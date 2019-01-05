@@ -1,0 +1,360 @@
+\section{A Compositional Model for Concurrency}
+\label{sec:informal}
+
+The key problem of verifying large programs is how to decompose them
+into smaller parts which can be verified independently. We need a way
+to specify the semantics of a program module (including all its
+concurrent interactions), deal with it in isolation, and finally
+conclude correctness of the whole program.  Our approach is based on
+\emph{logs}. In this section, we illustrate how the log-based model
+works by considering a small example.
+
+As our example, we consider a program
+(Fig.~\ref{fig:exp:ticket_lock_example}) that uses a lock to protect a
+critical section. The client program $P$ has two threads running on
+two different CPUs; each thread makes one call to the atomic primitive
+$\comm{foo}$ provided by the layer interface $L_2$.  The interface
+$L_2$ is implemented by the concurrent object module $M_2$, which in
+turn is built on top of the interface $L_1$. The $\comm{foo}$ method
+calls two atomic primitives $f$ and $g$ in a critical section
+protected by a lock.  The lock is implemented using the ticket lock
+algorithm~\cite{mcs91} in module $M_1$, which is built on the
+interface $L_0$. The details of the algorithm are not important,
+except to note that the state of the lock is stored in two shared
+integer variables, $\comm{n}$ and $\comm{t}$, and $L_0$ provides
+primitives (implemented using x86 atomic instructions) to load,
+increment, and fetch-and-increment them. $L_0$ also provides the
+atomic $\comm{f}$ and $\comm{g}$ which are later passed on to $L_1$,
+as well as a no-op primitive $\comm{hold}$ which $\comm{acq}$ calls to
+announce that it has taken the lock (explained below).
+
+\para{Events and Logs}
+The figure shows which functions are exported by each layer interface,
+but not the definitions of the interfaces themselves. An interface
+$L_i$ is a collection of specifications ($\sigma_{\comm{acq}}$,
+$\sigma_{\comm{rel}}$, $\sigma_{\comm{f}}$, etc.), where each
+specification $\sigma$ is a relation between the state of the system
+before and after the corresponding function call. A key idea in this
+paper is how we represent state when writing these specifications. As
+in prior work on sequential programs~\cite{dscal15}, the state is a
+tuple with fields for concrete and ``abstract'' thread-local memory
+state (see Sec.~\ref{sec:mach} for details).  However, data shared by
+multiple threads are not represented as abstract state. Instead, we
+add a new logical component to the tuple, the \emph{shared global
+  log}, which is a list of \emph{events}.  Each method call to a
+shared object (together with its arguments) is recorded as an
+observable event and is appended to the end of the log. For example,
+the specification of the fetch-and-increase ticket primitive $\comm{FAI\_t}$ says that when called from thread
+$i$, it takes a log $l$ to a log $l \cons (i.\incticket)$.  The symbol
+``$\cons$" means ``cons-ing'' an event to a list. 
+
+For each shared object, we define a {\em replay} function that can
+reconstruct the current shared state from the current global
+log. For example, for $L_0$ we define $\replay_{\comm{ticket}} :
+\mathsf{log} \rightarrow \mathbb{Z}\times\mathbb{Z}$ which computes
+the current state of $\comm{n}$ and $\comm{t}$ by counting the
+number of increment events in the log.
+Thus, all shared objects are represented as a single sequence of
+logged events with appropriate replay functions.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{figure*}
+\lstinputlisting [language = C, multicols=3] {source_code/ticket_lock_example.c}
+\vspace{-15pt}
+\caption{Building certified concurrent layers over a ticket lock}
+\label{fig:exp:ticket_lock_example}
+\vspace{-15pt}
+\end{figure*}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\ignore{
+\vilhelm{Do we make a distinction between refinement and simulation?
+  If not, it might be good to use the same term throughout the paper.}
+  }
+
+\para{Strategy, Environment Context, and Layer Refinement}
+When verifying programs, it is convenient to hide implementation
+details behind simple interfaces. For concurrent programs, this includes hiding
+non-atomicity. For example, when $\comm{acq}$ is called, the code in
+$M_1$ generates a series of $\incticket$/$\getnow$ events,
+but the exact way those interleave with events from other threads
+should not matter; we only need to care about the timing of the
+final $\holdlock$ event.  Using the log-based model, we can
+define a layer interface $L_1$, where the $\comm{acq}$ function only emits one
+event, and prove that the implementation \emph{refines} that
+interface.
+
+A concurrent program $P$ is inherently nondeterministic. We model this
+by parameterizing the machine semantics for each layer (e.g.,
+$\sem{L}{\cdot}$) by a scheduler strategy $\strat{hs}$ which specifies
+how the low-level operations are interleaved.  Thus, different
+scheduler strategies may generate different global logs.
+
+To prove the refinement $\sem{L'}{P\oplus{}M} \refines_R \sem{L}{P}$,
+for each scheduler strategy $\strat{hs}$, if running $P\oplus{}M$ on
+machine $L'$ with $\strat{hs}$ produces a global log $l$, we must find
+another scheduler strategy $\stratp{hs}$ such that running $P$ on
+machine $L$ under $\stratp{hs}$ would generate a global log $l'$ that
+is related to $l$ via the simulation relation $R$. We 
+construct a {\em function} that will map $l$ and $\strat{hs}$ into
+$l'$ and $\stratp{hs}$.
+\ignore{
+(The simulation relation $R$ over
+thread-private states might still be a general relation~\cite{dscal15}.)}
+
+In the case of the example shown in Fig. \ref{fig:exp:ticket_lock_example},
+our goal is to show that for each run of $P\oplus{}M_2\oplus{}M_1$
+over $L_0$, we can find another run of $P$ over $L_2$ so that the
+global logs produced by both runs are related. The proof builds the
+new run step by step, but it is easier to understand how it works by
+considering the resulting transformation of an entire log. As an
+example, here is a global log $l_{g1}$ produced from a specific run of
+$P\oplus{}M_2\oplus{}M_1$ over $L_0$.
+%\vspace*{.5ex}
+% \colorbox{Peach}{\textcolor{white}{a}}
+%\begin{small}
+%\vspace{-8px}
+\[
+\begin{array}{rl}
+l_{g1} := &
+\ssame \cons (1.\incticket) \cons
+\sdiff \cons (2.\incticket) \cons
+\ssame \cons (2.\getnow) \cons
+\sdiff \cons (1.\getnow)  
+\cons
+\ssame \cons (1.\holdlock)
+\cons 
+\sdiff \cons (2.\getnow) \cons
+\sdiff \cons (1.\comm{f}) \cons
+\sdiff \cons (2.\getnow)
+\cons \sdiff 
+\\
+&\cons (1.\comm{g}) \cons
+\ssame \cons (1.\incnow) 
+\cons \sdiff \cons (2.\getnow) \cons
+\ssame \cons (2.\holdlock)
+\cons
+\ssame \cons (2.\comm{f}) \cons
+\ssame \cons (2.\comm{g}) \cons
+\ssame \cons (2.\incnow) 
+\end{array}
+\]
+%\vspace{-8px}
+%\end{small}%
+
+The log contains two kinds of events: hardware yields $i\switch{}j$
+from thread $i$ to thread $j$ (in this example, $i$ and $j$ are always
+running on different CPUs), and calls to atomic primitives
+$i.\comm{f}$ done by thread $i$. Throughout this paper, we assume that
+all programs always start from thread 1, and before each thread
+executes an atomic primitive, it always yields to the hardware
+scheduler ($hs$). As an abbreviation, we use $\ssame$ to denote a
+hardware yield to the same thread, and $\sdiff$ for a yield to a
+different thread; each such symbol is actually an abbreviation of two
+consecutive switch events: switch from thread $i$ to $hs$ (\ie,
+$i\switch{}hs$), and then switch from $hs$ to thread $j$ (\ie, $hs
+\switch j$).  For example, starting from thread 1, $\sdiff$ is an
+abbreviation of $(1\switch{}hs) \cons (hs\switch 2)$.
+
+We define $\comm{target}(l)$ as the switching destination of the last
+event in the log $l$ (i.e. $\comm{target}(l\cons i.\comm{f}) = i$
+and $\comm{target}(l\cons i\switch{}j) = j$), which can be either 1,
+2, or $hs$. The above run, which produced the global log $l_{g1}$, can
+be viewed as combining the following {\em strategies} defined for each
+thread and $hs$:
+%\vspace*{-1ex}
+%\begin{small}
+%\vspace{-3px}
+\[
+\strat{j} (l):=
+\begin{cases}
+  j.e & \text{if } (\comm{target}(l) = j) ~~\wedge
+      (l\cons (j.e)) |_{j,hs} \text{ is a prefix of } (l_{g1} |_{j,hs}) \\
+\comm{undefined } & \text{otherwise}
+\end{cases}
+\]
+%\vspace{-8px}
+%\end{small}%
+Here, $l |_{j,hs}$ only keeps those events in $l$ that are
+related to participants $j$ and $hs$.  For the hardware scheduler's
+strategy $\strat{hs}$, this filtering essentially means that
+regardless how the CPUs (or threads) are going to play in the interim,
+$hs$'s moves will always follow $l_{g1}$.  Because $\strat{hs}$
+defines how switching between different CPUs is done, when we define
+each thread's strategy, we filter out other threads' events but still keep
+those events related to $hs$.
+
+%\jieung{Can we combine these sentences as a paragraph?}
+At each step, depending on the destination ($j$) of the current log
+($l$), we can query the corresponding strategy $\strat{j}(l)$ to get the
+next move for $j$.  For example, if the destination is $hs$, that is,
+the log ends with $(\any\switch hs)$, then it is the
+hardware scheduler's turn to generate a switch event $(hs\switch \any)$.
+
+These strategies also form a nice decomposition of the global log
+$l_{g1}$. To reason about thread 1 alone, we only need to construct
+its environment context $\oracle_1 := \strat{hs} \bigcup \strat{2}$.
+
+The layer interface $L_1$ introduces the $\acq$ and $\rel$ primitives
+which trigger events $\acq$ and $\rel$ respectively. Running
+$P\oplus{}M_2$ over $L_1$ could produce the following shared log $l_{g2}$:
+%\vspace*{-1ex}
+%\begin{small}
+%\vspace{-2px}
+\[
+l_{g2} :=\quad \ssame \cons (1.\acq) \cons
+\ssame \cons (1.\comm{f}) \cons
+\ssame \cons (1.\comm{g}) \cons
+\ssame \cons (1.\rel) 
+\cons \sdiff \cons (2.\acq) \cons
+\ssame \cons (2.\comm{f}) \cons
+\ssame \cons (2.\comm{g}) \cons
+\ssame \cons (2.\rel) 
+\]
+%\vspace{-5pt}
+%\end{small}%
+
+The layer interface $L_2$ introduces the atomic $\comm{foo}$
+primitive, and running $P$ over $L_2$ could produce the following shared log
+$l_{g3}$: $\ssame \cons (1.\comm{foo}) \cons \sdiff \cons (2.\comm{foo})$.
+
+To build a refinement, we want to define a function mapping one
+layer's log and environment context into those of another layer.  For
+example, the function $f_l$, mapping a log over $L_0$ into one over
+$L_1$, can be defined as follows: (1) it maps the $\holdlock$ and
+$\incnow$ events in $L_0$ to $\acq$ and $\rel$ events in $L_1$; (2) it
+drops the $\incticket$ and $\getnow$ events; 
+and (3) it merges all the adjacent switch symbols (\eg,
+$\ssame \cons \sdiff$ is merged into $\sdiff$).
+The following shows that $l_{g2} = f_l (l_{g1})$ is true:
+%\begin{small}
+%\vspace{-5px}
+\[
+\begin{array}{l}
+\mysout
+{\ssame \cons (1.\incticket) \cons
+\sdiff \cons (2.\incticket) \cons
+\ssame \cons (2.\getnow) \cons
+\sdiff \cons (1.\getnow)
+}
+\cons \ssame \cons (1.\cancel{\holdlock}/\acq) 
+\mysout
+{\cons 
+\sdiff \cons (2.\getnow) \cons
+\sdiff 
+} 
+\ssame \cons (1.\comm{f}) \cons
+\mysout
+{\sdiff \cons (2.\getnow) \cons
+\sdiff
+}
+\\
+\cons \ssame \cons (1.\comm{g}) \cons
+\ssame \cons (1.\cancel{\incnow}/\rel) 
+\cons \sdiff 
+\mysout
+{\cons (2.\getnow) \cons
+\ssame 
+}
+\cons (2.\cancel{\holdlock}/\acq) 
+\cons \ssame \cons (2.\comm{f})
+\cons \ssame \cons (2.\comm{g}) \cons
+\ssame \cons (2.\cancel{\incnow}/\rel) 
+\end{array}
+\]
+%\vspace{-5px}
+%\end{small}
+
+
+From $f_l$, we can construct a function $f_{\strat{}}$
+that maps each strategy $\strat{j}$ for $L_0$ into one for $L_1$.
+%\begin{small}
+\[ 
+f_{\strat{}}(\strat{j}) (l'):=
+\begin{cases}
+j.e' & \text{if } 
+\exists l, f_l(l) = l' \wedge \strat{j}(l) = j.e
+ \wedge f_l(l\cons(j.e)) = l' \cons (j.e') \\
+\comm{undefined } & \text{otherwise}
+\end{cases}
+\]
+%\end{small}%
+Here, since many $L_0$ events are dropped in $L_1$,
+the $L_1$ strategy $f_{\strat{}}(\strat{j})$ for $j$
+has to keep querying $\strat{j}$ until
+it also returns an event from $j$ at $L_1$.  For example, let $l$ be
+$\ssame \cons (1.\incticket) \cons \sdiff \cons (2.\incticket) \cons
+\ssame \cons (2.\getnow) \cons \sdiff \cons (1.\getnow) \cons \ssame$,
+since $\strat{1} (l) = 1.\holdlock$ and $f_l(l \cons 1.\holdlock) = \ssame \cons 1.\acq$, we have
+$f_{\strat{}}(\strat{1}) (\ssame) =1.\acq$.
+By looking at the definitions of $\strat{j}$ and $f_l$ we can see that $f_{\strat{}}$
+is indeed a function, i.e. any choice of $l$ that maps to $l'$ gives the same $j.e'$, because
+$\strat{j}$ is only defined when called with a prefix of the particular log $l_{g1}$.
+Finally, from $f_{\strat{}}$ we can construct the function
+$f_{\oracle}$, which maps each environment context $\oracle$ for
+$L_0$ into one for $L_1$.
+
+\paragraph{Layer Verification and Composition}
+Reasoning about a concrete strategy is simple, but when  verifying
+a concurrent module, we cannot assume such a specific environment context.
+Instead, to verify
+a layer of CPU~$i$, we have to show that its implementation
+meets its specification for all possible environment contexts
+$\oracle_i$ that satisfy its ``rely'' invariants.
+
+For example, to show that $\ltyp{L_0[1]}{R}{M_1}{L_1[1]}$, we must
+show that the implementation of $\acq$ meets its specification.
+This requires us to prove the starvation-freedom of the ticket
+lock algorithm. To do so, we can impose the following ``rely'' (i.e.,
+validity) conditions over $\oracle_1$:
+%%%%%%
+\begin{itemize} %\itemsep 0pt
+%\vspace{-5px}
+\item $\Rely_{hs}$:~~  $\strat{hs}$ is \emph{fair}, that is,
+  for any CPU $i$, the gap between two $(hs \switch i)$ events
+  in the log is less than some constant $m$.
+%%%%%%%
+\item $\Rely_{2}$:~~  $\strat{2}$ will eventually release the
+  lock it held, that is, the number of events generated by CPU~2
+  between $(2.\holdlock)$ and $(2.\incnow)$   is less
+  than some constant $n$.
+%\vspace{-5px}
+\end{itemize}
+%%%%
+Therefore, when CPU~1 acquires the lock, the loop iteration (\cf
+line 16 in Fig.~\ref{fig:exp:ticket_lock_example}) is bound by
+$n \times m$, because CPU~2 can generate at most $n$ events before
+releasing the lock and $\strat{hs}$ is fair to CPU~2.
+
+Note both $\Rely_{hs}$ and $\Rely_{2}$ can specify ``rely''
+conditions over the future events in $\oracle_1$. This is not
+supported in previous rely-guaranee-based program
+logics~\cite{feng07:sagl,vafeiadis:marriage,LRG,fu10:roch,sergey15}.
+
+Interestingly, we do not need to prove that CPU~1 \emph{guarantees} to
+release the lock within $n$ steps in machine $L_1[1]$ when we prove
+$\ltyp{L_0[1]}{R}{M_1}{L_1[1]}$.  We can restore this guarantee proof
+when we prove $\ltyp{L_1[1]}{R}{M_2}{L_2[1]}$ since clearly, each call
+to $\acq$ in $M_2$ is followed by a call to $\rel$ within three steps
+(see Fig. \ref{fig:exp:ticket_lock_example}).
+
+Two certified layers are allowed to compose only if each one's guarantee
+implies the other's rely. We cannot parallel-compose
+$\ltyp{L_0[1]}{R}{M_1}{L_1[1]}$ and $\ltyp{L_0[2]}{R}{M_1}{L_1[2]}$
+because the layer interface $L_1[1]$ is not compositional:
+the implementation of $\acq$ does not guarantee that $\rel$ will always be
+called afterwards; it does not imply the ``rely'' condition (i.e.,
+$\Rely_{2}$) of its environment.
+
+On the other hand, both $L_2[1]$ and $L_2[2]$ are compositional,
+so we can first apply vertical layer composition~\cite{dscal15} to get
+$\ltyp{L_0[1]}{R}{M_1\oplus{}M_2}{L_2[1]}$ and
+$\ltyp{L_0[2]}{R}{M_1\oplus{}M_2}{L_2[2]}$, and then parallel-compose
+these certified layers to get the certified layer
+$\ltyp{L_0[\set{1,2}]}{R}{M_1\oplus{}M_2}{L_2[\set{1,2}]}$.
+%\jieung{What is the difference between $L_1$ and $L_2$? Did we clarify it before?}
+%\jieung{Can we merge some short paragraphs as fewer paragraphs in here?}
+
+
+
+

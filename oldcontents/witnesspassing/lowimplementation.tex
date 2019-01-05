@@ -1,0 +1,142 @@
+\section{Representing the Network}
+\label{sec:low-level-implementation}
+
+Previous sections have shown how \sysname{} provides a generic specification
+that can accommodate a variety of distributed systems.  To assure correctness of
+a concrete implementation, a distributed system verification also needs to
+provide evidence that the actual running code refines high-level generic
+specifications. While mere functional correctness is relatively well-understood,
+it is not sufficient for the purposes of a distributed system verification. The
+system's behavior with respect to the network must be taken into account. To
+tackle these challenges, we extend CCAL by adding a network model and templates
+that can be generically adapted to multiple distributed systems.
+
+\subsection{Network Model}
+\label{subsec:network-model}
+
+\begin{figure}
+\begin{small}
+\raggedright
+$
+\begin{array}{llll}
+\chid & := & \mathbb{Z} & \mbox{(channel id)} \\
+\msg & : & Type & \mbox{(message)} \\
+\mathrm{gmsg} & : & Type & \mbox{(ghost message)} \\
+\mathrm{Esnd} & := & \nodeid \times \msg \\
+\mathrm{Erecv} & := & \nodeid \times \msg \\
+\mathrm{eType} & := & \mathrm{Esnd} + \mathrm{Erecv} + \nodeid + \mathrm{gmsg} \\
+\mathrm{E}_{net} & := & \chid \times \nodeid \times \mathrm{eType} \\
+\end{array}
+$
+\end{small}
+\vspace{-1em}
+\caption{Network Definitions}
+\label{fig:net-defs}
+\vspace{-1.5em}
+\end{figure}
+
+The network model here is the instantiation of log in
+\pref{sec:specs-for-leader-based-system}. Our network is defined as a list of
+network events, and the key definitions are found in \pref{fig:net-defs}. A
+network event ($\mathrm{E}_{net}$) represents an interaction between a node and
+the greater distributed system of which it is part. This $\mathrm{E}_{net}$ is a
+low-level instantiation of $\packet$ from \pref{fig:basic-state}.
+
+At the lowest logical level there are four kinds of events: 1) send, 2) receive,
+3) timeout, and 4) ghost. A send event represents an interaction in which one
+node sends data to another node and registers corresponding send events in the
+network log. A receive event represents the moment in time when a node begins
+processing data that arrived from another node (not the moment of the arrival
+itself). A timeout event represents the interaction in which a node decides it
+has not received an expected communication from another node. Ghost events do
+not correspond to any concretely observable network communication, but can
+greatly simplify local reasoning about the global state of the distributed
+system by explicitly demarcating global state transitions in the network log.
+
+All network events carry a channel identifier ($\chid$), the purpose of which is
+to logically separate network events into disjoint subsets for separate
+reasoning and refinement. \ignore{Projection functions are defined for narrowing the
+view of the network log to only the events from a given channel, to focus on
+only the relevant history.} Assigning different channel identifiers for each
+protocol and each verification layer allows for the composition of protocols and
+for network reductions (see Section~\ref{subsec:connection}).
+
+Network events also carry a source node ID, which denotes the node that
+instigated the event. For any given datagram sent from node $a$ to node $b$, the
+network log would eventually contain a send event with source $a$ and either a
+receive event or a timeout event also with source $a$. The source of a ghost
+event is the ID of the node that observed the distributed system transition from
+one state to another. \ignore{(for example, a Paxos proposer observing that it has
+received responses from a majority of acceptors, meaning that the system as a
+whole has come to consensus).} Send, receive, and timeout events carry a
+destination node ID indicating the intended recipient of the datagram to which
+they correspond. Send and receive events carry a message ($\msg$), the payload
+of the communication.
+
+A local node's view of the network log grows over time by the action of two
+primitives - send and receive. The low-level send primitive adds a single send
+event to the network log. There is no acknowledgement and send always succeeds.
+The low-level receive primitive conceptually collects data received from other
+nodes, but in addition to receive and timeout events, populates the network log
+with all intermediate events. \ignore{(including events not actually observable by the
+concrete local node).} For reasoning purposes, receive consults a network oracle
+to fill in the log. The oracle is constrained by predicates that model only
+relevant forms of network failure, \ignore{(which can be specified per protocol),} and
+verification of a protocol will involve quantifying over all such valid oracles
+to show the correctness of the local node's behavior and the greater distributed
+system.
+
+\subsection{Connection with Generic Specifications}
+\label{subsec:connection}
+
+\begin{figure}
+\begin{center}
+\includegraphics[scale=0.3]{figs/witnesspassing/network_reduction.pdf}
+\end{center}
+\vspace{-1em}
+\caption{Network Reduction}
+\label{fig:network-reduction}
+\vspace{-1em}
+\end{figure}
+
+\paragraph{Network Reduction}
+The network model in concert with CCAL permits a logical refinement step in
+which a complex view of the network log is reduced to a simpler one for easier
+reasoning. Channel ids and projection functions allow these network
+reductions to be applied independently to disjoint subsets of the network log.
+This facilitates clear separation of protocol verification and aids
+horizontal composition.
+
+Two example network reductions are shown in \pref{fig:network-reduction}. In
+reduction (a), a two-step reduction simplifies a network log in which node $P1$
+issues three independent send events. The first step rearranges the three send
+events so that they are adjacent in the network log. The second step
+consolidates the three send events into a single broadcast event. These
+reductions do not involve a change in behavior of the system (the first because
+the send events are independent of the intervening network log, and the second
+because a broadcast has the same semantics as individual sends). Each reduction
+introduces a new channel and disallows an old one (the channel id is the first
+number in brackets in each event in the figure).
+
+The separation of network reductions by channel enables verification of a
+protocol by parts and of several protocols in a single system. Since network
+reductions can be focused by channel, verification of different protocols is
+separable and thus composable.
+
+\ignore{
+\subsubsection{Building Global State Transition Systems}
+\label{subsubsec:building-global-state-transition-systems}
+}
+
+\paragraph{Log Replay Function}
+Specifications that we have described in
+Section~\ref{sec:specs-for-leader-based-system} are based on the network log and network
+log replay function. To connect low-level specifications with these log-oriented
+specifications, a refinement from direct update on local state is necessary. 
+ CCAL  showed how this can
+be done with CPU schedules, and the same technique applies straightforwardly to
+the network log.
+
+The high level global state calculated by the replay function contains local
+states for each node. The network oracle, and by extension the local states, can
+be constrained with protocol-specific assumptions for rely-guarantee reasoning.

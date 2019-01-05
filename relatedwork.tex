@@ -1,0 +1,502 @@
+
+%%%% From CCAL
+
+\paragraph{Certified Abstraction Layers.} \citet{dscal15}
+presented the first formal account of certified abstraction layers and
+showed how to apply layer-based techniques to build certified system
+software. The layer-based approach differs from Hoare-style program
+verification~\cite{hoare69,reynolds02,boogie05,nanevski06} in several
+significant ways. First, it uses the termination-sensitive forward
+simulation techniques~\cite{Lynch95,compcert} and proves a stronger
+contextual correctness property rather than simple partial or total
+correctness properties (as done for Hoare logics).
+%%%%%
+Second, the overlay interface of a certified layer object completely
+removes the internal concrete memory block (for the object) and
+replaces it with an abstract state suitable for reasoning; this
+abstract state differs from auxiliary or ghost states (in Hoare
+logic) because it is actually used to define the semantics of the
+overlay abstract machine and the corresponding contextual refinement
+property.
+%%%%%
+Third, as we move up the abstraction hierarchy by composing more
+layers, each layer interface provides a new programming language that gets
+closer to the specification language---it can call primitives at
+higher abstraction levels while still supporting general-purpose
+programming in C and assembly.
+
+Our CCAL toolkit follows the same layer-based methodologies. Each time
+we introduce a new concrete concurrent object implementation, we
+replace it with an abstract atomic object in its overlay
+interface. All shared abstract states are represented as a single
+global log, so the semantics of each atomic method call would need to
+{\em replay} the entire global log to find out the return value.  This
+seemingly ``inefficient'' way of treating shared atomic objects is
+actually great for compositional specification. Indeed, it allows us
+to apply game-semantic ideas and define a general semantics that
+supports parallel layer composition.
+
+\para{Abstraction for Concurrent Objects.}
+\citet{herlihy90} introduced {\em linearizability} as a key technique
+for building abstraction over concurrent objects. Developing
+concurrent software using a stack of shared atomic objects has since
+become the best practice in the system
+community~\cite{Herlihy08book,ospp11}. Linearizability is quite
+difficult to reason about, and it is not until 20 years later that
+\citet{filipovic10} showed that linearizability is actually equivalent
+to a termination-insensitive version of the contextual refinement
+property. \citet{Gotsman12concur} showed that such equivalence also
+holds for concurrent languages with ownership
+transfers~\cite{ohearn:concur04}.  Liang et al.~\cite{liang13,lili16} showed that linearizability plus various
+progress properties~\cite{Herlihy08book} for concurrent objects is
+equivalent to various termination-sensitive versions of the contextual
+refinement property. These results convinced us that we should prove
+termination-sensitive (contextual) simulation when building certified
+concurrent layers as well.
+
+\para{RGSim and LiLi.} Building contextual refinement proofs
+for concurrent programs (and program transformations) is challenging.
+Liang~{et~al.}~\cite{RGSim,Liang14lics,lili16} developed the
+Rely-Guarantee-based Simulation (RGSim) that can support both parallel
+composition and  contextual refinement of concurrent
+objects. Our contextual simulation proofs between two concurrent
+layers can be viewed as an instance of RGSim if we extend RGSim with
+auxiliary states such as environment contexts and shared logs. This
+extension, of course, is the main innovation of our new compositional
+layered model. Also, all existing RGSim systems are limited to reasoning
+about atomic objects at one layer; their client program context cannot
+be the method body of another concurrent object, so they cannot
+support the same general vertical layer composition as our work does.
+
+\citet{lili16} also developed a program logic called LiLi that can
+directly prove both the linearizability and starvation freedom (or
+deadlock-freedom) properties. Their ``rely'' conditions are specified
+over shared states only, so they cannot express temporal properties. To
+prove progress, they have to introduce a separate temporal ``rely''
+condition called {\em definite actions}.  This made it difficult to
+provide a standalone (total) specification for each lock acquire
+method.  Indeed, all examples in their paper are code fragments that
+must acquire a lock, then perform critical-section tasks, and then release the
+lock. In contrast, our environment context can specify the full
+strategies (i.e., both the past and the future events) of all
+environment threads and the scheduler, so we can readily impose
+temporal invariants over the environment. Within each thread-modular
+layer $L[t]$, we can show that each lock acquire primitive (e.g., for
+ticket locks) always returns as long as its environment is cooperative
+(e.g., always releases its acquired lock), even if $t$ itself may not
+be cooperative.
+In other words, the termination of $t$'s lock acquire
+operation does not depend on whether $t$ itself will release the lock
+after first acquiring it.
+
+\para{Treatment of Parallel Composition.}
+Most concurrent languages (including those used by RGSim) use a
+parallel composition command $(C_1 \| C_2)$ to create and terminate
+new threads.  In contrast, we provide thread spawn and join
+primitives, and assign every new thread a unique ID (e.g., $t$, which
+must be a member of the full thread-ID domain set $D$). Parallel layer
+composition in our work is always done over the whole program $P$ and over
+all members of $D$. This allows us to reason about the current
+thread's behaviors over the environment's full strategies (i.e., both
+past and future events). Even if a thread $t$ is never
+created, the semantics for running $P$ over $L[t]$ is still well
+defined since it will simply always query its environment context to
+construct a global log.
+
+\para{Program Logics for Shared-Memory Concurrency.}
+A large body of new program
+logics~\cite{ohearn:concur04,brookes:concur04,feng07:sagl,vafeiadis:marriage,LRG,verifast,gotsman13,Turon13popl,Turon13icfp,nanevski13,nanevski14,sergey15,sergey15pldi,pinto14,iris15,civl15,pinto16,xu16}
+have been developed to support modular verification of shared-memory
+concurrent programs. Most of these follow Hoare-style logics so they
+do not prove the same strong contextual simulation properties as RGSim
+and our layered framework do. Very few of them (e.g.,~\cite{pinto16})
+can reason about progress properties. Nevertheless, many of these
+logics support advanced language features such as higher-order functions
+and sophisticated non-blocking synchronization, both of which will be
+useful for verifying specific concurrent objects within our layered
+framework. Our use of a global log is similar to the use of compositional
+subjective history traces~\cite{sergey15}; the main difference is
+again that our environment context can talk about both past and future
+events but a history trace can only specify past events.
+
+Both CIVL~\cite{civl15} and FCSL~\cite{sergey15pldi} attempt to build
+proofs of concurrent programs in a ``layered'' way, but their notions
+of layers are different from ours in three different ways: (1) they do
+not provide formal foundational contextual refinement proofs of
+linearizability as shown by \citet{filipovic10} and \citet{liang13};
+(2) they do not address the liveness properties; (3) they have not be
+connected to any verified compilers.
+
+\para{Compositional CompCert.}
+\citet{stewart15} developed a new compositional extension of the
+original CompCert compiler~\cite{compcert} with the goal of providing
+thread-safe compilation of concurrent Clight programs.  Their
+interaction semantics also treats all calls to synchronization
+primitives as external calls. Their compiler does not support a layered
+ClightX language as our CompCertX does, so they cannot be used
+to build concurrent layers as shown in Fig.~\ref{fig:arch}. 
+
+\para{Game Semantics.} Even though we have used
+game-semantic concepts (e.g., strategies) to describe our
+compositional semantics, our concurrent machine and the layer simulation is still defined using
+traditional small-step semantics.  This is in contrast to several past
+efforts~\cite{ghica08,nishimura13,rideau11,abramsky99} of modeling
+concurrency in the game semantics community which use games to
+define the semantics of a complete language. Modeling higher-order
+sequential features as games is great for proving full abstraction,
+but it is still unclear how it would affect large-scale 
+verification as done in the certified software community.  We 
+believe there are great potential synergies between the two communities
+and hope our work will promote such interaction.
+
+\para{OS Kernel Verification.} There has been a large body
+of recent work on OS kernel verification including
+seL4~\cite{klein2009sel4,klein14},
+%CertiKOS~\cite{dscal15,chen16,costanzo16}, 
+Verve~\cite{hawblitzel10},
+and Ironclad~\cite{ironclad14}. None of these works have addressed the
+issues on concurrency with fine-grained locking. Very recently,
+\citet{xu16} developed a new verification framework based on RGSim
+and Feng~{et~al.}'s program logic~\cite{feng08:aim} for reasoning
+about interrupts; they have successfully verified many key modules
+(in C) in the $\mu$C/OS-II kernel, though so far, they have not proved
+any progress properties.
+
+
+
+%%%% From MCS Lock
+\paragraph{Verified system software}
+CertiKOS is an end-to-end verified concurrent system showing that its
+assembly code indeed ``implements'' (contextually simulates) the
+high-level specification.
+Other verified systems~\cite{klein2009sel4,hawblitzel10,hawblitzel:ironclad},
+are single-threaded, or use a per-core big kernel lock.
+The Verisoft team used VCC~\cite{vcc09} to verify spinlocks in a
+hypervisor by directly postulating a Hoare logic rather than building
+on top of an operational semantics for C, and only proved properties
+about the low-level primitives rather than the full functionality of
+the hypervisor. By contrast, CertiKOS deals with the problem of
+formulating a specification in a way that can be used as one layer
+inside a large stack of proofs. As for CertiKOS itself, while we
+discussed the ``local'' verification of a single module, other papers
+explain how to relate the log and context to a more realistic
+nondeterministic machine model~\cite{certikos16}, how to
+``concurrently link'' the per-CPU proofs into a proof about the full
+system~\cite{ccal16}, and how this extends to multiple threads per
+CPU~\cite{ccal16}.
+
+%
+%\paragraph{Other papers on CertiKOS}
+%Because this paper focused on a single module of the kernel,
+%we discussed the ``local'' aspects: how to formulate the
+%specifications of the OS primitives and how to ascribe
+%an atomic specification to a concurrent implementation.
+%
+%As the starting point of this paper, we assumed a C-level model where
+%concurrency is handled through an event log, and the log only has to
+%be updated from the context at certain points in the program. Gu et
+%al.~\cite{certikos16} explain how to relate that model to a more
+%realistic machine model where executions of different CPUs can be
+%nondeterministically interleaved anywhere (the proof uses a
+%backwards-simulation once at the lowest level of verification). The
+%different machine model also required support in the correctness
+%proofs for the C compiler.~\cite{ccal16}.
+%
+%We also need to relate the local refinement proofs of one primitive to
+%proofs about the whole system. First, the proofs in this paper handle
+%code running on a single CPU in isolation, with all the other CPUs
+%abstracted away as a concurrent context. We need a ``concurrent
+%linking'' theorem saying that this suffices to prove the correctness
+%when all CPUs run simultaneously producing a single global
+%log. Second, we only proved the correctness of a single layer in
+%isolation, but eventually this will be composed with higher
+%abstraction layers containing the client code of the lock (``vertical
+%composition''), and eventually with user-code running on top of the
+%OS. We need a ``contextual refinement'' theorem talking about the
+%entire system. And finally, the abstraction level used in this paper
+%only talks about inter-CPU concurrency, but to support user-space
+%programs, at higher abstraction levels the OS needs to provide
+%threading.~\cite{ccal16}
+
+\paragraph{Fine-grained concurrency}
+The MCS algorithm uses low-level operations like CAS instead of
+locks. There is much research about how to reason about such programs,
+more than we have space to discuss here. One key choice is how much to
+prove. At least all operations should be
+linearizable~\cite{herlihy:linearizability} (a safety property). Some
+authors have considered mechanized verification of linearizability
+(e.g. \cite{doherty:lock-free,derrick:mechanical-linearizability}),
+but on abstract transition system models, not directly on executable
+code. The original definition of linearizability instrumented programs
+to record a global history of method-invocation and method-return
+events. However, that's not a convenient theorem statement when
+verifying client code. Our formulation is closer to Derrick et
+al~\cite{derrick:mechanical-linearizability}, who prove a simulation
+to a history of single atomic actions modifying abstract state.  Going
+beyond safety, one also wants to prove a progress property such as
+wait-freedom~\cite{herlihy:wait-freedom} or (in our case)
+starvation-freedom~\cite{Herlihy08book}.
+
+% Formal proofs have included
+% e.g. Jia et al.~\cite{jia:lock-freedom}.  Most such research deals
+% with datastructures (sets, queues, etc), but mutexes present one extra
+% complication because different clients will hold the lock for
+% different amount of times, so we had to introduce bound-numbers to
+% give a modular specification.
+
+Liang {\em et al}~\cite{liang13} showed that the linearizability and
+progress properties~\cite{Herlihy08book} for concurrent objects is
+exactly equivalent to various termination-sensitive versions of the
+contextual simulation property. Most modern separation-style
+concurrent
+logics~\cite{cap10,Turon13popl,sergey15pldi,pinto14,iris15,pinto16} do
+not prove the same strong termination-sensitive contextual simulation
+properties as our work does, so it is unclear how they can be used to
+prove both the linearizability and starvation-freedom properties of
+our MCS Lock module.  Total-TaDA~\cite{pinto16} can be used to prove
+the total correctness of concurrent programs but it has not been
+mechanized in any proof assistant and there is no formal proof that
+its notion of liveness is precisely equivalent to Helihy's notion of
+linearizability and progress properties for concurrent
+objects~\cite{Herlihy08book}. FCSL~\cite{sergey15pldi} attempts to
+build proofs of concurrent programs in a ``layered'' way, but it does
+not address the liveness properties. Many of these program
+logics~\cite{Turon13popl,iris15}, however, support 
+higher-order functions which our work does not address.
+
+\paragraph{Other work on the MCS algorithm}
+We are aware of two other efforts to apply formal verification methods
+to the MCS algorithm.  Ogata and Futatsugi developed a mechanized
+proof using the UNITY program logic.~\cite{ogata:mcs-lock} They work
+with an abstract transition system, not executable code. Like us,
+their correctness proof works by refinement (between a fine-grained
+and a more atomic spec) but they directly prove backward
+simulation.
+
+One difference is that Ogata and Futatsugi's proof is
+done using a weaker fairness assumption. They assume ``every CPU gets
+scheduled infinitely often'', while we require a maximum scheduling
+period ($F$ in Section~\ref{sec:liveness-atomicity}).  This is because
+we write our specification of \lstinline$wait_lock$ as a Coq function
+defined by recursion on a natural number, and all Coq functions must
+be total. So although our ultimate theorem only states that the method
+terminates ``eventually'', as an intermediate lemma we need to prove
+an explicit natural number bound on when a given call to
+\lstinline$wait_lock$ will finish.  We could avoid this by e.g. using
+Coq's facilities to define functions by well-founded recursion, and
+making the termination measure $M_i$ take ordinal instead of number
+values, but in practice assuming a fixed $F$ seems like a reasonable
+model of multi-core concurrency.
+
+The other MCS Lock verification we know of is by Liang and
+Feng~\cite{liang:lili}, who define a program logic LiLi to prove
+liveness and linearizability properties and verify the MCS algorithm
+as one of their examples.  The LiLi proofs are done on paper, so they
+can omit many ``obvious'' steps, and they work with a simple
+while-loop language instead of C. Many of the concepts in our proof
+are also recognizable in theirs. The state of their concrete
+  programs includes a pointer $\mathrm{\texttt{tail}}$ and nodes
+  $\mathrm{\texttt{Node}}(\mathrm{\texttt{busy}}, \mathrm{\texttt{next}}, \mathrm{\texttt{ThrdID}})$.
+In their invariant and precondition they use specificational variables
+$\mathrm{\textit{ta}}$ and $\mathrm{\textit{tb}}$ (like \texttt{la} in
+Sec.~\ref{subsec:atomicoperation}), $\mathrm{\textit{tl}}$ and $S$ (like $q$
+and $s$ in Sec.~\ref{sec:representation-ghost}). Their
+  ``wellformed lock'' predicate $\mathrm{\textsf{lls}}$ includes our
+  tail-soundness and next-correctness properties, so in order to prove
+  that the invariant is preserved they need essentially the same
+  lemmas as in Section~\ref{sec:representation-ghost}. and their
+termination measure $f(\mathrm{G})$ includes the length of
+$\mathit{tl}$ and the size of $S$ (like $M$ in
+Sec.~\ref{sec:liveness-atomicity}. On the other hand, the fairness
+constant makes no appearance in $f(\mathrm{G})$, because fairness
+assumptions are implicit in their inference rules.
+
+A big difference between our work and LiLi is our emphasis on
+modularity.  Between every two lines of code of a program in LiLi, you
+need to prove all the different invariants, down to low-level data
+representation in memory. The specification takes the form of a single
+pre- and post-condition which involves concepts at many level of
+abstraction. For example, unfolding the definition of the measure $f$,
+we find not only $\mathit{tl}$, but also the tail-pointer $p$, and
+eventually the lock-array $\mathit{ta}$. In our development, these
+concerns are in different modules which can be completed by different
+programmers.  Similarly, we aim to produce a stand-alone specification
+of the lock operations. In the LiLi example, the program being
+verified is an entire ``increment'' operation, which takes a lock,
+increments a variable and releases the lock. The pre/post-conditions
+of the code in the critical section includes the low-level
+implementation invariants of the lock, and the fact the lock will
+eventually be released is proved for the ``increment'' operation as a
+whole. Our locks are specified using \emph{bound} numbers, so they can
+be used by many different methods.
+
+Apart from modularity, one can see a more philosophical difference
+between the CertiKOS approach and program logics such as LiLi.  Liang
+and Feng are constructing a program logic which is tailor-made
+precisely to reason about liveness properties under fair
+scheduling. To get a complete mechanized proof for a program in that
+setting would require mechanizing not only the proof of the program
+itself, but also the soundness proof for the logic, which is a big
+undertaking. Other parts of the program will favor other kinds of
+reasoning, for example many researchers have studied program logics
+with inference rules for reasoning about code \emph{using} locks. One
+of the achievements of the CertiKOS style of specification is its
+flexibility, because the same model---a transition system with data
+abstraction and a log of events---works throughout the OS kernel. When
+we encountered a feature that required thinking about liveness and
+fairness, we were able to do that reasoning without changing the
+underlying logical framework.
+
+
+
+%%%%% From Distributed Works
+\para{Model of leader-based distributed system}
+Throne eader-based distributed system model, which is based on the two functions,
+leader election and update functions, is inspired by CASPaxos~\cite{caspaxos},
+which implements an atomic shared object. CASPaxos uses prepare and accept
+phases similar to those in Paxos but it can repeatedly apply a compare-and-swap
+functions to the stored state instead of setting it just once. While CASPaxos is a system implementation
+to atomically update a distributed object, we use the implementation style of
+CASPaxos to build a generic specification for leader-based distributed systems.
+Our specification also resembles the high-level specification of a state machine
+replication protocol, which Lamport generalized~\cite{generalizedconsensus}.
+While Lamport mainly models multi-Paxos and consensus,Throne models and
+verifies common properties of a generic leader-based distributed system,
+which includes multi-Paxos and state machine replication.
+
+\para{Verification of linearizability and leadership}
+Verifying linearizability~\cite{herlihy90} for concurrent objects has been
+studied for decades. Methodologies to simplify linearizability have been
+proposed mostly in a concurrent programming context~\cite{Elmas10tacas,
+Liang13pldi,Gotsman12concur,Viktor10CAV} and the linearizability of Raft and
+multi-Paxos has been verified~\cite{cppraft, ironfleet}. The linearizability
+and leader-soundness proofs of Throne build on top of exiting work on
+linearizability: the key insight for the proof is to base the reasoning on
+an atomic step of each operation.  Yet, we generalize the reasoning of linearizability
+to the leader-based distributed system and create a reusable proof template.
+
+The template extracts
+necessary states from the witness that is created by the lower level
+specification of concrete systems
+of a generic leader-based distributed system and provides a proof template based on
+abstract states which are represented as the witness.
+The witness encodes atomic steps backed by a quorum, which approves state
+changes, and the validity of the leader who is initiating the atomic steps.
+Our template guarantees the linearizability of any leader-based system that
+satisfies the constraints of the witness. Using a similar witness structure, our
+template automatically verifies the soundness of the leader based on
+linearizability of leader election.
+
+\para{Distributed system verification}
+Approaches to verify distributed systems have been explored actively over the
+past few years. IronFleet~\cite{ironfleet} annotates functions with pre- and
+post-conditions to automatically prove the correctness of the code with an SMT (satisfiability
+modulo theories) solver and proves a refinement relation between the code and
+protocol proofs in different layers. Taube et al.~\cite{modular} studied adding
+decidability for verifying distributed systems using SMT solvers.
+The work surrounding SMT solvers has a philosophical difference with our verification approach.
+We use high-order logic and CCAL, which have higher expressiveness but less automation,
+while SMT-solver-based work requires encoding higher-order concepts into
+first-order logic for better automation. While a relatively large portion of the
+verification can be automated, the SMT-solver-based approach has some limitations.
+For example, certain higher-order properties (e.g. network reduction
+in IronFleet) are not always encodable or verifiable in first order logic.
+
+Verdi~\cite{verdi} presents a distributed system verification tool chain
+where developers specify and implement a system using a functional language
+embedded in Coq while assuming a perfect network model. The system can then automatically convert
+it into a system that handles a more realistic network and failure model. DISEL~\cite{disel}
+studies how to verify and horizontally compose different distributed protocols.
+It verifies the protocols in separation and uses send-hooks to restrict the
+interference among protocols. Throne assumes a realistic network to begin with
+and it not only allows both horizontal and vertical composition of verified distributed
+protocols but also supports combined reasoning of protocols by using witnesses.
+\vspace{-0.2em}
+
+\para{Paxos verification}
+A huge body of work exists on verifying the Paxos protocol~\cite{paxos}.
+Lamport provided a proof sketch at the time of proposing the protocol~\cite{paxosmadesimple}
+and Lampson attempted to distill Paxos into its core components by creating a very
+high-level Abstract Paxos~\cite{Lampson2001} and showing how variants of
+Paxos can be derived from it. Additional efforts were made to divide Paxos
+into simpler components~\cite{dpaxos, sdpaxos} to find a reusable framework for
+proving its variants. Our witness-based approach also attempts
+to find a reusable framework for these proofs, but instead of decomposing Paxos
+further, we make the key implicit invariants more explicit by passing around
+the information needed to prove them.
+
+Padon et al. verified high-level specifications of many variants of Paxos
+and multi-Paxos while proposing a method to specify the protocols using
+a decidable first-order logic~\cite{paxosepr}. Verification of Paxos
+variants was made possible by reusing the specification and proof of vanilla
+Paxos. Throne on the other hand can reuse the proof of a Paxos instance
+due to CCAL to prove variants of Paxos using proof objects and verifies both the
+C code and the specification of the system based on witness.
+
+
+Woos et al. presented the verification of Raft~\cite{cppraft}. The properties
+verified for Raft includes linearizability and soundness of the leader and
+the code written in Coq translates to executable OCaml code. Throne
+delegates verification of such Raft properties common to leader-based distributed
+systems to the template and the final executable code extracted from
+Throne is in assembly, which is generated from CompCert C compiler and is more
+optimized than the OCaml code.
+
+
+\para{Paxos Verification and Deconstruction}
+Within the category of distributed system verification, there is a significant amount of work focusing specifically on Paxos.
+Lamport's first paper on the protocol~\cite{paxos}, and his second attempt to explain it more clearly~\cite{paxosmadesimple}
+present the basic algorithm and give paper proofs of the safety properties.
+Since then, many variations have been developed such as Disk Paxos~\cite{diskpaxos}, Egalitarian Paxos~\cite{epaxos},
+and Vertical Paxos~\cite{vertpaxos}.
+Oftentimes, although these variations seem similar to the original protocol, it is not possible to reuse the original
+proof of the safety properties and a significant amount of work is required to re-prove them.
+Lampson attempted to distill Paxos into its core components by creating a very high-level Abstract Paxos~\cite{Lampson2001}
+and showing how other variants can be derived from it.
+Some still felt that this did not get at the essence of the algorithm because at least two works since then \cite{dpaxos, sdpaxos}
+have studied other ways of dividing Paxos into simpler components such that proofs of the protocol can be made more modular.
+Our write-witness-passing approach also attempts to find a reusable framework for these proofs,
+but instead of decomposing Paxos further, we make the key implicit invariants more explicit by passing around
+the information needed to prove them.
+
+This enables proofs to be done in a thread-local (or node-local) manner using an environment context to
+capture the behavior of the rest of the world.
+These proofs can then be linked together to obtain a strong correctness theorem for the entire system.
+
+Our witness benefits greatly from using CCAL.
+By decomposing distributed systems into layers, we reduce the amount of time and effort needed to
+prove functional correctness.
+By treating each distributed node as a separate thread, we can use the environment context to
+prove properties in a local context.
+Combining this with the witness then allows us to bring in information about the global state when necessary.
+We also use the environment context to model a realistic, non-deterministic network.
+Another advantage afforded by CCAL is that we can lift our safety proofs to higher layers via contextual refinement.
+This allows us to implement and verify a system once, and then reuse it as a component in various distributed applications.
+
+
+Approaches to verify distributed systems have been explored actively over the
+past few years. IronFleet~\cite{ironfleet} annotate functions with pre- and
+post-conditions to automatically prove the code with an SMT (satisfiability
+modulo theories) solver. It requires refinement proofs among three layers:
+implementation, distributed protocol, and high level specifications. However,
+the proof of network model is not fully machine-checkable whereas all Throne
+proofs are machine-checked using Coq.
+Verdi~\cite{verdi} presents a distributed system
+verification tool chain, where developers specify and implement a system using
+a functional language embedded in Coq while assuming a perfect network model.
+A transformer in the tool chain then automatically converts the system into one
+that can handle a more realistic network and fault model. The strong network
+assumption in Verdi made it difficult to verify Raft-like systems that
+inherently assumes weak network, but Throne starts with a realistic network
+assumtions and verifies multi-Paxos and Raft.
+DISEL studies how to verify and compose different distributed protocols.
+It verifies protocols in separation uses a send-hook to restrict the
+interference among protocols.  Throne erifies different protocols in
+separate layers in isolation and then combine them not only horizontally
+as DISEL does but also vertically, and the witness structures allow reasoning
+about multiple protocols (e.g. leader election and operations) at the same time.
+While the main goal of IronFleet, Verdi, and DISEL is to generalize the
+distributed system verification environment, Throne not only contributes to
+the same goal by proposing a composable withness and a network model but also
+contributes to a specialized verification of the leader-based distributed
+system.

@@ -1,0 +1,188 @@
+%\sectskip
+\section{Introduction}
+\label{sec:intro}
+%\asectskip
+
+Operating System (OS) kernels and hypervisors form the backbone of
+\ignore{every}safety-critical software systems in the world.  Hence it is
+highly desirable to formally verify the correctness of these
+\ifanonymized programs.  \else programs~\cite{shao10}.  \fi Recent
+efforts~\cite{klein2009sel4,hawblitzel10,klein14,ironclad14,dscal15,fscq15,cogent16,chen16}
+have shown that it is feasible to formally prove the functional
+correctness\ignore{property} of simple general-purpose kernels, file systems,
+and device drivers. However, none of these systems have addressed the
+important issues of concurrency~\cite{kaashoek15,ospp11}, 
+including not only user and I/O concurrency on a single CPU, but also
+multicore parallelism with fine-grained locking. This severely limits
+the applicability and power of today's formally verified system
+software.
+
+What makes the verification of concurrent OS kernels so challenging?
+First, concurrent kernels allow interleaved execution of kernel/user
+modules across different abstraction layers; they contain many
+interdependent components that are difficult to untangle.  Several
+researchers~\cite{vontessin13,peters15} believe that the combination
+of concurrency and the kernels' functional complexity makes formal
+verification of functional correctness intractable, and even if it is
+possible, its cost would far exceed that of verifying a single-core
+sequential kernel.
+
+Second, concurrent kernels need to support all three types of
+concurrency (user, I/O, or multicore) and make them work coherently
+with each other. User and I/O concurrency rely on thread
+yield/sleep/wakeup primitives or interrupts to switch control and
+support synchronization; these constructs are difficult to reason
+about since they transfer control from one thread to another.
+Multicore concurrency with fine-grained locking requires sophisticated
+spinlock implementations such as MCS locks~\cite{mcs91}, which are also
+hard to verify.
+
+Third, concurrent kernels should also guarantee that each of their
+system calls eventually returns, but this depends on the progress of
+the concurrent primitives used in the kernels. Proving
+starvation-freedom~\cite{Herlihy08book} for concurrent objects only
+became possible recently~\cite{lili16}.  Standard Mesa-style condition
+variables~\cite{lampson80} do not guarantee starvation-freedom; this
+can be fixed by using a FIFO queue of condition variables, but the
+solution is not trivial and even the popular, most up-to-date OS
+textbook~\cite[Fig.~5.14]{ospp11} has gotten it
+wrong~\cite{anderson16}.
+
+Fourth, given the high cost of building concurrent kernels, it is
+important that they can be quickly adapted to support new hardware
+platforms and applications~\cite{dune12,unikernel13,engler95}.  One
+advantage of a certified kernel is the formal specification for all of
+its components. In theory, this allows us to add certified kernel
+plug-ins as long as they do not violate any existing invariants.  In
+practice, however, if we are unable to encapsulate interference, even
+a small edit could incur huge verification overhead.
+
+In this paper, we present a novel compositional approach that tackles
+all these challenges. We believe that, to control the complexity of
+concurrent kernels and to provide strong support for extensibility, we
+must first have a {\em compositional} specification that can untangle
+{\em all} the kernel interdependencies and encapsulate interference
+among different kernel objects. Because the very purpose of an OS
+kernel is to build layers of abstraction over bare machines, we insist
+on meticulously uncovering and specifying these layers, and then
+verifying each kernel module at its {\em proper} abstraction level.
+
+The functional correctness of an OS kernel is often stated as a {\em
+  refinement}.  This is shown by building {\em forward
+  simulation}~\cite{Lynch95} from the C/assembly implementation of a
+kernel ($K$) to its abstract functional specification ($S$). Of
+course, the ultimate goal of having a certified kernel is to reason
+about programs running on top of (or along with) the kernel. It is
+thus important to ensure that given any kernel extension or user
+program $P$, the combined code $K\join{}P$ also refines
+$S\join{}P$. If this fails to hold, the kernel is simply still
+incorrect since $P$ can observe some difference between $K$ and $S$.
+\citet{dscal15} advocated proving such a {\em contextual refinement}
+property, but they only considered the {\em sequential} contexts (\ie,
+$P$ is sequential).
+
+For concurrent kernels, proving the {\em contextual refinement}
+property becomes essential. In the sequential setting, the only way
+that the context code $P$ can interfere with the kernel $K$ is when
+$K$ fails to encapsulate its private state; that is, $P$ can
+modify some internal state of $K$ without $K$'s permission.
+In the concurrent setting, the {\em environment} context ($\oracle$)
+of a running kernel $K$ could be other kernel threads or a copy of $K$
+running on another CPU. With shared-memory concurrency, 
+interference between $\oracle$ and $K$ is both necessary and 
+common; the sequential {\em atomic} specification $S$ is now replaced
+by the notion of linearizability~\cite{herlihy90} plus a progress
+property such as starvation-freedom~\cite{Herlihy08book}.
+
+In fact, linearizability proofs often require event reordering that
+preserves the happens-before relation, so $K\,\join{}\,\oracle$ may not
+even refine $S\,\join{}\,\oracle$.  Contextual refinement in the
+concurrent setting requires that for any $\oracle$, we can find a {\em
+  semantically related}\ $\oracle'$ such that $K\,\join{}\,\oracle$ refines
+$S\,\join{}\,\oracle'$.  Several
+researchers~\cite{filipovic10,liang13,lili16} have shown that
+contextual refinement is precisely equivalent to the linearizability
+and progress requirements for implementing compositional concurrent
+objects~\cite{Herlihy08book,herlihy90}.
+
+Our paper makes the following contributions:
+\begin{itemize}[leftmargin=*] %,itemsep=0pt] 
+\item We present {\bf{}\CTOS}---a new extensible architecture for
+  building certified concurrent OS kernels.  \CTOS\ uses 
+  contextual refinement over the ``concurrent'' {\em environment contexts}
+  ($\oracle$) as the {\em unifying} formalism for composing 
+  different concurrent kernel/user objects at different
+  abstraction levels.  Each $\oracle$ defines a specific instance on how
+  other threads/CPUs/devices respond toward the events generated by
+  the current running threads.  Each abstraction layer, 
+  parameterized over a specific $\oracle$, is an
+  assembly-level machine extended with a particular set of
+  abstract objects (\ie, abstract states plus atomic primitives).
+  \CTOS\ successfully decomposes an
+  otherwise prohibitive verification task into many simple and easily
+  automatable ones.
+%%%%%%%
+\item We show how the use of an environment context at each
+  layer allows us to apply standard techniques for
+  verifying sequential programs to verify concurrent programs.
+  Indeed, most of our kernel programs are written in a variant of C
+  (called ClightX)~\cite{dscal15}, verified at the source level, and
+  compiled and linked together using
+  CompCertX~\cite{dscal15,ccal16}~--- a {\em thread-safe} version of the CompCert
+  compiler~\cite{compcert,leroy09}. As far as we
+  know, \CTOS\ is the first architecture that can truly build
+  certified concurrent kernels and transfer global properties proved
+  for programs (at the kernel specification level) down to the
+  concrete assembly machine level.
+%%%%%%%
+\item We show how to impose temporal invariants over these environment
+  contexts so we can verify the progress of various
+  concurrent primitives. For example, to verify the starvation-freedom
+  of ticket locks or MCS locks, we must assume that the multicore
+  hardware (or the OS scheduler) always generates a {\em fair}
+  interleaving, and those threads/CPUs which requested locks before
+  the current running thread will eventually acquire and then release
+  the lock. In a separate paper~\cite{ccal16}, we present the formal
+  theory of environment contexts and show how these assumptions
+  can be discharged when we compose different threads/CPUs to form
+  a complete system.
+%%%%%%%
+\item Using \CTOS, we have successfully developed a fully certified
+  concurrent OS kernel (called \mCTOS) in the Coq proof
+  assistant~\cite{coq}. Our kernel supports both fine-grained locking
+  and thread yield/sleep/wakeup primitives, and can run on stock x86
+  multicore machines. It can also double as a hypervisor and boot
+  multiple instances of Linux in guest VMs running on different CPUs.
+  Our certified hypervisor kernel consists of 6500 lines of C and x86
+  assembly. The entire proof effort for supporting
+  concurrency took less than 2 person years. To our knowledge, this
+  is the first proof of functional correctness of a complete,
+  general-purpose concurrent OS kernel with fine-grained locking.
+\end{itemize}
+
+The rest of this paper is organized as follows.
+Section~\ref{sec:overview} gives an overview of our new
+\CTOS\ architecture. Section~\ref{sec:machine} shows how we use
+environment contexts to turn concurrent layers into sequential ones.
+Section~\ref{sec:base} presents the design and development of the
+\mCTOS\ kernel and how we verify various concurrent kernel
+objects. Section~\ref{sec:imp} presents an evaluation of \CTOS.
+Sections~\ref{sec:related}-\ref{sec:concl} discuss related work and
+then conclude.
+% The formal theory of a general compositional concurrent
+% model and a detailed description of the language and compiler toolchains
+% are presented in a separate paper~\cite{ccal16}.
+
+
+
+
+
+
+
+
+
+
+
+
+
+

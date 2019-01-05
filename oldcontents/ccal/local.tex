@@ -1,0 +1,296 @@
+\hyphenation{CompCert}
+\hyphenation{CompCertX}
+\hyphenation{Clight}
+\hyphenation{ClightX}
+\hyphenation{CertiKOS}
+\hyphenation{mCertiKOS}
+\hyphenation{mCTOS}
+\hyphenation{CTOS}
+\hyphenation{mCTOS-hyp}
+\hyphenation{mCTOS-rz}
+\hyphenation{mCTOS-emb}
+\hyphenation{Cos-tan-zo}
+
+%% Anonymization
+\newif \ifanonymized \anonymizedfalse
+
+\ifanonymized
+\newcommand\CTOS{CTOS}
+\else
+\newcommand\CTOS{CertiKOS}
+\fi
+%% END Anonymization
+
+\ifTRthen
+\newcommand{\ifTR}[2]{#1}
+\else
+\newcommand{\ifTR}[2]{#2}
+\fi
+
+\newcommand\raw{x86}
+\newcommand\sys{ker}
+\newcommand\layer[3]{(#1,#2,#3)}
+
+\newcommand\pCTOS{p\CTOS}
+\newcommand\mCTOS{m\CTOS}
+\newcommand\mCTOSbase{\mCTOS{}}
+\newcommand\mCTOShyper{\mCTOS{}-hyp}
+\newcommand\mCTOSringz{\mCTOS{}-rz}
+\newcommand\mCTOSembed{\mCTOS{}-emb}
+\newcommand\cCTOS{c\CTOS}
+
+\newcommand\sem[2]{[\![#2]\!]_{#1}}
+\newcommand\join{\!\bowtie\!}
+\newcommand\Refrel{\sqsubseteq}
+\newcommand\LSem[1]{\textrm{LSem(}#1\textrm{)}}
+\newcommand\ClightX[1]{\textrm{ClightX(}#1\textrm{)}}
+\newcommand\CompCertX[1]{\textrm{CompCertX(}#1\textrm{)}}
+\usepackage{multirow}
+\newtheorem{invariant}{Invariant}
+\newcommand\ignore[1]{}
+%\newcommand{\code}[1]{{\texttt{#1}}}
+
+%% COMMENTS 
+\newif \ifcomments \commentsfalse
+
+\ifcomments
+\newcommand{\zhong}[1]{\textbf{\textcolor{red}{[ #1 --Zhong]}}}
+\newcommand{\ronghui}[1]{\textbf{\textcolor{blue}{[ #1 --Ronghui]}}}
+\newcommand{\newman}[1]{\textbf{\textcolor{orange}{[ #1 -- Newman]}}}
+\newcommand{\tahina}[1]{\textbf{\textcolor{green}{[ #1 -- Tahina]}}}
+\newcommand{\shuchun}[1]{\textbf{\textcolor{cyan}{[ #1 -- Shu-Chun]}}}
+\newcommand{\jeremie}[1]{\textbf{\textcolor{purple}{[ #1 -- J\'er\'emie]}}}
+\newcommand{\vilhelm}[1]{\textbf{\textcolor{cyan}{[ #1 -- Vilhelm]}}}
+\newcommand{\jieung}[1]{\textbf{\textcolor{violet}{[ #1 -- Jieung]}}}
+\newcommand{\david}[1]{\textbf{\textcolor{purple}{[ #1 -- David]}}}
+\else
+\newcommand{\zhong}[1]{}
+\newcommand{\ronghui}[1]{}
+\newcommand{\newman}[1]{}
+\newcommand{\tahina}[1]{}
+\newcommand{\shuchun}[1]{}
+\newcommand{\jeremie}[1]{}
+\newcommand{\vilhelm}[1]{}
+\newcommand{\jieung}[1]{}
+\newcommand{\david}[1]{}
+\fi
+%% END COMMENTS
+
+% Orders on layers and behaviors: \lsim and \lle correspond to QuiverSim,
+% whereas \lpath corresponds to CategorySim.
+\newcommand{\lle}{\preceq}
+\newcommand{\lsim}[1]{\prec_{#1}}
+\newcommand{\lpath}[1]{\le_{#1}}
+%\newcommand{\lhtap}[1]{\ge_{#1}}
+\newcommand{\id}{\textbf{id}}
+
+% Typing judgements
+\usepackage{relsize}
+\newcommand{\ltyp}[4]{#1 \vdash_{#2} #3 : #4}
+\newcommand{\lltyp}[5]{#2 \vdash^{#1}_{#3} #4 : #5}
+\newcommand{\rulename}[1]{\textsc{\smaller{}#1}}
+
+% Useful shorthands used in layer.tex
+\newcommand{\pcom}{\parallel}
+\usepackage{scalerel}
+\DeclareMathOperator*{\bigJoin}{\scalerel*{\Join}{\sum}}
+\newcommand{\kw}[1]{{\mathsf{#1}}} % render as a keyword
+\newcommand{\pset}[1]{{\mathcal{P}({#1})}}
+\newcommand{\Beh}{\mathsf{Beh}} % the set of behaviors
+\newcommand{\Ev}{\mathbb{E}} % the set of events
+\newcommand{\Prog}{\mathbb{P}} % a set of programs
+\newcommand{\Lang}{\mathbb{L}} % a language with log
+\newcommand{\Mach}{\mathbb{M}} % a machine
+\newcommand{\Env}{\mathcal{E}} % an environment context
+\newcommand{\refines}{\sqsubseteq} % refinement relation
+\newcommand{\EC}[1]{{\kw{EC}({#1})}} % encironment
+\newcommand{\Layer}{\mathcal{L}}
+\newcommand{\Rely}{\mathcal{R}}
+\newcommand{\Guard}{\mathcal{G}}
+
+%------------------------ Added by Ronghui Gu
+\newcommand{\eg}{{e.g.\xspace}}
+\newcommand{\ie}{{i.e.\xspace}}
+%\newcommand{\cf}{{\em cf. }}
+\newcommand{\cf}{see }
+\newcommand{\etal}{{\em et al.\xspace}}
+\newcommand\step[1]{\overset{#1}{\rightarrow}}
+\newcommand\emptye{\epsilon}
+\newcommand\model{\models}
+\newcommand\opsem[3]{l,ge\model #2 \step{#1} #3}
+\newcommand\opsems[3]{l,ge\model #2 \overset{#1}{\rightarrow^*} #3}
+\newcommand\partialf{\rightharpoonup}
+\newcommand\intp{\rhd}
+\newcommand\CAS{\text{CAS}}
+\newcommand\XADD{\text{XADD}}
+\newcommand\XCHL{\text{XCHL}}
+\newcommand\FAA{\text{FAA}}
+\newcommand\FAI{\text{FAI}}
+\newcommand\regs{\rho}
+\newcommand\oracle{\mathcal{E}}
+\renewcommand\state{s}
+\newcommand\cpush{\commc{push}}
+\newcommand\cpull{\commc{pull}}
+\newcommand\push{\mathsf{push}}
+\newcommand\pull{\mathsf{pull}}
+\newcommand\abst{\mathcal{A}}
+\newcommand\primt{\mathcal{P}}
+
+\newcommand\commc[1]{\comm{\textcolor{gray}{#1}}}
+\newcommand\incticket{\comm{FAI\_t}}
+\newcommand\incnow{\comm{inc\_n}}
+\newcommand\getnow{\comm{get\_n}}
+\newcommand\tshared{\comm{tshared}}
+\newcommand\holdlock{\comm{hold}}
+\newcommand\lockstatus{\comm{lock\_status}}
+\newcommand\true{\mathsf{true}}
+\newcommand\false{\mathsf{false}}
+
+\newcommand\waitlock{\mathsf{wait}}
+\newcommand\releaselock{\mathsf{rel}}
+
+\newcommand*{\LargerCdot}{\raisebox{0.25ex}{\scalebox{0.7}{$\bullet$}}}
+\newcommand\cons{\LargerCdot}
+\newcommand\comm[1]{\mathsf{\textcolor{black}{#1}}}
+\newcommand\commb[1]{\mathsf{#1}}
+%\newcommand\mtext[1]{\mathit{#1}}
+\newcommand\set[1]{\{#1\}}
+\newcommand\replay{\mathbb{R}}
+\newcommand\calwait{\mathbb{B}}
+\newcommand\any{\cdot}
+\newcommand\nonev{\_}
+\newcommand\spec{\sigma}
+\newcommand\integer{\mathbb{N}}
+
+
+\newcommand\code{\kappa}
+\newcommand\acq{\mathsf{acq}}
+\newcommand\rel{\mathsf{rel}}
+\newcommand\deq{\mathsf{deQ}}
+\newcommand\enq{\mathsf{enQ}}
+\newcommand\reach{\mathsf{reachable}}
+\newcommand\now{\mathsf{now}}
+\newcommand\ticket{\mathsf{ticket}}
+\newcommand{\partf}{\rightharpoonup}
+\newcommand\bytelist{\textit{bl}}
+\newcommand\spawn{\mathsf{spawn}}
+\newcommand\yield{\mathsf{yield}}
+\newcommand\cyield{\mathsf{cyield}}
+\newcommand\sleep{\mathsf{sleep}}
+\newcommand\vundef{\mathsf{vundef}}
+\newcommand\ofs{\mathsf{ofs}}
+\newcommand\wakeup{\mathsf{wakeup}}
+\newcommand\regset{rs}
+%\newcommand\tid{\mathsf{tid}}
+\newcommand\alist{\rightharpoonup}
+\newcommand\tid{t}
+\newcommand\eempty{\mathsf{empty}}
+\newcommand\option{\mathsf{option}}
+\newcommand\qloc{\mathsf{q\_loc}}
+\newcommand\perm[1]{\mathsf{status}(#1)}
+\newcommand\LAsm{\mathsf{LAsm}}
+\newcommand\TAsm{L_\mathsf{pthread}}
+\newcommand\boot{\mathsf{x86}}
+\newcommand\allid{ID}
+
+\newcommand\ssem[2]{\llparenthesis #1 \rrparenthesis_{#2}}
+
+\newcommand{\strat}[1]{\varphi_{#1}}
+\newcommand{\stratp}[1]{\varphi'_{#1}}
+
+%% BEGIN CompCert memory model and extensions
+\newcommand{\nextblockOP}[0]{\mathsf{nb}}
+\newcommand{\nextblock}[1]{\nextblockOP({#1})}
+\newcommand{\liftnextblockOP}[0]{\mathsf{liftnb}}
+\newcommand{\liftnextblock}[2]{\liftnextblockOP({#1}, {#2})}
+\newcommand{\extends}[2]{{#1} \subseteq {#2}}
+\newcommand{\inject}[3]{{#2} \stackrel{#1}{\hookrightarrow} {#3}}
+\newcommand{\alloc}[3]{\mathsf{alloc}({#1}, {#2}, {#3})}
+\newcommand{\store}[3]{\mathsf{st}({#1}, {#2}, {#3})}
+\newcommand{\load}[2]{\mathsf{ld}({#1}, {#2})}
+\newcommand{\some}[1]{\left\lfloor {#1} \right\rfloor}
+
+\newcommand{\disjointunionOP}[0]{\circledast}
+\newcommand{\disjointunion}[3]{{#1} \disjointunionOP {#2} \simeq {#3}}
+
+\newcommand{\PBoot}{L_\mathsf{x86}}
+\newcommand{\XAsm}{\mathsf{XAsm}}
+
+\newcommand\efrom[1]{(#1\intp)}
+\newcommand\eto[1]{(\intp#1)}
+\newcommand\ssame{\odot}
+\newcommand\sdiff{\triangle}
+\newcommand\switch{\!\hookrightarrow\!}
+\newcommand\mysout[1]{\text{\sout{$#1$}}}
+%\newcommand\PLayer[3]{#1^{#3}[#2]}
+\newcommand\PLayer[3]{#1[#2]}
+\newcommand\TLayer[3]{#1[#2][#3]}
+\newcommand\Query[3]{#1[{#3}, #2]}
+\newcommand\Lthread{L_\comm{td}}
+\newcommand\Lbthread{L_\comm{btd}}
+\newcommand\Lhbthread{L_\comm{hbtd}}
+\newcommand\Lhthread{L_\comm{htd}}
+
+
+
+%%%%%%% 
+% Thread Local Machine related definitions
+\newcommand{\EAsmM}[1]{\mathsf{EAsm_{#1}}}
+\newcommand{\TAsmM}[1]{\mathsf{TAsm_{#1}}}
+\newcommand{\dshare}{\mathsf{sa}}
+\newcommand{\dproc}{\mathsf{pa}}
+\newcommand{\dsnap}{\mathbb{n}\dproc}
+\newcommand{\cpuid}{\mathsf{f_{cpu}}}
+\newcommand{\procid}{\mathsf{f_{proc}}}
+\newcommand{\blocknum}{\mathsf{nb}}
+\newcommand{\compcertx}{\textrm{CompCertX}}
+\newcommand{\lval}{\mathsf{Lval}}
+\newcommand{\largs}{\mathsf{Largs}}
+
+\newcommand{\primevunit}[1]{\mathsf{EU_{#1}}}
+\newcommand{\yieldbackunit}{\mathsf{yieldBack}}
+\newcommand{\SLog}{\mathsf{Log}}
+\newcommand{\snapfun}{\mathsf{f_{\dsnap}}}
+
+\newcommand{\Sevent}{\mathsf{Ev}}
+\newcommand{\threadfunid}{\mathsf{ident}}
+\newcommand{\statecheck}{\mathsf{f}_{\mathcal{C}}}
+
+\newcommand{\updatefun}{\mathcal{SR}}
+\newcommand{\haseventfun}{\mathsf{f_{evcheck}}}
+\newcommand{\threadstate}{\mathsf{ts}}
+\newcommand{\nextblockfun}{\mathsf{f_{\blocknum}}}
+
+\newcommand{\initdproc}{\mathsf{f_{init\_pa}}}
+\newcommand{\curthread}{\mathsf{CurID}}
+\newcommand{\initregs}{\mathsf{f_{init\_regs}}}
+\newcommand{\getenvlog}{\mathsf{\varphi^{\curthread}_{[\mathrm{TAsm}]}}}
+\newcommand{\composedata}{\mathcal{CD}_{\mathrm{init}}}
+\newcommand{\threadset}{\mathsf{T}}
+\newcommand{\fullthreadset}{\mathsf{T}_{\mathrm{c}}}
+
+%\newcommand{\AsmLM}{\mathsf{Asm}_{\mathrm{L}}}
+\newcommand{\AsmLM}{\mathsf{Asm}}
+\newcommand{\AsmHM}{\mathsf{Asm}^{\mathrm{t}}}
+\newcommand{\simrel}{\mathcal{R}_{\mathrm{sim}}}
+\newcommand{\absrel}{\mathcal{AR}^{{_{\EAsmM{}}}}_{_{\AsmLM}}}
+\newcommand{\absrelt}{\mathcal{AR}^{{_{\AsmHM}}}_{_{\TAsmM{}}}}
+\newcommand{\proofcase}[1]{({Case\ }_{\mathrm{#1}})}
+
+
+\newcommand\Lpthread{L_\comm{pthread}}
+\newcommand\Compose[3]{\comm{compat}(#1, #2, #3)}
+%\newcommand{\disjointunionOP}[0]{\mathsf{disjoint\_union}}
+%\newcommand{\disjointunion}[3]{\disjointunionOP({#1}, {#2}, {#3})}
+%% END CompCert memory model and extensions
+
+% The specification #1 takes a step from (#2, #3) to (#4, #5)
+% The second case is for when there's no return value
+\newcommand{\sstepr}[5]{#1(#2, #3) \ni (#4, #5)}
+\newcommand{\sstep}[4]{#1(#2, #3) \ni (#4)}
+\newcommand{\para}[1]{\paragraph{#1}}
+\newcommand{\modulef}[1]{#1 \mapsto \kappa_{#1}}
+
+\newcommand{\remove}[1]{\textcolor{red}{\sout{#1}}}
+\newcommand{\added}[1]{\textcolor{blue}{#1}}
+\newcommand{\return}[0]{\downarrow\!}

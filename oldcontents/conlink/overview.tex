@@ -1,0 +1,297 @@
+\section{Overview}
+\label{sec:overview}
+
+
+%%%%%%%%%%%%%%%%%%%%%%
+% 1. What is the target for our linking - CCAL layers 
+% 1-1. CCAL introduce (how to build layers)
+% 1-2. weekness of the paper - it provides details and examples to build layers
+% 1-3.  the paper does not show the linking parts (how it works) 
+% 1-4. This paper shows them.
+% 2. Multicore Linking Structure 
+% 2-1. Why we need multiple intermediate languages - divide the problem as simpler ones 
+% 2-1-1. High level language definitions without exposing details of underlying hardware specific instructions   
+% 2-1-1. linking for high level details 
+% 2-1-2. linking with the lowest layer of ccal layer structures. 
+% 2. Multithreaded linking 
+% 2-2. Define layer independent machine model (which is similar to the assembly machine model of CompCertX)
+% 2-3. Prove refinements between those languages 
+% 2-4. Provide the instance of relied definitions, functions.
+
+%%%%%%%%%%%%%%%%%%%%%%
+
+Our paper focus on 
+concurrent linking in the concurrent program verification. 
+To demonstrate the practical usage of our approach,
+We have modeled 
+multiple intermediate languages 
+and proofs 
+with the existing layered approach for concurrent program verification, CCAL~\cite{ccal}.
+
+\newcommand{\envcontext}{\varepsilon}
+\newcommand{\layerdef}{\mathcal{L}}
+\newcommand{\relyrule}{\mathcal{R}}
+\newcommand{\guaranteerule}{\mathcal{G}}
+\newcommand{\primid}{id}
+\newcommand{\primspeckwd}{{\sigma}}
+\newcommand{\primspec}[1]{\primspeckwd{#1}}
+\newcommand{\igchar}{\_}
+\newcommand{\registers}{{r}}
+
+\subsection{CCAL}
+\label{subsec:ccal}
+
+
+\newcommand{\valueundef}{\mathrm{\textsf{vundef}}}
+\begin{figure}
+
+$
+\begin{array}{llll}
+Loc, \primitiveid &\nattype \\
+vc & \set{vc : \nattype ~\vert 0 \leq vc < 2^{32}} \\
+
+\end{array}
+$
+
+$
+\begin{array}{lllllllll}
+
+(ID, Loc) & c, b & \in & Nat &                                                                & (Byts) & bl & \in & List \ Byte \\
+(Val)& v &:= & bl\vert  \vert vundef   &                                              & (RegSet) & rs & \in & Reg \rightarrow Val \\                          
+(Mem) & m & \in & Loc \rightarrow val &                                      & (Reg) & r & := & EIP\vert EAX \vert \cdots \\                          
+(PvtSt) & \rho & := & (pm, rs) &                                                            & (PvtStMap) & f_{\rho} & \in & Id \rightharpoonup  PvtSt \\
+(Abs) & a & \in & Type  &                                                                       & (State) & s & := & (c, f_\rho, m, a, l) \\
+(Event) & e & := & c.push(b, v) \vert &                                                 & (Log) & l & \in & List \ Event \\
+(AsmFn) & \kappa_{x86} & \in & List x86Instr &                                  & (AsmModule) & M_{x86} & \in & Loc \rightarrow AsmFn \\
+(PrimList) & \mathcal{L} & \in & Loc \rightharpoonup Prim &             & (Layer) & L[A] & :=& ( \mathcal{L} , \mathcal{R}, \mathcal{G}) \\
+(Inv) & INV & \in & Log \rightarrow Prop  &                                           & (EC)  & \varepsilon  & \in & Id \rightharpoonup Strategy \\
+(Rely, Guar) & \mathcal{R}, \mathcal{G} & \in & Id \rightarrow Inv &  & (Strategy) & \varphi & \in & Log \rightarrow Log           \\   
+  (Prim) & \sigma & \in & \multicolumn{6}{l}{State \rightarrow List Val \rightarrow  State \rightarrow  Val \rightarrow Prop} \\
+\end{array}
+$
+
+
+
+
+
+\caption{Key Definitions of CCAL}
+\label{fig:key-definitions-of-ccal}
+\end{figure}
+
+Certified Concurrent Abstraction Layer (CCAL)~\jieung{cite need}
+is a predicate ``$\ltyp{L'[(s : \set{\ztype})]}{R}{M}{L[s : \set{\ztype})]}$'' and a machine checked proof. 
+Each  layer contains a set 
+of identifiers that represents the 
+
+for threads, 
+
+
+Layer itself consists of three component, a set of primitives that defines the transition over abstract state, 
+a set of invariant about the context that the program relies on. 
+Since CCAL follows the rely-guarantee~\jieung {rely guarantee} style of compositional reasoning, 
+there are two kinds of set for the invariant, a set of \textit{rely} conditions and a set of \textit{guarantee} conditions. 
+
+In CCAL, users provide module $M$ as a C-like (clight) language, or an assembly language in \compcertkwd. 
+Then, the modified version of assembly machine model in \compcertkwd, which gets 
+
+%%%% explanations about CCAL
+
+
+
+They also show the applicability of CCAL by verifying concurrent operating system, CertiKOS.
+
+%%% What they actually did?
+In CertiKOS,
+they restricts the composition of multiple participants in specific locations;
+1) at the bottom layer of the whole layered structure; and 2) 
+at the layer when they introduce 
+
+
+
+
+CCAL, the extention of is an extension of the  Certified Abstraction Layer proposed by~\cite{deepspec}, 
+provides a state transition machine for certified concurrent program.
+With the variance of \compcertkwd, that gets the layer as its parameter, 
+programs can directly run on the state transition machines and can be formaly connect to the 
+other layers 
+with layer calculus that the tool provides. 
+
+It also supports 
+compositional reasoning for a single instance of 
+It is a collection of layers, and each layer 
+is a abstract machine that can run C and assembly programs on it. 
+
+Key definitions of CCAL is defined in Fig.~\ref{fig:key-definitions-of-ccal}. 
+Each layer is is a set of 
+
+
+The definition of a  CCAL over the instance identifier $i$ (\textit{i.e.} CPU ID or thread ID)
+is a tuple with four elements, notated as $L[i] := (\layerdef, \envcontext_i, \relyrule, \guaranteerule)$.
+The first component $\layerdef$ contains a partial map from
+identifiers to transition specifications
+($\layerdef := \set{\primid \mapsto \primspec{\primid}}$ where $ \primspec{\primid}$ is
+the specification of the primitive $\primid$).
+The state of the layer can be interpreted as a pair
+of the private abstract state for the instance $i$ ($lst_i$), and
+a log of events ($l$) that represents the history of the atomic operations ($st_i := (lst_i, l)$).
+The local state consists of multiple machine-dependent concrete definitions such as register and memory values (,
+as well as abstract objects that correspond to
+certain regions of memory through some relation.
+For specifications of primitives that only touch local state, the transition is straightforward.
+Specifications of primitives that contain network transition primitives, on the other hand,
+must use the environment context for the instance $i$ ($\envcontext_i$)
+to model the behavior of other instances (discussed in Sect.~\ref{subsec:network-primitives}).
+For example, the specification of a function that broadcasts a message from a proposer to a set of acceptors must query the environment context
+between each send to learn how the environment has changed.
+The other two components of the layer definition, $\relyrule$ and $\guaranteerule$,
+provide invariants about the network and the distributed system
+following the approach of previous work on rely/guarantee systems~\cite{RGSim, LRG}.
+The invariants in $\relyrule$ and $\guaranteerule$ are complementary to each other.
+Each layer must contain evidence that all of the local transitions satisfy the conditions in $\guaranteerule$.
+Conversely, we can restrict the behavior of other instances by using assuming the conditions in $\relyrule$ hold.
+One example of a rely/guarantee rule in Paxos concerns the relation between the round number and value in a Phase 1b message.
+It is true that the value is $\bot$ if and only if the round number is $\bot$.
+To prove that this invariant always holds it is enough to show that
+for layer $L'[i]$, every transition of instance $i$ will satisfy it.
+Having satisfied the guarantee, we can rely on the fact that the invariant will hold for all other single instances in the system.
+
+
+
+CCAL also provides a way to build a layer on top of another using a program module $M$, which consists of code written in C or assembly.
+The predicate $L'[i] \vdash_R  M : L[i]$ indicates that the layer implementation $M$, built on top of the interface $L'[i]$, rigorously implements
+the layer $L[i]$ with the two layers related by $R$.
+CCAL can compile these C modules using the CompCertX certified compiler~\cite{deepspec, concurrency},
+which is a modified version of CompCert~\cite{compcert}.
+This, combined with the {\em contextual} correctness property,
+lets us define contextual refinement over abstraction layers with the ability to compile layers.
+A certified layer converts any {\em safe} client program $P$ running on top of $L'[i]$ into one that has the
+same behavior but runs on top of $L[i]$ by compiling the abstract
+primitives in $L[i]$ into their implementation in $M$.
+If we use ``$\sem{L[i]}{\cdot}$'' to denote the behavior of the layer machine based on
+$L[i]$, the correctness property of ``$\ltyp{L'[i]}{R}{M}{L[i]}$'' is written
+formally as ``$\forall{}P.\sem{L'[i]}{P\oplus{}M} \refines_R \sem{L[i]}{P}$''
+where $\oplus$ denotes a linking operator over programs $P$ and $M$ and 
+the relation ($\refines_R$) is formally defined as a forward
+simulation~\cite{Lynch95,leroy09,Milner71,Park81} with the (simulation) relation $R$.
+
+CCAL compiles these modules with the CompCertX certified compiler~\cite{deepspec, concurrency},
+which is a modified version of CompCert~\cite{deepspec, compcert}.
+The {\em implements} relation ($\refines_R$) is formally defined as a forward
+simulation~\cite{Lynch95,leroy09,Milner71,Park81} with the (simulation) relation $R$.
+This guarantees that if $L'[i] \vdash_R  M : L[i]$ holds,
+the behaviors allowed by layer $L[i]$ simulate those allowed by $L'[i]$.
+
+Certified layers enforce a {\em contextual} correctness property as well.
+A certified layer converts any {\em safe} client program $P$ running on top of $L'[i]$ into one that has the
+same behavior but runs on top of $L[i]$ by compiling the abstract
+primitives in $L[i]$ into their implementation in $M$.
+If we use ``$\sem{L[i]}{\cdot}$'' to denote the behavior of the layer machine based on
+$L[i]$, the correctness property of ``$\ltyp{L'[i]}{R}{M}{L[i]}$'' is written
+formally as ``$\forall{}P.\sem{L'[i]}{P\oplus{}M} \refines_R \sem{L[i]}{P}$''
+where $\oplus$ denotes a linking operator over programs $P$ and $M$.
+
+The implements relation also applies to the environment context and the network.
+Formally,\\
+$\begin{array}{l}
+\forall \varphi_l \in \envcontext'_i, \exists \varphi_h,  \varphi_h \in \envcontext_i \wedge R_{\envcontext', \envcontext}(\varphi_l , \varphi_h) \\
+\hfill (\mbox{where} \ L'[i] = (\_,  \envcontext'_i, \_, \_) \ \mbox{and} \ L[i] = (\_,  \envcontext_i, \_, \_))
+\end{array}
+$\\
+This allows us to simplify our view of the possible network behaviors by showing that certain reductions refine the interleaved pattern.
+
+
+\subsection{Concurrency Linking}
+\label{subsec:concurrency-linking}
+
+The previous section provides how CCAL can be applied to build multiple certified abstraction layers of concurrent programs.
+It also shows that 
+the linking between two partial instances are possible with layer calculus. 
+Providing the 
+
+For the end-to-end correctness guarantee of concurrent program, 
+the verification not only shows the correctness of the each instance of the concurrent program, but also shows that 
+multiple instances of the program can be combined together as well as contains the proper projection 
+from the whole machine to the local machine (and vice versa).
+
+
+\begin{figure}
+\caption{Example of Linking}
+\label{fig:overview-example}
+\end{figure}
+
+%The verification of concurrent programs always consider the environment that the current program piece relies on. s
+%Fig.~\ref{fig:overview-example} (a) and (b) rely on the behavior of the other one.
+%Among the several previous works~\jieung{need cite} that are able to handle them, 
+%we focus on CCAL (Certified Concurrent Abstraction Layer)~\jieung{need cite} in this example. 
+%CCAL can focus on one thread (or one instance on one CPU) by providing all other threads' behavior using 
+%environmental context. 
+%
+%
+%
+%For example, 
+%When we want to verify the correctness of 
+%Fig.~\ref{fig:overview-example} (a), 
+%the environmental context provide the correct behavior of (b) using environmental context. 
+%It also provide the way to connect the proof on the each thread with the behavior of the combined program itself. 
+%The following one shows how it works: 
+
+\jieung{add theorem} 
+
+However, the reality is not simple. 
+To provide the linking theorem, 
+we have to introduce multiple intermediate languages, 
+prove refinement between those languages, 
+and connect those languages with the assembly machine model that can be used with CompCert. 
+
+%
+%\begin{figure}
+%\begin{minipage}[t]{.45\textwidth}
+%\includegraphics[scale=.20]{figs/cpu_linking_structure}
+%\begin{center}
+%(a) CPU Linking Structure
+%\end{center}
+%\end{minipage}
+%\begin{minipage}[t]{.45\textwidth}
+%\includegraphics[scale=.20]{figs/thread_linking_structure}
+%\begin{center}
+%(a) Thread Linking Structure
+%\end{center}
+%\end{minipage}
+%
+%\caption{Linking Structure}
+%\label{fig:linking-structure}
+%\end{figure}
+
+
+
+\begin{figure}
+\begin{center}
+\includegraphics[scale=.30]{figs/cpu_linking_structure}
+\end{center}
+\caption{CPU Linking Structure}
+\label{fig:cpu-linking-structure}
+\end{figure}
+
+
+\begin{figure}
+\begin{center}
+\includegraphics[scale=.30]{figs/thread_linking_structure}
+\end{center}
+\caption{Thread Linking Structure}
+\label{fig:thread-linking-structure}
+\end{figure}
+
+
+To show the brief idea, Fig.~\ref{fig:overview-example} shows why linking works as a critical roles in the 
+verification of concurrent programs. 
+
+The verification of concurrent program usually relies on the assumptions on 
+the environment of the whole program. 
+
+
+%\subsection{Layer Interface}
+%\label{subsec:layer-interface}
+%
+%Each layer interface is a state machine, consists of the following items. 
+
+

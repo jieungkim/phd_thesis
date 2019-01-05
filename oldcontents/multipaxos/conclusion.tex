@@ -1,0 +1,17 @@
+
+\para{Conclusions}
+We have developed write-witness-passing, a simple but powerful methodology for
+verifying the key safety properties of distributed systems.
+This approach can also be easily combined with
+the concurrent verification framework~\cite{concurrency}.
+Together they provide the tools
+to build and verify distributed systems in a scalable and extensible way with 
+less human effort required.
+As far as we know, our example of Paxos verification
+is the first work to mechanically prove the functional correctness
+and safety of a distributed protocol written in
+a low-level programming language such as C or Assembly.
+We believe this is a promising approach that can be applied to many other distributed systems.
+In the future we hope to use write-witness-passing to create mechanized proofs of some of the systems we
+describe in Section \ref{sec:witness-passing-semantics-with-paxos-variants} as well as other
+complicated protocols such as PBFT \cite{pbft}.

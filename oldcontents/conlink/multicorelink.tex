@@ -1,0 +1,43 @@
+
+
+
+\clearpage
+
+
+\subsection{Instantiating the abstract definition}
+\label{subsec:instantiate-mc}
+
+Previous sections deal with multiple intermediate languages and the refinement theorems among those languages. 
+They, however, are different from the practical hardware semantics such as x86 assembly languages or ARM. 
+To avoid the detailed subtleties of defining intermediate languages and the refinement proofs, 
+our definitions are relying on multiple abstract variables, syntax and semantics defined in Fig.~\ref{fig:hardware-abstract-definition}.
+
+Thus, providing the per-CPU machine model that can be connected with the \compcertx, 
+providing those abstract definitions are required. 
+
+
+\compcertx\ is a collection of layers, which give the interface for programs on them.
+
+
+%first starts from mapping the 
+%definitions in CompCert with the abstact definitions in our intermediate languages. 
+%One benefit of our framework is only one single instantiation is required for 
+%those local state transition semantics, and we can reuse them in all intermediate languages. 
+%
+%Based on the introduced languages, we are a ble to connect them together and then 
+%prove the receptiveness and single event property of CompCert semantics, which makes us to be able to use their simulation proof template.
+%
+%One place, among all refinements, cannot use the forward-backward simulation technique in CompCert. 
+%Since the lowest level semantics (hardware semantics) does not contain any	
+
+
+
+\clearpage
+
+
+\subsection{Linking Definition}
+\label{subsec:optimization-mc}
+
+With the definitions that we have written in ~\ref{subsubsec:instantiate-mc}, 
+Instantiating the intermediate machine models are straightforward.
+We used CompCert's small step semantics to encapsulate them. 

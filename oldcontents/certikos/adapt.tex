@@ -1,0 +1,114 @@
+%\sectskip
+\subsection{Extension and Adaptation}
+\label{ssec:adapt}
+%\asectskip
+
+One primary advantage of our extensible architecture is that it makes
+certified kernel extension and reasoning much easier and more principled. 
+In this section, we first describe three alternative \mCTOSbase{} kernels
+that we created through relatively minor changes to the base kernel. We
+then present a specific example of global reasoning over the \mCTOSbase{} 
+kernel~--- a simple notion of address space isolation that will serve as 
+a starting point for a full-fledged security proof in the future.
+
+We augmented \mCTOSbase{} to support the two hardware-assisted
+virtualization technologies Intel VT-x and AMD SVM, and built a
+certified hypervisor \mCTOShyper{}.
+
+Fig. \ref{fig:base:vm:layers} shows the 7 layers of the virtual
+machine management of \mCTOShyper{} on the Intel platform.
+\code{VMInfo} is the layer object
+that axiomatizes some of the hardware specific features needed
+for the virtualization support. 
+Since it is orthogonal to memory and process management,
+the \code{VMInfo} object can be horizontally composed with the layers 
+below \code{PProc} in \mCTOSbase{}.
+On top of this extended \code{PProc} layer,
+the virtual machine management extends the \emph{abstract memory model}
+with the notions of Extended Page Table (EPT), the virtual machine
+control structure (VMCS), and the virtual machine extension meta data (VMX),
+which are abstracted into corresponding layer objects.
+These objects are again orthogonal to the trap module above and can be
+horizontally composed to export related system calls
+with minimal cost.
+ 
+\begin{figure}
+\includegraphics[scale=0.33]{figs/intel_layer}	
+%\vspace*{-14pt}
+\caption{Layers of virtual machine management}
+\label{fig:base:vm:layers}
+\vspace*{-14pt}
+\end{figure}
+
+Thanks to the contextual refinement relation we have proved for
+\mCTOSbase{}, one can certify user programs using our formal
+specifications of system calls. This gives end-to-end proofs on
+the behaviors of user programs when they run on \mCTOSbase{}.  
+Furthermore, once certified, these processes can safely run in
+the privileged ring 0 mode.  We extended \mCTOSbase{} into
+\mCTOSringz{} by adding support for spawning ``in-kernel
+processes'' that run in the privileged ring 0 mode. 
+Ring 0 processes get much
+better system call performance by directly calling kernel
+functions and avoiding ring switch and interrupt processing. 
+
+The \mCTOSembed{} kernel is intended for embedded settings. To develop
+this kernel we started with \mCTOSringz{} and removed the virtual
+machine management, the virtual memory management, and some of the
+process management layers that are related to user contexts and user
+process management.  Thus \mCTOSembed{} only supports ring 0 processes
+which run directly inside the physical kernel address space instead of
+the user-level paged virtual address space.
+
+Removing plug-ins or layers does not take much effort.
+We only need to alter the contextual refinement proof 
+at the boundary so we can glue them back together.
+
+\paragraph{Isolation in \mCTOSbase{}}
+\label{security}
+We have begun exploring the verification of a global security property
+on top of \mCTOSbase{}. As a starting point, we proved a basic notion
+of isolation between user-level processes running in different virtual
+address spaces. This isolation property is composed of two theorems:
+one regarding integrity (write protection), and another regarding
+confidentiality (read protection, or noninterference).  The statements
+of these two theorems are as follows: suppose the top layer abstract
+machine takes one step, changing the machine state from $S$ to $S'$,
+and let $p$ be the id of the currently-running process (which can be
+found in $S$).
+\begin{description}
+  \item[Integrity:]
+If the value at some non-kernel memory location $l$ differs between
+$S$ and $S'$, then $l$ belongs to a page that is mapped in the 
+virtual address space of $p$.
+\item[Confidentiality:]
+\label{confidential}
+If the step taken
+is not a primitive call to an IPC syscall (send, recv, etc.), then the values
+of memory in any address space other than $p$'s cannot have an effect on the
+result of the step. In other words, if we altered $S$ 
+by changing data in a different process's address space, the step would still 
+have the same effect on $p$'s address space.
+\end{description}
+
+In the future, we plan to provide a more detailed security policy by
+describing what can happen to confidentiality when IPC is used.  This
+description will be expressed in terms of propagation of security
+labels on the IPC data. Note, however, that our framework allows for
+security labels to be specified at a purely logical level~--- there is
+no need for concrete representation and manipulation of labels at run
+time.
+
+Noninterference properties are generally not preserved across
+refinement due to nondeterminism. It may therefore seem that the
+aforementioned \emph{confidentiality} holds only at the topmost layer,
+but not at lower layers. It turns out, however, that our notion of
+deep specification is strong enough to preserve
+noninterference. Essentially, to give a deep specification to a
+nondeterministic semantics, we must first externalize the source of
+nondeterminism (e.g., into an oracle). The noninterference property
+then becomes parameterized over this source of nondeterminism, which
+allows the parameterized property to be preserved across
+refinement. This relationship between deep specification,
+noninterference, and refinement will be explored comprehensively in
+future work.

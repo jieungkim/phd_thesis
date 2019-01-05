@@ -1,0 +1,190 @@
+\section{Related Work and Conclusions}
+\label{sec:related}
+
+\paragraph{Certified Abstraction Layers.} \citet{dscal15}
+presented the first formal account of certified abstraction layers and
+showed how to apply layer-based techniques to build certified system
+software. The layer-based approach differs from Hoare-style program
+verification~\cite{hoare69,reynolds02,boogie05,nanevski06} in several
+significant ways. First, it uses the termination-sensitive forward
+simulation techniques~\cite{Lynch95,compcert} and proves a stronger
+contextual correctness property rather than simple partial or total
+correctness properties (as done for Hoare logics).
+%%%%%
+Second, the overlay interface of a certified layer object completely
+removes the internal concrete memory block (for the object) and
+replaces it with an abstract state suitable for reasoning; this
+abstract state differs from auxiliary or ghost states (in Hoare
+logic) because it is actually used to define the semantics of the
+overlay abstract machine and the corresponding contextual refinement
+property.
+%%%%%
+Third, as we move up the abstraction hierarchy by composing more
+layers, each layer interface provides a new programming language that gets
+closer to the specification language---it can call primitives at
+higher abstraction levels while still supporting general-purpose
+programming in C and assembly.
+
+Our CCAL toolkit follows the same layer-based methodologies. Each time
+we introduce a new concrete concurrent object implementation, we
+replace it with an abstract atomic object in its overlay
+interface. All shared abstract states are represented as a single
+global log, so the semantics of each atomic method call would need to
+{\em replay} the entire global log to find out the return value.  This
+seemingly ``inefficient'' way of treating shared atomic objects is
+actually great for compositional specification. Indeed, it allows us
+to apply game-semantic ideas and define a general semantics that
+supports parallel layer composition.
+
+\para{Abstraction for Concurrent Objects.}
+\citet{herlihy90} introduced {\em linearizability} as a key technique
+for building abstraction over concurrent objects. Developing
+concurrent software using a stack of shared atomic objects has since
+become the best practice in the system
+community~\cite{Herlihy08book,ospp11}. Linearizability is quite
+difficult to reason about, and it is not until 20 years later that
+\citet{filipovic10} showed that linearizability is actually equivalent
+to a termination-insensitive version of the contextual refinement
+property. \citet{Gotsman12concur} showed that such equivalence also
+holds for concurrent languages with ownership
+transfers~\cite{ohearn:concur04}.  Liang et al.~\cite{liang13,lili16} showed that linearizability plus various
+progress properties~\cite{Herlihy08book} for concurrent objects is
+equivalent to various termination-sensitive versions of the contextual
+refinement property. These results convinced us that we should prove
+termination-sensitive (contextual) simulation when building certified
+concurrent layers as well.
+
+\para{RGSim and LiLi.} Building contextual refinement proofs
+for concurrent programs (and program transformations) is challenging.
+Liang~{et~al.}~\cite{RGSim,Liang14lics,lili16} developed the
+Rely-Guarantee-based Simulation (RGSim) that can support both parallel
+composition and  contextual refinement of concurrent
+objects. Our contextual simulation proofs between two concurrent
+layers can be viewed as an instance of RGSim if we extend RGSim with
+auxiliary states such as environment contexts and shared logs. This
+extension, of course, is the main innovation of our new compositional
+layered model. Also, all existing RGSim systems are limited to reasoning
+about atomic objects at one layer; their client program context cannot
+be the method body of another concurrent object, so they cannot
+support the same general vertical layer composition as our work does.
+
+\ifTR{\citet{lili16} also developed a program logic called LiLi that can
+directly prove both the linearizability and starvation freedom (or
+deadlock-freedom) properties. Their ``rely'' conditions are specified
+over shared states only, so they cannot express temporal properties. To
+prove progress, they have to introduce a separate temporal ``rely''
+condition called {\em definite actions}.  This made it difficult to
+provide a standalone (total) specification for each lock acquire
+method.  Indeed, all examples in their paper are code fragments that
+must acquire a lock, then perform critical-section tasks, and then release the
+lock. In contrast, our environment context can specify the full
+strategies (i.e., both the past and the future events) of all
+environment threads and the scheduler, so we can readily impose
+temporal invariants over the environment. Within each thread-modular
+layer $L[t]$, we can show that each lock acquire primitive (e.g., for
+ticket locks) always returns as long as its environment is cooperative
+(e.g., always releases its acquired lock), even if $t$ itself may not
+be cooperative.
+In other words, the termination of $t$'s lock acquire
+operation does not depend on whether $t$ itself will release the lock
+after first acquiring it.}{}
+
+\para{Treatment of Parallel Composition.}
+Most concurrent languages (including those used by RGSim) use a
+parallel composition command $(C_1 \| C_2)$ to create and terminate
+new threads.  In contrast, we provide thread spawn and join
+primitives, and assign every new thread a unique ID (e.g., $t$, which
+must be a member of the full thread-ID domain set $D$). Parallel layer
+composition in our work is always done over the whole program $P$ and over
+all members of $D$. This allows us to reason about the current
+thread's behaviors over the environment's full strategies (i.e., both
+past and future events). Even if a thread $t$ is never
+created, the semantics for running $P$ over $L[t]$ is still well
+defined since it will simply always query its environment context to
+construct a global log.
+
+\para{Program Logics for Shared-Memory Concurrency.}
+A large body of new program
+logics~\cite{ohearn:concur04,brookes:concur04,feng07:sagl,vafeiadis:marriage,LRG,verifast,gotsman13,Turon13popl,Turon13icfp,nanevski13,nanevski14,sergey15,sergey15pldi,pinto14,iris15,civl15,pinto16,xu16}
+have been developed to support modular verification of shared-memory
+concurrent programs. Most of these follow Hoare-style logics so they
+do not prove the same strong contextual simulation properties as RGSim
+and our layered framework do. Very few of them (e.g.,~\cite{pinto16})
+can reason about progress properties. Nevertheless, many of these
+logics support advanced language features such as higher-order functions
+and sophisticated non-blocking synchronization, both of which will be
+useful for verifying specific concurrent objects within our layered
+framework. Our use of a global log is similar to the use of compositional
+subjective history traces~\cite{sergey15}; the main difference is
+again that our environment context can talk about both past and future
+events but a history trace can only specify past events.
+
+Both CIVL~\cite{civl15} and FCSL~\cite{sergey15pldi} attempt to build
+proofs of concurrent programs in a ``layered'' way, but their notions
+of layers are different from ours in three different ways: (1) they do
+not provide formal foundational contextual refinement proofs of
+linearizability as shown by \citet{filipovic10} and \citet{liang13};
+(2) they do not address the liveness properties; (3) they have not be
+connected to any verified compilers.
+
+\para{Compositional CompCert.}
+\citet{stewart15} developed a new compositional extension of the
+original CompCert compiler~\cite{compcert} with the goal of providing
+thread-safe compilation of concurrent Clight programs.  Their
+interaction semantics also treats all calls to synchronization
+primitives as external calls. Their compiler does not support a layered
+ClightX language as our CompCertX does, so they cannot be used
+to build concurrent layers as shown in Fig.~\ref{fig:arch}. 
+
+\para{Game Semantics.} Even though we have used
+game-semantic concepts (e.g., strategies) to describe our
+compositional semantics, our concurrent machine and the layer simulation is still defined using
+traditional small-step semantics.  This is in contrast to several past
+efforts~\cite{ghica08,nishimura13,rideau11,abramsky99} of modeling
+concurrency in the game semantics community which use games to
+define the semantics of a complete language. Modeling higher-order
+sequential features as games is great for proving full abstraction,
+but it is still unclear how it would affect large-scale 
+verification as done in the certified software community.  We 
+believe there are great potential synergies between the two communities
+and hope our work will promote such interaction.
+
+\para{OS Kernel Verification.} There has been a large body
+of recent work on OS kernel verification including
+seL4~\cite{klein2009sel4,klein14},
+%CertiKOS~\cite{dscal15,chen16,costanzo16}, 
+Verve~\cite{hawblitzel10},
+and Ironclad~\cite{ironclad14}. None of these works have addressed the
+issues on concurrency with fine-grained locking. Very recently,
+\citet{xu16} developed a new verification framework based on RGSim
+and Feng~{et~al.}'s program logic~\cite{feng08:aim} for reasoning
+about interrupts; they have successfully verified many key modules
+(in C) in the $\mu$C/OS-II kernel, though so far, they have not proved
+any progress properties.
+
+
+\para{Conclusions.}
+Abstraction layers are key techniques used in building large-scale
+concurrent software and hardware. In this paper, we have presented
+CCAL---a novel programming toolkit developed under the CertiKOS project for building certified concurrent
+abstraction layers.  We have developed a new compositional model
+for concurrency, program verifiers for concurrent C and assembly,
+certified linking tools, and a thread-safe verified C compiler. 
+We believe these are critical technologies 
+for developing large-scale certified system infrastructures in the future.
+
+\section*{Acknowledgments}
+We would like to thank our shepherd Grigore Rosu and anonymous
+referees for helpful feedbacks that improved this paper significantly.
+This research is based on work supported in part by NSF grants 1521523
+and 1715154 and DARPA grants FA8750-12-2-0293, FA8750-16-2-0274, and
+FA8750-15-C-0082. Tahina Ramananandro's work was completed while he
+was employed at Reservoir Labs, Inc. Hao Chen's work is also supported
+in part by China Scholarship Council.  The U.S. Government is
+authorized to reproduce and distribute reprints for Governmental
+purposes notwithstanding any copyright notation thereon. The views and
+conclusions contained herein are those of the authors and should not
+be interpreted as necessarily representing the official policies or
+endorsements, either expressed or implied, of DARPA or the
+U.S. Government.
+

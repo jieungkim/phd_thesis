@@ -1,0 +1,473 @@
+
+\section{Witness Passing}
+\label{sec:witness-passing-semantics}
+
+This section illustrates the formal definition of write-witness-passing.
+This includes
+the network model discussed in Sect.~\ref{subsec:network-primitives}, 
+the write witness in Sect.~\ref{subsec:witness-write}, and 
+how to connect them together via contextual refinement and CCAL mentioned in Sect.~\ref{subsec:link-with-low-level-code-verification}.
+We first illustrate the formal definition of our network model,  and then define how it works to 
+build the global state transition machines for distributed systems by
+building abstraction layers.
+After that, we define the formal rules for witnesses and show how the global state transition machine refines
+the machine with write witness. 
+
+\begin{figure}
+\raggedright
+\fbox{Variables:}
+
+$
+\begin{array}{llll}
+\msg: Type & \mbox{(message)} \\
+\argus: \mathrm{list}\ \mathbb{Z} & \mbox{(arguments for ghost packets)} \\
+cid,\ owner,\ des, src: \mathbb{Z} & \mbox{(channel ID, owner, destination, and source in packets)}\\ 
+\lstate{i}: Type & \mbox{(local state of the node}\ i\mbox{)} \\
+\end{array}$
+\vspace{0.5em}
+
+\raggedright
+\fbox{Packet, network, and state definitions:}
+
+$
+\begin{array}{lll}
+\packet & :=& \fsendpkt{owner}{cid}{\msg}{des}~\vert~\frecvpkt{owner}{cid}{\msg}{src}~\vert~\ftimeoutpkt{owner}{cid}\\
+&&\vert~\fghostpkt{owner}{cid}{\argus}\\
+\networklog & := & \mbox{list}\ \packet  \ \ \ \ \ \ \ \ \ \ \ \ \ \mbox{(network log with the local view from node} \  i \mbox{)}\\
+\stfori{i} & := & (\lstate{i}, \networklog)  \ \ \ \ \ \ \ \ \ \mbox{(state of  node} \ i\mbox{)}\\
+\end{array}
+$
+\vspace{0.5em}
+
+\raggedright
+\fbox{Auxiliary functions:}
+
+$
+\begin{array}{ll}
+\getsrc : \msg \rightarrow \mathbb{Z} & \mbox{(return source node ID of message}\ \msg\mbox{)}\\
+\getowner :  \packet \rightarrow \mathbb{Z} & \mbox{(return  owner node ID of  packet}\ \packet\mbox{)}\\
+\getdes :  \packet \rightarrow \mathbb{Z} & \mbox{(return destination node ID of the packet}\ \packet\mbox{)}\\
+\checkcidone : \mathbb{Z}  \rightarrow \mathbb{Z}  \rightarrow \mathbb{Z}  \rightarrow \propkwd & 
+\mbox{(validity of channel ID for send and receive packets)}\\
+\checkcidtwo : \mathbb{Z} \rightarrow \mathbb{Z}  \rightarrow \propkwd & 
+\mbox{(validity of channel ID for timeout and ghost packets)}\\
+\ssame:   \networklog \rightarrow \networklog \rightarrow \networklog & \mbox{(append two network logs)} \\
+\cons : \networklog \rightarrow \packet \rightarrow \networklog & \mbox{(add one packet into one network log)} \\
+\end{array}
+$
+\vspace{0.5em}
+
+\raggedright
+\fbox{Specifications for send and receive primitives:}
+\begin{mathpar}
+\inferrule
+{\layerfori{owner} = (\layerdef, \envcontext_{owner}, \igchar, \igchar) \\
+\stfori{owner} = (\lstate{owner}, \networklog) \\
+(\networklog, \networklog ') \in  \envcontext_{owner} \\
+\packet = \fsendpkt{owner}{cid}{\msg}{des}\\
+src = \getsrc(\msg)\\  
+\checkcidone(cid, owner, des) \\
+\stfori{owner}' = (\lstate{owner},\ \networklog \ssame\ \networklog '\ \cons\ \packet)}
+{\layerfori{owner} \vdash \stfori{owner} \xrightarrow{\sigma_{send(cid, des, \msg)}}  \stfori{owner}'}
+
+\inferrule
+{\packet =  \frecvpkt{owner}{cid}{\msg}{src}\\
+\checkcidone(cid, owner, src) \\
+src = \getsrc(\msg)  \\\\
+\exists cid', \checkcidone(cid', src, des) \wedge \fsendpkt{src}{cid'}{\msg}{owner} \in \networklog}
+{\canrecv(src, \packet, \networklog)}
+
+\inferrule
+{\packet = \ftimeoutpkt{owner}{cid} \\ 
+\checkcidtwo(cid, owner)}
+{\canrecv(src, \packet, \networklog)}
+
+\inferrule
+{\layerfori{owner} = (\layerdef, \envcontext_{owner}, \igchar, \igchar) \\
+\stfori{owner} = (\lstate{owner}, \networklog) \\
+(\networklog, \networklog ') \in  \envcontext_{owner} \\
+\canrecv(from, \packet, \networklog \ssame \networklog ') \\
+\stfori{owner}' = (\lstate{owner},\ \networklog \ssame\ \networklog '\ \cons\ \packet)}
+{\layerfori{owner]} \vdash \stfori{owner} \xrightarrow{\sigma_{recv(from)}} \stfori{owner}'}
+\end{mathpar}
+\caption{Network Model and Related Definitions}
+\label{fig:net-syntax-semantics}
+\end{figure}
+
+\subsection{Low Level Network Syntax and Semantics}
+\label{subsec:low-level-network-syntax-and-semantics}
+
+Our network is defined as a log of packets, and the key definitions are
+found in Figure~\ref{fig:net-syntax-semantics}.
+There are four kinds of packets; 1) send; 2) receive; 3) timeout; and 4) ghost.
+The first three correspond to send and receive primitives, and those 
+packets consist of multiple elements including a channel identifier.
+The model contains multiple logical channels and communication in one channel can be distinguished from communication in others.
+Channel identifiers provide a clear distinction between packets in different channels even though our network history contains 
+packets in multiple channels.
+The channel identifier also makes defining projection functions straightforward.
+There are often two nodes per channel,
+but multiple nodes can be associated with one channel as well.
+Additionally, one node or one set of nodes can participate in multiple channels, which is a crucial property
+of the network model to build extensible distributed systems.
+For example, one channel can be designated for communications from acceptors to proposers in Paxos
+and another channel can be used for communications from proposers to acceptors.
+It is also possible for the model to assign another channel between proposers (clients)
+to build distributed applications based on the underlying Paxos implementation.
+By allowing that, multiple kinds of distributed transactions could be built based on the same consensus protocols
+but their network communications would remain logically separated.
+
+The existence of multiple channels also relates to the network reductions in Fig.~\ref{fig:network-reduction}.
+A reduction can be represented as introducing a new channel with the simplified semantics and disallowing the old channel.
+For example, the specification of the broadcasting send function (\textit{i.e.} Fig.~\ref{fig:network-reduction} (a) (2)) can be first defined as
+sending the same message to all acceptors in the set ($\accsset$) as
+\begin{mathpar}
+\inferrule
+{\stfori{owner}' = 
+\mbox{\textbf{reduce}}\ (\lambda\ des. \ \layerfori{owner}_{send_{low}}(send)\ (cid_{low}, des, \msg))\ 
+\ \accsset\  \  \stfori{owner}}
+{\layerfori{owner}_{send_{low}} \vdash \stfori{owner} \xrightarrow{\sigma_{bsend(cid_{low}, \msg)}}  \stfori{owner}'}
+\end{mathpar}
+assuming that  $\layerfori{owner}_{send_{low}} $ contains the primitive $bsend$.
+Then, we simplify the function by assigning the new channel $cid_{high}$ without changing 
+the actual specification of the send primitive so other nodes can continue to use it.
+The new specification of the broadcasting send primitive (\textit{i.e.} Fig.~\ref{fig:network-reduction} (a) (3))
+can be defined as a single send primitive call with the newly assigned channel
+\begin{mathpar}
+\inferrule
+{\stfori{owner}' = \layerfori{owner}_{send_{high}}(send)\ (cid_{high}, \igchar, \msg))\  \stfori{owner}}
+{\layerfori{owner}_{send_{high}} \vdash \stfori{owner} \xrightarrow{\sigma_{bsend(cid_{high}, \msg)}}  \stfori{owner}'}
+\end{mathpar} 
+with the condition $cid_{low} \neq cid_{high}$.
+The rely/guarantee conditions must also be modified, and the two layers must be related by a proper relation $R$ that also relates their environment contexts.
+Intuitively, the relation $R$ matches multiple send packets  in channel $cid_{low}$, with $n$ when $n$ is the number of elements in $\accsset$,
+into a single send event $cid_{high}$. 
+
+Figure~\ref{fig:net-syntax-semantics} also contains send and receive specifications.
+They first query the environment context based on the current network status, represented as $(\networklog, \networklog ') \in  \envcontext_{owner} $.
+Then, they
+update the current network status using the result from the environment context query, notated as $ \networklog \ssame\ \networklog '$.
+After that, both add the next event, either send, receive, or timeout packet, at the end of the network history. 
+The specification of the receive function requires an additional validity condition, $\canrecv$,
+to check whether the currently received packet has a matching send in the network history.
+This rules out the possibility of packets being generated from nothing.
+Besides validity checks for received messages and channel identifiers,
+we do not have any additional auxiliary conditions in the network primitives.
+That implies that the receive primitive can receive any packets that have been sent previously, and some send packets may never have a corresponding receive packets.
+The receive primitive also can generate a timeout packet, which implies that no packets were received at that time.
+
+The final type of packet, a ghost packet, is to represent the transitions that only trigger changes in the local state.
+As having observed in the specifications of send and receive,
+all nodes contain their local view of network history 
+via the environment context that properly captures interleaving among other nodes.
+This helps us to directly define the global state transition machines without considering complex composition with other nodes in the system. 
+However, only having send, receive, and timeout packets is sometimes not sufficient
+to define all possible transitions.
+Ghost packets help us to define them, and Sect.~\ref{subsec:distributed-transition-semantics} shows how we use them.
+
+\subsection{Distributed Transition Semantics}
+\label{subsec:distributed-transition-semantics}
+
+Another step required in distributed system verification is defining the global state and transitions to represent the status and the behavior of 
+all the participants in the system.
+Based on the network primitives including send and receive functions and the local
+instructions that manipulate the local state,
+implementing and verifying the functional correctness of the transitions on each node
+(e.g. proposers and acceptors) are feasible by building multiple certified abstraction layers. 
+Distributed systems, however, are a cluster of nodes.
+However, exciting safety properties such as immutability and linearizability for distributed systems are usually stated about the status and the behavior of all nodes in the system. 
+Therefore, proving the functional correctness of the low-level implementation only for a local node is not sufficient.
+The verification has to consider the global behavior of the entire distributed system because.
+thus specifications for transitions also need to represent the alternative behaviors that make use of a protocol,
+which are on the whole local states of all nodes in them. 
+Our approach provides a simple, but sufficient solution for that purpose. 
+
+
+Our network history contains not only the packets triggered by the node that calls network primitives but also 
+the packets generated by other nodes in the system.
+This feature is achieved by the network history update using environmental context,
+and thus it implies that the history contains all the communication information in the network as the linearized version by the view of each node.
+By using all the network packets in the system, 
+the network replay function provides a way to figure out how local states of all nodes can be changed during if all local transitions can be mapped with packets in the network history.
+We define the
+replay function for the distributed system $DS$ as
+$$\replay_{DS}: \networklog \rightarrow \mbox{option}\ \set{\lstate{DS_i}~\vert~\forall i, i \in \dsset} $$
+, where $\dsset$ is the set of nodes that participate in the distributed system and
+$\lstate{DS_i}$ is the local state for node $i$ that only contains the information
+regarding $DS$. 
+ 
+However, only using send, receive, and timeout packets to define the proper replay function is 
+impossible or restricted in its applicability.
+Even though most local transitions in the distributed systems are associated with the network primitive, 
+there are some local transitions can be purely associated with the local state itself. 
+To model those transitions in the network replay function properly, 
+we use ghost packets defined in~\ref{fig:net-syntax-semantics}.
+These packets do not participate in the network communication but work as stamps that tell the 
+replay function to change the local state that is associated with that node id $i$.
+Allowing ghost packets for node id $i$ in the network history also implies that adding ghost packets in the network for other nodes is also possible by using environment context and rely/guarantee conditions.
+In this sense, it is possible for us to model all local transitions with the network replay functions even though some are not associated with network primitives. 
+
+\begin{figure}
+\begin{center}
+\begin{mathpar}
+\inferrule
+{L_{impl}[owner] = (\layerdef_{impl}, $\_$, $\_$, $\_$) \\
+L_{abs}[owner] = (\layerdef_{abs}, $\_$, $\_$, $\_$) \\\\
+\stfori{impl_{owner}} = (\lstate{impl_{owner}},\ \networklog) \\
+\stfori{abs_{owner}} = (\lstate{abs_{owner}},\ \networklog) \\\\
+\layerdef_{impl}(fid) = \sigma_{fid}\\
+fid \in \mathrm{dom}(\layerdef_{abs})\\
+\sigma_{fid}(args, \lstate{impl_{owner}}) = \lstate{owner}'\\\\
+cid = \getcid(fid)\\
+\checkcidtwo(cid, owner)\\
+\packet = \fghostpkt{owner}{cid}{args}  \\
+\replay_{DS}(\networklog)  = \mbox{Some}\ \set{\cdots ,\lstate{DS_{owner}},  \cdots }\\
+\replay_{DS}(\networklog\ \cons\ \packet)  = \mbox{Some}\ \set{\cdots ,\ \lstate{DS_{owner}}',\  \cdots } \\ 
+\stfori{impl_{owner}}' = (\lstate{impl_{owner}}',\ \networklog \ \cons\  \packet) \\
+\stfori{abs_{owner}}' = (\lstate{abs_{owner}},\ \networklog \ \cons\  \packet)\\
+R (\lstate{impl_{owner}},\ (\lstate{abs_{owner}}, \lstate{DS_{owner}}))\\
+R (\lstate{impl_{owner}}',\ (\lstate{abs_{owner}}, \lstate{DS_{owner}}'))}
+{L_{impl}[owner](fid) \refines_R  L_{abs}[owner](fid)}
+\end{mathpar}
+\end{center}
+\caption{Relation for the Refinement Proof of Function $fid$ in Two Layers, $L_{impl}$ and  $L_{abs}$}
+\label{fig:relation-for-the-refinement-proof}
+\end{figure}
+
+Providing the refinement theorem in between those two representations is also necessary to link the layer with global state transition representation and the layer only contains the information about the local functional correctness.
+For example, when the layer $L_{abs}$ is the layer that contains the network replay function to represent the global state of the distributed system and the $L_{impl}$ is the layer that only contains the specifications focusing on the local functional correctness, 
+the relation for refinement proof of $fid$ is defined in Fig.~\ref{fig:relation-for-the-refinement-proof}, 
+which implies that the evaluation of the network replay function  for $fid$ in the $L_{abs}$  layer 
+will be matched with evaluation of the local transition of the function $fid$ in the $L_{impl}$ layer 
+with the refinement relation $R$.
+
+Similar to the example, providing the simulation proofs for all possible transitions between 
+those two layers are possible with using proper ghost packets and the network replay function.
+This process finally gives us the refinement theorem 
+$L_{impl}[owner]  \refines_R L_{abs}[owner]$, and also the contextual refinement theorem 
+with the client program $p$, which will be stated as $\forall{}P.\sem{L_{impl}[owner]}{P} \refines_R \sem{L_{abs}[owner]}{P}$.
+
+\subsection{Distributed Transition Semantics with Write-Witness-Passing}
+\label{subsec:distributed-transition-semantics-with-witness-passing}
+
+This section illustrates a novel but straightforward way, \textit{write-witness-passing}, that can aid protocol-related property proofs (\textit{e.g.} safety) of distributed systems alongside with the functional correctness of them. 
+The write-witness-passing does not only make the proofs simple but 
+but also helps to provide a generic interface that many distributed systems have.
+
+
+The main idea of write-witness-passing is facilitating the methodology that we use \textit{(2) functional correctness} in
+\textit{(3) safety verification} as much as possible by
+introducing ghost state in the local state, by linking the ghost state with the low-level
+implementation using contextual refinement, and by capturing the universal aspects of the write operation in the distributed system.
+Write operation of several distributed systems usually requires a step ahead before write, prepare. 
+The prepare step is for 
+asking each acceptor to be prepared with the proposed write
+and more importantly, asking each acceptor to give the value that has been previously written if it exists.
+Distributed systems typically do not guarantee successes of all write attempts due to possible contentions from other write attempts for 
+other nodes in the system
+and error that may occur during the operation. 
+However, most of them require specific evidence before each write attempt regardless of the result of the write operation. 
+Therefore, we generalize the form of the evidence and define the generic form, \textit{write-witness} ($\witness$).
+
+\begin{figure}
+\raggedright
+\fbox{Variables:}
+
+$
+\begin{array}{llll}
+\termnum: Type & \mbox{(ballot value -- totally ordered)} \\
+\dstate: Type & \mbox{(value that the distributed system stores)} \\
+\nodeid : Type & \mbox{(node ID --  unique value for each node)} & \\
+\partialset : \set{\nodeid} & \mbox{(set of node IDs)}\\
+\accsset : \set{\nodeid} & \mbox{(set of node IDs for all acceptors at the moment)}\\
+\witness_{\mathrm{el}} : (\termnum \times \dstate \times accs  \times \accsset  \times \set{\packet}) & \mbox{(each  element in the witness)}\\
+\witness  : \mbox{list}\ \witness_{\mathrm{el}}  & \mbox{(witness)}\\
+\end{array}$
+\vspace{0.7em}
+
+\fbox{Inductive definition of write-witness-passing:}
+\vspace{0.2em}
+
+$
+\begin{array}{ll}
+\witness_{\bot} := \mbox{nil} & \mbox{(base case of the witness definition)}\\
+\witness_{\termnum} := \witness_{\termnum'}\ \cons\ (\termnum, \dstate, accs, \accsset, \set{\packet}) &  \mbox{(inductive case of the witness definition)}\\
+\end{array}
+$
+\vspace{0.7em}
+
+
+\raggedright
+\fbox{Packets with write-witness-passing:}
+\vspace{0.2em}
+
+$
+\begin{array}{llll}
+\getvbn : \msg \rightarrow \termnum  & \mbox{(voted ballot value of message}\ \msg\mbox{)} \\
+\msg_\witness : (\msg, \mbox{option}\ \witness) & \mbox{(message with its witness -- the witness of}\ \getvbn(\msg)\mbox{)}\\
+\end{array}
+$
+\vspace{0.7em}
+
+$
+\begin{array}{lll}
+\packet_\witness & :=& \fsendpkt{owner}{cid}{\msg_{\witness}}{des}~\vert~\frecvpkt{owner}{cid}{\msg_\witness}{src}~\vert~\ftimeoutpkt{owner}{cid}\\
+&&\vert~\fghostpkt{owner}{cid}{\argus}\\
+{\networklog}_{\witness} & := & \mbox{list}\ \packet_{\witness}  \ \ \ \ \ \ \ \ \ \ \ \ \ \mbox{(network log with the local view from node)} \  i \\
+\end{array}
+$
+\vspace{0.7em}
+
+\fbox{Function for write-witness-passing:}
+\vspace{0.2em}
+
+$
+\begin{array}{llll}
+\isquorums : \set{\mathbb{Z}} \rightarrow  \set{\mathbb{Z}} \rightarrow \propkwd & 
+ \mbox{(function that checks the quorum)} \\
+\le_{\termnum} : \termnum \rightarrow \termnum \rightarrow \propkwd & \mbox{(binary relation for ballot values)}\\
+\funwitness : \le_{\termnum}  \rightarrow  \isquorums  \rightarrow \set{\nodeid}  \rightarrow \termnum \rightarrow \set{\packet_\witness} \rightarrow \dstate \rightarrow \witness 
+& \mbox{(generate a write witness)} \\
+\end{array}
+$
+\vspace{0.7em}
+
+\fbox{Generic properties with write-witness-passing:}
+\vspace{0.2em}
+
+$
+\begin{array}{llll}
+\getvbnp : \packet \rightarrow \termnum  & \mbox{(voted ballot value of  packet}\ \packet\mbox{)} \\
+\getdsvalue : \packet \rightarrow \dstate  & \mbox{(stored value of  packet}\ \packet\mbox{)} \\
+\getwitness : \packet_\witness \rightarrow \mathrm{option} \ \witness  & \mbox{(witness of  packet}\ \packet_{\witness} \mbox{)} \\
+\projpkt : \packet_\witness \rightarrow \packet & \mbox{(remove witness from}\ \packet_{\witness}\mbox{)} \\
+\projnet : {\networklog}_{\witness} \rightarrow \networklog & \mbox{(remove witnesses from all packes in}\  {\networklog}_{\witness}\mbox{)} \\
+NoDup: \mathrm{list}\ Type \rightarrow \propkwd & \mbox{(check the uniqueness of all elements in the list)} \\
+\end{array}
+$
+\vspace{0.7em}
+
+$$
+\begin{array}{c}
+ \funwitness(\le_{\termnum},~\isquorums,~\accsset, ~\termnum, ~pkts) = \witness_{\termnum'} \ \cons \ (\termnum, ~\dstate', ~accs, ~\accsset, ~pkts') \rightarrow\\
+\isquorums(accs, \accsset)~\wedge~NoDup(accs)~\wedge~accs \subseteq  \accsset ~\wedge~ pkt' \subseteq \projnet(pkt)~\wedge\\
+(\forall a.~a \in accs \rightarrow \exists p.\ p \in pkts'~\wedge~p = \frecvpkt{\igchar}{\igchar}{\igchar}{a})~\wedge\\
+
+(\forall p.~p \in  pkt' \rightarrow \\
+(\exists \ src \ \msg. \ p = \frecvpkt{\igchar}{\igchar}{\msg}{src}~\wedge~
+src \in accs~\wedge~\getvbn(\msg) <_{\termnum} \termnum)) \\ 
+
+(\exists p\ p_{\witness}.~p \in  pkt'~\wedge~p_{\witness} \in pkt~\wedge\\
+\projpkt(p_{\witness}) = p~\wedge~~\getwitness(p_{\witness}) = \mathrm{Some}\ \witness_{\termnum'}~\wedge~
+\getvbnp(p) = \termnum'~\wedge\\
+(\forall p'.\ p' \in pkt' \rightarrow \getvbnp(p') \le_{\termnum} \getvbnp(p))~\wedge\\
+( \getvbnp(p) = \bot \rightarrow \getdsvalue(p) = \bot~\wedge~ \dstate' = \dstate)~\wedge \\
+( \getvbnp(p) \neq \bot \rightarrow \dstate' = \getdsvalue(p)) \\
+\end{array}
+$$
+\caption{Write-Witness-Passing and Related Definitions}
+\label{fig:witness-witness-formal}
+\end{figure}
+
+
+Figure~\ref{fig:witness-witness-formal} shows  key definitions related the write-witness-passing.
+The write-witness can be viewed as a record that keeps the essential and generic information for each write attempt in the distributed system,
+and it is a list of evidence for the all write attempts that are associated with the current one. 
+
+
+Each element of the witness consists of five components that can be instantiated according to the distributed system that we want to verify.
+The first one is a ballot number $\termnum$, a unique identifier for the write-witness.
+Most distributed systems use their own ballot values ($\termnum$) to distinguish each write attempt from others. 
+Those values do not need to be defined as simple singleton values such as integer numbers, but they have to satisfy three conditions. 
+First, all values need to be members of a totally ordered set to provide the order 
+between all possible two different ballot values.
+Also, distributed systems need to guarantee the uniqueness of each value for each write attempt from others of other write attempts
+with having a particular constraint, and regardless of contentions or network error.
+Two examples are round numbers in Paxos and the pair of term and index numbers in Raft.
+Those facts imply that a particular ballot value has only one and unique witness if there was a write attempt associated with the ballot value.
+One another condition related to $\termnum$ is that no write attempts are allowed with $\bot$, 
+when $\bot$ implies the bottom value with the condition that for all possible ballot numbers are greater than or equal to $\bot$, 
+ $\forall \termnum, \ \bot <_{\termnum} \termnum \vee \termnum = \bot$.
+The second field is a stored value ($\dstate$) for the distributed system, and each stored value is mapped with a certain $\termnum$.
+There is no restriction on the stored value, but if the current $\termnum$ is $\bot$ in the local state of a node $i$, 
+ then the corresponding stored value in the node $i$'s local state also needs to be $\bot$.
+Using the constraints of both $\termnum$ and $\dstate$, we can treat $(\bot, \bot)$ as an initial state for the slot. 
+
+Other two fields of the write-witness, two sets of node IDs, are to 
+represent the node IDs that participate in the quorum for the write attempt and
+the node IDs that represent the all candidates that could participate in the write attempt.
+The last field, $\set{\packet}$, is a set of concrete evidence for the write attempt. 
+When a proposer collects the evidence for the write attempt, 
+write-witness also collect additional information, which is a set that contains all the received packets from the acceptors that participate in the quorum ($accs$ in the definition).
+During the proof, we can treat them as a projection from the whole network history to the packets that are related to witness of the associated write attempt. 
+
+The write-witness, list of each evidence discussed in the above, contains all the information from the initial write to the latest one associated with
+the ballot value to keep track of the write history.
+The list does not need to have the witness for the all possible ballot values less than or equal to the current ballot value. 
+The list of identifiers, projection from the list of witness elements, is monotonically increasing but is not continuous.
+However, the information in the list is sufficient for us to deduct where the stored value with the ballot value comes from and the history of the stored value. 
+In Paxos, for example, 
+each write operation usually picks up one value among promise messages from acceptors 
+if the previous write has been recorded on one of the acceptors that participate in the quorum. 
+This implies that the witness can keep track of the previous write that has been occurred on the acceptor. 
+Combined with the consensus mechanism of Paxos,
+this also implies that all stored values ($\dstate$) in all elements of the write-witness in Paxos
+need to be same regardless of the consensus of the entire system. 
+If the consensus has been raised with the ballot number $\termnum$, 
+all write attempts with $\termnum'$ ($\termnum <_{\termnum} \termnum'$) after the consensus contains 
+$\witness_{\termnum}$ as  the prefix of their witnesses.
+
+\topic{how we pass those write witness}
+
+Providing write-witness-passing also requires us to integrate the witness generation process with the previous distributed transition system, combining local states with the write-witness as well as extending the network model with the write-witness, which are straightforward with contextual refinement.
+Regarding local state modification, adding write witness implies adding one more \textit{logical} field in each local state of the participant. 
+For example, $\lstate{DS_i}$, the local state of node $i$ in the global transition system, is a tuple of three components, 
+$(\termnum, \termnum, \dstate)$ for Paxos.
+Then $\lstate{DS\witness_i}$, the local state of node $i$ in the global transition system with the write-witness, 
+is a tuple with the form $(\termnum, \termnum, \dstate, \witness_{\termnum})$.
+The network model also needs a small change to make it possible to use the write-witness in the communication. 
+Each message of packets can contain its own write-witness for the value stored in the message
+if it is required, and the definition for the modified packet is in Fig.~\ref{fig:witness-witness-formal}.
+As in the figure, adding the write-witness in the packet is optional.
+For instance, the prepare packet in Paxos described in the Fig.~\ref{fig:paxos-pseudocode} does not need to include the write-witness in it.
+With those modifications, we provide the form for the network replay function with the write-witness as
+$$\replay_{DS\witness}: {\networklog}_{\witness} \rightarrow \mbox{option}\ \set{\lstate{DS\witness_i}~\vert~\forall i, i \in \dsset} $$
+, which is similar to the network replay function in Sect.~\ref{subsec:distributed-transition-semantics}, but can handle the write-witness in it. 
+
+\topic{how we collect them}
+
+Collecting those write-witness is mostly compatible with the prepare phase in distributed protocols. 
+The type of the function, $\funwitness$, that generates the write-witness is also defined in Fig.~\ref{fig:witness-witness-formal}.
+The first argument, $ \le_{\termnum}$ is the binary comparison relation for the set of ballot values,
+and the second one is the definition of the quorum. 
+Two definitions depend on distributed protocols, and  different services in the same distributed protocol may have 
+different definitions for them, too.
+For example, the binary relation in  Paxos is a binary comparison relation on natural numbers, 
+and $\isquorums$ is the function that checks whether the witness contains the majority, which is more than half, of all acceptors. 
+On the other hand, the binary relation on the election phase of Raft is a relation on two elements, 
+term and index numbers. 
+The third argument is a set of node IDs for all acceptors in the system for the write attempt associated with the ballot number $\termnum$.
+Several distributed protocols, such as Vertical Paxos and Raft, allow reconfiguration. 
+Allowing reconfiguration implies that a set of node IDs for all acceptors associated with a single write attempt may vary with the set related to other attempts even they are write attempts inside the same distributed protocols.
+The next two arguments of the function correspond to the values that we need when we collect the evidence of the quorum in the prepare phase.
+The ballot value ($\termnum$) is the value that we use for the write attempt and thus also in the prepare phase.
+The $\packet_\witness$ are the packets that the function received from all acceptors while the prepare phase.
+For example, they are the same packets with promise packets from acceptors in Paxos and vote packets in the election phase of Raft. 
+The last argument ($\dstate$) is the value that the $\termnum$ try to write on the system but is not guaranteed.
+Writing  another value different from $\dstate$  happens frequently in multiple distributed systems, especially consensus protocols.
+Most consensus protocols sometimes need to rewrite the values that they have gotten from acceptors instead of 
+their proposed value.
+Picking up the value for the write attempt associated with $\termnum$ depends on the distributed protocol.
+
+\topic{what do they guarantee?}
+
+The witness generated by $\funwitness$ guarantees multiple safety properties with the argument of the function and those properties are described in Fig.~\ref{fig:witness-witness-formal}
+with
+$$\funwitness(\le_{\termnum},~\isquorums,~\accsset,~\termnum,~pkts) = \witness_{\termnum'} \ \cons \ (\termnum,~\dstate',~accs,~\accsset,~pkts')$$ The first line of the property shows that
+$accs$ is a collection of acceptor node IDs that participate in the quorum.
+It also provides the property that there are a set of packets ($pkt'$), pieces of evidence for the write that are extracted from a subset of $pkt$ when $pkt$ is a set of packets that the proposer received from all acceptors related to the write. 
+The second line implies every element that participates in the quorum sent the proper message to provide the evidence of the write.
+The next two lines are for properties that all shreds of evidence need to hold. 
+All packets in $pkt'$ contain the proper evidence, which includes the fact that ballot values of those packets are always less than $\termnum$, the identifier of the current write-attempt.
+The last five lines are for inferring the source of the values and finding out the previous write-witness for the current write.
+Some properties may vary depending on the protocol, and adding or removing those properties in the write-witness is striaghtforward with our approach. We discuss how it helps the verification of distributed systems in Sect.~\ref{sec:paxos-verification} using the running example.

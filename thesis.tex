@@ -39,6 +39,11 @@
 \usepackage{tabu}
 \usepackage{amsthm}
 \usepackage[normalem]{ulem} % for strike out
+\usepackage{tcolorbox}
+\usepackage{tikz}
+\usepackage{flushend}
+
+\usetikzlibrary{arrows.meta, decorations.pathmorphing}
 
 \usepackage{prettyref}
 %----------------------------------------------------
@@ -122,46 +127,92 @@
 \label{chapter:introduction}
 \input{introduction}
 
-\chapter{Overview}
-\label{chapter:overview}
-
 \chapter{Concurrent Certified Abstraction Layer}
 \label{chapter:ccal}
+
+\input{oldcontents/ccal/intro}     % Introduction (1.5 pages)
+\input{oldcontents/ccal/new-overview}  % Informal Development (1.5 pages) 
+\input{oldcontents/ccal/mach-multicore}     % Concurrent Abstraction Layers (1.5 pages)
 
 
 \chapter{Case Study: MCS Lock}
 \label{chapter:mcs lock}
-\input{mcslock/abstract}
-\input{mcslock/intro}
-\input{mcslock/overview}
-\input{mcslock/veri}
-\input{mcslock/evaluation}
-\input{mcslock/related}
+%\input{oldcontents/mcslock/abstract}
+%\input{oldcontents/mcslock/intro}
+\input{oldcontents/mcslock/overview}
+\input{oldcontents/mcslock/veri}
+\input{oldcontents/mcslock/evaluation}
+%\input{oldcontents/mcslock/related}
 
 
 
 \chapter{Multicore and Multithreaded Linking}
 \label{chapter:linking}
 
+\input{oldcontents/conlink/ccaldefinitions}
+\input{oldcontents/conlink/multicore}
+\input{oldcontents/conlink/multicorelink}
+\input{oldcontents/conlink/multicorerefinement}
+\input{oldcontents/ccal/prog-multithread-pldi18}      % Layered Concurrent Programming (3-3.5 pages)
+\input{oldcontents/ccal/comp}      % Certified Compilation and Linking 
+\input{oldcontents/ccal/mach-multithread-impl}     % Concurrent Abstraction Layers (1.5 pages)
+
+
 
 \chapter{Case Study: Concurrent CertiKOS}
 \label{chapter:concurrent-certikos}
 
+\input{oldcontents/ccal/prog-multicore}      % Layered Concurrent Programming (3-3.5 pages)
+\input{oldcontents/ccal/kernel}      % Layered Concurrent Programming (3-3.5 pages)
+
+%\input{oldcontents/certikos/abstract}
+%\input{oldcontents/certikos/intro}
+%\input{oldcontents/certikos/overview}
+%\input{oldcontents/certikos/spec}
+%\input{oldcontents/certikos/base}
+%\input{oldcontents/certikos/imp}
+%\input{oldcontents/certikos/related}
+%\input{oldcontents/certikos/concl}
 
 
 \chapter{Case Study: Multi-registred Paxos}
 \label{chapter:wormspace}
 
+%\input{oldcontents/multipaxos/abstract}
+%\input{oldcontents/multipaxos/intro}
+\input{oldcontents/multipaxos/overview}
+\input{oldcontents/multipaxos/datastructure}
+\input{oldcontents/multipaxos/nsdi19_verification}
+\input{oldcontents/multipaxos/paxosproof}
+\input{oldcontents/multipaxos/paxosvariants}
+\input{oldcontents/multipaxos/evaluation}
+
 
 \chapter{Beyond Functional Correctness of Distributed Systems}
 \label{chapter:witness-passing}
 
+%\input{oldcontents/witnesspassing/abstract}
+
+%\input{oldcontents/witnesspassing/intro}
+\input{oldcontents/witnesspassing/background}
+\input{oldcontents/witnesspassing/datastructure}
+\input{oldcontents/witnesspassing/witness}
+\input{oldcontents/witnesspassing/witness-property}
+\input{oldcontents/witnesspassing/lowimplementation}
+\input{oldcontents/witnesspassing/multipaxos}
+\input{oldcontents/witnesspassing/examples}
+\input{oldcontents/witnesspassing/evaluation}
+%\input{oldcontents/witnesspassing/related}
+%\input{oldcontents/witnesspassing/conclusion}
 
 \chapter{Related Work}
 \label{chapter:related}
+\input{relatedwork}
 
 \chapter{Limitations, Future Work, and Conclusions}
 \label{chapter:conclusion}
+\input{conclusion}
+
 
 \backmatter
 

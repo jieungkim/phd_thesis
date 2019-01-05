@@ -1,0 +1,406 @@
+\section{Overview}
+\label{sec:overview}
+
+Distributed systems often require a collection of nodes to reach consensus on some value.
+Thus, to show the effectiveness of our approach,
+we use the Paxos algorithm~\cite{paxos} as a simple but useful example.
+After first briefly explaining Paxos, we illustrate how we can prove the functional correctness of the low-level implementation.
+Finally, we show how write-witness-passing captures the essential information of Paxos as well as
+reducing the complexity of the verification.
+
+\subsection{Example: Paxos} 
+\label{subsec:paxos} 
+
+\begin{figure}
+\begin{minipage}{\linewidth}
+\noindent
+\begin{multicols}{2}
+\lstinputlisting[numbers = left, language=TeX]{source_code/multipaxos/paxos_spec.c}
+\end{multicols}
+\end{minipage}
+\caption{Paxos: Informal Description}
+\label{fig:paxos-pseudocode}
+\end{figure}
+
+The Paxos algorithm is one of the most popular asynchronous consensus algorithms, and was even almost treated as a synonym of
+consensus for decades.
+Although an informal description of Paxos can be expressed in a single page,
+implementations of the algorithm often exceed thousands of lines of code due to its underlying complexity.
+Moreover, this hidden complexity is made evident by the difficulty that many people have in trying to understand the algorithm.
+Several works~\cite{raft, rvrpaxos} have noted Paxos' lack of clarity despite multiple attempts to present
+it in a more understandable way ~\cite{paxosmadesimple, Lampson1996, Lampson2001, dpaxos}.
+Part of the difficulty stems from the fact that all nodes in the distributed system perform their transitions in a local manner in a fault-prone environment.
+Their states and behaviors need to be consistent, but
+the only way to learn another node's state is through the network, which can fail in multiple ways.
+The result is a system that guarantees global properties through local behaviors, but the relation between the two is not made clear by the algorithm.
+
+\begin{figure}
+\begin{center}
+\includegraphics[scale=.34]{figs/multipaxos/paxos_example_nowitness}
+\end{center}
+\caption{Paxos: Execution Example}
+\label{fig:paxos-example}
+\end{figure}
+
+Paxos can be treated as a concurrent state machine consisting of a cluster of two types of nodes: proposers and acceptors.
+Proposers operate with arbitrary speed and their role is to propose a value to write in the system.
+Although there can be multiple proposers in the system, they are isolated from one another;
+thus they do not coordinate to reach consensus.
+Acceptors, on the other hand, are responsible for deciding which values suggested by the proposers to write.
+The system is said to reach consensus if a majority of the acceptors (here defined to simply be more than half), have chosen the same value.
+In this sense, the acceptors are cooperating to reach consensus, but they do not actually communicate with one another.
+Instead, each acceptor works only using its local state, and certain invariants of the algorithm guarantee that the states of all acceptors remains consistent.
+
+Figure~\ref{fig:paxos-pseudocode} informally illustrates the key steps of Paxos.
+Both proposers and acceptors participate in two phases, which are notated as Phase 1 (Prepare) and Phase 2 (Write) in the figure.
+In addition to modifying local state, transitions in both phases can also involve network communications between nodes.
+When a proposer wants to write a value, it first asks acceptors to prepare (Phase 1a) with a unique round number ($crndp$).
+This number is totally ordered among the whole system, but proposers cannot know which numbers have been proposed by other proposers directly.
+When an acceptor receives the message, it will first compare the round number with the highest round number it has seen up to that point.
+If the new number is higher, it will respond with its stored value and the round in which it was stored (Phase 1b).
+If no such value and round exist then it returns a special null value and the round number that is smaller than any that can be proposed.
+If a proposer receives Phase 1b responses from a majority of acceptors it can send a Phase 2a message with a value to write.
+If any of the Phase 1b messages contained a non-null value then the proposer must try to write the value associated with the highest round number.
+Otherwise, if all of the values are null, the proposer is free to choose any value.
+Upon receiving the Phase 2a message, acceptors will again check the round number to ensure that it is greater or equal to the maximum it has seen.
+Otherwise they do not update their state and they ignore the request.
+
+%%%%%%%
+% fault tolerant 
+%%%%%% 
+
+This high-level description is relatively short and seemingly simple.
+The complexity, however, arises when all nodes run together concurrently in an asynchronous environment with the possibility of multiple types of failures.
+In an asynchronous environment, nodes are loosely connected with others.
+There are no bounds on timing, so each clock on each node can run arbitrarily fast or slow.
+Additionally, network communication may take a potentially unbounded amount of time,
+and nodes themselves may be unpredictably slow in responding to messages.
+The possibility of failures then compounds the complexity.
+Communication may involve message duplication, loss, and reordering, which means that a simple send-receive pair can have many possible interleavings.
+Figure~\ref{fig:paxos-example} (a) shows some of the possible interleavings of messages sent between multiple acceptors and a proposer.
+In the example, the proposer (P1) communicates with three acceptors (A1, A2, and A3).
+It first proposes the round number 5, and gets an acknowledgement from A1 and A2.
+A3 also responds, but its message is duplicated, and one of them is lost.
+The other one is delayed and does not arrive until after P1 has already heard from a majority of acceptors, so it is ignored.
+Then, in Phase 2, P1 tries to write the value $v$, which will succeed assuming its messages reaches a majority of the acceptors and no
+other proposer has proposed a larger round number in the meantime.
+Although Paxos does guarantee that it will still work under these conditions, even in this simple example,
+the number of cases to consider is large and proving it even informally is not straightforward.
+
+%%%%%%%
+% mininum requirement for distributed system verificatiaon
+%%%%%% 
+In general, implementation and verification of a distributed system must handle the following:
+\begin{enumerate}
+\item \textbf{Network model}:
+Most distributed systems and consensus protocols are based on certain assumptions about the network,
+such as packet duplication, loss, and reordering. In order to verify such a system, one must make a model of the network that matches
+those assumptions.
+
+\item \textbf{Functional correctness}: 
+To reason about correctness at all, there must be a specification of how the system should behave.
+A key part of the verification of a system is showing that the implementation correctly simulates this specification.
+Distributed systems, including Paxos, can often have a large gap between their implementation and specification due to optimizations and careful handling of failure cases.
+This mismatch between code and specification makes proofs of functional correctness especially important.
+
+\item \textbf{Safety of the protocol}: 
+Proving that the implementation refines the specification is necessary, but is often insufficient in distributed system verification.
+Since distributed systems consist of multiple nodes, which may have different functionalities,
+functional correctness of one node does not imply the correctness or safety of the whole system.
+Instead, verification of such global properties requires modeling the entire system and
+proving that the behaviors of individual nodes ensures that the system runs correctly.
+\end{enumerate}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Network Model 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%\newcommand\sdiff{\triangle}
+%\newcommand\ssame{\odot}
+
+\newcommand{\envcontext}{\varepsilon}
+\newcommand{\layerdef}{\mathcal{L}}
+\newcommand{\relyrule}{\mathcal{R}}
+\newcommand{\guaranteerule}{\mathcal{G}}
+\newcommand{\primid}{id}
+\newcommand{\primspec}[1]{\sigma_{#1}}
+\newcommand{\igchar}{\_}
+\newcommand{\sendpkt}[3]{{#1}.\mathrm{SEND}{[#2]}.{#3}}
+\newcommand{\recvpkt}[3]{{#1}.\mathrm{RECV}{[#2]}.{#3}}
+
+\subsection{Network Primitives}
+\label{subsec:network-primitives}
+
+In distributed systems, the network acts as a shared communication channel among the participating nodes.
+Nodes in the system typically run independently and concurrently, and can only guarantee the order of their own evaluations.
+To represent this, several previous approaches~\cite{verdi, disel}
+define the network as a collection of events corresponding to send and receive transitions.
+They then build local transitions on top of these network primitives that can update local state as well as the network,
+and finally they compose multiple nodes and their transitions together to represent the global state machine.
+Instead of doing that, our approach lifts the composition down to the bottom by using methodologies
+inspired by the concurrent linking framework~\cite{concurrency} and game semantics~\cite{gsinvite},
+which treats each node as a participant in a game with communication via the network.
+
+A key idea of the approach is to keep a snapshot of the global shared state from the view of a single node,
+and use an environment context (\textit{i.e.} $\envcontext_i$ when focusing on node $i$) to model the
+other nodes' behaviors.
+The environment context is a collection of all of the possible behaviors of the other nodes and
+can be defined as a set of functions from a local log of network events to another log representing the next steps taken by the environment.
+At certain synchronization points the node under consideration will query the context to learn what steps
+the environment has taken and decide what to do next based on the result.
+By parametrizing proofs over all valid environment contexts we can guarantee that every node will behave correctly
+even in a non-deterministic environment.
+As a concrete example, consider the following possible linearized trace of Fig.~\ref{fig:paxos-example}.
+\begin{center}
+\begin{tabular}{c}
+$[\sendpkt{P1}{5, non}{A1}] \ssame [\sendpkt{P1}{5, non}{A2}]  \ssame [\recvpkt{A1}{5, non}{P1}]$\\
+$\ssame [\sendpkt{P1}{5, non}{A3}]  \ssame [\recvpkt{A2}{5, non}{P1}]    \ssame [\sendpkt{A2}{5, 0, \igchar}{P1}]$\\
+$ \ssame \cdots \ssame [\sendpkt{P1}{5, v}{A1}] \ssame 
+[\recvpkt{A1}{5, v}{P1}] \ssame \ssame [\recvpkt{A1}{5, v}{P2}]$\\
+$ \ssame \cdots \ssame [\recvpkt{P1}{5, 3, v'}{A3}] $\\ 
+\end{tabular}
+\end{center}
+where [$\sendpkt{i}{msg}{j}$] means that $i$ sends the message ($msg$) to $j$,
+[$\recvpkt{i}{msg}{j}$] means that $i$ receives the message ($msg$) from $j$,
+and $\ssame$ is the concatenation operator.
+% \wolf{TODO: not sure what this next sentence means}
+% With the single linearized instance among all possible executions,
+% constructing other nodes' behavior when the current status is given is possible.
+After each $[\sendpkt{P1}{\any, \any}{A}]$ event P1 queries its environment context ($\envcontext_{P1}$) to learn what the acceptors have done.
+In this case, $\envcontext_{P1}$ is defined as
+\begin{center}
+\begin{tabular}{c}
+$\envcontext_{P1} := \set{\cdots, ([\sendpkt{P1}{5, non}{A1}] \ssame [\sendpkt{P1}{5, non}{A2}]   \rightarrow [\recvpkt{A1}{5, non}{P1}]), \cdots}$\\
+\end{tabular}
+\end{center}
+This means that just before P1 sends its message to A3, it first
+queries $\envcontext_{P1}$ and passes it its local view of the network,
+$[\sendpkt{P1}{5, non}{A1}] \ssame [\sendpkt{P1}{5, non}{A2}]$. 
+Then the environment context returns $[\recvpkt{A1}{5, non}{P1}]$ and P1 appends this event to its log before continuing
+with sending $[\sendpkt{P1}{5, non}{A3}]$.
+The behavior of receive is defined similarly.
+Continuing in this manner, P1 builds up a trace of events that can be replayed to reconstruct its
+state at any point.
+
+\ignore{\wolf{Is this paragraph saying that we can define the environment context so the last event is always one that affects the current node's state?}}
+Similarly,
+it is possible to build the environment context for node $i$ ($\envcontext_i$)
+from arbitrary send and receive patterns.
+The network primitives will
+add multiple events to the network log, which will always end with an event generated by the node $i$.
+Send and receive primitives then consist of two
+adjacent transitions.
+The first one only updates node $i$'s view of the other nodes based on what the environment context returns
+in response to the current network state.
+The other is a local transition that adds a single packet associated with node $i$.
+
+The benefits of following this approach are as follows:
+\begin{itemize}
+ \item We hide the non-determinism of the network as soon as possible by introducing send and receive primitives that use the environment context.
+   Because the environment context is a collection of deterministic functions, it acts as an oracle that knows in advance what the network will do.
+   But, by parametrizing over all valid environments, the proofs are still not tied to any particular pattern of events.
+ \item The global network history snapshot is recorded in the network log. This implies that the local view from each node
+contains all the relevant information on the network, including packets that are not associated with the current node.
+\end{itemize}
+We present the formal rules for network primitives in Section~\ref{subsec:low-level-network-syntax-and-semantics}.
+
+\subsection{Link with Low-level Code Verification}
+\label{subsec:link-with-low-level-code-verification}
+
+Implementations of distributed systems are sometimes quite different in structure from their formal specifications.
+One cause of this is because they typically must handle many corner cases, such as network timeouts or ignoring invalid messages.
+They also often add optimizations that are not present in the specification.
+For these reasons, proving that the implementation refines the specification is desirable.
+To make the proofs manageable, we follow a strategy employed by many systems that consist of multiple abstraction layers
+(e.g., OS kernels, hypervisors, device drivers, network protocols).
+Each layer defines a state machine that implements a particular set of functionalities.
+The layer then provides an abstract interface that hides the implementation details.
+This way, client programs can be built on top of a state machine without concerning themselves with the actual implementation.
+Previous work~\cite{concurrency} has proposed a way of building abstraction layers with the
+capability to handle concurrent programs, and we extend this approach to work for distributed systems as well.
+
+\ignore{
+A concurrent certified abstraction layer (CCAL) is a predicate $L'[i] \vdash_R  M : L[i]$
+plus a mechanized proof object
+that indicates that the layer implementation $M$, built on top of the interface $L'[i]$, rigorously implements
+the layer $L[i]$ with the two layers related by $R$.}
+
+\ignore{
+\wolf{it seems like we are defining concurrent certified abstraction layers twice} }
+The definition of a concurrent certified abstraction layer over the node identifier $i$
+is a tuple with four elements, notated as $L[i] := (\layerdef, \envcontext_i, \relyrule, \guaranteerule)$.
+The first component $\layerdef$ contains a partial map from
+identifiers to transition specifications
+($\layerdef := \set{\primid \mapsto \primspec{\primid}}$ where $ \primspec{\primid}$ is
+the specification of the primitive $\primid$).
+The state of the layer can be interpreted as a pair
+of the private abstract state for the node $i$ ($lst_i$), and
+a log of events ($l$) that represents the network ($st_i := (lst_i, l)$).
+The local state consists of multiple machine-dependent concrete definitions such as register and memory values,
+as well as abstract objects that correspond to
+certain regions of memory through some relation.
+For specifications of primitives that only touch local state, the transition is straightforward.
+Specifications of primitives that contain network transition primitives, on the other hand,
+must use the environment context for the node $i$ ($\envcontext_i$)
+to model the behavior of other nodes (discussed in Sect.~\ref{subsec:network-primitives}).
+For example, the specification of a function that broadcasts a message from a proposer to a set of acceptors must query the environment context
+between each send to learn how the environment has changed.
+The other two components of the layer definition, $\relyrule$ and $\guaranteerule$,
+provide invariants about the network and the distributed system
+following the approach of previous work on rely/guarantee systems~\cite{RGSim, LRG}.
+The invariants in $\relyrule$ and $\guaranteerule$ are complementary to each other.
+Each layer must contain evidence that all of the local transitions satisfy the conditions in $\guaranteerule$.
+Conversely, we can restrict the behavior of other nodes by using assuming the conditions in $\relyrule$ hold.
+One example of a rely/guarantee rule in Paxos concerns the relation between the round number and value in a Phase 1b message.
+It is true that the value is $\bot$ if and only if the round number is $\bot$.
+To prove that this invariant always holds it is enough to show that
+for layer $L'[i]$, every transition of node $i$ will satisfy it.
+Having satisfied the guarantee, we can rely on the fact that the invariant will hold for all other nodes in the system.
+
+\begin{figure}
+\begin{center}
+\includegraphics[scale=0.47]{figs/multipaxos/network_reduction.pdf}
+\end{center}
+\caption{Network Reduction}
+\label{fig:network-reduction}
+\end{figure}
+
+CCAL also provides a way to build a layer on top of another using a program module $M$, which consists of code written in C or assembly.
+The predicate $L'[i] \vdash_R  M : L[i]$ indicates that the layer implementation $M$, built on top of the interface $L'[i]$, rigorously implements
+the layer $L[i]$ with the two layers related by $R$.
+CCAL can compile these C modules using the CompCertX certified compiler~\cite{deepspec, concurrency},
+which is a modified version of CompCert~\cite{compcert}.
+This, combined with the {\em contextual} correctness property,
+lets us define contextual refinement over abstraction layers with the ability to compile layers.
+A certified layer converts any {\em safe} client program $P$ running on top of $L'[i]$ into one that has the
+same behavior but runs on top of $L[i]$ by compiling the abstract
+primitives in $L[i]$ into their implementation in $M$.
+If we use ``$\sem{L[i]}{\cdot}$'' to denote the behavior of the layer machine based on
+$L[i]$, the correctness property of ``$\ltyp{L'[i]}{R}{M}{L[i]}$'' is written
+formally as ``$\forall{}P.\sem{L'[i]}{P\oplus{}M} \refines_R \sem{L[i]}{P}$''
+where $\oplus$ denotes a linking operator over programs $P$ and $M$ and 
+the relation ($\refines_R$) is formally defined as a forward
+simulation~\cite{Lynch95,leroy09,Milner71,Park81} with the (simulation) relation $R$.
+
+\ignore{CCAL compiles these modules with the CompCertX certified compiler~\cite{deepspec, concurrency},
+which is a modified version of CompCert~\cite{deepspec, compcert}.
+The {\em implements} relation ($\refines_R$) is formally defined as a forward
+simulation~\cite{Lynch95,leroy09,Milner71,Park81} with the (simulation) relation $R$.
+This guarantees that if $L'[i] \vdash_R  M : L[i]$ holds,
+the behaviors allowed by layer $L[i]$ simulate those allowed by $L'[i]$.
+\wolf{or is it the other way around?}}
+
+\ignore{Certified layers enforce a {\em contextual} correctness property as well.
+A certified layer converts any {\em safe} client program $P$ running on top of $L'[i]$ into one that has the
+same behavior but runs on top of $L[i]$ by compiling the abstract
+primitives in $L[i]$ into their implementation in $M$.
+If we use ``$\sem{L[i]}{\cdot}$'' to denote the behavior of the layer machine based on
+$L[i]$, the correctness property of ``$\ltyp{L'[i]}{R}{M}{L[i]}$'' is written
+formally as ``$\forall{}P.\sem{L'[i]}{P\oplus{}M} \refines_R \sem{L[i]}{P}$''
+where $\oplus$ denotes a linking operator over programs $P$ and $M$.}
+
+The implements relation also applies to the environment context and the network.
+Formally,
+$$\forall \varphi_l \in \envcontext'_i, \exists \varphi_h,  \varphi_h \in \envcontext_i \wedge R_{\envcontext', \envcontext}(\varphi_l , \varphi_h) \ \ \ \ \ \ (\mbox{where} \ L'[i] = (\_,  \envcontext'_i, \_, \_) \ \mbox{and} \
+L[i] = (\_,  \envcontext_i, \_, \_))$$
+This allows us to simplify our view of the possible network behaviors by showing that certain reductions refine the interleaved pattern.
+Figure~\ref{fig:network-reduction} shows two common types of network reduction.
+The events in boxes are generated by the current node, and the gaps represent places where the environment context will fill in other nodes' events.
+Example (a) shows the reductions that can be done for broadcasting sends.
+Since the same message is sent to every acceptor, the environment's behavior between the sends is not relevant to P1.
+Therefore, it is possible to define a network reduction rule that reorders those send messages and collects them together (Fig.~\ref{fig:network-reduction} (a) (2)).
+Then, because the sends always appear together and their order is not important, we can further refine them into a single broadcasting send message (Fig.~\ref{fig:network-reduction} (a) (3)).
+Another example of possible network reductions is for a busy-waiting receive pattern.
+In example (b), P1 is waiting for a response from A1.
+Since the first message comes from A3 instead, P1 will ignore it, and so it can safely be dropped from the log.
+Similarly, the third messages arrives after P1 has already received the message it was waiting for so it can also be removed.
+
+
+
+\subsection{Write-Witness-Passing}
+\label{subsec:witness-write}
+\newcommand{\witness}{\varpi}
+
+Concurrent certified abstraction layers provide a powerful framework for showing functional correctness.
+However, that alone is not sufficient in distributed system verification.
+To fully verify Paxos, for example, one must prove that certain safety properties hold, such as immutability and durability.
+These proofs are often considered to be the main obstacles in distributed system verification.
+For example, although Verdi~\cite{verdi} provides a framework
+that can automatically convert a program assuming a perfect network
+into one that can handle a fault-prone environment,
+a follow-up work~\cite{cppraft} claims that the safety proofs are still challenging.
+Ironfleet~\cite{ironfleet} proves the safety Multi-Paxos,
+but they leave some parts of network reduction to a pencil-and-paper proof
+(\textit{e.g.} the reduction between Fig.~\ref{fig:network-reduction} (a) (1) and (a) (2)).
+Other works~\cite{EPRdistributed, modular} provide automated approaches to reduce the amount of human effort needed,
+but it is unclear how well they can handle some distributed protocol services such as leader election in Raft.
+
+\begin{figure}
+\begin{center}
+\includegraphics[scale=.34]{figs/multipaxos/paxos_example_witness}
+\end{center}
+\caption{Paxos: Execution Example with Witness}
+\label{fig:paxos-example-with-witness}
+\end{figure}
+
+In order to simplify these types of proofs and create a methodology that will work for many systems,
+we focus on two factors that are common across most distributed systems.
+\begin{enumerate}
+\item Most distributed protocols involve some totally ordered, unique round identifier (\textit{i.e.} the round number in Paxos, the term number in Raft).
+These values monotonically increase as a node executes, and when a value is written, the corresponding round identifier is stored with it.
+\item To write a value, a proposer (client, leader, etc) needs to first get acknowledgment
+from a quorum of nodes that a certain value is safe to write.
+The definition of what constitutes a quorum varies between distributed protocols.
+\end{enumerate}
+
+Based on these observations, we propose write-witness-passing as a generic distributed system proof technique.
+The high level idea is to make the second point more explicit by gathering the acknowledgements from the quorum
+and attaching them to the messages that follow.
+This is purely a logical change; the implementation will not actually send any additional information, but only the specification
+will be enriched.
+We claim that this captures the essential aspects of many distributed systems, and makes it possible to reason about
+safety properties without having to consider every failure case.
+
+A formal definition of a write-witness is given in Sect.~\ref{subsec:distributed-transition-semantics-with-witness-passing},
+but intuitively, a write-witness is an extension of the pair ($rnd, val$) with additional logical information.
+Figure~\ref{fig:paxos-example-with-witness} shows a brief example of using witnesses.
+When acceptors store a value, they now store a witness along with it that demonstrates the validity of the value.
+For example, acceptor $A1$ contains the witness $\witness_2$ for value $v$ and $A3$ contains witness $\witness_3$ for value $v'$.
+Because $A2$ has not yet stored a value, it has the bottom witness $\witness_0$, which is formally defined later.
+
+In order for $P1$ to write a value in round 5, it must create a new witness $\witness_5$ by collecting the responses it received from $A1$ and $A2$.
+A witness consists of several components including
+the round number, the value to be written, the set of acceptors that participated in the quorum, the set of all acceptors,
+and the messages sent by the quorum.
+If the value to be written came from one of the acceptors in the quorum and was not chosen by the proposer, then the witness
+also contains the previous witness corresponding to the round in which that value was originally written.
+All of these can be seen in the definition of $\witness_5$ in Figure~\ref{fig:paxos-example-with-witness}.
+This information is nearly all that is needed to prove the safety of Paxos
+(we argue in Section~\ref{sec:witness-passing-semantics-with-paxos-variants} that it can be adapted to other systems as well),
+and building these witnesses is straightforward.
+
+The following is an informal description of Paxos enriched with witnesses, but it is quite similar
+to the previous description in Figure~\ref{fig:paxos-pseudocode}.
+\begin{enumerate}
+\item Phase 1 (Prepare).
+\begin{itemize}
+\item Proposer: This step is the same as before except that a witness is generated as acceptor responses are received.
+\item Acceptor: If an acceptor returns a previously stored value, it also sends the stored witness associated with it.
+\end{itemize}
+\item Phase 2 (Write).
+\begin{itemize}
+\item Proposer: The message now also contains the witness generated in Phase 1.
+\item Acceptor: When writing a new value, the acceptor also writes the associated witness.
+\end{itemize}
+\end{enumerate}
+It is clear that adding witnesses to a system is practically free because they are not actually used anywhere in the protocol.
+They are merely logically passed around and only used in reasoning about the algorithm.
+
+Witnesses also free one from having to consider all of the ways the environment can fail.
+For example, an important invariant in Paxos is that if an acceptor has a stored value, then a majority of acceptors
+claimed it was safe to write that value in an earlier round.
+To prove this without witnesses requires stepping back through the network history to demonstrate the existence of these message.
+This is a tedious process that involves accounting for all the possible network timeouts and dropped packets that could occur.
+With write-witness-passing on the other hand, the acceptor already has the witness with exactly these messages.
+By simply gathering relevant parts of the global state and storing them locally, write-witnesses are
+powerful enough to dramatically reduce the effort required in distributed system verification.

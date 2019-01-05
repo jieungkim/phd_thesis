@@ -1,0 +1,85 @@
+\vspace{-0.5em}
+
+\section{Common Property Proof}
+\label{sec:prove-safety-with-witness}
+
+Proving the safety property of generic specifications using witnesses is 
+similar to showing that invariants of the witness holds.
+%Besides the basic invariant including Theorem~\ref{thm:witness-invariant},
+%other assumptions about protocol specific functions can be defined and used to 
+%prove other crucial properties of distributed systems. 
+This section illustrates the proof of one of the common desirable properties
+of leader-based distributed system, linearizability.
+
+Linearizability guarantees that if a quorum of approvers accepts a request $c$, 
+all the subsequently issued requests reflects the result of $c$. 
+The proof of linearizability can take advantage of the witness. 
+\vspace{-0.1em}
+
+\begin{lemma}
+All issued requests have a unique identifier.
+\end{lemma}
+
+This lemma enables us to distinguish all requests. To achieve this goal the 
+update function $u$, which is an argument of $\opfunction$ should fulfill a 
+property that monotonically increases the version number to distinguish all
+requests:
+$$\forall \ (st \ st' : \dsvalue) : \ u \ st = st' \rightarrow st.\seqnum
+<_{\seqnum} st'.\seqnum$$,
+where $<_{\seqnum}$ is a comparison relation of two version numbers.
+
+Another requirement to build a linearizable leader-based distributed system 
+is to make sure that the elected leader is able to get the latest consistent
+state of the system. Such state is represented as the commit witness with the
+longest list of witness elements and this witness contains the entire history of
+all committed requests. 
+
+This proof is related to generic functions, $\ldrfunction$ and $\ldrhfunction$, 
+and the witness construction functions, $\conwcons$ and $\ldrwcons$.
+First, the $g$ function in $\ldrhfunction$ has to satisfy that  
+it always returns the up-to-date status to the requester.
+Second, the $g_{post}$ function has to choose the value mapped with the highest 
+version number among the valid acknowledgments. 
+Third, $\conwcons$ and $\ldrwcons$ functions should be called with the proper 
+write witness, which is the witness mapped with the highest version number 
+among all witnesses from the approvers. 
+With the given constraints, the following two lemmas can be proved.
+\vspace{-0.2em}
+
+\begin{lemma}[Election consistency]\label{lemma:election-consistency}
+The leader election does not miss any committed operation.
+\end{lemma}
+\vspace{-0.2em}
+
+\begin{lemma}[Leader witness] 
+The leader always contains the up-to-date commit witness that is represented as
+witness with the largest number of entries.
+\end{lemma}
+\vspace{-0.2em}
+
+\begin{proof}
+Proving the election consistency is providing that system-specific functions 
+satisfy the conditions that we illustrated. However, satisfying these
+conditions are common requirements for system-specific functions in
+\sysname{} and thus if we assume that the conditions already hold for all
+system-specific functions, the proofs for the lemmas are straightforward.
+\end{proof}
+\vspace{-0.2em}
+
+With these lemmas, proving the linearizability can be proved.
+
+\begin{theorem}[linearizability]\label{thm:linear-spec}
+The commit witness is linearizable.
+\end{theorem}
+\vspace{-0.2em}
+
+\begin{proof}
+Our witness contains all the linearizable history that is matched with the current local state, 
+and the witness in all consistent nodes are the same due to our witness passing mechanism. 
+Therefore, linearizability is captured by our witness.
+\end{proof}
+\vspace{-0.2em}
+
+Since the leader election collects the leader witness with the largest
+size using $\ldrwcons$, the linearizability of leader election, and thus uniqueness of the leader
+for each term can be proved in a similar way. 

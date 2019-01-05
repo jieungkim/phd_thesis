@@ -1,0 +1,363 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+{
+%\setlength{\floatsep}{-10pt}
+\begin{figure}\centering
+%\ifanonymized
+\includegraphics[scale=.32]{figs/mainthmA}
+%\else
+%\includegraphics[scale=.3]{figs/mainthm}
+%\fi
+\caption{Certified OS kernels: what to prove?}
+%\rule[0in]{\columnwidth}{.15mm}
+\label{fig:mainthm}
+\end{figure}
+}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%\sectskip
+
+\section{Overview of Our Approach}
+\label{sec:overview}
+%\asectskip
+
+\ignore{
+What is the high-level picture like?
+\begin{itemize}
+\item What to prove and why? What is the main theorem?
+  (We can state such a theorem in Coq! need a figure)
+\item Introducing abstract state and abstract primitives
+       (this is necessary to specify a kernel! explain challenges)
+\item Challenge: how to cut deep dependency? use layered refinement;
+      viewing kernel verification as building a "certified compiler",
+      that is, how to compile system calls w. spec into actual assembly code!
+\item cutting deep dependency needs layered decomposition
+         (Invariant decomposition: each layer has its own invariant)
+\item Challenge: C too low level? 
+       Mixing Clight/AsmX with abstract state/primitives, use CompCertX
+\item Challenge: C too high level? 
+       Define abstraction layer at the AsmX level?
+\item Proving contextual refinement between two layers
+       (Connecting all layers together to establish the new theorem)
+\end{itemize}
+}
+
+The ultimate goal of research on building certified OS kernels is
+not just to verify the functional correctness of a particular kernel,
+but rather to find the best OS design and development methodologies that can be used to build provably reliable, secure, and efficient
+computer systems in a cost-effective way. We enumerate a few important
+dimensions of concerns and evaluation metrics which we have used so
+far to guide our work toward this goal:
+%%%%%%%%%
+\begin{itemize}[leftmargin=*,itemsep=0pt] 
+\item {\bf Support for new kernel design.}  Traditional OS kernels use
+  the hardware-enforced ``red line'' to define a single system call
+  API. A certified OS kernel opens up the design space significantly as
+  it can support multiple certified kernel APIs at different
+  abstraction levels. It is important to support kernel
+  extensions~\cite{bershad95,engler95,unikernel13} and novel ring-0
+  or guest-domain processes~\cite{hunt07,dune12} so we can experiment
+  and find the best trade-offs.
+%%%%%%%%%  
+\item {\bf Kernel performance.} Verification should not
+  impose significant overhead on kernel performance. Of course,
+  different kernel designs may imply different performance
+  priorities.  An L4-like microkernel~\cite{liedtke95} focuses on
+  fast inter-process communication (IPC), while a
+  Singularity-like kernel~\cite{hunt07} emphasizes efficient
+  support for type-safe ring-0 processes.
+%%%%%%%%%
+\item {\bf Verification of global properties.}
+  A certified kernel is much less interesting if it cannot be
+  used to prove global properties of the complete system built on top
+  of the kernel.  Such global
+  properties include not only safety, liveness, and security properties
+  of user-level processes and virtual machines, but also resource usage
+  and availability properties (\eg, to counter denial-of-service attacks).
+%%%%%%%%%  
+\item {\bf Quality of kernel specification.}  A good kernel
+  specification should capture precisely the {\em contextually observable}
+  behaviors of the implementation~\cite{dscal15}. It must
+  support transferring global properties proved at a high abstraction
+  level down to any lower abstraction level~\cite{costanzo16}.
+%%%%%%%%%
+\item {\bf Cost of development and maintenance.} Compositionality
+  is the key to minimize such cost. If the machine model is stable,
+  verification of each kernel module should only need
+  to be done once (to show that it {\em implements} its deep
+  functional specification~\cite{dscal15}). Global properties (e.g., 
+  information flow security) should
+  be derived from the kernel deep specification alone~\cite{costanzo16}. 
+%%%%%%%%%  
+\item {\bf Quality of formal proofs.} We use the term {\em certified
+  kernels} rather than {\em verified kernels} to emphasize the
+  importance of third-party machine-checkable proof
+  certificates~\cite{shao10}. Hand-written paper proofs are
+  error-prone~\cite{findler12}. Program verification without explicit
+  machine-checkable proof objects has been subject to
+  significant controversy~\cite{demillo77}.
+\end{itemize}
+%%%%%%%%%
+
+\vspace*{-10pt}
+\paragraph{Overview of \CTOS}
+Our new \CTOS\ architecture aims to address all these concerns and
+also tackle the challenges described in Section~\ref{sec:intro}.  The
+\CTOS\ architecture leverages the new certified programming
+methodologies developed by \citet{dscal15,ccal16} and applies them to
+support building certified concurrent OS kernels.
+
+A {\em certified abstraction layer} consists of a language construct
+$\layer{L_1}{M}{L_2}$ and a mechanized proof object showing that the
+layer implementation $M$, built on top of the interface $L_1$ (the
+{\em underlay}), is a {\em contextual refinement} of the desirable
+interface $L_2$ above (the {\em overlay}). A {\em deep} specification
+($L_2$) of a module ($M$) captures everything {\em contextually
+  observable} about running the module over its underlay ($L_1$). Once
+we have certified $M$ with a deep specification $L_2$, there is no
+need to ever look at $M$ again, and any property about $M$ can be
+proved using $L_2$ alone.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{figure}\centering
+\includegraphics[scale=0.7]{figs/refine_layer}
+\caption{Contextual refinement between concurrent layers}
+\label{fig:spec:refine_layer}
+\vspace*{-10pt}
+\end{figure}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+{
+%\setlength{\floatsep}{-10pt}
+%\setlength{\abovecaptionskip}{-2pt}
+%\setlength{\belowcaptionskip}{-10pt}
+\begin{figure*}\centering
+\includegraphics[scale=.75]{figs/sysarch}
+\caption{System architecture for the \mCTOS\ kernel}
+%\rule[0in]{\columnwidth}{.15mm}
+\label{fig:sysarch}
+\vspace*{-10pt}
+\end{figure*}
+}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+In Figure~\ref{fig:mainthm}, we use x86mc to denote an assembly-level
+multicore machine.  Suppose we load such a machine with the
+\mCTOS\ kernel $K$ (in assembly) and user-level assembly code $P$, and
+we use {$\sem{\rm{}x86mc}{\cdot}$} to denote the whole-machine
+semantics for x86mc, then proving any global property of such a
+complete system amounts to reasoning about the semantic object
+{$\sem{\rm{}x86mc}{K\join{}P}$}, i.e., the set of observable behaviors
+from running $K\join{}P$ on x86mc.
+
+Reasoning at such a low level is difficult, so we formalize a new
+\mCTOS\ machine that extends the x86mc machine with the (deep) high-level
+specification of all system calls implemented by $K$.
+We use $\sem{\rm\mCTOS}{\cdot}$ to denote its
+whole-machine semantics.  The contextual refinement property about the
+\mCTOS\ kernel can be stated as:
+%%%%
+ \[
+\forall{}P,\;\sem{\rm{}x86mc}{K\join{}P}\Refrel{}\sem{\rm\mCTOS}{P}
+\]%
+%%%%
+\noindent
+Hence any global property proved about
+$\sem{\rm\mCTOS}{P}$ can be transferred to
+$\sem{\rm{}x86mc}{K\join{}P}$.
+
+To support concurrency, for each layer interface $L$,
+we parameterize it with an {\em active} thread set $A$ 
+and then carefully define its set of valid {\em environment contexts},
+denoted as $\ectxt{L,A}$. Each environment context $\oracle$ captures
+a specific
+instance---from a particular run---of the list of events that other
+threads or CPUs (i.e., those not in $A$) return when responding
+to the events generated by those in $A$.  We can then define a
+new {\em thread-modular} machine $\mach{L(A)}(P,\oracle)$ that will
+operate like the usual assembly machine when $P$ switches control to
+those threads in $A$, but will only obtain the list of events from the
+environment context $\oracle$ when $P$ switches control to those outside
+$A$. The semantics for a concurrent layer machine $L$ is then:
+%%%%
+\[
+\sem{L(A)}{P} = \{ ~ \mach{L(A)}(P,\oracle) ~ \mid ~ \oracle \in \ectxt{L,A} ~ \}
+\]%
+%%%%
+\noindent{}To support parallel layer composition, 
+we carefully design $\ectxt{L,A}$ so that the following
+property holds:
+%%%%
+\[
+\sem{L(A\cup{}B)}{P} ~ = ~ \sem{L(A)}{P} ~ \cap ~ \sem{L(B)}{P} ~~ {\it if} ~ A\cap{}B=\emptyset
+\]%
+%%%%
+\noindent{}The formal details for $\ectxt{L,A}$ and 
+$\sem{L(A)}{\cdot}$ are presented in a separate paper~\cite{ccal16}.
+Note that if $A$ is a singleton, for each $\oracle$,
+$\mach{L(A)}$  behaves like a sequential machine.
+
+With our new compositional layer semantics, we can take a multicore
+machine like x86mc and zoom into a specific active CPU $i$ by creating
+a {\em logical} ``single-core'' machine layer for CPU $i$, and then
+apply techniques from \citet{dscal15} to build a collection of
+certified ``sequential'' (per-CPU) layers (see
+Figure~\ref{fig:spec:refine_layer}).
+%%%%
+When we want to introduce kernel- or
+user-level threads, we can further zoom into a particular thread
+(\eg, $i0$) and create a corresponding logical machine
+layer.
+%%%%%
+We can impose
+specific invariants over the environment contexts (i.e., the ``rely''
+conditions) and use them to ensure that per-CPU or per-thread
+reasoning can be soundly composed (when their ``rely'' conditions are
+compatible with each other).
+%%%%%
+After we have added all the kernel components and
+implemented all the system calls, we can combine these per-thread
+machines into a single concurrent machine.
+
+Under \CTOS, building a new certified concurrent kernel (or
+experimenting with a new design) is just a matter of composing a
+collection of certified concurrent layers, developed in a variant of C
+(called ClightX) or assembly.  \citet{dscal15} have
+developed a certified compiler (CompCertX) that can compile certified
+ClightX layers into certified assembly layers. Since all
+concurrent primitives in \CTOS\ are treated as CompCert-style
+external calls or built-ins,
+they cannot be reordered or optimized away by the compiler. Memory
+accesses over these external calls cannot be reordered either.
+Therefore, each concurrent ClightX module (running over a particular
+per-thread or per-CPU layer) is compiled by CompCertX as if it were a
+sequential program performing many external-call events. The
+correctness of CompCertX guarantees that the generated x86 assembly
+behaves the same as the source ClightX module.  CompCertX can
+therefore serve as a {\em thread-safe} version of CompCert.
+
+\CTOS\ can thus enjoy the full programming power of both an ANSI C
+variant and an assembly language to certify any efficient routines
+required by low-level kernel programming.  The layer mechanism allows
+us to certify most kernel components at higher abstraction levels,
+even though they all eventually get mapped (or compiled) down to an
+assembly machine.
+
+\vspace*{-10pt}
+\paragraph{Overview of the \mCTOS\ kernel}
+Figure~\ref{fig:sysarch} shows the system architecture of \mCTOS.  The
+\mCTOS\ system was initially developed in the context of a large
+DARPA-funded research project.  It is a concurrent OS kernel that can
+also double as a hypervisor.  It runs on an Unmanned Ground Vehicle
+(UGV) with a multicore Intel Core i7 machine.  On top of
+\mCTOS, we run three Ubuntu Linux systems as guests (one each
+on the first three cores). Each virtual machine runs several RADL (The
+Robot Architecture Definition Language~\cite{radl15}) nodes that have
+fixed hardware capabilities such as access to GPS, radar, \etc\  
+The kernel also contains a few simple device drivers (\eg, interrupt
+controllers, serial and keyboard devices). More complex devices are
+either supported at the user level, or passed through (via IOMMU) to
+various guest Linux VMs. By running different RADL nodes in different
+VMs, \mCTOS\ provides strong isolation support so that even if
+attackers take control of one VM, they still cannot break into other
+VMs to compromise the overall mission of the UGV.
+
+Within \mCTOS, we have various shared objects such as spinlock modules
+(Ticket, MCS), sleep queues (SleepQ) for implementing queueing locks
+and condition variables, pending queues (PendQ) for waking up a
+thread on another CPU, container-based physical and virtual memory
+management modules (Container, PMM, VMM), a Lib Mem module for
+implementing shared-memory IPC, synchronization modules (FIFOBBQ,
+CV), and an IPC module. Within each core (the purple box), we have
+the per-CPU scheduler, the kernel-thread management module, the process
+management module, and the virtualization module (VM Monitor). Each
+kernel thread has its own thread-control block (TCB), context, and stack.
+
+\vspace*{-10pt}
+\paragraph{What have we proved?}
+Using \CTOS, we have successfully built a fully certified version of
+the \mCTOS\ kernel and proved its contextual refinement property with
+respect to a high-level deep specification for \mCTOS.  This important
+functional correctness property implies that all system calls and
+traps will strictly follow the high-level specification and always run
+{\em safely} and {\em terminate} eventually; and there will be no data
+race, no code injection attacks, no buffer overflows, no null pointer
+access, no integer overflow, \etc
+
+More importantly, because for any program $P$, we have 
+$\sem{\rm{}x86mc}{K\join{}P}$ refines
+$\sem{\rm\mCTOS}{P}$, we can also derive the
+important {\em behavior equivalence} property for $P$, that is,
+whatever behavior a user can deduce about $P$ based on the high-level
+specification for the \mCTOS\ kernel $K$, the actual linked system
+$K\join{}P$ running on the concrete x86mc machine would indeed behave
+exactly the same.  All global properties proved at the system-call
+specification level can be transferred down to the lowest assembly
+machine.
+
+\vspace*{-10pt}
+\paragraph{Assumptions and limitations}
+The \mCTOS\ kernel is obviously not as comprehensive as real-world
+kernels such as Linux.  The main goal of this paper is to show that it
+is feasible to build certified concurrent kernels with fine-grained
+locking.  We did not try to incorporate all the latest advances for
+multicore kernels into \mCTOS.
+
+Our assembly machine assumes strong sequential consistency for all
+atomic instructions. We believe our proof should remain valid for
+the x86 TSO model because (1) all our concurrent layers guarantee that
+non-atomic memory accesses are properly synchronized; and (2) the TSO
+order guarantees that all atomic synchronization operations are
+properly ordered. Nevertheless,
+more formalization work is needed to turn our proofs over
+sequential-consistent machines into those over the TSO
+machines~\cite{vontessin13}.
+
+Since our machine does not model TLB, any code for addressing TLB
+shootdown cannot be verified.
+
+The \mCTOS\ kernel currently lacks a certified storage system.
+%and a certified network stack.
+%The Linux community~\cite{lkmap} sorted these
+%into different stacks of abstraction layers (based on their underlying
+%hardware devices).\vilhelm{it's not clear to me what point this sentence makes.}
+We plan to incorporate recent advances in building
+certified file systems~\cite{fscq15,cogent16} into \mCTOS\ in the near future.
+
+Our assembly machine only covers a small part of the full x86
+instruction set, so our contextual correctness results only apply to
+programs in this subset. Additional instructions 
+can be easily added if they have simple or no interaction with our
+kernel.  \citet[Sec. 6]{costanzo16} shows how the fidelity of the
+CompCert-style x86 machine model would impact the formal correctness
+or security claims, and how such gap can be closed.
+
+The CompCertX assembler for converting assembly into machine code is
+unverified. We assume correctness of the Coq proof checker
+and its code extraction mechanism.
+
+The \mCTOS\ kernel also relies on a bootloader, a {\it PreInit}
+module (which initializes the CPUs and the devices), and an ELF
+loader. Their verification is left for future work. 
+
+\ignore{
+The bottom-most x86 layer of our certified kernels is called 
+\code{PreInit}, which initializes the drivers, \eg, serial, disk,
+console, {\it etc}. Device drivers are not verified because our
+current machine semantics lacks device models for expressing the
+corresponding semantics.
+
+Like most existing verified kernel efforts, we assume that interrupts
+are only enabled in user or guest mode.  The challenges in handling
+interrupts and preemption are similar to those for
+concurrency~\cite{feng09:jar,feng08:vstte}. We believe that similar
+approaches can be readily supported in our \CTOS\ framework.
+\vilhelm{But then in section 4.3 ``Device drivers'', we say that
+we have ported Chen et al's work to allow interrupts inside the kernel; 
+which is it?}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+

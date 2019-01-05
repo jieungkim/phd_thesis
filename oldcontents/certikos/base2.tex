@@ -1,0 +1,434 @@
+%\sectskip
+\section{Certifying the \mCTOSbase\ Kernel (SOSP version)}
+\label{sec:base}
+%\asectskip
+
+\ignore{
+\zhong{
+A detailed description is given in the Appendix in the TR. 
+\begin{itemize}     
+\item machine model and preinit and drivers
+\item memory management: memory allocator; page table; initialization
+\item thread and process management: thread queue and IPC
+\item trap handlers: page fault handler 
+\item user-level programs
+\end{itemize}
+}
+
+}
+
+\begin{comment}
+\begin{figure*}
+\begin{center}
+\begin{scriptsize}
+\begin{tabular}{ |l|l||l|p{4.5cm}| }
+  \hline
+  \multicolumn{2}{|c||}{\textbf{Memory Management}} 
+  & \multicolumn{2}{|c|}{\textbf{Thread and Process Management}} \\
+  \hline
+  \hline    
+  \multicolumn{2}{|l||}{\textbf{abstract state}} 
+  & \multicolumn{2}{|l|}{\textbf{abstract state}}\\
+  \hline
+  \verb"AT" & physical page allocation table
+  & \verb"kctxp" & kernel context (\verb"kctx") pool\\
+  \hline 
+  \verb"PFInfo" & save the address and \verb"PC" that page fault occurs
+  & \verb"Ltdqp" & low abstract thread queue pool\\
+  \hline
+  \verb"ptp" & page table (\verb"pt") pool 
+  
+  & \verb"Htdqp"& high abstract thread queue (\verb"Htdq") pool\\ 
+  \hline
+   \verb"ipt"& whether \verb"pt"'s invariant  should hold or not
+  
+  & \verb"uctxp" & user context pool\\
+  \hline
+\verb"PT" & index of the current \verb"pt"
+  & \verb"chanp" & channel pool\\
+  \hline
+  \verb"pbit" & bit map for free \verb"pt" indexes
+  & \verb"Htcbp"& high abstract TCB pool \\
+  \hline
+  \multicolumn{2}{|l||}{\textbf{primitive}} 
+  & \multicolumn{2}{|l|}{\textbf{primitive}}\\
+  \hline	
+  \verb"setcr3" & set the starting address of the \verb"pt"
+  & \verb"kctx_new" & allocate the first free \verb"pt" and \verb"kctx"\\
+  \hline
+  \verb"meminit" & initialize the allocation table
+  & \verb"Henqueue" & append a thread to the \verb"Htdq"\\
+  \hline
+  \verb"palloc" & allocate a page 
+  & \verb"thread_kill" & kill and free a thread\\
+  \hline
+  \verb"pt_insrt" & insert a page map into a given \verb"pt" 
+  & \verb"thread_sleep" & sleep, schedule to the 1st ready thread\\
+  \hline
+  \verb"pt_resv" & allocate a page for a given linear addr 
+  & \verb"kctx_switch" & switch \verb"kctx" between threads\\
+  \hline 
+  \verb"PTInit" & init kernel's \verb"pt" and enable paging 
+  & \multirow{2}{*}{\texttt{resv\_chan}} & 
+  receive msg from the channel, wake\\
+  \cline{1-2}
+  \verb"pt_new" & allocate the first free \verb"pt" & & up the first sleeping thread
+    \\	  
+  \hline
+  \hline
+  \multicolumn{2}{|c||}{\textbf{Virtualization}}
+  &\multicolumn{2}{|c|}{\textbf{Trap Handler}} \\
+  \hline
+  \hline    
+  \multicolumn{2}{|l||}{\textbf{abstract state}} 
+  & \multicolumn{2}{|l|}{\textbf{primitive}} \\
+  \hline
+  \verb"npt" & nested page table for guest
+  & \verb"trap_arg" & get arguments of system calls\\
+  \hline
+  \verb"hctx"& host context
+  & \verb"hpagefault" & page fault handler\\ 
+  \hline
+  \verb"vmcb" & virtual machine (\verb"VM") control control block
+  & \verb"sys_yield" & system calls for yielding\\
+  \hline
+  \verb"xvmst" & registers not saved in \verb"vmcb" 
+  & \verb"sys_wait_chan" & system calls to sleep on a channel\\
+  \hline
+  \multicolumn{2}{|l||}{\textbf{primitive}} 
+  & \verb"sys_run_vm" & system calls to run \verb"VM"\\
+  \hline	
+  \verb"npt_insrt" & insert into the nested page table
+  & \verb"sys_proc_create" & system calls to create a process\\
+  \hline
+  \verb"switch2guest" &  switch to guest mode 
+  & \verb"sys_getexitinfo" 
+  & get the information about \verb"VM" exit\\
+  \hline
+  \verb"set_vmcb" & set value in virtual machine control block
+  & \verb"sys_injectevent" & inject interrupt and exception to \verb"VM"\\
+  \hline 
+  \verb"run_vm" & save host context, restore \verb"vmcb", start \verb"VM" 
+  & \verb"kernel_init" & initialization function of the kernel\\  
+  \hline  
+
+\end{tabular}
+\end{scriptsize}
+\caption{Key abstract states and primitives for \mCTOSbase{} and \mCTOShyper{}}
+\label{table:layers}
+\end{center}
+%\vspace*{-14pt}
+\end{figure*}
+\end{comment}
+
+\begin{comment}
+\begin{figure}
+\includegraphics[scale=0.38]{figs/memory_management_layer}	
+\caption{Layers of PreInit and memory management}
+\label{fig:base:mm:layers}
+\vspace*{-14pt}
+\end{figure}
+
+\begin{figure}
+\includegraphics[scale=0.37]{figs/process_management_layer}	
+\caption{Layers of process management}
+\label{fig:base:pm:layers}
+\vspace*{-14pt}
+\end{figure}
+
+\begin{figure}
+\includegraphics[scale=0.37]{figs/trap_management_layer}	
+\caption{Layers of trap management}
+\label{fig:base:tm:layers}
+\vspace*{-14pt}
+\end{figure}
+\end{comment}
+
+\begin{figure}
+\includegraphics[scale=0.34]{figs/mctos_layer}	
+\caption{Layers of \mCTOSbase{}}
+\label{fig:base:ctos:layers}
+\vspace*{-14pt}
+\end{figure}
+
+In this section, we describe the main parts of the certification
+of \mCTOS{}.
+% ; more detailed descriptions can be found in the extended TR.
+%
+The \mCTOSbase{} kernel is divided into four main components (see
+Fig.~\ref{fig:base:ctos:layers}) which consist of multiple layers: the
+pre-initialization module (1 layer), the memory management (14
+layers), the process management (14 layers), and the trap handler (4
+layers).  The pre-initialization module contains the bottom layer that
+corresponds to the physical machine, and the trap handler contains the top
+layer that provides system calls and serves as a specification of the whole
+kernel. Our main theorem states that context code that is
+understood in terms of the topmost abstraction layer has an equivalent
+behavior when run along with the kernel on the bottom-most layer.
+
+The overall structure of the layered certification is shown in
+Fig.~\ref{fig:base:ctos:layers}.  Each row in the diagram describes a
+layer. It consists of the name of the layer (on the very left)
+followed by the initialization primitive (green background), and the
+memory model used by the layer (blue background).  The rest of the row
+describes layer objects, each in their own bordered rectangle.  Normal
+white-filled objects are used to implement new layers, while those
+filled with gray are hidden from higher layers.  Some objects span
+across multiple rows and are colored purple, meaning that they are
+horizontally composed to implement higher layers. The objects with
+different subscripts indicate different abstract view over the same
+data.
+
+
+\paragraph{Pre-initialization module}
+\label{sec:base:preinit}
+
+The pre-initialization module only contains the bottom-most layer
+\emph{PreInit}. It is used to model the x86 hardware and axiomatizes the
+hardware behaviors that are necessary to obtain end-to-end behaviors
+across the kernel and the user space. These behaviors include page
+table walk upon memory load when paging is turned on, saving and
+restoring part of the trap frame in the case of interrupts, and switching
+the stack in the case of ring switch.
+
+The \code{x86} object is the only layer object in the PreInit layer.
+It extends the CompCert assembly semantics
+to model the low-level features of the machine.
+Its abstract state consists of control registers,
+a physical memory map \code{MM},
+and a kernel mode flag \code{ikern}.
+Its primitives consist of
+getter-setter functions for control registers and \code{MM},
+and a function models the transition between user and kernel mode.
+
+The state component \code{MM} is the abstraction of the
+E820 memory map provided by the bootloader.
+The control registers \code{CR0}, \code{CR2}, and \code{CR3},
+are used to model the behavior
+of the processor's memory management unit (MMU).
+\ignore{
+\code{CR0} selects the memory protection mode,
+\code{CR2} stores the Page Fault Linear Address (PFLA)
+as well as the address of the instruction that caused the page fault, and
+\code{CR3} stores the starting point of the page map.
+}
+When paging is enabled (as indicated by \code{CR0}),
+memory accesses made by both the kernel and the user programs
+are translated using the page map pointed to by \code{CR3} in the
+\emph{machine memory model}.
+When a page fault occurs,
+the corresponding information is stored in \code{CR2}
+and the page fault handler is invoked.
+The logical flag \code{ikern} indicates
+whether the processor is currently in kernel or user mode.
+Some privileged
+memory regions (e.g., allocation table) and 
+instructions (e.g., modifying control registers)
+are only available in kernel mode.
+\ignore{
+The switch function models the change of the \code{ikern} flag
+and the remaining tasks involved with trap handling,
+such as saving and restoring user and kernel contexts,
+and dispatch over the trap type,
+are verified at the assembly level.
+}
+
+\ignore{
+{\color{red}Jan: Do we need the following paragraph?}
+The initialization primitive at this bottom-most layer is the bootloader,
+which initializes \code{MM} and necessary drivers
+(tsc, disk, console, timer, keyboard, serial, {\it etc.}),
+loads the kernel into the memory,
+and sets the initialization flag to be \code{true}.
+}
+
+\paragraph{Memory management}
+\label{sec:base:memm}
+
+The memory management of \mCTOSbase{} consists of  the
+physical memory management (4 layers), virtual memory management (7 layers) and
+shared memory management (3 layers).
+
+\ignore{
+\begin{figure}
+\includegraphics[scale=0.35]{figs/dynamic}	
+\caption{The state transition of page object}
+\label{fig:base:dynamic}
+\vspace*{-14pt}
+\end{figure}
+}
+
+Based on the pre-initialization layer and the \emph{machine memory model},
+the physical memory management abstracts the physical page allocation table
+into \code{page} objects.
+To better reason about access control and isolation in the case of
+the dynamic resource allocation, each physical page
+object maintains a \emph{logical} state containing ownership information,
+and the page is only allowed to be accessed by its owners.
+
+\ignore{
+The logical permission further restricts the kind of
+operations that are allowed to be performed on the page directly through the
+memory reads and writes.  The permissions includes {\it none}
+(no permission) and  {\it writable} (read-write).
+\newman{decide whether we want to bring the related figure above back.
+And if we do, how are we gonna modify the figure to better match our text.}
+}
+
+On top of physical memory management,
+the virtual memory management provides consecutive virtual address spaces.
+We proved not only that the primitives of virtual memory management
+manipulate the address space correctly,
+but also that the initialization procedure sets up the two-level page maps properly
+in terms of hardware address translation.
+The Inv.~\ref{inv:virtual} we have proved guarantees that it is safe to
+run both the kernel and user programs in the virtual 
+address space when paging is enabled.
+
+The shared memory management provides a protocol to share physical
+pages among different user processes. 
+It provides an infrastructure to map a physical page into multiple
+processes' page maps in different address spaces.
+Our ownership mechanism ensures that the page can only be freed once 
+all processes release ownership.
+
+\ignore{
+Its verification makes use
+of the ownership relation. 
+For example, a user process $k_1$ can share its private physical page $i$
+to another user process $k_2$ through the shared memory protocol,
+and the owner set of page object $i$ will become
+$\{\text{process object }k_1, \text{process object }k_2\}$.
+}
+
+\paragraph{Enforcing memory quotas}
+
+Another function of the physical memory management is to dynamically
+track and bound the memory usage (in terms of number of dynamically-allocated
+pages) of processes based on their id.
+
+In \mCTOSbase{}, we consider every unique
+integer (up to some predefined maximum, currently $2^{18}$) to represent
+a different agent or principal. We refer to this integer as the agent's
+id, and we use it for all layer objects owned by that agent. % For example,
+% whenever \mCTOSbase{} receives a request to spawn a process, it picks some 
+% currently unused id $i$ and creates a new container, page map, and thread 
+% control block, all of which are bound to the same id $i$. Thus
+% The id serves
+% as a simple and global way to relate various kernel objects to a single agent.
+
+
+The MContainer layer introduces a notion of container, inspired by container 
+objects in the HiStar operating system~\cite{zeldovich06}. 
+Whenever a new agent (id) is created in \mCTOSbase{}, a container is created for the agent 
+that dynamically keeps track of its memory usage. 
+An agent's usage may increase for a few reasons, including a direct request for 
+dynamically-allocated resources, or a successfully-handled page fault. Each container 
+object is initialized with some maximum \emph{quota}; any attempt for an agent to increase 
+its usage beyond this quota will be denied by the kernel. Furthermore, the kernel maintains a mapping of ids to containers using
+a hierarchical tree structure. Whenever an agent's process makes a request to spawn a
+new process, the new container is added as a child to the requesting agent's container,
+and the new container's quota is taken from the requester's.
+
+With this notion of container, we are able to prove a theorem about reliability of 
+dynamic memory allocation: agents' requests for additional resources will always be 
+fulfilled as long as their quota is not exceeded.
+Furthermore, from the viewpoint of information-flow security, resource quotas close the 
+potential for two different processes to communicate via allocation requests.
+Hence quota enforcement provides an additional level of security for \mCTOSbase{}.
+%
+We plan to extend the concept of containers to other types of
+resources in the future. For example, we could maintain a time-slice quota
+for each agent.  This would provide a foundation for reasoning about
+liveness properties for processes and security breaches via timing
+channels.
+
+
+
+\paragraph{Process management}
+\label{sec:base:procm}
+
+Process management depends on virtual address spaces
+and introduces the \code{thread} and \code{proc} objects 
+as the abstractions of threads and processes, respectively.
+One interesting aspect of the process management component is the 
+context switch function. 
+This assembly function saves the register set
+of the current thread and restores the register set from 
+the kernel context of another thread.
+Since the instruction pointer register (\code{EIP}) and stack pointer register (\code{ESP}) 
+are saved and restored in this procedure,
+we can show that this function reflects the C-level behavior
+and restores the continuation of a thread's execution.
+Even though this kernel context switch function is verified at 
+assembly level,
+we prove that it will not violate the convention of ClightX execution.
+This enables us to link it with other code that is verified at C-level
+and compiled by CompCertX. 
+
+In the process management component, we have also implemented and verified a single-copy
+synchronous inter-process communication (IPC) protocol.
+Additionally, we have verified an
+asynchronous zero-copy IPC implementation that is built on top of our
+shared memory infrastructure.
+
+\paragraph{Trap module}
+\label{sec:base:trapm}
+
+\ignore{
+\begin{figure}
+\begin{center}
+\includegraphics[scale=0.33]{figs/pagefault2}	
+\caption{Call graph of page fault handler}
+\label{fig:base:pagefault}
+\end{center}
+\vspace*{-14pt}
+\end{figure}
+}
+
+The trap module specifies the behaviors of exception handlers and
+\mCTOSbase{} system calls.
+In \mCTOSbase{}, exception handlers are registered in a table of first-class code pointers.
+When an exception triggers (via interrupt), the kernel consults this table
+and invokes the corresponding exception handler.
+For example, a page fault at the user level traps into the kernel.
+The page fault handler then reserves a page for PFLA (if necessary)
+and returns to the user level.
+The verification of the page fault handler depends on layer objects introduced
+at different abstraction levels. % (see Fig.~\ref{fig:base:pagefault}).
+Therefore, the behavior of the page fault handler is interpreted by
+the concrete first-class code pointer until all the dependent layer
+objects are introduced.  Then the handler code is verified and
+the behavior is interpreted using its abstract atomic specification.
+
+To further simplify the reasoning about user code, we have implemented and
+verified the user level system call libraries directly in the user space.
+Since our machine semantics models hardware behaviors
+like paging and ring switch, the specifications of user system call
+libraries closely corresponds to the real execution model in the actual
+hardware. With this atomic system call semantics in the user level,
+the user code can be proved much more easily.
+
+\ignore{
+The top layer of \mCTOSbase{} offers a set of system calls for user programs, 
+such as IPC calls and calls to trigger the scheduler.
+The specifications of system calls are defined and verified at the user level
+by wrapping the system call handler's specification
+with the ring switch specification.
+We can reason about user-level programs directly with these atomic system calls' specifications.
+}
+
+\ignore{
+\newman{Already in Section 2}
+\subsection{Other properties}
+Except for the above features, we also prove the following properties of \mCTOSbase{}:
+\begin{itemize}
+\item Since the contextual refinement is termination sensitive, we prove the total
+correctness of our kernel, meaning that our kernel will not get stuck
+and all system calls for user program will terminate.
+\item There is no integer overflow inside the kernel.
+\item There is not stack overflow inside the kernel. (Statically checked by the analysis tool,
+refer to Quentin's work)
+\item All the pointers stored in the kernel objects are valid.
+\end{itemize}
+}

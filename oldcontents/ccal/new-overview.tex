@@ -1,0 +1,451 @@
+\section{Overview}
+\label{sec:informal}
+The key challenge of verifying concurrent systems is how to untangle 
+the complexities of module dependencies and interleaving, 
+and then verify different parts independently and locally at the layers they belong to. 
+To address this issue, 
+
+we need a way
+to specify the semantics of a program module (including all its
+concurrent interactions), deal with it in isolation, and finally
+combine the individual proof of modules to
+conclude the correctness of the whole program. 
+ Our approach is based on
+\emph{logs}.
+
+%%%%%%%%%%%
+\begin{figure}
+\lstinputlisting [language = C, multicols=2] {source_code/ccal/ticket_lock_example.c}
+\caption{Certified concurrent layers involving ticket locks.}
+\label{fig:exp:ticket_lock_example}
+\end{figure}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+In this section, to illustrate our layered techniques, we will walk through a small  example
+(see Fig.~\ref{fig:exp:ticket_lock_example}) that uses a lock to protect a
+critical section. In this example, the client program $P$ has two threads running on
+two different CPUs; each thread makes one call to the primitive
+$\commc{foo}$ provided by the concurrent  layer interface $L_2$. 
+The interface
+$L_2$ is implemented by the concurrent  module $M_2$, which in
+turn is built on top of the interface $L_1$. The method $\commc{foo}$
+calls two primitives $\commc{f}$ and $\commc{g}$ in a critical section
+protected by a lock.  The lock is implemented over the
+interface $L_0$ using the ticket lock
+algorithm~\cite{mcs91} in module $M_1$.  The lock maintains two 
+integer variables $\commc{n}$ (the ``now serving'' ticket number) and $\commc{t}$ (i.e\, next ticket number). The lock acquire method $\commc{acq}$ fetches-and-increments the next ticket number (by $\commc{FAI\_t}$) 
+and spins until the fetched  number is served.
+The lock release method $\commc{rel}$ simply increments the ``now serving'' ticket number by $\commc{inc\_n}$. These primitives are provided by $L_0$ and  implemented using x86 atomic instructions. $L_0$ also provides the primitives $\commc{f}$ and $\commc{g}$ that are later passed on to $L_1$,
+as well as a no-op primitive $\commc{hold}$ called by $\commc{acq}$ to
+announce that the lock has been taken.
+
+
+\para{Certified Abstraction Layers.} 
+\citet{dscal15} defines
+a certified sequential abstraction layer 
+as a predicate 
+``$\ltyp{L'}{R}{M}{L}$'' plus a \emph{mechanized proof object} for the predicate,
+showing that the layer implementation $M$, built
+on top of the interface $L'$ (which we call the {\em underlay}
+interface), indeed faithfully {\em implements} the desirable interface
+$L$ above (which we call the {\em overlay} interface) via a simulation
+relation $R$.
+
+Here, the implementation $M$ is a program module written in
+assembly (or C). A layer interface $L$ consists of a set of abstract
+states and primitives. An abstract layer machine based on $L$ is just
+the base assembly (or C) machine extended with abstract states and
+primitives defined in $L$.  The {\em implements} relation
+($\refines_R$) is formally defined as a forward
+simulation~\cite{Lynch95,leroy09,Milner71,Park81} with the
+(simulation) relation $R$.
+
+A certified layer enforces a {\em contextual} correctness property: a
+correct layer is like a ``certified compiler,'' converting any {\em
+  safe} client program $P$ running on top of $L$ into one that has the
+same behavior but runs on top of $L'$ (i.e., by ``compiling'' abstract
+primitives in $L$ into their implementation in $M$).  If we use
+``$\sem{L}{\cdot}$'' to denote the behavior of the layer machine based on
+$L$, the correctness property of ``$\ltyp{L'}{R}{M}{L}$'' is written
+formally as ``$\forall{}P.\sem{L'}{P\oplus{}M} \refines_R \sem{L}{P}$''
+where $\oplus$ denotes a linking operator over programs $P$ and $M$.
+
+
+\para{Certified Concurrent Layers.} %%%%%%%%%%%%%%%%%%%
+
+
+To support concurrency, each layer interface $L$ is parameterized
+with a ``focused'' thread set $A$ (where $A \subseteq D$ and $D$ is
+the domain of all thread/CPU IDs).  The layer machine
+based on a concurrent layer interface $L[A]$ specifies
+the execution of threads in $A$ (with threads
+outside $A$ considered as the {\em environment}). For the example in Fig.~\ref{fig:exp:ticket_lock_example}, the domain $D$ is $\set{1, 2}$. If we treat $\set{1}$ as the focused thread set, the environment contains thread 2.
+For readability,
+we often abbreviate $L[\{i\}]$ as $L[i]$ where $i\in{}D$.
+
+A concurrent layer interface extends its sequential counterpart
+ with a
+set of abstract {\em shared} primitives and a global log $l$, and a set of {\em valid} environment contexts.
+Unlike calls to thread-local primitives
+which are not {\em observable} by other threads, each shared primitive call (together with its arguments) is recorded as an
+observable event appended to the end of the global log. 
+For example, $\commc{FAI\_t}$ (see Fig.~\ref{fig:exp:ticket_lock_example}) called from thread
+$i$ takes a log $l$ to a log ``$l \cons (i.\incticket)$'' with the symbol
+``$\cons$'' means ``cons-ing'' an event to the log. 
+
+To define the semantics of a concurrent program $P$ in a {\em generic}
+way, we develop a novel compositional (operational) model based upon
+ideas from game semantics~\cite{gsinvite}. Each run of
+$P$ over $L[D]$ is viewed as playing a game involving members of
+$D$ (plus a scheduler): each participant $i\in{}D$ contributes its
+play by appending events into the global log $l$; its {\em strategy}
+$\strat{i}$ is a deterministic partial function from
+the current log $l$ to its next move $\strat{i}(l)$ whenever
+the last event in $l$ transfers control back to $i$.
+
+\tikzset{
+  node_w/.style = {circle, fill=white, draw, inner sep=3pt},
+  node_b/.style = {circle, fill=lightgray, draw, inner sep=3pt},
+  node_d/.style = {circle, double, fill=white, draw, inner sep=3pt},
+  node_db/.style = {circle, double, fill=lightgray, draw, inner sep=3pt},
+  arc_b/.style = {very thick, draw=red, >={stealth[black]}},
+  node_t/.style = {circle, fill=white, draw},
+}
+
+For example, suppose thread $i$ only invokes  $\commc{FAI\_t}$, its strategy $\strat{i}$  can be represented as an automaton:%
+\begin{center}
+\begin{tikzpicture}[->,>={stealth[black]}, auto,  node distance=3cm,draw]
+\begin{scope}[every node/.style={font=\sffamily\small}]
+    \node (A) at (0,0) {};
+    \node (B) [node_w] at (0.5,0) {};
+    \node (C) [node_d] at (3,0) {};
+\end{scope}
+
+\begin{scope}[every node/.style={font=\sffamily\small},
+every edge/.style={draw, thick}]
+    \path [->] (A) edge (B);
+    \path [->] (B) edge node[above] {$?l, !i.\comm{FAI\_t}, \return t$} (C);
+    \path [->] (C) edge [loop right] node[right] {$?l',!\emptye$} (C);
+\end{scope}
+\end{tikzpicture}
+\end{center}%
+Suppose the global log is equal to $l$ when the control is transferred to $i$  (denoted as ``$?l$''). Thread $i$  first generates the event
+$i.\comm{FAI\_t}$ (denoted as ``$!i.\comm{FAI\_t}$'') and returns the ticket number $t$ (denoted as ``$\return t$'') calculated from $l$. It then becomes idle (denoted as a reflexive edge labeled with``$?l',!\epsilon$'')
+and will not produce any more events.
+The ticket number $t$ is calculated by a  function that counts the fetch-and-increment events in $l$. Such functions that reconstruct the current shared state from the log are called \emph{replay} functions (we notate it with $\replay$).
+
+The scheduler (denoted as $\strat{0}$) acts as a judge of the game.
+At each round, it picks one thread to make a move (and generate events) using its strategy. The \emph{behavior} of the \emph{whole} layer machine (denoted as ``$\sem{L[D]}{\cdot}$'') is then just the set of  logs generated by playing the game under all possible schedulers.
+
+When focusing on a subset of threads $A$, the semantics (or execution) of the (concurrent) layer machine based on an
+interface $L[A]$ is defined over its set of \emph{valid environment
+contexts}. Each environment context (denoted as $\oracle$) provides a
+strategy for its ``environment,'' i.e., the union of the strategies
+by the scheduler plus those participants {\em not} in $A$.
+By doing that it specifies the observable behaviors of the
+execution of those threads/CPUs in the environment under one possible
+interleaving.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{figure}[t]
+\centering
+\includegraphics[scale=.38]{figs/ccal/pcomp}
+\caption{Environment contexts and parallel layer composition.}
+\label{fig:pcomp}
+\end{figure}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+For example, Fig.~\ref{fig:pcomp} shows a system with two threads
+($t_1$ and $t_2$) and a scheduler. On the left, it shows one execution
+of method $\commc{foo}$ over the layer machine $L'[t_1]$ under a specific
+environment context $\oracle'_1$.  Here, $\oracle'_1$ is the union of
+the strategy $\stratp{0}$ for the scheduler and $\stratp{2}$ for
+thread $t_2$. In the middle, it shows the execution of $\commc{foo}$
+(invoked by $t_2$) over $L'[t_2]$ under the environment context
+$\oracle'_2$. On the right, it shows the interleaved execution of
+two invocations to $\commc{foo}$ over $L'[\{t_1,t_2\}]$
+where the environment context $\oracle'$ is just the scheduler
+strategy $\stratp{0}$.
+
+Given an environment context $\oracle$ which also contains a specific
+scheduler strategy, the execution of $P$ over $L[A]$ (we notate it with $\sem{L[A]}{P}$)
+deterministic; the concurrent machine will run $P$ when the control is
+transferred to any member of $A$, but will ask $\oracle$ for the next
+move when the control is transferred to the environment.
+
+To enforce the safety of environmental moves,
+each layer interface also specifies its set of valid environment contexts.
+The semantics $\sem{L[A]}{P}$ is then just a set of global logs
+generated from running $P$ over $L[A]$ under all {\em valid}
+environment contexts. 
+The definition of validity here is customized
+by each layer interface.
+This validity  corresponds to a generalized version of
+the ``rely'' (or ``assume'') condition in rely-guarantee-based
+reasoning~\cite{feng07:sagl,vafeiadis:marriage,LRG,fu10:roch,sergey15}. Each layer interface can also
+provide its own ``guarantee'' condition. These conditions  are simply expressed as
+invariants over the global log. 
+
+
+\para{Local Layer Interface.} 
+Consider the case where the focused thread set is a singleton $\set{i}$.
+Since the environmental executions (including the interleavings) are all encapsulated into the environment
+context,  $L[i]$ is actually a sequential-like (or \emph{local}) interface parameterized over $\oracle$. 
+Before each move of a client program $P$ over this local interface, 
+the layer machine first repeatedly asks $\oracle$ for environmental events until the control is transferred to $i$. It then makes the move based on
+received events. Thus, the semantics of running $P$ over $L[i]$ (denoted as $\ssem{P}{L[i]}$) can also be viewed
+as a strategy.
+
+The correctness property asserting that a concurrent module on top of a local layer interface indeed
+satisfies its specification (i.e\, a more abstract strategy) is defined
+by the \emph{strategy simulation} via a simulation relation $R$ for logs.
+
+\begin{definition}($\le_R$) We say a strategy $\strat{}$ is simulated by
+another strategy $\strat{}'$ with a simulation relation $R$ and write ``$\strat{} \le_R \strat{}'$'', if, and only if, for any two related (by $R$) environmental event sequences and any two related initial logs, we have that
+for any log $l$ produced by $\strat{}$, there must exist a log $l'$ that can be produced by $\strat{}'$ such that $l$ and $l'$ also satisfy $R$.
+\end{definition}
+
+Verifying that a concurrent module satisfies its specification 
+defined as a strategy is as easy as verifying a sequential program.
+Consider the $\commc{acq}$ method of the ticket lock module $M_1$ running 
+over $L_0[i]$ (see Fig.~\ref{fig:exp:ticket_lock_example}). 
+Its  specification
+can be represented as the following strategy $\strat{\comm{acq}}'[i]$:
+\begin{center}
+\begin{tikzpicture}[->,>={stealth[black]}, auto,  node distance=3cm,draw]
+\begin{scope}[every node/.style={font=\sffamily\small}]
+    \node (A) at (0,0) {};
+    \node (B) [node_w] at (0.5,0) {};
+    \node (C) [node_w] at (3,0) {};
+    \node (D) [node_w] at (5.5,0) {};
+    \node (E) [node_d] at (7.3,0) {};
+\end{scope}
+
+\begin{scope}[every node/.style={font=\sffamily\small},
+every edge/.style={draw, thick}]
+    \path [->] (A) edge (B);
+    \path [->] (B) edge node[above] {$?\oracle, !i.\comm{FAI\_t}, \return t$} (C);
+    \path [->] (C) edge [loop below] node[below] {$?\oracle,!\comm{i.get\_n}, \return n\ (\neq t)$} (C);
+       \path [->] (C) edge node[above] {$?\oracle, !i.\comm{get\_n}, \return t$} (D);
+              \path [->] (D) edge node[above] {$?\oracle, !i.\comm{hold}$} (E);
+\end{scope}
+\end{tikzpicture}
+\end{center}
+We write $?\oracle$ for querying $\oracle$.
+We can prove that the simulation ``$\ssem{\commc{acq}}{L_0[i]}\le_\id \strat{\comm{acq}}'[i]$'' holds for the identical relation: for any equal $\oracle$
+and equal initial state, if $\strat{\comm{acq}}'[i]$ takes one step, $\commc{acq}$ can take one (or more) steps to generate the same event and the resulting states are still equal. This correctness property is also used to define certified concurrent layers:
+$$\ltyp{L_0[i]}{\id}{\commc{acq}}{\strat{\comm{acq}}'[i]}
+\quad := \quad  \ssem{\commc{acq}}{L_0[i]}\le_\id \strat{\comm{acq}}'[i]$$
+Let ``$M_1:= \commc{acq} \oplus \commc{rel}$''
+and ``$L_1'[i]:= \strat{\comm{acq}}[i]'\oplus \strat{\comm{rel}}[i]'$''. By showing that the lock release    satisfies its specification
+(i.e.\, ``$\ltyp{L_0[i]}{\id}{\commc{rel}}{\strat{\comm{rel}}'[i]}$'')
+and by the horizontal composition rule (see Sec.~\ref{boot-linking}), we have:
+\begin{equation} \label{eq:acq} \tag{2.1}
+\ltyp{L_0[i]}{\id}{M_1}{L_1'[i]}\quad:=\quad \ssem{M_1}{L_0[i]}\le_\id L_1'[i]
+\end{equation}
+The notations are extended to a set of strategies,  meaning that each strategy of $L_1'[i]$ simulates the one of $\ssem{M_1}{L_0[i]}$. 
+
+
+\tikzstyle{block} = [draw=gray,rectangle,minimum height=1em,minimum width=2em]
+
+\begin{figure}[t]
+\begin{tikzpicture}[->,>={stealth[black]}, auto,  node distance=3cm,draw]
+\begin{scope}[every node/.style={font=\sffamily\large,}]
+\node (P) at (3.72,4) {$\oplus$};
+\node (P1) at (3.7,3.85) {};
+\node (C) at (0.3,1.6) {$\underset{i\in \set{1,2}}{\parallel}$};
+\end{scope}
+
+\begin{scope}[every node/.style={font=\sffamily\small}]    
+     \node (T) at (0.2,4) {(2.2)};   
+     \node (T1) at (4.2,4) {(2.3)};  
+\end{scope}
+
+
+\begin{scope}[every node/.style={font=\sffamily\small,block}]    
+     \node (L01) at (2,4) {$\ltyp{L_0[i]}{R_1}{M_1}{L_1[i]}$};  
+     \node (L02) at (6,4) {$\ltyp{L_1[i]}{R_2}{M_2}{L_2[i]}$};   
+     \node (L1) at (3.7,2.8) {$\ltyp{L_0[i]}{R_1 \circ R_2}{M_1\oplus{}M_2}{L_2[i]}$};  
+     \node (L21) at (3.7,1.6) {$\ltyp{L_0[i]}{R_1 \circ R_2}{\text{CompCertX}(M_1\oplus{}M_2)}{L_2[i]}$}; 
+     \node (L3) at (3.7,0.4) {$\ltyp{L_0[\set{1,2}]}{R_1 \circ R_2}{\text{CompCertX}(M_1\oplus{}M_2)}{L_2[\set{1,2}]}$}; 
+     \node (L4) at (3.7,-0.8) {$\forall P, \sem{L_0[\set{1,2}]}{P\oplus{}\text{CompCertX}(M_1 \oplus M_2)} \refines_{R_1 \circ R_2} \sem{L_2[\set{1,2}]}{P}$}; 
+\end{scope}
+
+
+\begin{scope}[every node/.style={font=\sffamily\small},
+every edge/.style={draw, thick}]
+    \path [->]  (P1) edge node [right]{vertical composition} (L1);
+    \path [->] (L1) edge node [right]{thread-safe compilation} (L21);    
+    \path [->] (L21) edge node [right]{parallel composition} (L3);    
+    \path [->] (L3) edge node [right]{soundness theorem} (L4);
+\end{scope}
+\end{tikzpicture}
+\caption{Layer verification of the ticket lock example using CCAL.}
+\label{fig:exp:verification}
+\end{figure}%
+
+\para{Higher-level Strategies.} Although the specifications above (e.g., $\strat{\comm{acq}}'[i]$) are abstract (i.e., language independent),
+low-level implementation details and interleavings within the module are still exposed.
+For example, $\strat{\comm{acq}}'[i]$ reveals the loop that repeatedly interacts with the environment to check the serving ticket number.
+To simplify the verification of components using locks, we have to \emph{refine} the strategies of $L'_1[i]$ to a higher-level interface $L_1[i]$ that is \emph{atomic}:%
+\begin{center}
+\begin{tikzpicture}[->,>={stealth[black]}, auto,  node distance=3cm,draw]
+\begin{scope}[every node/.style={font=\sffamily\small}]
+
+    \node (L1) at (-1.7,0) {$L_1[i]:=$};
+    \node (F1) at (-0.5,0) {$\strat{\comm{acq}}[i]:$};
+    \node (A) at (0,0) {};
+    \node (B) [node_w] at (0.5,0) {};
+    \node (C) [node_db] at (2,0) {};
+    
+    \node (Add) at (2.7,0) {$\oplus$};
+    \node (F2) at (3.5,0) {$\strat{\comm{rel}}[i]:$};
+    \node (A1) at (4,0) {};
+    \node (D) [node_b] at (4.5,0) {};
+    \node (E) [node_d] at (6,0) {};    
+\end{scope}
+
+\begin{scope}[every node/.style={font=\sffamily\small},
+every edge/.style={draw, thick}]
+    \path [->] (A) edge (B);
+    \path [->] (B) edge node[above] {$?\oracle, !i.\comm{acq}$} (C);
+    \path [->] (A1) edge (D);
+       \path [->] (D) edge node[above] {$!i.\comm{rel},\return t$} (E);
+\end{scope}
+\end{tikzpicture}
+\end{center}
+Here, $\strat{\comm{acq}}[i]$ simply queries $\oracle$
+and produces a single event $i.\comm{acq}$. It then enters  a so-called
+\emph{critical} state (marked as gray) to prevent losing the control until  the lock is released. Thus, there is no need to  ask $\oracle$ in critical state. 
+
+To prove the strategy simulation between $L_1'[i]$ and $L_1[i]$, we have to  pose ``rely'' (i.e.,
+validity) conditions $\Rely$ over the environment context of $L_1'[i]$:
+
+%%%%%%
+\begin{itemize}\itemsep1em
+\item $L_1'[i].\Rely_{hs}$:~~  the scheduler strategy $\strat{hs}'$ must be \emph{fair}.
+\item $L_1'[i].\Rely_{j}$ ($j\neq i$):~~ lock-related events 
+ generated by $\strat{j}$ must follow $\strat{\comm{acq}'}[j]$ and $\strat{\comm{rel}'}[j]$, and the held locks will eventually be released.
+\end{itemize}
+%%%%
+
+\noindent These conditions ensure that the loop (waiting for the ticket 
+to be served) in $\strat{\comm{acq}}'[i]$  terminates. Also, they can be used to prove that each run of $L_1'[i]$ is captured by $L_1[i]$. For example, if the scheduler strategy  $\strat{\comm{hs}}'$ schedules as  ``1, 2, 2, 1, 1, 2, 1, 2, 1, 1, 2, 2,'' running $P$ (see Fig.~\ref{fig:exp:ticket_lock_example}) over $L_1'[D]$ generates the log:%
+
+\begin{small}
+\[
+\begin{array}{rl}
+l'_{g} := &
+ (1.\incticket) \cons
+(2.\incticket) \cons
+(2.\getnow) \cons
+(1.\getnow)  \cons 
+ (1.\holdlock) \cons 
+(2.\getnow) \\
+&
+\cons (1.\comm{f})
+\cons (2.\getnow)
+\cons (1.\comm{g})
+\cons (1.\incnow) 
+\cons (2.\getnow)
+\cons (2.\holdlock) 
+\end{array}
+\]
+\end{small}
+
+\noindent This interleaving can be captured by a higher-level scheduler $\strat{\comm{hs}}$ producing ``1, 2'' (recall that thread 1 is in the critical state while holding the lock),
+and the generated log at $L_1[D]$ is:%
+\begin{small}
+\[
+\begin{array}{rl}
+l_{g} := &
+ (1.\comm{acq})
+\cons (1.\comm{f})
+\cons (1.\comm{g})
+\cons (1.\comm{rel})
+\cons 
+ (2.\comm{acq}) 
+\end{array}
+\]
+\end{small}%
+Although logs (and events) at these two layers are different, the order of lock acquiring and 
+the resulting shared state (calculated from logs by replay functions) are exactly the same. By defining the relation $R_1$ over logs as mapping events $i.\comm{acq}$ to $i.\comm{hold}$, $i.\comm{rel}$  to $i.\comm{inc\_n}$ and other lock-related events to empty ones, we can prove:%
+$$L_1'[i] \le_{R_1} L_1[i]$$
+Then by the predicate (\ref{eq:acq}) and the weakening rule (i.e.\, the \textsc{Wk} rule in Fig.~\ref{fig:calculus}), we have that:%
+\begin{equation}\label{eq:acq:h} \tag{2.2}
+\ltyp{L_0[i]}{\id \circ R_1\ =\ R_1}{M_1}{L_1[i]}
+\end{equation}
+
+Similarly,  for the $\commc{foo}$ method (i.e.\, $M_2$ in Fig.~\ref{fig:exp:ticket_lock_example}), we can also introduce a low-level strategy $\strat{\comm{foo}}'[i]$ as the first step:
+\begin{center}
+\begin{tikzpicture}[->,>={stealth[black]}, auto,  node distance=3cm,draw]
+\begin{scope}[every node/.style={font=\sffamily\small}]
+    \node (L1) at (-1.7,0) {$L_2'[i]:=$};
+    \node (F1) at (-0.5,0) {$\strat{\comm{foo}}'[i]:$};
+    \node (A) at (0,0) {};
+    \node (B) [node_w] at (0.5,0) {};
+    \node (C) [node_b] at (2,0) {};
+    \node (D) [node_b] at (3,0) {};
+    \node (E) [node_b] at (4,0) {};
+    \node (F) [node_d] at (5,0) {};
+\end{scope}
+
+\begin{scope}[every node/.style={font=\sffamily\small},
+every edge/.style={draw, thick}]
+    \path [->] (A) edge (B);
+    \path [->] (B) edge node[above] {$?\oracle, !i.\comm{acq}$} (C);
+       \path [->] (C) edge node[above] {$!i.\comm{f}$} (D);
+       \path [->] (D) edge node[above] {$!i.\comm{g}$} (E);
+       \path [->] (E) edge node[above] {$!i.\comm{rel}$} (F);
+\end{scope}
+\end{tikzpicture}
+\end{center}
+Then we prove that a high-level atomic interface $\strat{\comm{foo}}$:%
+\begin{center}
+\begin{tikzpicture}[->,>={stealth[black]}, auto,  node distance=3cm,draw]
+\begin{scope}[every node/.style={font=\sffamily\small}]
+    \node (L1) at (-1.7,0) {$L_2[i]:=$};
+    \node (F1) at (-0.5,0) {$\strat{\comm{foo}}[i]:$};
+    \node (A) at (0,0) {};
+    \node (B) [node_w] at (0.5,0) {};
+    \node (C) [node_d] at (2.5,0) {};
+\end{scope}
+
+\begin{scope}[every node/.style={font=\sffamily\small},
+every edge/.style={draw, thick}]
+    \path [->] (A) edge (B);
+    \path [->] (B) edge node[above] {$?\oracle, !i.\comm{foo}$} (C);
+\end{scope}
+\end{tikzpicture}
+\end{center}
+simulates (with some $R_2$) $\strat{\comm{foo}}'$, which
+in turn simulates $\commc{foo}$:%
+\begin{equation}\label{eq:foo:h} \tag{2.3}
+L_2'[i] \le_{R_2} L_2[i]
+ \qquad\quad
+\ltyp{L_1[i]}{\id}{M_2}{L_2'[i]} 
+\end{equation}
+
+Based on $L_2'[i]$, we can  derive the ``guarantee'' condition $\Guard$ of the thread $i$ saying that held locks are always released within three steps, which is consistent but more concrete than the rely condition $\Rely$ defined above.
+
+\para{Parallel Layer Composition.}
+We say that two layer interfaces $L[t_1]$ and $L[t_2]$ are {\em compatible} if the guarantee $\Guard$ of
+each interface implies the other interface's rely conditions $\Rely$.  The new
+compositional model allows us to prove a general {\em parallel layer
+  composition} rule: if $L'[t_1]$ is compatible with $L'[t_2]$, $L[t_1]$ is compatible with $L[t_2]$, and
+``$\ltyp{L'[t]}{R}{M}{L[t]}$'' holds for every $t\in \set{t_1,t_2}$, then we  have
+``$\ltyp{L'[\set{t_1,t_2}]}{R}{M}{L[\set{t_1,t_2}]}$.'' Figure~\ref{fig:pcomp} shows how to compose
+certified local layers (one for $t_1$ and another for $t_2$) to
+build a certified layer for the entire machine (with $t_1$ and $t_2$
+both focused).
+
+\para{Thread-Safe CompCertX and Layer Linking.}
+Since the local layer interface is sequential-like, we can adapt the CompCertX compiler~\cite{dscal15} to be thread-safe by merging the stack frames of threads on the same CPU into a single stack. In this way, 
+certified C layers can be compiled into certified assembly layers. We can then apply the horizontal, 
+vertical, and the new parallel layer
+composition rules (see Sec.~\ref{boot-linking}) to construct the certified concurrent layer for the entire system (see Fig.~\ref{fig:exp:verification}). Finally, from ``$\ltyp{L'[D]}{R}{M}{L[D]}$,'' the soundness theorem enforces a strong contextual refinement property saying that, for any client program $P$, we have that for any log $l$ in the behavior $\sem{L'[D]}{P \oplus M}$, there must exist a log $l'$ in the behavior $\sem{L[D]}{P}$
+such that $l$ and $l'$ satisfy $R$.
+
+\begin{theorem}[Soundness]
+$$\ltyp{L'[D]}{R}{M}{L[D]} \quad\Rightarrow\quad \forall P, \sem{L'[D]}{P\oplus{}M} \refines_R \sem{L[D]}{P}$$
+\end{theorem}

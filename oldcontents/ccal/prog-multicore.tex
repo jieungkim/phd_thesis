@@ -1,0 +1,167 @@
+\section{Building Certified Multicore Layers}
+\label{sec:prog}
+
+In this section, we start to show how to apply our techniques to verify shared objects in the CCAL toolkit.
+We begin by considering the ones
+shared among CPUs: spinlocks and shared queue objects protected by spinlocks.
+All layers are built upon the CPU-local layer interface
+$\PLayer{\PBoot}{c}{\oracle}$.
+
+\subsection{Spinlocks}
+\begin{figure}[t]
+\lstinputlisting [language = C, multicols=2] {source_code/ccal/ticket_lock.c}
+\caption{Pseudocode of ticket lock using $\push/\pull$.}
+\label{fig:exp:real_ticket_lock}
+\end{figure}
+
+Spinlocks (e.g., the ticket lock algorithm described in Sec.~\ref{sec:informal}) 
+are one of the most basic synchronization
+methods for multicore machines; they are used as building
+blocks for shared objects and more sophisticated synchronizations.
+
+A spinlock enforces mutual exclusion by restricting CPU access to
+a memory location $b$. Therefore, lock operations can be viewed
+as ``safe'' versions of $\cpush/\cpull$ primitives.
+For example, when the lock acquire  for $b$ succeeds,
+the corresponding shared memory is guaranteed
+to be ``free'', meaning that it is safe to 
+pull the contents to the local copy at this point (line 4 in Fig.~\ref{fig:exp:real_ticket_lock}).
+Therefore, as can be seen in Fig.~\ref{fig:exp:real_ticket_lock},
+the $\acq/\rel$ functions invoke the $\push/\pull$ primitives.
+We now show how to build layers for the spinlock
+in Fig.~\ref{fig:exp:real_ticket_lock}, which uses a ticket lock algorithm. Note that query points are denoted as ``$\intp$'' in pseudocode.
+
+\para{Bottom Interface $\PBoot[c]$.}
+We begin with the CPU-local interface $\PBoot[c]$ extended with shared primitives
+$\commc{FAI\_t}$, $\commc{get\_n}$, and $\commc{inc\_n}$.
+These primitives directly manipulate the lock state $\commc{t}$
+(next ticket) and $\commc{n}$ (now serving ticket)
+via x86 atomic instructions. 
+
+\begin{figure}[t]
+\lstinputlisting [language = Caml] {source_code/ccal/lock.v}
+\caption{Pseudocode of ticekt lock specifications in Coq.}
+\label{fig:exp:tlock}
+%\end{wrapfigure}%
+\end{figure}
+Each of them generates a corresponding event in the 
+log. As an example, the specification of $\commc{FAI\_t}$ is shown in Fig.~\ref{fig:exp:tlock},
+where the replay function $\replay_{\comm{ticket}}$ calculates  the lock state.
+ 
+\para{Fun-Lift to $L_\comm{lock\_low}[c]$.}
+We have shown how to establish the strategy simulation
+for this low-level interface $L_\comm{lock\_low}[c]$ (i.e.\, $L_1'[c]$, see Sec.~\ref{sec:informal}).
+Note that $\ssem{\commc{acq}}{L_\comm{lock\_low}[c]}$ contains extra silent moves (e.g.\, assigning $\comm{myt}$, line 2 in Fig.~\ref{fig:exp:real_ticket_lock}) compared with $\strat{\comm{acq}}'[c]$.
+The simulation relation 
+$R_\comm{lock}$ not only states the equality between logs but also maps the lock
+state in the memory to the ones calculated by $\replay_{\comm{ticket}}$.
+Here we must also handle potential \emph{integer overflows} for $\commc{t}$ and $\commc{n}$.
+We can prove that, as long as the total number of CPUs (i.e.\, $\#CPU$) in the machine is less than $2^{32}$ (determined by $\comm{uint}$), the mutual exclusion property will not be violated  even with overflows. 
+Based on the CPU-local layer, we first verify that the C implementations of 
+the ticket lock satisfy the $\acq$ and $\rel$ specifications,
+which are defined in terms of logs with low-level events
+related to $\comm{t}$ and $\comm{n}$.
+Thus, we can build $\ltyp{\PLayer{\PBoot}{c}{}}{R_\comm{lock}}{(\modulef{\acq}
+\oplus \modulef{\rel})}{\PLayer{L_\comm{lock\_low}}{c}{}}$
+using the \textsc{Fun} rule,
+where the simulation relation $R_\comm{lock}$ maps the lock
+fields in the memory to the ones calculated by $\replay_{\comm{ticket}}$.
+
+\para{Log-Lift to $L_\comm{lock}[c]$.}
+We then lift the $\acq$ and $\rel$ primitives to an atomic interface, meaning that each
+invocation produces exactly one event in the log (see Sec.~\ref{sec:informal}).
+These atomic lock interfaces (or strategies) are similar to $\cpull/\cpush$ specifications,
+except that the former ones are \emph{safe} (i.e.\, will not get stuck).
+This safety property can be proved using rely conditions $L_\comm{lock}[c].\Rely$ saying that,
+for any CPU $c'\neq c$, its $c'.\acq$ event must be followed by a sequence of its own events (generated in the critical state)
+ending with $c'.\rel$. The distance between $c'.\acq$ and $c'.\rel$ in the log is less than some number $n$.
+
+By enforcing the fairness of the scheduler in rely conditions, saying that any CPU can be scheduled
+within $m$ steps, we can show the liveness property (i.e., starvation-freedom): the while-loop in $\commc{acq}$ terminates
+in ``$n \times m \times \#CPU$'' steps.
+
+
+\begin{figure}
+\lstinputlisting [language = C, multicols=2] {source_code/ccal/dequeue.c}
+\caption{Pseudocode of dequeue implementation.}
+\label{fig:exp:dequeue}
+\end{figure}
+
+
+\subsection{Shared Queue Object}
+\label{sec:shared-queue}
+Shared queues are widely used in concurrent programs, e.g.\, 
+as buffers for producers/consumers,
+as the list of threads in a scheduler, etc.
+The specification of a shared queue object should provide a high level abstract
+interface by hiding all the low level details,
+to ease the verification of programs using the object.
+However, the large gap between this high level abstract specification
+and the low level efficient implementation makes the verification of the shared queue object
+itself extremely challenging.
+Furthermore,
+In previous work~\cite{lili16},
+due to the lack of layering support,
+the verification of any shared object
+required inlining the lock implementation
+and duplicating the lock-related proofs.
+In the following, we illustrate how to utilize concurrent
+abstraction layers to verify a shared queue module
+(c.f.\ Fig.~\ref{fig:exp:dequeue}
+using fine-grained locks  introduced by $L_\comm{lock}[c]$.
+
+\para{Fun-Lift to $L_\comm{q}[c]$.}
+The shared queues are implemented as doubly linked lists, and are protected
+by spinlocks. For example, the dequeue ($\commc{deQ}$) operation
+first acquires the spinlock associated with queue $i$(via the auxiliary function $\qloc$),
+then performs the actual dequeue operation in the critical state,
+and finally releases the lock.
+Instead of directly verifying $\commc{deQ}$ in one shot, 
+we first introduce an intermediate function
+$\commc{deQ\_t}$, which contains
+code that performs the dequeue operation
+over a local copy, under the assumption that
+the corresponding lock is held.
+Since no environmental queries are needed in the critical state, 
+building concurrent layers for $\commc{deQ\_t}$ is similar to building a sequential layer~\cite{dscal15}:
+we first introduce the abstract states $a.\comm{tcbp}$ and $a.\comm{tdqp}$, which stand for the thread control block (i.e.\, $\commc{tcb}$) array
+and the thread queue array.
+The  abstract $\comm{tdqp}$ is a partial map from the \emph{queue index}
+to an \emph{abstract queue}, which is represented as
+a list of $\comm{tcb}$ indices.
+Then we can show that $\commc{deQ\_t}$ meets its specification
+$\spec_{\deq\comm{\_t}}$:%
+\lstinputlisting [language = Caml] {source_code/ccal/deq_t.v}%
+
+\para{Fun- and Log-Lift to $L_\comm{q\_high}[c]$.}
+Finally, we have to show that the $\commc{deQ}$ function that wraps $\commc{deQ\_t}$ with lock primitives indeed meets an atomic interface.
+With a simulation relation $R_\comm{lock}$ that merges two queue-related lock events
+(i.e.\, $c.\acq$ and $c.\rel$) into a single event $c.\deq$
+at the higher layer, we can prove the following strategy simulation:%
+\begin{center}
+\begin{tikzpicture}[->,>={stealth[black]}, auto,  node distance=3cm,draw]
+\begin{scope}[every node/.style={font=\sffamily\small}]
+    \node (F1) at (-0.8,0) {$\ssem{\commc{deQ}}{L_{\comm{q}}[c]}:$};
+    \node (F2) at (-0.8,-1) {$\strat{\comm{deQ}}[c]:$};
+    \node (G) at (-0.8,-0.45) {$\le_{R_{\comm{lock}}}$};
+    \node (A) at (-0.1,0) {};
+    \node (B) [node_w] at (0.4,0) {};
+    \node (C) [node_b] at (2.6,0) {};
+    \node (D) [node_b] at (5.3,0) {};
+    \node (E) [node_d] at (6.7,0) {};
+    \node (A2) at (-0.1,-1) {};
+    \node (B2) [node_w] at (0.4,-1) {};
+    \node (E2) [node_d] at (3,-1) {};
+\end{scope}
+\begin{scope}[every node/.style={font=\sffamily\small},
+every edge/.style={draw, thick}]
+    \path [->] (A) edge (B);
+    \path [->] (B) edge node[above] {$?\oracle, !c.\comm{acq}(i), \return q$} (C);
+       \path [->] (C) edge node[above] {$\spec_{\comm{deQ\_t}}(q) = (q', r)$} (D);
+       \path [->] (D) edge node[above] {$!c.\comm{rel}(i,q')$} (E);
+        \path [->] (A2) edge (B2);
+    \path [->] (B2) edge node[above] {$?\oracle, !c.\comm{deQ}(i), \return r$} (E2);
+\end{scope}
+\end{tikzpicture}
+\end{center}
+

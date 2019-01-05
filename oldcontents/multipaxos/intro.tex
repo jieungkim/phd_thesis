@@ -1,0 +1,206 @@
+\section{Introduction}
+\label{sec:intro}
+
+
+%Distributed systems are based on the consensus protocols to guarantee consistency among the nodes.
+%However, consensus protocols are notorious due to their complexity originated by their complex interleaving.
+%Due to that, proving basic safety proofs for consensus protocols is known as a challenging problem. 
+%Recent works, \needcite\jieung{verdi, DISEL, ironfleet, PLDI18, oopsla 2017, CPP for verdi, ESOP} propose
+%the works to provide robust verification on consensus protocols. 
+%However, some of them fail to connect the safety proof of consensus protocols with the low-level implementations,
+%others are not able to allow re-configuration of the system, which is usually necessary in the real deploy of the system, 
+%hard to reuse safety proofs for the system that are built based on the protocols 
+
+% \jieung{need to compare, others are quite simple to compare... but we need to write a 
+%simple comparison with inronfleet}
+
+%Therefore, we propose a way to understand multiple consensus protocols easy and thus makes the safety verification of them simple.
+
+%To demonstrate the approach, we implement Paxos \needcite\jieung{paxos} with a small TCB code for network communications, 
+
+\topic{Distributed systems are difficult to verify.}
+Distributed systems form the underlying base of many applications these days.
+Unfortunately, verifying these systems is difficult because of the inherent concurrency and the possibility of failure in both the nodes and the network.
+For distributed nodes to collaborate and overcome these failures seamlessly,
+distributed systems must employ sophisticated protocols.
+\topic{Existing non-machine checkable proofs are less useful in practice.}
+Although many of these distributed protocols have pencil-and-paper proofs of their correctness,
+their subtle and complex nature makes them difficult to implement faithfully in actual code.
+Even though the industry rigorously applies various testing strategies 
+for software development, there are continuous reports about distributed software bugs that can shut down entire data centers~\cite{awsdown, gmaildown}.
+
+\topic{Interactive theorem provers created opportunities to verify distributed systems.}
+Machine-checkable verification tools open up new opportunities to provide distributed systems
+with end-to-end correctness guarantees by
+verifying low-level implementations of distributed code and linking them with safety proofs of the abstract protocols.
+Specifically, theorem provers allow line-by-line verification of the code
+with support for partial proof-automation.
+Previous works have used
+both automated tools such as Z3~\cite{moura08} and
+Dafny~\cite{dafny} as well as
+interactive tools, such as Coq~\cite{coq}.
+\ignore{
+The most common tools are the ones based on SMT solvers, such as Z3\cite{moura08} and 
+Dafny\cite{dafny}, which are well automated but works for only first-order logic and decidable problems, 
+and Coq\cite{coq}, which is less automated but works on high-order logic.}
+
+\topic{But distributed system verification is still difficult.}
+Regardless of which tool one uses,
+verifying distributed system code with an interactive theorem prover requires much more work
+than with a hand-written proof.
+The verification must cover every low-level corner case that is mostly related to the underlying network error 
+or optimization.
+In addition, the collective view
+of all distributed nodes and the network -- which we call the \globalstate{} -- 
+should be created and made available to the proof because key safety properties of distributed protocol 
+always related to not with a single node but with all nodes in the system. 
+Thus, even given a high-level proof of a theorem for a distributed protocol, 
+there is still a significant proof burden to bridge the gap between the code and the model.
+
+\topic{Reasons why others have failed: verdi, ironfleet, sergey et al., disel, etc.}
+For this reason, proofs of distributed protocols done using interactive theorem provers often simplify the \globalstate{}
+and rely on additional tools or assumptions to fill in the missing pieces.
+For example, in Ironfleet's~\cite{ironfleet} model, all distributed nodes are connected via an asynchronous network,
+and they show that the code refines the \globalstate{}.
+However, in part due to the expressiveness limitations of Dafny, Ironfleet's verification relies on pencil-and-paper proofs to show
+that a realistic, arbitrarily-interleaved network refines their more restrictive \globalstate{}.
+Verdi~\cite{verdi} similarly models a global state but assumes an ``idealized'' network and carries out refinement proofs to show that the code refines the \globalstate{}. 
+It then relaxes its assumptions by automatically applying valid transformations to the code, such as adding sequence numbers to tolerate packet duplication.
+However, starting with an assumption of an ideal network is not suitable for verifying systems such as Paxos~\cite{paxos} that assume a faulty network.
+% which the same authors showed the safety proof later in a separate paper~\cite{cppraft}. % TODO: fit this reference in another way
+Several other papers suggest methodologies to verify distributed systems using interactive theorem provers,
+but they focus on specific topics such as automation~\cite{modular} or isolating protocols~\cite{disel} and do not fully address this problem.
+
+\topic{We propose a new and easy-to-understand distributed system proving techniques: new global model + witness-passing.}
+To fill in this gap, we propose a \globalstate{} of a distributed system where the proof can be written entirely in Coq,
+and a novel write-witness-passing scheme that can promote the understanding of distributed system protocols and simplify the verification process.
+Our \globalstate{} includes an asynchronous network, and the states in the \globalstate{} are constructed by composing the operations and local state of each node.
+Write-witness-passing adds a logical data structure to the messages sent between nodes that remembers what each node has seen so far.
+The contents of this data structure could come from the sending node's own state or from observations of other nodes' state.
+As this information accumulates it can show how each node reached its current state, with evidence demonstrating the validity of each transition.
+Using these witnesses, the behavior of a node can easily be verified with respect to the \globalstate{} through primarily local reasoning.
+
+\topic{Rationale behind our approach.}
+To understand why the write-witness-passing scheme is useful, one should first understand how distributed systems are designed.
+Distributed systems have evolved to hide complex protocols using simple abstractions and to send as little information as possible between nodes to save network bandwidth.
+Messages sent over the network may be lost depending on network assumptions and information received over the network is often discarded right after it is used to update any relevant local states.
+The code for each node often blindly executes an operation without the global view of the entire distributed system and assumes that all other nodes are working correctly.
+Therefore, the context that can be extracted from the code for a local node is typically not enough to reason about the validity of the node's state against the entire distributed system.
+
+\topic{Our design: 1) Network model: we don't make any extra assumptions}
+Our \globalstate{}'s network is asynchronous and allows that packets can be dropped, delayed, reordered, interleaved, and duplicated, but never corrupted,
+which most other works on distributed system verification also assume.
+Such a realistic network model is necessary because verification based on a weaker model will be invalid in an actual deployment.
+Depending on the need, our network model can sometimes be refined to a more restrictive model, but, because of the simulation relation,
+properties proved using this model are also guaranteed to hold for the realistic one.
+Existing work sometimes assumes that nodes operate atomically between send and receive (for clients) or receive and send (for servers)~\cite{verdi},
+but our model does not have any such additional assumptions.
+
+\topic{Our design: 2) Our global model.}
+State in our \globalstate{} is a collection of all local states that are affected by the network.
+To prove correctness of the whole system, we must show that the interactions among the distributed nodes are correct.
+Our model of the global state is not very different from other work, but the write-witness-passing scheme takes advantage of the state in an unique way.
+
+\topic{Our design: 3) Why witness-passing: how it works easier to reason and prove.}
+While typical proofs of distributed systems involve showing that a local node's behavior refines the \globalstate{}~\cite{verdi, ironfleet},
+write-witness-passing works in the opposite direction;
+we start from a \globalstate{} and bring necessary global state information into the local state.
+The imported state is what the other nodes have witnessed at the time of sending messages.
+This information provides the context that is necessary for a local node to reason about its correctness within the entire distributed system,
+but was not required to simply execute the distributed protocol.
+The imported global state constitutes a witness-tree that keeps track of the path and evidence for how a node's current state was reached.
+This structure can be used for checking invariants and carrying out inductive proofs of the protocol.
+The witness-tree has partial information about the entire system state, but only the parts that are relevant to the node currently holding the tree.
+Thus, the verification can take place within the local context of a node without having to worry about other complex states in the rest of the distributed system.
+Because the information in the witness-tree was taken from the global state, an invariant that the data in the tree corresponds to something in the \globalstate{} naturally holds.
+In addition to easier verification, a proof based on write-witness-passing provides insight into why the protocol works,
+because the verification takes place in a local context that more closely mirrors the implementation.
+
+We use Paxos as an example to demonstrate how our \globalstate{} and write-witness-passing scheme can facilitate the verification of distributed systems.
+Paxos is a good example to explore the power of write-witness-passing because it requires communication with at least a majority of acceptors,
+and the weak network assumptions require reasoning about failure cases.
+Therefore, being able to handle a weak network model and having a clear sight on the global view of the system are necessary to verify the system.
+The Paxos consensus protocol is also notoriously difficult to understand just by observing the information that is passed around.
+Write-witness-passing can gather necessary global state into a tree to provide a clearer insight into how the protocol works.
+
+\begin{figure}
+\includegraphics[scale=.70]{figs/overall_structure}
+\caption{Overall Structure of Distributed System Verification with Write-Witness-Passing. 
+All important components are explained in the later sections; (1) in Sect.~\ref{subsec:network-primitives} and 
+Sect.~\ref{subsec:low-level-network-syntax-and-semantics}; (2) in Sect.~\ref{subsec:network-primitives} and Sect.~\ref{subsec:functional-correctness};
+(3) in Sect.~\ref{subsec:distributed-transition-semantics} and Sect.~\ref{subsec:witness-passing-semantics-in-paxos}
+(4) in Sect.~\ref{subsec:witness-write}, Sect.~\ref{subsec:distributed-transition-semantics-with-witness-passing}, and Sect.~\ref{subsec:witness-passing-semantics-in-paxos};
+(5) in Sect.~\ref{subsec:paxos-safety} and Sect.~\ref{subsec:extensibility-of-verified-paxos}; and 
+(6) in Sect.~\ref{subsec:extensibility-of-verified-paxos}}
+\label{fig:overall-structure}
+\end{figure}
+
+To realize the write-witness-passing scheme, we use certified concurrent abstraction layers (CCAL)~\cite{concurrency} as the base verification framework
+and build necessary components such as the \globalstate{}, which includes the network model and node states, and the state transition framework within the \globalstate{}.
+The contextual refinement scheme that is proposed by the CCAL approach adds more benefits to our distributed system verification framework,
+such as enabling vertical and horizontal composition of verified protocols.
+Figure~\ref{fig:overall-structure} shows the overall structure of 
+distributed system verification with write-witness-passing, and the important components are numbered in the figure.
+In a later section, we describe those components one by one, and
+we show how our framework and write-witness-passing can be used to prove Paxos leader election and reconfiguration, as well as other distributed protocols.
+
+
+This paper makes the following contributions:
+\begin{itemize}
+	\item We propose a general distributed system verification approach with the capability to link Coq-verified specifications with executable C code without relying on any external verification tools.
+	\item We propose a novel write-witness-passing scheme that facilitates local reasoning about distributed systems and provides insight into how distributed system protocols work.
+	\item We present a complete safety proof of Paxos using our verification framework and sketch how our framework can be used to verify other distributed systems.
+\end{itemize}
+
+
+The remaining parts of this paper are organized as follows.
+Section~\ref{sec:overview} is an overview of our verification approach using Paxos.
+Section~\ref{sec:witness-passing-semantics} describes in detail the formal definitions of our verification approach and of write-witnesses.
+Sections~\ref{sec:paxos-verification}-\ref{sec:evaluation} provide examples of
+our verification approach applied to Paxos and variants of Paxos, and evaluate
+our proof methodology. 
+Section~\ref{sec:related} investigates related work and gives our conclusions.
+
+\topic{Benefit of CCAL: 1) network model is flexible, 2) vertical and horizontal composition.}
+
+\topic{Contributions: 
+1) provide simple way to represent consensus protocols as well as for safety proofs of those protocols, 
+2) provide the way to link those representations with low-level implementations (scalable, reusable way),
+3) verify Paxos using the approach with small human efforts.}
+
+%\jiyong{We need to know what are the typical ways that others model the global state to verify distributed systems.}
+%\jieung{ 
+%\begin{enumerate}
+%\item Ironfleet: takes too much human effort. Some parts are treated as assumptions (network reduction is not able to be verified)
+%\item ESOP18, Verdi: made atomic handler and collect those atomic handlers to define global transition systems - connecting local behaviours with global transition systems. for the global properties, they need to reason about the state transitions for all the packets due to their representation.  Human efforts is high
+%\item DISEL: horizontal composition. They argue that they can reuse their verification when it combined with other protocols. But, they cannot support vertical composition, which seems that they only can verify multiple distributed systems together if they are clearly divided. 
+%\item OOSPLA17, PLDI18 (automations): OOSPLA17 cannot generate the the runnable code. they cannot be linked with executable code, which is desired - they works with Paxos variants well, but have questions about other distributed systems. For PLDI18, they argue that they verified Raft and MultiPaxos, but for the MultiPaxos, they are unclear that what they have proved. they are not able to verify network reduction like Ironfleet, and they are not able to support concurrency yet (but.. I need to recompare PLDI18 paper again. PLDI18 paper also assume the all synthesis as a TCB
+%\end{enumerate}
+%}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% some brain storming
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Distributed protocol is important but complex:\\
+%Several works verify distributed protocols either using automated tools or using interactive theorem provers\\
+%people knows that interactive theorem provers are subtle\\
+%But, it has benefits:\\
+%Not even with its expressiveness, we can connect protocol layer verification with the low-level implementation \\
+%Also, re-usability can be achieved using contextual refinement - this one cannot be achieved by automated system (contextual refinement)
+%
+%And, Paxos, immutability, is actually unbounded. 
+%In this sense, it is a little bit hard for automated approaches to prove that one in general (need to check PLDI18 and OOPSLA 17 papers)
+%
+%We want to claim that the complexity is not because of using interactive theorem prover, 
+%
+%We propose  a way that dramatically simplify the proof of distributed system 
+%
+%1. witness passing \\
+%2. global transition system \\
+%3. simple enough to understand the distributed system in a few minute \\
+%4.compositionality \\
+%5. and other benefits (link the proof with low-level implementation )
+%
+
+ 

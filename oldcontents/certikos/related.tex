@@ -1,0 +1,208 @@
+\section{Related Work}
+\label{sec:related}
+
+Dijkstra~\cite{dijkstra68a,Dijkstra72} proposed to ``realize'' a
+complex program by decomposing it into a hierarchy of linearly ordered
+abstract machines.  Based on this idea, the PSOS team at
+SRI~\cite{psos80} developed the Hierarchical Development Methodology
+(HDM) and applied it to design and specify an OS using 20
+hierarchically organized modules. HDM was later also used for the KSOS
+system~\cite{ksos84}.
+\citet{dscal15} developed new languages and tools for building
+certified abstraction layers with {\em deep} specifications, and
+showed how to apply the layered methodology to construct fully
+certified (sequential) OS kernels in Coq.
+
+\citet{costanzo16} showed how to prove sophisticated global properties
+(e.g., information-flow security) over a deep specification of a
+certified OS kernel and then transfer these properties from the
+specification level to its correct assembly-level implementation.
+\citet{chen16} extended the layer methodology to build certified
+kernels and device drivers running on multiple {\em logical}
+CPUs. They treat the driver stack for each device as if it were
+running on a logical CPU dedicated to that device. Logical CPUs do not
+share any memory, and are all eventually mapped onto a single physical
+CPU.
+%%%%
+None of these systems, however, can support shared-memory concurrency
+with fine-grained locking.
+
+\ignore{Our new \CTOS\ framework adds several
+significant novelties (e.g., new models and refinement proofs for
+concurrent layer machines, new layer design with environment context),
+but it still connects back to the previous
+work~\cite{dscal15,chen16,costanzo16} really nicely.  A concurrent
+layer with a specific environment context can be composed freely just
+as sequential layers~\cite{dscal15}.  The invariants over the
+environment contexts (i.e., the ``rely'' conditions) are used to
+guarantee that per-CPU or per-thread reasoning can be soundly composed
+(when their ``rely'' conditions are compatible with each other).
+}
+
+The seL4 team~\cite{klein2009sel4,klein14} was the first to verify the
+functional correctness and security properties of a high-performance
+L4-family microkernel. The seL4 microkernel, however, does not support
+multicore concurrency with fine-grained locking.  \citet{peters15}
+and \citet{vontessin13} argued that for an seL4-like microkernel,
+concurrent data accesses across multiple CPUs can be reduced to a
+minimum, so a single {\em big kernel lock (BKL)} might be good enough
+for achieving good performance on multicore machines.
+\citet{vontessin13} further showed how to convert the single-core seL4
+proofs into proofs for a BKL-based clustered multikernel.
+
+\ignore{
+One high-level difference between seL4 and \CTOS\ is that the seL4
+team~\cite{klein14} focused on verifying a particular microkernel. The
+designers of the L4-family kernels~\cite{liedtke95,heiser13} advocated
+the {\em minimality principle}: a concept is tolerated inside the
+microkernel only if moving it outside the kernel would prevent the
+implementation of the system's required functionality.  This is a
+reasonable principle but its interpretation of the ``kernel-user''
+boundary (as the hardware-enforced ``red-line'') is quite narrow.  Our
+new \CTOS\ architecture advocates replacing the traditional ``red
+line'' with a large number of certified abstraction layers enforced by
+formal specification and proofs; hardware mechanism (such as address
+protection) is just one (quick) way of ensuring that a specific
+process will not violate the invariants required by a particular
+kernel abstraction layer.
+}
+
+The Verisoft team~\cite{verisoft07,leinenbach09,alkassar10} applied
+the VCC framework~\cite{vcc09} to formally verify Hyper-V, which is a
+widely deployed multiprocessor hypervisor by Microsoft consisting of
+100 kLOC of concurrent C code and 5 kLOC of assembly. However, only
+20\% of the code is verified~\cite{vcc09}; it is also only verified
+for function contracts and type invariants, not the full functional
+correctness property.  There is a large body of other
+work~\cite{bevier89,hawblitzel10,ironclad14,fscq15,ironfleet15,verdi15,cogent16,uberspark16}
+showing how to build verified OS kernels, hypervisors, file systems, device
+drivers, and distributed systems, but they do not address the issues
+on concurrency.
+
+\citet{xu16} developed a new verification framework by combining
+rely-guarantee-based simulation~\cite{RGSim} with Feng~{et~al.}'s
+program logic for reasoning about interrupts~\cite{feng08:aim}.
+They have successfully verified key modules in the $\mu$C/OS-II
+kernel~\cite{ucosii}. Their work supports preemption but only on a
+single-core machine. They have not verified any assembly code nor
+connected their verified C-like source programs to any certified
+compiler so there is no end-to-end theorem about the entire
+kernel. They have not proved any progress properties so even their
+verified kernel modules or interrupt handlers could still diverge.
+
+
+\ignore{
+\citet{lili16} presented the first program logic (Lili) that can apply
+contextual refinement techniques to prove both linearizability and a
+progress property for various concurrent objects (including ticket
+locks and MCS locks). Their assertion language does not allow
+assertions on event traces, so temporal invariants must be described
+using special predicates (called {\em definite actions}).  Our new
+\CTOS\ framework, on the other hand, directly reasons about the
+environment contexts so temporal properties can be expressed uniformly
+as other invariants. The Lili language also only supports the
+high-level parallel composition construct, so it is unclear how their
+logic can be used to verify the yield/sleep/wakeup primitives in \mCTOS.
+}
+
+
+\ignore{
+
+Bevier~\cite{bevier89} developed a full correctness proof
+for a highly idealized kernel in an automated theorem prover. The
+Verisoft team~\cite{verisoft07} has done a large body of work aiming
+to verify OS kernels and
+hypervisors~\cite{leinenbach09,alkassar10}. The Verve
+project~\cite{hawblitzel10} managed to prove the type safety of an
+entire kernel by combining the partial correctness proof of a nucleus
+and the type-safety guarantee from a certifying C\# compiler (for the
+rest of the kernel); by using powerful automated proving tools (\eg,
+Boogie and Z3), Verve managed to certify the nucleus in 9
+person-months.
+
+
+Hawblitzel~{\em et al}~\cite{ironclad14} has recently developed a set
+of new tools based on the Dafny verifier~\cite{dafny10} and Z3 SMT
+solver~\cite{moura08}, and applied them to build their Ironclad system
+which includes a verified kernel (based on Verve~\cite{hawblitzel10}),
+verified drivers, verified system and crypto libraries, and several
+applications.  This is another impressive effort that advances the
+frontier of system software verification. Ironclad, however, only
+proves the partial correctness property (at the assembly level), which
+is weaker than the total correctness properties proved by seL4 and
+\CTOS. All properties proved by Ironclad are not ``contextual'' so it
+is unclear how properties proved on Ironclad apps would still hold
+when new extensions are added into their system. Ironclad also differs
+from seL4 and \CTOS\ in that its proofs are all done by an SMT solver
+which does not produce any machine-checkable proof objects.
+
+
+\citet{filipovic10} showed that proving linearizability for
+concurrent objects is precisely equivalent to proving
+termination-insensitive contextual refinement for a simple
+object-based concurrent language. \citet{liang13,li} extended this
+result
+
+
+\paragraph*{Comparison with seL4}
+As mentioned in Section~\ref{sec:intro}, the seL4 team only proved the
+{\em refinement} property but not the {\em contextual refinement}
+property, so the global properties (\eg,
+security~\cite{murray13,sewell11}) proved at the abstract
+specification level cannot be transferred to the C-implementation
+level.\david{they do transfer security to the C level; need to reword this} 
+The root cause of this problem is their rather simplistic
+C-level state machine which they used to verify their 7500 lines of C
+code. This machine is too high level to model
+several key OS features (e.g, kernel initialization,
+context switches, address translation, and page-fault
+handling). Indeed, these features happen to coincide with the
+unverified C and assembly code in their kernel.
+
+Sewell {\em et al.}~\cite{sewell13} used translation validation to
+build a refinement proof between the semantics of the verified C
+source code and the corresponding binary (compiled by GCC).  This
+proof is not as high quality as the rest of the seL4 effort because
+it was not done in a proof assistant (thus it has no machine-checkable
+proof) and the translation validator itself still has not been
+verified.
+
+Even with this work by Sewell {\em et al.}~\cite{sewell13}, the
+previously unverified C code (1200 lines) and assembly code (600
+lines) in seL4 still remain unverified. These are actually quite {\em
+  major} assumptions for a verified kernel because they include the
+correctness of context switches, kernel initialization, address
+translation, and linking between verified C and assembly; all of which
+were considered as major challenge problems by many researchers
+working in this
+field~\cite{verisoft06,ni07,feng08:vstte,BedrockPLDI11,vaynberg12}.
+
+Using \CTOS, we have successfully tackled all of these challenges:
+context switches, kernel initialization, address translation, and page
+fault handling are all certified. All kernel components (in C and
+assembly) are correctly linked together to form a complete system in
+an assembly machine and all our proofs are machine-checkable in Coq.
+
+Much of the implementation complexity of the seL4 kernel lies on its
+support of capability-based access control. Capabilities are important
+in seL4 as they are used to prevent unwanted interference between
+different kernel components. However, they significantly increase the
+complexity of the seL4 kernel.  In contrast, the \CTOS-family kernels
+we have built so far rely on the CompCert memory
+model~\cite{leroy12} to enforce isolation and prove contextual
+refinement.
+
+
+
+Vaynberg {\em et al.}~\cite{vaynberg12} also advocated a layered approach
+and used it to verify a small virtual memory manager. Their layers
+are not linearly ordered; instead, their seven abstract machines
+form a DAG with potential upcalls (i.e., calls from a lower layer to
+upper ones). As a result, their initialization function (an upcall)
+was much harder to verify. Their refinement proofs between layers are
+insensitive to termination, from which they can only prove partial
+correctness but not the strong contextual refinement property which we
+prove in our current work.
+
+}
+

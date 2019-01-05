@@ -1,0 +1,197 @@
+\section{Evaluation and Experience}
+\label{sec:kernel}
+
+\begin{table}[t]
+\caption{Lines of proofs in Coq for the toolkit.}
+\vspace{-5pt}
+\begin{center}
+\begin{small}
+\renewcommand{\arraystretch}{1} 
+\begin{tabular}{|c|c||c|c|}
+\hline
+Component & LOC & Component & LOC \\
+\hline
+\hline
+Auxiliary library & 6,200 & Multilayer linking & 17,000 \\
+\hline
+C verifier & 2,200 & Multithread linking & 10,000 \\
+\hline
+Asm verifier & 800 & Multicore linking & 7,000 \\
+\hline
+Simulation library & 1,800 & Thread-safe CompCertX & 7,500\\
+\hline
+\end{tabular}
+\end{small}
+\end{center}
+%\vspace{-9pt}
+%\hrulefill
+\label{table:toolkit}
+\vspace{-5pt}
+\end{table}
+
+%
+\begin{table}[t]
+\caption{Statistics for implemented components.}
+\vspace{-5pt}
+\begin{center}
+\begin{small}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\tabcolsep}{0.3em}
+\begin{tabular}{|c|c|c|c|c|c|c|}
+\hline
+ & \makecell{ C\&Asm \\Source} & Spec. & \makecell{Invariant \\ Proof} & \makecell{C \& Asm \\Proof} & \makecell{Simulation \\ Proof} \\
+%\cline{3-4}
+% & Source & Specification & Invariant Proof & Proof & Proof  \\
+\hline
+Ticket lock & 74 & 615 & 1,080 & 1,173 & 2,296* \\
+\hline
+MCS lock & 287 & 1,569 & 2,299  &  1,899 & 3,049** \\
+\hline
+Local queue & 377 & 554 & 748 & 2,821& 3,647 \\
+\hline
+Shared queue &  20 & 107 & 190 & 171& 419\\
+\hline
+Scheduler & 62 & 153 & 166 & 1,724 & 2,042 \\
+%\hline
+%Multithreaded linking & N/A & 2350 & N/A & N/A & 31,500 \\ 
+\hline
+Queuing lock & 112 & 255 & 992 & 328 & 464 \\
+\hline
+\end{tabular}
+\end{small}
+%\newline
+\end{center}
+
+\begin{flushright}\begin{scriptsize}
+* Starvation proof for Ticket lock included: 980\\
+** Starvation proof for MCS lock included: 2,455
+\end{scriptsize}
+\end{flushright}
+\label{table:evaluation}
+
+\end{table}
+
+
+We have implemented the CCAL toolkit (see
+Fig. \ref{fig:toolchain}) in the Coq proof assistant. Table
+\ref{table:toolkit} presents the number of lines (in Coq) for each component in Fig.~\ref{fig:toolchain}. The auxiliary library contains the common
+tactics and lemmas for 64 bit integers, lists, maps, integer
+arithmetic, {etc}.
+
+
+
+\para{Case Studies.}
+
+To evaluate the framework itself, we have implemented, specified, and verified various
+concurrent programs in the framework. Table \ref{table:evaluation} presents some of the
+statistics with respect to the implemented components in terms of the number of lines of C \& assembly
+source code, the number of layers used to specify and verify the module, the size of the
+specification, and the number of lines
+(in Coq) used to perform the invariant proof, code proof, and refinement proof, respectively.
+
+Lock implementations are  big parts in our examples. 
+The first reason or this large LoC is the subtlety of busy waiting in the lock implementation 
+(line 14 in Fig.~\ref{fig:exp:ticket_lock_example}). This requires us a large number of proofs to show 
+ this loop
+terminates within a bound (i.e.\, starvation-freedom). 
+The other reason is mainly related to the strategy simulation 
+that we have explained in Sec.~\ref{sec:informal}. 
+Since our main goal is facilitating our toolkit for a large concurrent software system 
+with scalability,  we have to make sure the the spinlock module provides
+a general and simple interface.
+This requires us to lift the low-level strategies (or specifications)
+of two lock implementation to the same atomic interface (see Sec.~\ref{sec:informal}), which make proofs big.
+Despite of this large LoC, however, the client of spinlocks can be verified over a simple interface
+thanks to our toolkit.
+
+Their source code contains not only
+the code of the associated functions,
+but also the data structures and their initialization.
+In addition to the top level interface, the specification contains all the 
+specifications used in the intermediate layers.
+For both the ticket and MCS locks,
+the refinement proof column
+includes the proof of starvation freedom (about 3,500 lines) in addition to the correctness proof.
+The gap between the underlying C implementation and the high level specification of the locks
+also contributes to the large proof size for these components.
+For example, the intermediate specification of the ticket lock uses an unbounded
+integer for the ticket field,
+while the implementation uses a binary integer
+which wraps back to zero.
+Similarly, the queue is represented as a logical list in the specification,
+while it is implemented as a doubly linked list.
+
+
+Our development is compositional. Both ticket  and MCS locks share the same
+high-level atomic specifications (or strategies) shown in Sec.~\ref{sec:informal}.
+Thus the lock implementations can be freely interchanged without affecting any proof
+in the higher-level modules using locks. When implementing the shared queue library, we
+also reuse the implementation and proof of the local (or sequential) queue library:
+to implement the atomic queue object, we simply wrap the
+local queue operations with lock acquire and release statements.
+As shown in Table \ref{table:evaluation}, using verified lock modules to build
+atomic objects such as shared queues is relatively simple and does not require
+many lines of code.
+
+Following the same philosophy, 
+Gu et al. \cite{certikos-osdi16} has further extended our work with paging-based
+dynamically allocated virtual
+memory, device drivers with in-kernel interrupts, a synchronous inter-process
+communication (IPC) protocol using the queuing lock, a shared-memory IPC protocol with
+a shared page, and Intel hardware virtualization support;
+our CCAL toolkit was used to produce the world's
+first fully certified concurrent OS kernel
+with fine-grained locking. 
+
+
+\para{Performance Evaluation.} 
+The verification should not by any means hinder the performance.
+One benefit of the layered approach is that
+concrete and highly optimized (and thus complex) implementations can be abstracted
+into much simpler logical specifications that are easier to reason about.
+In our toolkit, the verified source code (both C and assembly) are encoded as
+abstract syntax trees in Coq, while CompCertX is written directly in
+Coq. We then use Coq's extraction mechanism to produce a program which
+compiles the C source code and outputs a single piece of assembly code
+for the system. The resulting code is efficient.
+We have measured the performance
+of the ticket lock on an Intel 4-Core i7-2600S (2.8GHz) processor with 16GB memory.
+Initially, the ticket lock implementation incurred a latency of 87 CPU cycles in the
+single core case.
+After a short investigation, we found that we forgot to remove some function calls
+to ``logical primitives'' used for manipulating ghost abstract states. After we removed
+these extra null calls, the latency dropped down to only 35 CPU cycles.
+Gu et al. \cite{certikos-osdi16} also presented performance
+evaluations of their OS kernel built using CCAL.
+
+\para{Limitations.}
+
+Our concurrent  machine models assume strong sequential consistency (SC)
+for atomic primitives. 
+Previous work~\cite{SewellSONM10} demonstrated that race-free programs on a
+TSO model do indeed behave as if executing on a
+sequentially consistent machine. Since safe programs on our push/pull model are race-free, 
+we believe extending our work from SC to TSO is promising. In our future work,
+we will formalize and integrate this proof in Coq.
+%We leave the support for relaxed memory models as future work.
+Since our model requires all non-atomic memory
+operations to be synchronized through locking, and the x86 TSO model
+guarantees proper order for the atomic operations used to implement
+locks, we are confident that our proof is valid for that model as
+well.  However, a formal proof of this is left as future work.
+Furthermore, the current event-based contextual refinement proofs still require
+quite a bit of manual proof. We are working on developing more
+automation tactics to further cut down the proof effort. In addition to this
+general toolkit that can support a broad range of concurrent programs,
+we also plan to provide more aggressive automation for commonly-used
+concurrent programming patterns, either through additional tactic
+libraries or using specific program logics targeting such patterns.
+
+Our layered methodology enables us the modular development of the proofs, by proving
+each module at the right abstraction level with minimum dependencies, avoiding unnecessary
+tedious dependency proofs. But still, as the code base gets larger, the slowdown
+in the compilation time starts to affect efficiency of the development more and more.
+For example, in rare cases, if we change the file that contains global definitions used by
+most of other files, the compilation take very long to get to the file we are working on.
+We are actively considering porting our framework to the newest version of Coq which support
+asynchronous edition and compilation.

@@ -1,0 +1,185 @@
+\section{Introduction}
+\label{sec:intro}
+
+Abstraction layers (e.g., circuits, ISA, device drivers, OS kernels,
+and hypervisors) are widely used in modern computer
+systems to help reduce the complex interdependencies among components
+at different levels of abstraction~\cite{salzer09,baldwin00}.  An
+abstraction layer defines an interface that hides the implementation
+details of its underlying software or hardware components. Client
+programs built on top of each layer are understood solely based on
+the interface, independent of the layer implementation.
+
+As multicore hardware and multithreaded programming become more
+pervasive, many of these abstraction layers also become {\em
+  concurrent} in nature.  Their interfaces not only hide the concrete
+data representations and algorithmic details, but also create an
+illusion of {\em atomicity} for all of their methods: each method call
+is viewed as if it completes in a single step, even though its
+implementation contains complex interleavings with operations done by
+other threads.  Herlihy~{et~al.}~\cite{herlihy90,Herlihy08book}
+advocated using layers of these atomic objects to 
+construct large-scale concurrent software systems.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{figure}
+\centering
+\includegraphics[scale=.5]{figs/ccal/sys_arch}
+\caption{An overview of concurrent abstraction layers in a modern
+  multithreaded and multicore environment (arrow means
+  possible function call from one component to another).}
+\label{fig:arch}
+\end{figure}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{figure*}[t]
+\centering
+%\ifTR{}{\vspace*{-7pt}}
+\includegraphics[scale=.5]{figs/ccal/tool_chain}
+%\ifTR{}{\vspace*{-7pt}}
+\caption{System architecture of the CCAL programming toolkit.}
+\label{fig:toolchain}
+%\ifTR{}{\vspace*{-5pt}}
+\end{figure*}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Figure~\ref{fig:arch} presents a few common concurrent layer objects
+in a modern multicore runtime. Here we
+use the light gray color to stand for thread-local (or CPU-local)
+objects, blue (also with round dots in their top-right corner) for objects shared between CPU cores, green for objects exported and shared between threads, and orange for threads
+themselves. Above the hardware layers, we must first build an efficient
+and starvation-free spinlock implementation~\cite{mcs91}. 
+With spinlocks, we can implement shared objects for sleep and pending thread
+queues, which are then used to implement the thread schedulers,
+and the primitives yield, sleep, and wakeup. 
+On top of them,
+we can then implement high-level synchronization libraries such as
+queuing locks, condition variables (CV), and message-passing
+primitives~\cite{ospp11}.
+
+Despite the importance of concurrent layers and a large body of recent
+work on shared-memory concurrency
+verification~\cite{ohearn:concur04,brookes:concur04,feng07:sagl,vafeiadis:marriage,LRG,gotsman13,Turon13popl,nanevski13,sergey15pldi,iris15,pinto16,lili16,xu16},
+there are no certified programming tools that can
+specify, compose, and compile concurrent layers to form a whole
+system~\cite{sfm16}.
+Formal reasoning across multiple concurrent
+layers is challenging because different layers often exhibit different
+interleaving semantics and have a different set of observable
+events. For example, the spinlock module in Fig.~\ref{fig:arch}
+assumes a multicore model with an overlapped execution of instruction
+streams from different CPUs. This model differs significantly
+from the multithreading model for building high-level synchronization
+libraries: each thread will block instead of  spinning if a queuing
+lock or a CV event
+is not available; and
+it must count on other threads to wake it up to ensure liveness.
+
+
+Reasoning across these different abstraction levels requires a
+general, unified compositional semantic model that can cover all of
+these concurrent layers. It must also support a general ``parallel
+layer composition rule'' that can handle explicit thread control
+primitives (e.g., sleep and wakeup). It must also support
+vertical composition~\cite{ospp11} of these concurrent layer
+objects~\cite{Herlihy08book} while preserving both the
+linearizability and progress (e.g., starvation-freedom) properties.
+
+
+\para{Contributions.} 
+In this paper, we present CCAL---a fully mechanized
+programming toolkit implemented in
+Coq~\cite{coq} and developed under the CertiKOS project \cite{certikos-osdi16} for building certified {\em concurrent}
+abstraction layers.  
+As shown in Fig.~\ref{fig:toolchain}, CCAL consists of a novel
+compositional semantic model for concurrency, a collection of C and
+assembly program verifiers, a library for building layered refinement
+proofs, a thread-safe verified C compiler based on
+CompCertX~\cite{dscal15}, and a set of certified linking tools for
+composing multithreaded or multicore layers.
+
+We define a certified  concurrent abstraction layer
+as a triple $(L_1[A],M,L_2[A])$ plus a mechanized proof object showing that the layer implementation $M$, running on behalf of a thread set $A$ over the interface $L_1$, indeed faithfully implements the desirable interface $L_2$
+above. Our compositional semantics model  is based upon
+ideas from game semantics~\cite{gsinvite}. It
+enables local reasoning such that  the implementation can be first verified over a single thread $t$ by building $(L_1[\set{t}], M,L_2[\set{t}])$ without worrying too much about the concurrency
+and the guarantees can then be propagated to the whole concurrent machine by parallel compositions. 
+
+Following \citet{dscal15}, certified concurrent layers enforce {\em
+  termination-sensitive} contextual correctness property. In the
+concurrent setting, this means that every certified concurrent object
+satisfies not only a safety property (e.g., {\em
+  linearizability})~\cite{herlihy90,filipovic10} but also a progress
+property (e.g., {\em starvation-freedom})~\cite{liang13}.
+
+The CCAL toolkit has already been used in multiple
+large-scale verification projects under CertiKOS: \citet{certikos-osdi16} have
+successfully used CCAL to build the world's first fully certified
+concurrent OS kernel; \citet{cpp-mcs-lock} used CCAL to verify the
+safety and liveness of a complex MCS lock
+implementation~\cite{mcs91}. Neither of these two
+papers~\cite{certikos-osdi16,cpp-mcs-lock} explained the internals of
+CCAL and how and why it can work so effectively.
+
+This paper, rather than focusing on the applications of  CCAL, gives an in-depth exploration of the CCAL toolkit itself and how it can be used for building various certified concurrent objects. Over \citet{certikos-osdi16}, this paper presents the following three  technical contributions:
+\begin{itemize}[leftmargin=15pt] \itemsep1em
+
+\item We introduce a new compositional semantic model for shared-memory
+  concurrent abstract machines and prove a general parallel layer
+  composition rule. We show how our new framework is
+  used to specify, verify, and compose various concurrent objects at different levels of abstraction (see Fig.~\ref{fig:arch}) 
+  such as multicore
+  machine hardware, implementations of fine-grained
+  synchronization primitives (e.g., spinlocks, queuing locks,
+  condition variables), low-level thread primitives (e.g., $\yield$,
+  $\sleep$, $\wakeup$), and multi-threading in the presence of a software 
+  scheduler and I/O interrupts.
+\item We show how to apply standard {\em simulation}
+  techniques~\cite{compcert,dscal15} to verify
+  the safety and liveness of concurrent objects in a unified setting.
+Following RGSim~\cite{RGSim}, we can impose
+  {\em invariants} both over the environment contexts (i.e., the ``rely'')
+  and also over the active threads themselves (i.e., the ``guarantee'').
+  However, unlike RGSim,
+  because our environment context
+  specifies not just the environment's past events
+  but also {\em future events}, we can readily impose temporal
+  invariants such as fairness requirements (for schedulers) or
+  {\em definite actions}~\cite{lili16} (for releasing locks). This allows
+  us to give full specifications for lock primitives and support vertical
+  composition of starvation-free atomic objects, none of which have ever
+  been possible before~\cite{lili16}.
+%%%%%%%%%%%%%
+\item
+  We have also developed a new {\em thread-safe} version of the
+  CompCertX compiler~\cite{dscal15} that can compile certified concurrent C
+  layers into assembly layers.
+  To support certified multithreaded linking, we have developed a new
+   extended algebraic memory model (for CompCertX) whereby stack frames
+  allocated for each thread are combined to form a single coherent
+  CompCert-style memory.
+%%%%%%%%%%%%%
+\end{itemize}
+%
+%%\vspace{-5pt}
+%\para{Scope and Paper Outline.} While the notion of certified
+%concurrent layer can potentially be applied to a more general
+%setting~\cite{lynch96,sangiorgi03}, in this paper, we focus on
+%shared-memory concurrent program modules as described in
+%\citet{ospp11} and \citet{Herlihy08book}, which are sufficient to
+%verify layers as shown in Fig.~\ref{fig:arch}.  Section~\ref{sec:related}
+%discusses related work and puts our work in broader perspective. Both
+%the CCAL toolkit and all our assembly (or C) machines assume strong
+%sequential consistency for  shared primitives. Adding support for
+%relaxed memory models is left as future work.
+%
+%%\para{Supplemental Material}
+%More technical details are found in 
+% the Coq implementation (submitted as the supplemental material)
+%of our CCAL toolkit, including the layered specifications, simulation
+%proofs, linking theorems, 
+%and the thread-safe CompCertX compiler.
+
+

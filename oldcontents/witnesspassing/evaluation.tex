@@ -1,0 +1,48 @@
+\vspace{-0.7em}
+
+\section{Evaluation}
+\label{sec:evaluation}
+Our verification contains two parts, a high-level representation and the low-level implementation of the protocol. 
+
+The shared library that contains basic network template and model, 
+data type template, and per-protocol data type template is approximately 2,300 lines of code. 
+Specifying the distributed systems using the shared library takes about 800 to 1,000 lines of code
+and the verification of individual system takes minimum 10,000 lines of code. 
+Still we believe there are opportunities to reduce the lines of code by
+introducing user-defined tactics and careful reconstruction of lemmas. 
+
+The explosion of the lines of code is mainly due to
+the duplicated codes and low-level code handling in multiple layers. 
+
+
+ 
+
+
+\ignore{
+\para{Proof Effort}
+
+Our verification of Paxos can be divided into two main parts: functional correctness and safety.
+All of the proofs of functional correctness took approximately 1.5 person-months, in large part thanks to the power of the CCAL framework.
+The safety proofs using write-witness-passing were completed in 2 person-months with a small amount of trial-and-error.
+
+\para{Comparison with non-witness-passing proof}
+
+Our initial attempt to prove the safety of Paxos did not use witnesses and instead went by induction on the round number or the network log.
+We quickly found that this strategy created large, intractable proofs due to the difficulty of trying to reconstruct global state
+from only partial local information.
+Adding in write-witness-passing required only minor changes to our specifications, but made many of the proofs significantly easier.
+Because we never completed the proofs without write-witness-passing, we cannot directly compare how long each method took;
+however, before using witnesses we struggled to make any significant progress, and afterwards progress was steady.
+
+
+\para{Hand-written Proof vs. Mechanized Proof}
+
+The overall structure of our Paxos safety proof is similar to some hand-written proofs.
+However, these proofs often proceed by induction on the round numbers or network transitions,
+which, as stated earlier, we found to be difficult in a mechanized proof.
+The nature of machine-checked proofs means that every corner-case and detail must be accounted for,
+and where a hand-written proof might gloss over some seemingly trivial fact, the full proof can turn out
+to be surprisingly involved.
+The reward for this extra work is a more rigorous proof that can be linked to the actual implementation,
+thus providing an even stronger assurance of correctness.
+}

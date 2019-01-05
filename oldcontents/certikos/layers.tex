@@ -1,0 +1,51 @@
+\section{Detailed Layer Definitions}
+\label{sec:layers}
+
+\subsection{Overview of the Layers of \mCTOS{}}
+\label{sec:spec:layer}
+  
+The \mCTOS{} kernel is divided into six main parts.
+Following the bottom layer (the bare machine) to the top (the system call),
+they are physical memory management (4 layers), virtual memory management (7 layers), thread management (10
+layers), process management (4
+layers), virtualization (9 layers), and the trap handler (3 layers).
+
+
+\paragraph{Bottom Layer} is the abstract machine after the bootloader.
+%i.e., the \verb+MBoot+ layer in Figure \ref{fig:mm:layer}. 
+In this version, we do not aim for the verification of the bootloader,
+and rely on the bootloader to set up the physical memory
+map correctly.
+
+The abstract state of the \verb+MBoot+ layer consists of:
+\begin{itemize}
+\item \verb"MM", the physical memory map from bootloader
+indicating the actual size
+  of available physical memory and the type (usable or reserved) of
+  each memory piece.
+\item Logical flags: \verb"pe" is abstract from CR0 register, showing
+  whether paging is enabled or not; \verb"ikern" and \verb"ihost"
+  decide the current mode (kernel/user and host/guest).
+\end{itemize}
+
+In addition to the assembly instructions, the bottom layer also provides primitives to read \verb"MM" and set logical flags.
+ 
+\paragraph{Top Layer} is the abstract machine that user programs and guest OS kernels are running on. The top layer provides:
+\begin{itemize}
+\item 12 primitives used inside mCertiKOS, including thread
+  management, reading page table (to access \verb"high memory" of a user
+  process), primitives to manipulate user contexts and the page fault
+  handler. These primitives cannot be called by user/guest.
+\item 25 system calls for user/guest, including inter-process
+  communication (IPC), process creation, starting virtual machine
+  (guest OS kernel), and others. % (Haozhong can fill in the others).
+\item one special primitive to run mCertiKOS
+\item abstract states related to the primitives, such as abstract TCB pool, thread queues, virtual machine state, page table pool, and also the channel pool for IPC.
+\end{itemize}
+
+\input{pmmlayers}
+\input{vmmlayers}
+\input{tmlayers}
+\input{pmlayers}
+\input{vmlayers}
+\input{traplayers}

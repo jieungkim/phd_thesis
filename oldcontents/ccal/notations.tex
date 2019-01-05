@@ -1,0 +1,69 @@
+\onecolumn
+
+\section{Table of notations}
+
+\vilhelm{This appendix will not be part of the paper when we submit it, but can be helpful to keep the notation consistent during paper writing.}
+
+\begin{tabular}{lp{12cm}}
+$\layer{L'}{M}{L}$ & Certified abstraction layer. (Sec~\ref{sec:intro}.) \\
+$\ltyp{L'}{R}{M}{L}$  & Layer correctness
+  statement. (Sec~\ref{sec:intro}.) \\
+$\sem{L}{\cdot}$ & The state machine for layer
+  $L$. (Sec~\ref{sec:intro}.) \\
+$\sem{L'}{P\oplus{}M} \leq_R \sem{L}{P}$ & (An instance of) Layer refinement. (Sec~\ref{sec:intro}.) \\
+$L[A]$ & the layer $L$ with members of $A$
+  being {\em active} and members outside $A$ considered as the {\em environment}. (Sec~\ref{sec:intro}.)\\
+$L[t]$ & Abbreviation for  $L[\{t\}]$.  (Sec~\ref{sec:intro}.) \\
+  $\oracle$ & Environment context. \\
+$(L'[t],M,L[t])$ & A ``sequential certified abstraction
+  layer''. (Sec~\ref{sec:intro}).\\
+  $\stratp{hs}$  & Scheduler strategy. (Sec~\ref{sec:informal}.)\\
+$i \switch j$  & A CPU switch event. (Sec~\ref{sec:informal}.) \\
+$\ssame$  & Switch to the same thread (abbreviates $(i\switch{}hs) \cons (hs\switch i)$. (Sec~\ref{sec:informal}.) \\
+$\sdiff$ & Switch to different thread (abbreviates $(i\switch{}hs) \cons (hs\switch j)$). (Sec~\ref{sec:informal}.) \\
+  $l \cons e$ & Append an event to a log. (Sec~\ref{sec:informal}.) \\
+  $\comm{target}(l)$ & Switching target of a log. (Sec~\ref{sec:informal}.) \\
+  $l |_A$ & Filter a log to keep events related to $A$. (Sec~\ref{sec:informal}.)\\
+  $f$ & Function from low to high logs. (Sec~\ref{sec:informal}.)\\
+  $\Mach$ & Machine or Partial machine. (Sec~\ref{sec:layer}). \\
+  {\small $\Mach_1 \refines \Mach_2$} & Refinement. (Sec~\ref{sec:layer}). \vilhelm{need to change this to use $\le$ instead.} \\
+  $\Mach \langle \Env \rangle$ & Instantiated partial machine. (Sec~\ref{sec:layer}, \ref{sec:mach}.)\\
+  $\EC{\Mach}$ & Valid (i.e. invariant-respecting) contexts. (Sec~\ref{sec:layer}.)\\
+  $\Mach_1 \Join \Mach_2$ & Linking partial machines. (Sec~\ref{sec:layer}.)\\
+  $ \bigcup \Mach$ & Nondeterminized partial machine. (Sec~\ref{sec:layer}.)\\
+  $\kw{LAsm}(L_2(t, \Env'), P)$ & (used without explanation in Sec~\ref{sec:layer}.)\\
+  $\Mach_{\boot}$,  $\LAsm$,  $\PBoot$ & These are specific machines introduced in Sec~\ref{sec:mach}.\\
+  $\Mach.S$ & The state component of a tuple that makes up a machine. (Sec~\ref{sec:mach}.)\\
+  $\rho$ & Private state of a thread.  (Sec~\ref{sec:mach}.)\\
+  $f_p$ & The thread-private state component of a machine state. (Sec~\ref{sec:mach}.)\\
+  $m$ & Memory component of machine state. (Sec~\ref{sec:mach}.)\\
+  $a$ & Abstract state component of machine state. (Sec~\ref{sec:mach}.)\\
+  $l$ & Global log component of machine state.  (Sec~\ref{sec:mach}.)\\
+  $\intp$ & Switch point. (Sec~\ref{sec:mach}.)\\
+  $L := (\abst, \Ev, \primt)$ & Multiprocessor layer interface. (Sec~\ref{sec:mach}.) \vilhelm{Note the different font, to distinguish from active set $A$.}\\
+  $\abst$ & Type of abstract state.  (Sec~\ref{sec:mach}.)\\
+  $\Ev$ & Type of events.  (Defined in Sec~\ref{sec:mach}, but it was prematurely used in Sec~\ref{sec:layer}.)\\
+  $c$ & CPU identifier. (Sec~\ref{sec:mach}.)\\
+  $\primt(c, \oracle)$ & the set of 
+available primitives and their 
+specifications.  (Sec~\ref{sec:mach}.)\\
+$L(c,\oracle)$ & is \emph{kindof} the same as $L[c]$, but with a particular oracle. \vilhelm{This seems ripe for harmonization.}\\
+$\LAsm(L(c, \oracle))$ & This is notation for a particular machine, rather than an operator being applied to something? (Sec~\ref{sec:mach}.)\\
+$ L, M, \oracle, c \vdash f : (args;\state) \Downarrow (res;\state')$ & Operational semantics of function calls.  (Sec~\ref{sec:mach}.)\\
+$  M(f) = S $ & Looking up a function body in layer code. (Sec~\ref{sec:mach}.)\\ 
+$  \regs_0 = \regs \leftarrow args$ & Binding arguments to registers. (Sec~\ref{sec:mach}.)\\
+$L(c,\oracle)(f)(args;\state, res;\state')$ & Accessing the primitive specifications in a layer interface. (Sec~\ref{sec:mach}.) \vilhelm{Can probably maybe omit this and write everything in terms of $\sigma$s, somehow?}\\
+$\replay$, $\replay_{\comm{get\_shared}}$, etc. & Replay functions.  (Sec~\ref{sec:mach}.)\\
+$l_0 = l \cons \oracle(l)$ & Appends a list of events (abuse of notation).  (Sec~\ref{sec:mach}.)\\
+$ a' = a \set{\perm{b}: \comm{valid}} $ Record update.  (Sec~\ref{sec:mach}.)\\
+$c.\push(b,\bytelist)$ & This is a single event, where the id field of the event is $c$.  (Sec~\ref{sec:mach}.)\\
+$ \oracle, c \vdash  \sstep{\spec_{\push}}{[b]}{\regs, m, a, l}{\any}{\regs, m, a', l'}$ & A definition/use of a particular primitive specification $\spec_{\push}$.  (Sec~\ref{sec:mach}.)\\
+$f_{l3}$ & The log function between $L_3$ and $L_4$.
+(Sec~\ref{sec:mach}.)\\
+TAsm & \vilhelm{This is basically what is called LAsm in
+  Sec~\ref{sec:mach}, need to harmonize this.}\\
+$f$ & The code of a CLightX function. (Sec~\ref{sec:comp}) \vilhelm{harmonize.}\\
+$\inject{j}{m'}{m''}$ & Memory injections.  (Sec~\ref{sec:comp})\\
+$L_{2, \text{Asm}} \leqslant_R \llbracket M_{\text{Asm}} \rrbracket L_1$ & Refinement.  (Sec~\ref{sec:comp})\\
+ $\disjointunion{m_1}{m_2}{m}$ & Disjoint union relationship on memories (a ternary relations).   (Sec~\ref{sec:comp})\\
+\end{tabular}
