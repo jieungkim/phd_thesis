@@ -1,0 +1,168 @@
+%%% For proofs 
+\newtheorem{definition}{Definition}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+\newtheorem*{remark}{Remark}
+\newtheorem{invariant}{Invariant}
+\renewcommand\qedsymbol{$\blacksquare$}
+\newenvironment{myproof}{{\bf Proof:}}{\hfill\rule{2mm}{2mm}}
+
+\newcommand{\pref}[1]{\prettyref{#1}}
+\newcommand{\Pref}[1]{\prettyref{#1} \vpageref[]{#1}}
+\newcommand{\ppref}[1]{\vpageref[]{#1}}
+\newrefformat{fig}{Figure~\ref{#1}}
+\newrefformat{tab}{Table~\ref{#1}}
+
+%%% general
+\newcommand\ignore[1]{}
+%
+%% COMMENTS 
+\newif \ifcomments \commentsfalse
+
+\ifcomments
+\newcommand{\zhong}[1]{\textbf{\textcolor{red}{[ #1 --Zhong]}}}
+\newcommand{\jieung}[1]{\textbf{\textcolor{red}{[ #1 -- Jieung]}}}
+
+\else
+\newcommand{\zhong}[1]{}
+\newcommand{\jieung}[1]{}
+
+\fi
+%% END COMMENTS
+%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+
+%%% for hypertext
+
+\hyphenation{CompCert}
+\hyphenation{CompCertX}
+\hyphenation{Clight}
+\hyphenation{ClightX}
+\hyphenation{CertiKOS}
+\hyphenation{mCertiKOS}
+\hyphenation{mCTOS}
+\hyphenation{CTOS}
+\hyphenation{mCTOS-hyp}
+\hyphenation{mCTOS-rz}
+\hyphenation{mCTOS-emb}
+
+
+%%%%%%%%%%%%%% COMMON 
+\newcommand{\code}[1]{{\texttt{#1}}}
+
+%%% for intros 
+\newcommand{\selfour}{\textsf{SeL4}}
+%%%%
+
+
+%%%%%%%%%%%%%% FROM CCAL 
+\newcommand\oracle{\mathlarger{\varepsilon}}
+
+%\newcommand{\eg}{e.g.\xspace}
+%\newcommand{\ie}{i.e.\xspace}
+%\newcommand{\cf}{cf. }
+%\newcommand{\etc}{etc.\xspace}
+%\newcommand{\etal}{ et al.\xspace}
+%\newcommand\step[1]{\overset{#1}{\rightarrow}}
+%\newcommand\emptye{\epsilon}
+%\newcommand\model{\models}
+%\newcommand\opsem[3]{l,ge\model #2 \step{#1} #3}
+%\newcommand\opsems[3]{l,ge\model #2 \overset{#1}{\rightarrow^*} #3}
+%\newcommand\partialf{\rightharpoonup}
+%
+%\newcommand\CAS{\text{CAS}}
+%\newcommand\XADD{\text{XADD}}
+%\newcommand\XCHL{\text{XCHL}}
+%\newcommand\FAA{\text{FAA}}
+%\newcommand\FAI{\text{FAI}}
+%\newcommand\intptext{\text{switch point}}
+%
+%\newcommand{\event}[1]{{\tiny \mathrm{\texttt{#1}}}}
+%\newcommand\intp{\filledmedtriangleright}
+%%\newcommand\oracle{\mathlarger{\mathlarger{\varepsilon}}}
+%\newcommand\hardoracle{\oracle_{hs}}
+%\newcommand\machx{\Pi}
+%\newcommand\mach[1]{\machx_{\text{#1}}}
+%\newcommand\machrel{\Refrel}
+%\newcommand\switch{\hookrightarrow}
+%\newcommand{\wbigcup}{\mathop{\widetilde{\bigcup}}\displaylimits}
+%\newcommand\inv{\texttt{INV}}
+%\newcommand\set[1]{\{#1\}}
+%\newcommand\machbe[3]{#1 @ \left(#2, #3\right)}
+%\newcommand\env[1]{\overline{#1}}
+%\newcommand\ectxt[1]{{\rm{}EC}({#1})}
+%\newcommand\ectxtc{{\rm{}EC}}
+%\newcommand\myscale[1]{\Scale[0.9]{#1}}
+
+
+
+
+%%%%%%%%%%%%%% FROM MCSLOCK
+\newcommand{\swaptail}[2]{\texttt{SWAP$\_$TAIL #1 #2}}
+\newcommand{\castail}[1]{\texttt{CAS$\_$TAIL #1}}
+\newcommand{\getnext}{\texttt{GET$\_$NEXT}}
+\newcommand{\setnext}[1]{\texttt{SET$\_$NEXT #1}}
+\newcommand{\getbusy}[1]{\texttt{GET$\_$BUSY #1}}
+\newcommand{\setbusy}{\texttt{SET$\_$BUSY}}
+\newcommand{\invalidmcsval}{\texttt{MCS\_TOTAL\_CPU}}
+\newcommand{\rellock}{\texttt{REL$\_$LOCK}}
+\newcommand{\waitlock}[1]{\texttt{WAIT$\_$LOCK #1}}
+\newcommand{\mcsmboot}{\texttt{MMCSMBoot}}
+\newcommand{\mmcslockintro}{\texttt{MMCSLockIntro}}
+\newcommand{\mmcslockabsintro}{\texttt{MMCSLockAbsIntro}}
+\newcommand{\mmcslockop}{\texttt{MMCSLockOp}}
+\newcommand{\mqmcslockop}{\texttt{MQMCSLockOp}}
+\newcommand{\mhmcslockop}{\texttt{MHMCSLockOp}}
+\newcommand{\mathlarger}[1]{#1}
+\newcommand{\mathsmaller}[1]{#1}
+
+\newcommand\mimp{M_C}
+\newcommand\mabs{M_A}
+\newcommand\layer[3]{(#1,#2,#3)}
+
+\newcommand\pCTOS{p\CTOS}
+\newcommand\mCTOS{mC2}
+\newcommand\mCTOSbase{\mCTOS{}}
+\newcommand\mCTOShyper{\mCTOS{}-hyp}
+\newcommand\mCTOSringz{\mCTOS{}-rz}
+\newcommand\mCTOSembed{\mCTOS{}-emb}
+
+\newcommand\sem[2]{[\![#2]\!]_{#1}}
+\newcommand\join{\!\bowtie\!}
+\newcommand\Refrel{\sqsubseteq}
+\newcommand\LSem[1]{\textrm{LSem(}#1\textrm{)}}
+\newcommand\ClightX[1]{\textrm{ClightX(}#1\textrm{)}}
+\newcommand\CompCertX[1]{\textrm{CompCertX(}#1\textrm{)}}
+
+
+\newcommand\None{\mathsf{None}}
+\newcommand\Some{\mathsf{Some}}
+
+\newcommand\nil{\mathrm{\texttt{nil}}}
+\newcommand\QSCalLock{\mathsmaller{\mathrm{\texttt{QS\_CalLock}}}}
+\newcommand\CalBound{\mathsmaller{\mathrm{\texttt{CalBound}}}}
+\newcommand\CalWaitGet{\mathsmaller{\mathrm{\texttt{CalWaitGet}}}}
+\newcommand\LEMPTY{\mathsmaller{\mathrm{\texttt{LEMPTY}}}}
+\newcommand\LHOLD{\mathsmaller{\mathrm{\texttt{LHOLD}}}}
+
+\newcommand\SWAPTAIL{\mathsmaller{\mathrm{\texttt{SWAP\_TAIL}}}}
+\newcommand\GETNEXT{\mathsmaller{\mathrm{\texttt{GET\_NEXT}}}}
+\newcommand\SETNEXT{\mathsmaller{\mathrm{\texttt{SET\_NEXT}}}}
+\newcommand\SETBUSY{\mathsmaller{\mathrm{\texttt{SET\_BUSY}}}}
+\newcommand\true{\mathrm{\texttt{true}}}
+\newcommand\false{\mathrm{\texttt{false}}}
+
+
+
+%%%%%%%%%%%%%% FROM MULTICORE AND MULTITHREADED LINKING
+
+
+
+%------------------------ Added by Ronghui Gu
+
+
+% -------------------------- customize the listings package a bit
+\lstset{basicstyle=\small\ttfamily }
