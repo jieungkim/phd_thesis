@@ -218,9 +218,9 @@ construct a global log.
 
 \para{Extending CompCert and Verified Compilation.} 
 
-Stewart {\etal}~\cite{stewart15} extends the original CompCert compiler~\cite{compcert}  
+Compositional CompCert~\cite{stewart15} extends the original CompCert compiler~\cite{compcert}  
 to support compositional thread-safe compilation of concurrent Clight programs. 
-They introduce their interaction semantics, which treats
+They introduce their interaction semantics followed by the approach proposed by Beringer \etal~\cite{beringer14}, which treats
 synchronization
 primitive calls as external calls.
 They, however, does not support a layered ClightX language as we support in our CompCertX.  
@@ -285,109 +285,111 @@ high-level specification.
 
 \section{Other Work on the MCS Algorithm}
 
-
-
-
-
 As far as we know, two other efforts apply formal verification methods
-to the MCS algorithm.  Ogata and Futatsugi~\cite{ogata:mcs-lock} used the UNITY program logic to 
-develop a mechanized proof for the MCS algorithm.
+to the MCS algorithm.  Ogata and Futatsugi~\cite{ogata:mcs-lock} used the UNITY program logic to develop a mechanized proof for the MCS algorithm.
 They work, however, is not with executable code, but with an abstract transition system. 
 Their correctness proof works by refinement like we do (between a fine-grained
 and a more atomic spec) but they directly prove backward
 simulation.
 
 One difference is that Ogata and Futatsugi's proof is
-done using a weaker fairness assumption. They assume ``every CPU gets
+done using a weaker fairness assumption.
+Their assumption is ``every CPU gets
 scheduled infinitely often'', while we require a maximum scheduling
-period ($F$ in Section~\ref{sec:liveness-atomicity}).  This is because
-we write our specification of \lstinline$wait_lock$ as a Coq function
-defined by recursion on a natural number, and all Coq functions must
-be total. So although our ultimate theorem only states that the method
-terminates ``eventually'', as an intermediate lemma we need to prove
-an explicit natural number bound on when a given call to
-\lstinline$wait_lock$ will finish.  We could avoid this by e.g. using
-Coq's facilities to define functions by well-founded recursion, and
-making the termination measure $M_i$ take ordinal instead of number
-values, but in practice assuming a fixed $F$ seems like a reasonable
-model of multi-core concurrency.
+period,  cause we write our specification of \lstinline$wait_lock$ as a Coq function defined by recursion on a natural number, and all Coq functions must be total (\ie~ all Coq functions has to terminate). 
+So although our ultimate theorem only states that the method
+terminates ``eventually'', as an intermediate lemma, we need to prove an explicit natural number bound on when a given call to
+\lstinline$wait_lock$ will finish.  
+We could avoid this by using
+Coq's well-founded recursion, and
+making the termination measure take ordinal instead of number
+values, but in practice assuming a fixed termination number seems like a reasonable
+model of multicore concurrency.
 
 The other MCS Lock verification we know of is by Liang and
-Feng~\cite{lili16}, who define a program logic LiLi to prove
+Feng~\cite{lili16}. 
+They use their program logic LiLi to prove
 liveness and linearizability properties and verify the MCS algorithm
-as one of their examples.  The LiLi proofs are done on paper, so they
-can omit many ``obvious'' steps, and they work with a simple
-while-loop language instead of C. Many of the concepts in our proof
-are also recognizable in theirs. The state of their concrete
-  programs includes a pointer $\mathrm{\texttt{tail}}$ and nodes
-  $\mathrm{\texttt{Node}}(\mathrm{\texttt{busy}}, \mathrm{\texttt{next}}, \mathrm{\texttt{ThrdID}})$.
+as one of their examples.  
+The LiLi proofs are done on paper, so they
+can omit many ``obvious'' steps what we have to handle in the mechanized proof, 
+and they work with a simple
+while-loop language instead of C-like languages, which we have used to implement our MCS Lock.
+Many of the concepts in our proof, however, 
+are also recognizable in theirs. 
+The state of their concrete
+  programs includes a pointer \texttt{tail} and nodes
+ \texttt{Node}(\texttt{busy}, texttt{next}, \texttt{ThrdID}).
 In their invariant and precondition they use specificational variables
-$\mathrm{\textit{ta}}$ and $\mathrm{\textit{tb}}$ (like \texttt{la} in
-Sec.~\ref{subsec:atomicoperation}), $\mathrm{\textit{tl}}$ and $S$ (like $q$
-and $s$ in Sec.~\ref{sec:representation-ghost}). Their
-  ``wellformed lock'' predicate $\mathrm{\textsf{lls}}$ includes our
-  tail-soundness and next-correctness properties, so in order to prove
-  that the invariant is preserved they need essentially the same
-  lemmas as in Section~\ref{sec:representation-ghost}. and their
+\textit{ta} and \textit{tb}, \textit{tl} and $S$. Their
+  ``wellformed lock'' predicate \textsf{lls} includes our
+  tail-soundness and next-correctness properties.
+In addition, their
 termination measure $f(\mathrm{G})$ includes the length of
-$\mathit{tl}$ and the size of $S$ (like $M$ in
-Sec.~\ref{sec:liveness-atomicity}. On the other hand, the fairness
+$\mathit{tl}$ and the size of $S$ which is similar to our termination measure function. 
+On the other hand, the fairness
 constant makes no appearance in $f(\mathrm{G})$, because fairness
 assumptions are implicit in their inference rules.
 
-A big difference between our work and LiLi is our emphasis on
-modularity.  Between every two lines of code of a program in LiLi, you
-need to prove all the different invariants, down to low-level data
-representation in memory. The specification takes the form of a single
-pre- and post-condition which involves concepts at many level of
+One big difference between our work and LiLi is our emphasis on
+modularity.  
+LiLi requires users to prove all the different invariants, down to low-level data representation in memory, between every two lines of code of a program.
+The specification takes the form of a single
+pre- and post-condition which involves concepts at multiple levels of
 abstraction. For example, unfolding the definition of the measure $f$,
-we find not only $\mathit{tl}$, but also the tail-pointer $p$, and
-eventually the lock-array $\mathit{ta}$. In our development, these
+we find not only \textit{tl}, but also the tail-pointer $p$, and
+eventually the lock-array  \textit{ta}. In our development, these
 concerns are in different modules which can be completed by different
 programmers.  Similarly, we aim to produce a stand-alone specification
 of the lock operations. In the LiLi example, the program being
 verified is an entire ``increment'' operation, which takes a lock,
 increments a variable and releases the lock. The pre/post-conditions
 of the code in the critical section includes the low-level
-implementation invariants of the lock, and the fact the lock will
+implementation invariants of the lock and the fact the lock will
 eventually be released is proved for the ``increment'' operation as a
-whole. Our locks are specified using \emph{bound} numbers, so they can
-be used by many different methods.
+whole. Our locks are specified using \emph{bound} numbers so that they can be used by many different methods.
 
-Apart from modularity, one can see a more philosophical difference
-between our CCAL approach and program logics such as LiLi.  Liang
-and Feng are constructing a program logic which is tailor-made
+In addition to the modularity, one can see a more philosophical difference
+between our CCAL approach and program logics including LiLi.  
+Liang and Feng are constructing a program logic which is tailor-made
 precisely to reason about liveness properties under fair
-scheduling. To get a complete mechanized proof for a program in that
+scheduling. 
+To get a complete mechanized proof for a program in that
 setting would require mechanizing not only the proof of the program
-itself, but also the soundness proof for the logic, which is a big
-undertaking. Other parts of the program will favor other kinds of
-reasoning, for example many researchers have studied program logics
+itself but also the soundness proof for the logic, which is a big
+undertaking. 
+Other parts of the program will favor different kinds of
+reasoning, for example, many researchers have studied program logics
 with inference rules for reasoning about code \emph{using} locks. One
-of the achievements of the CertiKOS style of specification is its
-flexibility, because the same model---a transition system with data
-abstraction and a log of events---works throughout the OS kernel. When
+of the achievements of the CCAL style of specification is its flexibility because the same model works throughout the entire software stack such as the OS kernel. When
 we encountered a feature that required thinking about liveness and
 fairness, we were able to do that reasoning without changing the
 underlying logical framework.
 
-
 \section{Distributed system verification}
 
 Approaches to verify distributed systems have been explored actively over the
-past few years. IronFleet~\cite{ironfleet} annotates functions with pre- and
+past few years. 
+IronFleet~\cite{ironfleet} aims to verify multi-Paxos by using annotated functions with pre- and
 post-conditions to automatically prove the correctness of the code with an SMT (satisfiability
-modulo theories) solver and proves a refinement relation between the code and
-protocol proofs in different layers.
+modulo theories) solver.
+It also proves a refinement relation between the code and
+protocol proofs (including immutability and liveness) in different layers. 
 
-Verdi~\cite{verdi} is a distributed system verification tool chain
+Verdi~\cite{verdi} is a distributed system verification toolchain
 where developers specify and implement a system using a functional language
 embedded in Coq while assuming a perfect network model. 
 The system can then automatically convert
 it into a system that handles a more realistic network and failure model,
 and provides the refinement property of the system behavior on different network and failure models.
-%They facilitate Verdi to verify Raft.~\cite{cppraft} 
-%Using the framework, they show the correctness and the linearizability of their own Raft implementation written in Coq.
+Woos \etal~ presents the mechanical verification of Raft~\cite{cppraft} by facilitating Verdi. The properties
+verified for Raft includes linearizability and soundness of the leader and
+the code written in Coq translates to executable OCaml code. 
+Our work delegates verification of such Raft properties common to leader-based distributed systems to the template.
+Besides, the final executable code extracted from
+our verification is in assembly, which is generated from CompCert C compiler and is more
+optimized than the OCaml code.
+
 
 DISEL~\cite{disel}
 studies how to verify and horizontally compose different distributed protocols.
@@ -396,67 +398,62 @@ interference among protocols. Throne assumes a realistic network to begin with
 and it not only allows both horizontal and vertical composition of verified distributed
 protocols but also supports combined reasoning of protocols by using witnesses.
 
-Taube et al.~\cite{modular} studied adding
+Taube et al.~\cite{modular}, followed by the previous work~\cite{paxosepr}, studied adding
 decidability for verifying distributed systems using SMT solvers.
-The work surrounding SMT solvers has a philosophical difference with our verification approach.
+The work surrounding SMT solvers has a philosophical difference with our distributed system verification approach.
 We use high-order logic and CCAL, which have higher expressiveness but less automation,
 while SMT-solver-based work requires encoding higher-order concepts into
 first-order logic for better automation. While a relatively large portion of the
 verification can be automated, the SMT-solver-based approach has some limitations.
-For example, certain higher-order properties (e.g. network reduction
-in IronFleet) are not always encodable or verifiable in first order logic.
+For example, some higher-order properties (\eg~network reduction
+in IronFleet) are not always encodable or verifiable in first-order logic.
 
 
 \section{Paxos Verification and Deconstruction}
-A huge body of work exists on verifying the Paxos protocol~\cite{paxos}.
-Lamport provided a proof sketch at the time of proposing the protocol~\cite{paxosmadesimple}
-and Lampson attempted to distill Paxos into its core components by creating a very
+
+A substantial body of work exists on verifying the Paxos protocol~\cite{paxos}.
+Lamport provided a proof sketch at the time of proposing the protocol~\cite{paxosmadesimple}.
+Lampson also attempted to distill Paxos into its core components by creating a very
 high-level Abstract Paxos~\cite{Lampson2001} and showing how variants of
-Paxos can be derived from it. Additional efforts were made to divide Paxos
+Paxos can be derived from it. 
+Additional efforts were made to divide Paxos
 into simpler components~\cite{dpaxos, sdpaxos} to find a reusable framework for
-proving its variants. Our witness-based approach also attempts
-to find a reusable framework for these proofs, but instead of decomposing Paxos
-further, we make the key implicit invariants more explicit by passing around
-the information needed to prove them.
+proving its variants. Our approach also attempts
+to find a reusable framework for these proofs,
+but our approach chooses to pass around the information (by logically exposing the key implicit invariant as the explicit one)
+ that is needed to prove the fundamental properties of distributed protocols instead of decomposing Paxos further. 
 
 Padon et al. verified high-level specifications of many variants of Paxos
 and multi-Paxos while proposing a method to specify the protocols using
 a decidable first-order logic~\cite{paxosepr}. Verification of Paxos
 variants was made possible by reusing the specification and proof of vanilla
-Paxos. Throne on the other hand can reuse the proof of a Paxos instance
-due to CCAL to prove variants of Paxos using proof objects and verifies both the
-C code and the specification of the system based on witness.
+Paxos. 
+On the other hand, our approach can reuse the proof of a Paxos instance
+via using CCAL. 
 
 
-Woos et al. presented the verification of Raft~\cite{cppraft}. The properties
-verified for Raft includes linearizability and soundness of the leader and
-the code written in Coq translates to executable OCaml code. Throne
-delegates verification of such Raft properties common to leader-based distributed
-systems to the template and the final executable code extracted from
-Throne is in assembly, which is generated from CompCert C compiler and is more
-optimized than the OCaml code.
-
-
-Within the category of distributed system verification, there is a significant amount of work focusing specifically on Paxos.
+Within the category of distributed system verification,
+a significant amount of work focuses on Paxos.
 Lamport's first paper on the protocol~\cite{paxos}, and his second attempt to explain it more clearly~\cite{paxosmadesimple}
-present the basic algorithm and give paper proofs of the safety properties.
+present the underlying algorithm and give paper-and-pencil proofs of safety properties of the algorithm.
 Since then, many variations have been developed such as Disk Paxos~\cite{diskpaxos}, Egalitarian Paxos~\cite{epaxos},
-and Vertical Paxos~\cite{vertpaxos}.
-Oftentimes, although these variations seem similar to the original protocol, it is not possible to reuse the original
+and Vertical Paxos~\cite{vertpaxos} to extends the applicability of Paxos by adding additional features. 
+Oftentimes, although these variations seem similar to the original protocol, 
+it is not possible to reuse the original
 proof of the safety properties and a significant amount of work is required to re-prove them.
 Lampson attempted to distill Paxos into its core components by creating a very high-level Abstract Paxos~\cite{Lampson2001}
 and showing how other variants can be derived from it.
 Some still felt that this did not get at the essence of the algorithm because at least two works since then \cite{dpaxos, sdpaxos}
-have studied other ways of dividing Paxos into simpler components such that proofs of the protocol can be made more modular.
+have studied other ways of dividing Paxos into simpler components such that  proofs of the protocol can be made more modular.
 Our write-witness-passing approach also attempts to find a reusable framework for these proofs,
-but instead of decomposing Paxos further, we make the key implicit invariants more explicit by passing around
+but instead of decomposing Paxos further, we make the critical implicit invariants more explicit by passing around
 the information needed to prove them.
 
-This enables proofs to be done in a thread-local (or node-local) manner using an environment context to
+It enables proofs to be done in a thread-local (or node-local) manner using an environment context to
 capture the behavior of the rest of the world.
 These proofs can then be linked together to obtain a strong correctness theorem for the entire system.
 
-Our witness benefits greatly from using CCAL.
+Our witness benefits significantly from using CCAL.
 By decomposing distributed systems into layers, we reduce the amount of time and effort needed to
 prove functional correctness.
 By treating each distributed node as a separate thread, we can use the environment context to
@@ -464,24 +461,27 @@ prove properties in a local context.
 Combining this with the witness then allows us to bring in information about the global state when necessary.
 We also use the environment context to model a realistic, non-deterministic network.
 Another advantage afforded by CCAL is that we can lift our safety proofs to higher layers via contextual refinement.
-This allows us to implement and verify a system once, and then reuse it as a component in various distributed applications.
+It allows us to implement and verify a system once, and then reuse it as a component in various distributed applications.
+
 
 
 \section{Model of leader-based distributed system}
-Our distributed system verification focuses on leader-based distributed system model, 
+
+
+Distributed system verification in this thesis focuses on a leader-based distributed system model, 
 which is based on the two functions,
-leader election and update functions, is inspired by CASPaxos~\cite{caspaxos},
-which implements an atomic shared object. CASPaxos uses prepare and accept
-phases similar to those in Paxos but it can repeatedly apply a compare-and-swap
-functions to the stored state instead of setting it just once. While CASPaxos is a system implementation
-to atomically update a distributed object, we use the implementation style of
+leader election and update functions. 
+The model itself is inspired by CASPaxos~\cite{caspaxos},
+which implements an atomic shared object. 
+CASPaxos uses prepare and accept
+phases similar to those in Paxos, but it can repeatedly apply a compare-and-swap
+functions to the stored state instead of setting it just once. 
+CASPaxos is a system implementation
+to atomically update a distributed object, but our work differs from CASPaxos 
+because we use the implementation style of
 CASPaxos to build a generic specification for leader-based distributed systems.
 Our specification also resembles the high-level specification of a state machine
-replication protocol, which Lamport generalized~\cite{generalizedconsensus}.
-While Lamport mainly models multi-Paxos and consensus,Throne models and
-verifies common properties of a generic leader-based distributed system,
-which includes multi-Paxos and state machine replication.
-
-
-
+replication protocol that Lamport generalized~\cite{generalizedconsensus} based on the trace theory~\cite{mazurkiewicz:tracetheory}.
+Our work is aiming to model and verify the common properties of  generic leader-based distributed systems;
+thus it differs from Lamport's work which focuses on modeling multi-Paxos and consensus (that is one of our examples).
 
