@@ -245,42 +245,31 @@ However, it is unclear how it is applied to the large-scale verification in the 
 
 \section{OS Kernel Verification} 
 
-A large body
-of recent work including
+A significant body
+of  work including
 seL4~\cite{klein2009sel4,klein14},
 Verve~\cite{hawblitzel10}, Hyperkernel~\cite{hyperkernel}, and Komodo~\cite{komodo} are 
 addressed OS kernel verification.
-None of these works, however, do not handle the issues on concurrency with fine-grained locking.
+None of these works, however, support concurrency (either with multicore or with multithreaded)  with fine-grained locking.
 Xu \etal~\cite{xu16} developed a new verification framework by facilitating RGSim
 and Feng~\etal's program logic~\cite{feng08:aim} for reasoning
-about interrupts;.
-They verified many key modules (in C) 
-in the $\mu$C/OS-II kernel, but they have not proved
-any progress properties or proof linking properties like we do.
-Other verified systems~\cite{klein2009sel4,hawblitzel10,ironclad},
-are single-threaded, or use a per-core big kernel lock.
+about interrupts.
+They verified multiple  key modules (written in C) 
+in the $\mu$C/OS-II, a preemptive kernel,
+ but progress and proof linking properties are out of the scope of their work. 
+Others~\cite{klein2009sel4,hawblitzel10, hyperkernel, komodo},
+are aiming to prove several properties based on the model of single-threaded, or limited concurrency supports using a per-core big kernel lock.
 
-
-The Verisoft team used VCC~\cite{leinenbach09} to verify spinlocks in a
-hypervisor by directly postulating a Hoare logic rather than building
-on top of an operational semantics for C, and only proved properties
-about the low-level primitives rather than the full functionality of
-the hypervisor. By contrast, CertiKOS deals with the problem of
-formulating a specification in a way that can be used as one layer
-inside a large stack of proofs. As for CertiKOS itself, while we
-discussed the ``local'' verification of a single module, other papers
-explain how to relate the log and context to a more realistic
-nondeterministic machine model~\cite{certikos:osdi16}, how to
-``concurrently link'' the per-CPU proofs into a proof about the full
-system~, and how this extends to multiple threads per
-CPU~\cite{concurrency}.
-CertiKOS is an end-to-end verified concurrent system showing that its
+There is another hypervisor verification work done by the Verisoft team by using VCC~\cite{leinenbach09}.
+The team verifies spinlocks in a hypervisor by directly postulating a Hoare logic rather than building
+on top of an operational semantics for C.
+However, their work is limited to proofs about properties of the low-level primitives 
+instead of showing the full functionality of
+the hypervisor.
+Our work, on the other hand, 
+is an end-to-end verified concurrent system showing that its
 assembly code indeed ``implements'' (contextually simulates) the
-high-level specification.
-
-CertiKOS is an end-to-end verified concurrent system showing that its
-assembly code indeed ``implements'' (contextually simulates) the
-high-level specification.
+high-level specification by using CCAL.
 
 
 \section{Other Work on the MCS Algorithm}
