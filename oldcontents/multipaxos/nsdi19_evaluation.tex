@@ -1,0 +1,191 @@
+
+\begin{table}
+\centering
+\small
+\begin{tabular} {@{}c@{~~}|c@{~~}c@{~~}c@{~~}c@{}}
+  \toprule
+  \sysname{} & \wormpaxos{} & WormLog & WormTX (C5)\\
+  \hline
+  4551 & 359 & 362 & 547\\
+  %3421 & 359 & 362 & 531 & 547\\
+  \bottomrule
+\end{tabular}
+%\nocaptionrule
+\caption{C lines of code (CLoC) for \sysname{} and applications. C5 has the largest CLoC among WormTX variants.\label{tbl:loc}}
+\vspace{-0.1in}
+\end{table}
+
+\section{Experience}
+\label{subsec:exp}
+\nsdinew{
+The main benefit of \sysname{} is that compared to Paxos, developers do not need to reason about or understand Paxos protocols to build applications on top, and compared to other fault-tolerant replicated systems, the developer has the flexibility to choose low-level implementation details.
+}
+
+\nsdinew{
+\sysname{} applications are easy to build, relying largely on simple invocations on the data-centric \wormspace{} API to store data durably and to coordinate across machines. 
+The effort taken to implement WormTX was similar to implementing a non-fault-tolerant version. In other cases, \wormspace{} simplified application-level coordination. The leader election scheme of \wormpaxos{} and the failure recovery scheme for WormLog sequencer are implemented with the \WOS{} \api{alloc} call: it ensures that among multiple concurrent nodes that try to become the new leader or the sequencer, only one succeeds. The C lines of code to build \sysname{} and the applications are summarized in Table~\ref{tbl:loc}.}
+
+%In the case of WormTX, the effort taken to implement the application was similar to implementing a non-fault-tolerant version. In other cases, \wormspace{} simplified application-level coordination. For instance, the \wormpaxos{} leader election scheme was implemented with the help of the \WOS{} \api{alloc} call, which ensures that only one node can allocate the \WOS{}. For WormLog, the write once semantics enforced in the \WOS{} layer made the failure recovery of the sequencer easy: even if multiple sequencers spin up after a sequencer failure, the one that allocates the next unallocated \WOS{} becomes the new sequencer. The C lines of code (CLoC) to build \sysname{} and the distributed applications are summarized in Table~\ref{tbl:loc}. 
+
+
+%The C lines of code (CLoC) to build \sysname{} and the distributed applications are summarized in Table~\ref{tbl:loc}. Numbers for WormTX are for A8 and C5, which are the WormTX implementations with the most CLoC. It took over 4.5K CLoC to build \sysname{}, but based on \sysname{}, only less than 600 CLoC were used to build highly available and durable distributed applications.
+
+%we had to build a sequencer that keeps track of the tail of the log so that clients can directly append data to the wormservers in a sequential order without address conflicts. The 
+
+%; the \sysname{} APIs reduced the effort to guarantee the availability and durability of the transaction decisions. In addition, the optimizations in Section~\ref{sec:wormtx} were easy to implement over the \wormspace{} API (and as we show later, very effective).
+
+%\sysname{} makes it easy to build a distributed system. The \WOR{} abstraction hides the logic for durability and consistency behind a data-cent
+
+
+%With the data-centric \wormspace{} API that takes care of availability, durability and consistency, the developers only need to focus on the core application functionality that is necessary. For example, for both \wormpaxos{} and WormLog, we only needed to create read, write, and append APIs wrapped around the \sysname{} API and could concentrate on other features. For \wormpaxos{} we spent most of the time implementing the leader election scheme, which was made easier with the support of the \api{alloc} call of \WOS{}. The \api{alloc} call ensures that there is only one leader for a \WOS{} and clients only need to tunnel their request through the leader. For WormLog, we had to build a sequencer that keeps track of the tail of the log so that clients can directly append data to the wormservers in a sequential order without address conflicts. The write once semantics enforced in the \WOS{} layer also made the failure recovery of the sequencer easier: even if multiple counter servers spin up after a sequencer failure, the one that first allocates the next unallocated \WOS{} becomes the new sequencer.
+
+ % and we will show in a later subsection that the optimizations are very effective. 
+ 
+\nsdinew{
+Our experience with verification was similar to application development, where the verification of \sysname{} facilitates that of applications. Our Coq-based verification cannot be fully automated, but the CCAL framework provides templates and libraries that dramatically reduce the proof effort. The entire Coq verification code size is 108K lines. Overall, it took 6 person months to verify \sysname{}: 4.5 person months to prove functional correctness and 1.5 person months to prove properties in the \ghostlayer{}. Yet, verifying WormPaxos, WormLog, and WormTX, linking these applications to \sysname{}, and linking \sysname{} to CertiKOS took in a total of 5 person weeks. The proof effort for \sysname{} was not small, but reusing the proof for the application was easy.  We believe the end-to-end verification can be extended easily (e.g., a key-value store layer above WormPaxos), the same way that WormPaxos, WormLog, and WormTX were verified over \sysname{} and CertiKOS.}
+
+%Similar to how we connect WormPaxos, WormLog, \sysname{}, and CertiKOS, we believe the end-to-end verification can be extended easily to run verified applications even on top of WormPaxos and WormLog. 
+
+%Our experience with verification was similar to application developement where verification of \sysname{} facilitates that of applications. Our Coq-based verification cannot be fully automated, but the CCAL framework provides multiple templates and libraries that dramatically reduce the proof effort. Overall, it took 4.5 person months to prove functional correctness, which included dividing the C code into verifiable layers, writing specifications, proving the refinement relations between the code and the spec, linking the layers with contextual refinements, and adding the \ghostlayer{}. Proving the global properties in the ghostlayer took additional 1.5 person months. Yet, verifying WormPaxos and WormLog and linking them to \sysname{} took only three person days each, and linking \sysname{} and CertiKOS took only four person days. The proof effort that took to prove \sysname{} was not small, but reusing the verification for applications was very easy. Similar to how we connect WormPaxos, WormLog, \sysname{}, and CertiKOS, we believe end-to-end verification can be extended easily to run verified applications even on top of WormPaxos and WormLog. 
+%Application implementations by others, which are not based on \sysname{}, typically exceed few thousands of lines of code due to their own implementation of the \WOR{} concept~\cite{epaxoscode, corfudb}.
+
+
+
+\begin{figure*}
+\begin{minipage}[t]{0.32\textwidth}
+\vspace{0pt}
+%\begin{figure}
+\includegraphics{graphs/veri_wormspace_micro}
+\caption{Microbenchmarks: read/write saturates a single wormserver.\label{fig:micro}}
+%\end{figure}
+\end{minipage}
+\hspace{0.1in}
+%WormLog is implemented on a Paxos-based \WOR{} (paxos-\WOR{}) of \wormspace{}. To compare WormLog against the CORFU design, we implemented an alternative \wormspace{} that is based on Chain Replication. The Chain Replication design shares exactly the same API with the Paxos-based design, so the code for the WormLog requires no changes. 
+\begin{minipage}[t]{0.32\textwidth}
+\vspace{0pt}
+\includegraphics{graphs/veri_wormspace_paxos}
+\caption{A verified C-based WormPaxos outperforms unverified Go-based E/CPaxos.\label{fig:paxos}}
+%\caption{WormLog over paxos-\WOR{} has a lower latency than that over chain-\WOR{} and both WormLog designs outperform CorfuDB.\label{fig:paxos}}
+\end{minipage}
+\hspace{0.1in}
+\begin{minipage}[t]{0.32\textwidth}
+\vspace{0pt}
+%\begin{figure}
+\includegraphics{graphs/paxos_persist_tput}
+\caption{Fewer writes per operation makes WormPaxos outperform E/CPaxos in persistent mode.\label{fig:paxos-persist}}
+%\end{figure}
+\end{minipage}
+\end{figure*}
+
+\section{Evaluation}
+\label{sec:eval}
+
+We evaluate the performance of \sysname{} and show that verified systems can be fast. We run in two modes: the verified \sysname{} stack over a commodity unverified OS (on Amazon EC2, on m4.xlarge instances running Ubuntu 14.04), unless mentioned otherwise; and an end-to-end verified stack running over CertiKOS on a local cluster. We run three wormservers and up to sixteen client nodes. \sysname{} has in-memory and persistent modes, which determine whether the data is stored in memory or in persistent storage; in-memory mode is used by default. The data size we use for all experiments is 8 bytes. We focus on the write-related workloads as reads can be massively parallelized in all applications that we use. %In this section, we aim to answer the following questions: 1) how well does \sysname{} facilitate distributed system designs?; 2) how flexible is the API?; and 3) how well do \sysname{} and \sysname{}-based applications perform? 
+%All our experiments are on Amazon EC2 (N. Virginia region; m4.xlarge instances; Ubuntu 14.04 server) \osdijy{except when we run \sysname{} on top of CertiKOS. CertiKOS based experiments are done in a local cloud.} 
+
+\begin{figure*}
+\begin{minipage}[t]{0.32\textwidth}
+\vspace{0pt}
+\includegraphics{graphs/veri_wormspace_corfu}
+\caption{WormLog: Paxos-\WOR{} can optimize the latency of a shared log design.\label{fig:corfu}}
+\end{minipage}
+\hspace{0.1in}
+\begin{minipage}[t]{0.37\textwidth}
+\vspace{0pt}
+\includegraphics{graphs/log_latency_cdf.pdf}
+\caption{WormLog latency distribution: Paxos-\WOR{} has constant 2 RTT latency regardless of the number of wormservers. \label{fig:corfu_latency}}
+\end{minipage}
+\hspace{0.1in}
+\begin{minipage}[t]{0.26\textwidth}
+\vspace{0pt}
+\includegraphics{graphs/2pc_latency.pdf}
+%\caption{WormTx\label{fig:2pc}}
+\caption{WormTX: optimizations above \sysname{} enable lower latency.\label{fig:2pc}}
+\end{minipage}
+\end{figure*}
+
+\subsection{Micro-benchmarks}
+
+
+We use a micro-benchmark to test the base performance of \sysname{} (Figure~\ref{fig:micro}). We evaluate the performance of reads and writes. We first pre-fill the address space with data and have clients read different parts of it sequentially. We increase the number of concurrent clients to get different throughput/latency points. A read to a \WOR{} entails 1 RTT between the client and wormservers. The read latency stays low at around 250 microseconds when the load is low and the throughput saturates at about 70K/s operations, which is the peak capacity of a single wormserver.
+
+Similar to the read experiment, we have clients write to a disjoint set of \WORs{} so that clients do not contend to write on the same \WOR{}. We measure two different cases where each client issues a \prepare{} to individual \WORs{} before a write, and another case where clients are writing to \WORs{} that are already \prepared{} in a batch. The latter is equivalent to writing to a \WOS{} that is \prepared{} or doing an unsafe write. The former takes 2 RTT whereas the latter takes 1 RTT to complete the write. 
+The overhead of incorporating a \prepare{} call on every write doubles the latency and halves throughput compared to issuing writes on batch-\prepared{} \WORs{}. 
+
+%\WOS{} \api{alloc} (WP\_alloc) writes the metadata payload to a \WOR{} (\prepare{} and write) and then batches a \prepare{} call to the \WORs{} in the \WOS{}. We vary the \WOS{} size and measure the \api{alloc} latency (Figure~\ref{fig:micro}-(c)). Compared to read and write operations, \api{alloc} calls entail 3 RTT. When the batch size becomes large, the overhead of processing a larger amount of batch requests and returning acknowledgments for each \WOR{} becomes noticeable. We can remove this overhead by parallelizing the batched \prepare{} operations in the wormserver and returning the results as a single success/failure acknowledgment for the entire \WOS{}, but we leave this as a future work. Despite a small latency overhead, we use the WOS size of 1024 throughout the evaluation.
+ 
+ 
+\subsection{WormPaxos}
+
+%It is not only easy to build distributed applications over \wormspace{}, but also the performance of applications is comparable to existing systems. We compare \wormpaxos{} against the open source code of the Egalitarian Paxos (EPaxos) paper~\cite{epaxos}. Figure~\ref{fig:paxos} compares the write performance of \wormpaxos{} against EPaxos and the classical Paxos (CPaxos) that is used in the EPaxos evaluation. All systems achieve similar latencies and the maximum throughput of \wormpaxos{} is slightly higher than the others. However, depending on additional optimizations (i.e. aggressive server-side batching), EPaxos can outperform \wormpaxos{} (not shown). Thus, the point of this experiment is rather to show that \wormpaxos{} which is built with ease on top of \wormspace can perform comparable to different Paxos implementations by others. 
+%It is not only easy to build distributed applications over \wormspace{}, but also the performance of applications is comparable to or even better than existing systems. 
+
+To evaluate the verified \wormspace{} application performance, we compare \wormpaxos{} against the unverified open source code of the Egalitarian Paxos (EPaxos) paper~\cite{epaxos}. Under the same configuration, Figure~\ref{fig:paxos} compares the write performance of \wormpaxos{} against EPaxos and the classical Paxos (CPaxos) that is used in the EPaxos evaluation. CPaxos shows slightly lower latency than \wormpaxos{} but the maximum throughput of \wormpaxos{} is much higher than the others. The performance difference comes from different implementations, \wormpaxos{} in C versus the others in Go, and an extra commit phase that exists in E/CPaxos. E/CPaxos asynchronously notifies all acceptors about the written value after the two Paxos rounds, whereas \wormpaxos{} omits this step because \sysname{} clients use a quorum read. Our point here is not to claim \wormpaxos{} simply runs much faster than EPaxos, which internally does dependency checks and ordering, but to show that verified code is not necessarily slow and can be even faster than unverified code.% depending on the implementation choice. 
+%To show that \wormspace{} applications provide performance comparable to or better than existing systems, we compare \wormpaxos{} against the open source code of the Egalitarian Paxos (EPaxos) paper~\cite{epaxos}. Under the same configuration, Figure~\ref{fig:paxos} compares the write performance of \wormpaxos{} against EPaxos and the classical Paxos (CPaxos) that is used in the EPaxos evaluation. CPaxos shows slightly lower latency than \wormpaxos{} but the maximum throughput of \wormpaxos{} is much higher than the others. The performance difference comes from different implementations, \wormpaxos{} in C versus the others in Go. Our point here is not to claim \wormpaxos{} runs much faster than EPaxos that internally does dependency checks and ordering, but to show that verified code and applications built on top of verified code is not necessarily slow and they can be even faster than unverified code depending on the choice of the implementation. 
+
+We also measure the throughput with data persistence on an Amazon EBS GP2 SSD (Figure~\ref{fig:paxos-persist}). Having to write less data to persistent storage, due to the absence of a commit phase, makes \wormpaxos{} achieve higher throughput. 
+
+%While E/CPaxos executes a commit phase to let all acceptors learn about the written value after the two Paxos rounds, \wormpaxos{} omits this step because \sysname{} clients use a quorum read. The asynchronous nature of the commit phase barely affects the E/CPaxos performance in in-memory mode, but writing extra data in persistent mode makes \wormpaxos{} achieve higher throughput.
+%However, the point of this experiment is rather to show that \wormpaxos{} which is built with ease on top of \wormspace can perform comparable to different Paxos implementations by others. 
+
+%\begin{itemize}
+%\item \wormpaxos{}: 3 acceptor 1 leader 16 clients
+%\item Append only request.
+%\item All requests are tunneled through the leader and ack is sent back to the clients.
+%\item we increase the \# of threads in clients to achieve Figure~\ref{fig:paxos}.
+%\item Our Paxos performs comparable to Epaxos, EPaxos' implementation of paxos, and Raft.
+%\end{itemize}
+
+\subsection{WormLog}
+
+We evaluate the performance of WormLog with Paxos-based \WORs{} (paxos-\WOR{}) and Chain Replication \WORs{} (chain-\WOR{}), and compare it with CorfuDB~\cite{corfudb}, an unverified open source Java implementation of CORFU. Note that the WormLog code does not change for Chain Replication \WORs{} (in fact, neither does the \sysname{} stack above the \WOR{} abstraction). However, performance differs: the Chain Replication design propagates the data from the head server to the tail server in a sequence before returning a write; this incurs 1 RTT per wormserver in the chain. In addition to contacting wormservers, clients contact the sequencer before issuing a write. Thus, having $N$ wormservers results in $N+1$ RTT for the Chain Replication design and 2 RTT for the Paxos-based design (wormservers are accessed in parallel). CorfuDB employs the same Chain Replication design as chain-WOR{}.
+
+Figure~\ref{fig:corfu} shows that with three wormservers, the write latency of a WormLog over paxos-\WOR{} is the half of that for WormLog over chain-\WOR{} for almost identical throughput. Under the same configuration, CorfuDB performs with 2 to 4X higher latency and 14\% of the throughput of WormLog. We further vary the number of wormservers (replicas) and measure the access latency. While the Paxos-based WormLog has the same latency distribution regardless of the number of wormservers, Chain-Replication-based designs show linearly increasing latency with wider distributions depending on the number of wormservers (Figure~\ref{fig:corfu_latency}). The experiment demonstrates that a Paxos-based \wormspace{} can enable a CORFU sequencer-based design while eliminating the latency of Chain Replication. Also, we show that different \WOR{} implementations can be used without application code changes and both WormLogs outperform CorfuDB partly due to different languages for the implementation.
+
+
+%Also, two variants of \wormspace{} present potentials and flexibilities to seamlessly port various implementations of \wormspace{}. 
+
+%support a low latency shared log and can replace the Chain Replication design of CORFU. 
+
+%\begin{itemize}
+%\item \wormpaxos{}: 3 acceptor 1 counter server, 16 clients
+%\item Append only request.
+%\item All clients first consult the counter server and then directly writes to \sysname{}.
+%\item we increase the \# of threads in clients to achieve Figure~\ref{fig:corfu}.
+%\item The throughput almost reach the cap shown in micro benchmark: very efficient. 
+%\item Two implementations: one based on paxos another based on client driven chain replication (equivalent to corfu). Paxos is much faster (half the latency) and chain replication gives us slightly higher throughput.
+%\end{itemize}
+%Latency distribution graph: \jyshin{(We need to remove the server driven chain replication from the fig)}
+%\begin{itemize}
+%\item We furture analyze the latency impact in shared log and number of replicas (Figure~\ref{fig:corfu_latency}).
+%\item Paxos latency stays the same regardless of \# of replicas.
+%\item chain replication (corfu) is equal for only 1 replica, and worse for all cases with more than 1 replica.
+%\end{itemize}
+
+
+\subsection{WormTX}
+\nsdinew{
+Next, we present the performance of WormTX that implements fault-tolerant atomic commit. We compare the commit latency of WormTX variants A8, B6, C5, D4, and E3. The numeric suffix represents the message delays of each WormTX variant. Figure~\ref{fig:2pc} illustrates linearly decreasing latency as more optimizations are applied. This shows that a low-latency distributed transaction protocol can be easily implemented above \wormspace{}.} 
+%An step by step optimizations to the atomic commit protocol, along with the concurrency control mechanism shown in Section~\ref{sec:wormtx}, can easily support a low latency distributed transaction protocol on top of \wormspace{}.}
+%\wormspace{} facilitates applying optimizations step by step to the atomic commit protocol, and with the concurrency control mechanism described in Section~\ref{sec:wormtx}, a low latency distributed transaction protocol can be easily supported on top of \wormspace{}. 
+
+
+%\begin{itemize}
+%\item Our transaction is just an engine for distributed decisions. 
+%\item The backend is paxos based \sysname{}.
+%\item We added notification feature to the wormserver. 
+%\item We implemented A8 to E3 and measured latency for the decision makeing (error bar = stdev).
+%\item As we can expect the latency decreases and is a more efficient implementation than conventional 2PC + paxos design (\sysname is useful and facilitates system buildign).
+%\end{itemize}
+\subsection{End-to-end Verification}
+\begin{figure}
+\centering
+\includegraphics{graphs/certikos_allinone}
+\caption{Wormspace on CertiKOS: an end-to-end verified system is bottlenecked by the lwIP network stack.\label{fig:certikos}}
+\vspace{-0.1in}
+\end{figure}
+
+Finally, we show the evaluation of \sysname{} on CertiKOS which forms an end-to-end verified distributed system from the OS layer. The experiment was run on a local cloud where the virtual machine configuration mimics the set up in Amazon EC2: CertiKOS and \sysname{} were placed inside QEMU instances with the same amount of resources as the m4.xlarge instance and the instances are placed such that all network communication crosses the physical machine boundaries. 
+
+We evaluate microbenchmark, WormPaxos, and WormLog and the throughput is approximately 10x lower and the latency is approximately 2x higher than running the experiments on Linux in Amazon EC2 (Figure~\ref{fig:certikos}). The main cause of this performance degradation has little to do with verification and is mainly attributed to the network stack used in CertiKOS. CertiKOS uses rather slow lwIP~\cite{lwip}, which is intended for embedded systems, as its network stack and a single dedicated thread multiplexes packets to and from applications. The performance number showed similar results even when we ran all \sysname{} servers and clients in a single VM due to this inefficiency. Once we replaced the network stack with a custom IPC call, we achieved over 100 Kops/s for all experiments when the same number of \sysname{} clients and servers were placed in a single VM. \nsdinew{We plan to replace lwIP with a higher-performance network stack for a better end-to-end performance in the future.}
+

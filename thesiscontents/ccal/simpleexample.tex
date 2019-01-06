@@ -1,0 +1,83 @@
+\section{Example: Building Spinlock Layers using CCAL}
+\label{chapter:ccal:sec:example}
+
+
+In this section, we start to show how to apply our techniques to verify shared objects in the CCAL toolkit.
+We begin by considering the ones
+shared among CPUs: spinlocks and shared queue objects protected by spinlocks.
+All layers are built upon the CPU-local layer interface
+$\PLayer{\PBoot}{c}{\oracle}$.
+
+
+\begin{figure}[t]
+\lstinputlisting [language = C, multicols=2] {source_code/ccal/ticket_lock.c}
+\caption{Pseudocode of ticket lock using $\push/\pull$.}
+\label{fig:exp:real_ticket_lock}
+\end{figure}
+
+Spinlocks (e.g., the ticket lock algorithm described in Sec.~\ref{sec:informal}) 
+are one of the most basic synchronization
+methods for multicore machines; they are used as building
+blocks for shared objects and more sophisticated synchronizations.
+
+A spinlock enforces mutual exclusion by restricting CPU access to
+a memory location $b$. Therefore, lock operations can be viewed
+as ``safe'' versions of $\cpush/\cpull$ primitives.
+For example, when the lock acquire  for $b$ succeeds,
+the corresponding shared memory is guaranteed
+to be ``free'', meaning that it is safe to 
+pull the contents to the local copy at this point (line 4 in Fig.~\ref{fig:exp:real_ticket_lock}).
+Therefore, as can be seen in Fig.~\ref{fig:exp:real_ticket_lock},
+the $\acq/\rel$ functions invoke the $\push/\pull$ primitives.
+We now show how to build layers for the spinlock
+in Fig.~\ref{fig:exp:real_ticket_lock}, which uses a ticket lock algorithm. Note that query points are denoted as ``$\intp$'' in pseudocode.
+
+\para{Bottom Interface $\PBoot[c]$.}
+We begin with the CPU-local interface $\PBoot[c]$ extended with shared primitives
+$\commc{FAI\_t}$, $\commc{get\_n}$, and $\commc{inc\_n}$.
+These primitives directly manipulate the lock state $\commc{t}$
+(next ticket) and $\commc{n}$ (now serving ticket)
+via x86 atomic instructions. 
+
+\begin{figure}[t]
+\lstinputlisting [language = Caml] {source_code/ccal/lock.v}
+\caption{Pseudocode of ticekt lock specifications in Coq.}
+\label{fig:exp:tlock}
+%\end{wrapfigure}%
+\end{figure}
+Each of them generates a corresponding event in the 
+log. As an example, the specification of $\commc{FAI\_t}$ is shown in Fig.~\ref{fig:exp:tlock},
+where the replay function $\replay_{\comm{ticket}}$ calculates  the lock state.
+ 
+\para{Fun-Lift to $L_\comm{lock\_low}[c]$.}
+We have shown how to establish the strategy simulation
+for this low-level interface $L_\comm{lock\_low}[c]$ (i.e.\, $L_1'[c]$, see Sec.~\ref{sec:informal}).
+Note that $\ssem{\commc{acq}}{L_\comm{lock\_low}[c]}$ contains extra silent moves (e.g.\, assigning $\comm{myt}$, line 2 in Fig.~\ref{fig:exp:real_ticket_lock}) compared with $\strat{\comm{acq}}'[c]$.
+The simulation relation 
+$R_\comm{lock}$ not only states the equality between logs but also maps the lock
+state in the memory to the ones calculated by $\replay_{\comm{ticket}}$.
+Here we must also handle potential \emph{integer overflows} for $\commc{t}$ and $\commc{n}$.
+We can prove that, as long as the total number of CPUs (i.e.\, $\#CPU$) in the machine is less than $2^{32}$ (determined by $\comm{uint}$), the mutual exclusion property will not be violated  even with overflows. 
+Based on the CPU-local layer, we first verify that the C implementations of 
+the ticket lock satisfy the $\acq$ and $\rel$ specifications,
+which are defined in terms of logs with low-level events
+related to $\comm{t}$ and $\comm{n}$.
+Thus, we can build $\ltyp{\PLayer{\PBoot}{c}{}}{R_\comm{lock}}{(\modulef{\acq}
+\oplus \modulef{\rel})}{\PLayer{L_\comm{lock\_low}}{c}{}}$
+using the \textsc{Fun} rule,
+where the simulation relation $R_\comm{lock}$ maps the lock
+fields in the memory to the ones calculated by $\replay_{\comm{ticket}}$.
+
+\para{Log-Lift to $L_\comm{lock}[c]$.}
+We then lift the $\acq$ and $\rel$ primitives to an atomic interface, meaning that each
+invocation produces exactly one event in the log (see Sec.~\ref{sec:informal}).
+These atomic lock interfaces (or strategies) are similar to $\cpull/\cpush$ specifications,
+except that the former ones are \emph{safe} (i.e.\, will not get stuck).
+This safety property can be proved using rely conditions $L_\comm{lock}[c].\Rely$ saying that,
+for any CPU $c'\neq c$, its $c'.\acq$ event must be followed by a sequence of its own events (generated in the critical state)
+ending with $c'.\rel$. The distance between $c'.\acq$ and $c'.\rel$ in the log is less than some number $n$.
+
+By enforcing the fairness of the scheduler in rely conditions, saying that any CPU can be scheduled
+within $m$ steps, we can show the liveness property (i.e., starvation-freedom): the while-loop in $\commc{acq}$ terminates
+in ``$n \times m \times \#CPU$'' steps.
+

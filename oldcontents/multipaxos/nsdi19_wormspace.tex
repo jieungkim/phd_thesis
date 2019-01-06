@@ -1,0 +1,136 @@
+\section{The \sysname{} System}
+
+%\subsection{The \sysname{} Abstractions}
+
+
+\lstdefinelanguage{rock}
+{morekeywords={WS_alloc, WS_prefixtrim, WOS_capture, WOS_write, WOS_listen, WS_trim, WOR_capture, WOR_write, WOR_read, WOAS_write},
+sensitive=false,
+morecomment=[l]{//},
+morecomment=[s]{/*}{*/},
+morestring=[b]",
+}
+
+\lstset{
+  basicstyle={\footnotesize\linespread{0.5}\normalfont}, %\ttfamily %\small, %\ttfamily
+  showstringspaces=false,
+  columns=flexible,
+  breakatwhitespace=false, 
+  breaklines=true, 
+  commentstyle=\color[HTML]{444444},%\textit,
+  keywordstyle=\color{black}\textbf
+}
+
+%\lstset{emph={append,snapshot,getnext,trim},emphstyle=\textbf}
+\begin{figure}[t]
+%\lstinputlisting[ 
+  % showstringspaces=false,
+  % columns=flexible,
+  % breakatwhitespace=false, 
+  % breaklines=true, 
+  % basicstyle=\small,
+  % commentstyle=\textit]
+%{modpaxos.h}
+\centering
+\footnotesize
+\begin{lstlisting}[language=rock]%, basicstyle=\linespread{0.5}]
+
+//allocates a WOS
+int WS_alloc(char *metadata, int size, segno_t *newsegno);
+
+//trims a segment
+int WS_trim(segno_t seg); 
+
+//batch captures a sub-range within the WOS
+int WOS_capture(segno_t seg, int *retcodes, off_t start,
+    off_t end);
+
+//batch writes a sub-range within the WOS
+int WOS_write(segno_t seg, char *buf, int size,
+    int *retcodes, off_t start, off_t stop);
+
+//registers a listener for write notifications
+int WOS_listen(segno_t seg, callback_t listener);
+
+//captures a WOR
+int WOR_capture(segno_t seg, off_t addr, int *captureID);
+
+//writes a single WOR
+int WOR_write(segno_t seg, off_t addr, char *buf, int size,
+    int captureID);
+
+//reads a single WOR
+int WOR_read(segno_t seg, off_t addr, char *buf, int size);
+\end{lstlisting}
+\caption{The \sysname{} API. \label{fig:api}}
+\vspace{-0.1in}
+\end{figure}
+%; returns E_SUCCESS / 
+%// E_ALREADY_WRITTE; returns E_SUCCESS / E_UNWRITTEN //// N / E_TRIMMED%// E_TRIMMED
+
+The \sysname{} API (Figure \ref{fig:api}) provides applications running on client machines with a shared, random-access address space of \WORs{}. All calls in the \sysname{} API are safe for concurrent access, providing linearizable semantics for the address space. The address space is divided into write-once segments (\WOSes{}) of fixed size\cuttext{; i.e., \WOS{} \#0 contains \WORs{} [0-100), \#1 contains [100-200), and so on}. Segments are explicitly allocated via an \api{alloc} call that takes in a segment ID and succeeds if it is as yet unallocated. The \api{alloc} takes an optional metadata payload to be associated with the new segment. Clients can \api{check} a segment to see if it is allocated by some other client, obtaining the metadata if this is the case. 
+
+Once a client has allocated a \WOS{}, any client in the system can operate on \WORs{} within the segment. Specifically, it can \api{\prepare{}} a \WOR{}; \api{write} to it; and \api{read} from it. Any call to a \WOR{} in an unallocated segment fails with an error code. 
+%Clients must \prepare{} an address before writing to it.
+% \Preparing a \WOR{} is similar to locking it with special semantics: the lock is strictly enforced rather than advisory, and can be stolen (hence the name `capture') by other clients.
+Clients must \prepare{} an address before writing to it to coordinate replicated servers to make the write atomic and immutable.
+\Preparing{} a \WOR{} is similar to locking with a preemptable lock: the lock must be acquired to write, but it can be stolen (hence the name `capture') by others.
+
+A successful \prepare{} call returns a unique, non-zero \prepare{}ID; a subsequent write by the same thread is automatically parameterized with this ID, and succeeds if the \WOR{} has not been \prepared{} by some other client in the meantime. Alternatively, threads, processes, and even clients can \prepare{} a \WOR{} and then hand over the \prepare{}ID to some other thread/process/client that passes it in explicitly as a parameter to a write, allowing the \prepare{} and write to be decoupled in space. Finally, a write parameterized with a \prepare{}ID of 0 does not require a prior \prepare{}; we call this an \textit{unsafe write}. 
+%Unsafe writes are not safe for concurrent access; applications must ensure that there is only one client in the system that will issue an unsafe write to any particular \WOR{}.
+Unsafe writes are fast because \preparing{} is unnecessary, but not safe for concurrent access; applications must ensure that at most one client issues an unsafe write to a particular \WOR{}.
+
+The \WOS{} provides a \api{\prepare{}} and \api{write} API, which act as batched or vectorized operations, \preparing{} all the \WORs{} in the segment or writing a single value to all of them.
+%A client can also request to be notified when \WORs{} in a particular \WOS{} are written to, via the \api{listen} call. 
+A client can also receive notifications when \WORs{} in a particular \WOS{} are written to, via the \api{listen} call.
+Garbage collection can be triggered by the application via the \api{trim} call, which trims individual \WOSes{}. \sysname{} returns an error code when a trimmed address is subsequently accessed.
+%Importantly, allocation and de-allocation must happen sequentially: the \api{alloc} call fails unless all segments prior to the passed-in segment number are allocated and all segments after it are unallocated. Garbage collection can be triggered by the application via the \api{prefixtrim} call, which takes a segment number as a parameter and trims all prior segment numbers.
+
+
+%The \api{trim} call can create holes in the address space and \sysname{} returns a special error code when the hole is accessed; we leave it to the application to maintain and access valid addresses.}
+
+%, or the \api{prefixtrim} call, which takes a segment number as a parameter and trims all prior segments
+
+%\WOS{} allocation occurs sequentially in the system; the application can expect the \api{alloc} call to return \WOSes{} in strict increasing order. The \sysname{} instance acts as a linearizable object for the purposes of allocation.
+
+ %The \api{alloc} call optionally take in parameters that determine the durability and availability requirements for the new \WOS{}. Consequently, a single \sysname{} instance can combine \WORs{} types with different durability / availability guarantees (though a single \WOS{} has \WORs{} of the same type).
+
+\subsection{Design and Implementation}
+
+\sysname{} is implemented via a combination of a client-side library exposing the API shown in Figure \ref{fig:api} and a collection of servers (which we call wormservers). In a sense, the \sysname{} design is similar to a distributed key-value store: \WORs{} are associated with 64-bit IDs (consisting of segment IDs concatenated with offsets within the segment) and mapped to partitions, which in turn consist of replica sets of wormservers. Partitioning occurs at \WOS{} granularity; to perform an operation on a \WOR{} within a \WOS{}, the client determines the partition storing the segment (via a modulo function) and issues the operation to the replica set.
+
+Each \WOR{} is implemented via a single-shot Paxos consensus protocol, with the wormservers within a partition acting as a set of acceptors. In the context of a single \WOR{}, the wormservers act identically to Paxos acceptors~\cite{paxosmadesimple}; a \api{\prepare{}} call translates to a phase 1a prepare message, whereas a \api{write} call is a phase 2a accept message. The \api{read} protocol mirrors a phase 1a message, but if it encounters a half-written quorum, it completes the write. Each wormserver maintains a map from \WOR{} IDs to the acceptor state for that single-shot Paxos instance. If a map entry is not found, the \WOR{} is treated as unwritten.
+% \jyshin{(Read first does the benign read and then only if there is a wedged state it completes the write. Also we may want to emphasize that our read is similar to phase 1a which is the main difference with other paxos variants.)}
+
+Above this basic \WOR{} interface, the client-side library layers the logic for enforcing write-once segments. Each \WOS{} segment is implemented via a set of data \WORs{} (one per each address in that segment), a single metadata \WOR{}, and a single trim \WOR{}. Allocating the \WOS{} requires writing to the metadata \WOR{}. If two clients race to allocate a \WOS{}, the first one to capture and write the \WOR{} wins.
+
+%The \api{prefixtrim} API for garbage collection is implemented via a special message where the client instructs the wormserver to return errors on requests for \WORs{} with IDs below a certain threshold, and delete all state for any \WORs{} in that range. The client only has to reach a quorum of acceptors with the trim command for it to succeed; on subsequent reads or writes to a trimmed \WOR{}, if a subset of the accessed quorum replies that the ID has been trimmed, the client-side library completes the trim by issuing it to the remainder of the quorum, and after that responds with an \api{E\_TRIMMED} error to the application.
+%and the \api{prefixtrim} APIs 
+\nsdinew{
+The \api{trim} call for garbage collection is implemented via a special message where the client instructs the wormserver to return errors on requests for affected \WORs{}, and delete all states of the \WORs{}. The trim \WOR{} in each \WOS{} enables consensus on a trim command. On subsequent reads or writes to a trimmed \WOR{}, if a subset of the accessed quorum replies that the ID is trimmed, the client-side library completes the trim by issuing it to the remainder of the quorum, and then returns an \api{E\_TRIMMED} error to the application.}
+%\jyshin{(We need to add the trim API here and in Fig 2.)}
+
+%\jyshin{(I think we need to talk about E\_CATHESTROPHE which will incur reconfig. People will question how we handle network failure and do reconfig.)}
+%\noindent
+\nsdinew{
+\textbf{Reconfiguration} Replacing a minority of wormservers from a partition requires a reconfiguration protocol along the lines of Vertical Paxos~\cite{vertpaxos}. In essence, a reconfiguring client `seals' the existing configuration by contacting a majority of the servers. The servers promise to respond with errors to messages sent by clients with the existing configuration to prevent progress using this configuration. A new configuration is installed at an auxiliary location; this could be an external membership service, a different partition of the \sysname{} deployment, or a different instance of \sysname{} altogether. Clients that receive error messages from servers due to a sealed configuration must go check this location for the new configuration, and reissue the command to the new set of servers in the partition.}
+%\textbf{Reconfiguration} Replacing a minority of wormservers from a partition requires a reconfiguration protocol along the lines of Vertical Paxos~\cite{vertpaxos}. In essence, a reconfiguring client `seals' the existing configuration by contacting a majority of the servers. The servers promise to respond with errors to messages sent by clients with the existing configuration; as a result, there can no longer be completed operations in the existing configuration. A new configuration is installed at an auxiliary location; this could be an external membership service, a different partition of the \sysname{} deployment, or a different instance of \sysname{} altogether. Clients that receive error messages from servers due to a sealed configuration must go check this location for the new configuration, and reissue the command to the new set of servers in the partition.\cuttext{ (which retains the majority of surviving servers from the old configuration).}
+
+%\noindent
+\nsdinew{
+\textbf{Alternative \WOR{} implementations} Within each \sysname{} partition, wormservers can be organized in different ways to realize other consensus protocols. For example, instead of Paxos, we access the wormservers via a client-driven variant of Chain Replication used in CORFU~\cite{corfu}. The client captures and writes to each server in the chain in sequence, and issues reads to the tail. Such a protocol has the benefit of efficient reads which contact a single server rather than a majority quorum, and provides durability against $f$ failures with $f+1$ nodes rather than $2f+1$. The downside is the increased write latency, which is linear in the number of servers, and unavailability for writes if a single server goes down until a reconfiguration. In our implementation, we did not implement the CRAQ~\cite{craq} optimization, which allows for reads to go to any replica instead of the tail. We call our two implementations chain-\WOR{} and paxos-\WOR{}. \WORs{} could be implemented via Byzantine consensus~\cite{pbft, hq}; we leave this for future work.}
+
+
+
+In a sense, the \WOR{} is analogous to the logical block device abstraction found at the bottom of a single-machine storage stack. The \WOR{} simplifies the construction of systems such as shared logs and MultiPaxos by hiding the complexity of asynchrony and failures; a block device simplifies the construction of filesystems by hiding the complexity of storage hardware. Following this analogy, it is possible to implement the \WOR{} itself over a shared log or MultiPaxos (in the same way that a block device can be implemented over a filesystem). However, the more conventional layering places the \WOR{} at the bottom of the stack to simplify higher-level systems, as we now describe. 
+
+
+%What are the design goals? We want to be able to write/read a named register. Names have contiguous ordering. We need to know which set of machines each register is mapped to, and what protocol to use.
+%Each wormspace has a type? Create many wormspaces, one per type of data.
+%How do we know where each address goes to?
+%Option 1: each WOS stores the location of the next WOS
+%Option 2: there's a metadata service that stores WOS to location mappings
+%		  2A: For every WOS, there's a specific WOR that stores its mapping. Where does this WOR live? Why is it guaranteed to be there as long as the WOS is alive?
+%		  2B: For every WOS, the previous WOS includes the configuration. What happens when we free the previous WOS? If freeing is contiguous too, then we need to make sure the location of the start of the address space is safe before we free it.
+%		 2A and 2B don't allow for rebuilding a failed acceptor, since the configuration is stored in a WOR. But they're nice because they use the WOR itself to store membership for other WORs.
+%		 2C: For every WOS, the configuration is stored in a data structure. This data structure is itself implemented over a wormspace with a single, extremely large segment. 
