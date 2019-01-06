@@ -1,13 +1,74 @@
+The distributed system verification in chapter~\ref{chapter:wormspace} shows 
+that CCAL can be applied not only to the concurrency by local machines
+but also to the concurrency in the cluster of multiple machines in distributed protocols. 
+However, verifying a single distributed protocol is insufficient to build large-scaled distributed applications 
+because they are commonly built on top of multiple distributed systems.
 
-In this chapter, I show how we provide the toolkit to build abstraction layers for concurrent programs with fine-grained locking. 
-We first describe a framework to build 
-abstraction layers for sequential machines 
+To verify the correctness of the application, underlying
+systems should be verified, but even verifying a single distributed system is
+still very challenging. In this paper, we focus on one of the most commonly
+used families of distributed systems, the leader based distributed system, and study the common properties to build a verification framework.
+We build a generic specification to model leader-based distributed systems, and based on
+the specification we create a proof template that can verify the common
+desirable properties of the leader based system: linearizability and soundness of
+the leader election. 
+Our framework uses a novel logical data structure called witness which keeps track of the history of state changes in distributed nodes.
+The witness can be used to reason about different distributed functions and can
+be composed to verify the properties of the entire distributed system. We provide
+multi-Paxos as the main example and compare it with
+how Raft, two-phase commit, and other protocols are modeled and verified under
+our framework. 
+We demonstrate that once systems are specified to satisfy the proof template's requirement, the witness data structure delivers necessary
+information to the proof template and common properties to leader-based systems are proved for free. 
+
+
+%Distributed systems are common these days and real deployments nearly always
+%comprise multiple protocols.  These systems are notoriously complex due to
+%the many possible interleavings of their coarsely-connected instances as well as
+%the possibility of errors in both their local behavior and the network
+%environment. For these reasons and more, verification is desirable to remove the
+%possibility of bugs and guarantee the safety and correctness of distributed
+%protocols and the systems built from them. However, much current verification
+%work still requires a great deal of effort and sometimes has limitations.
+%
+%This paper focuses on providing a compositional and generic way to  build and
+%verify some of the essential components of practical distributed systems,
+%leader-based distributed systems.
+%%We provides  both horizontal and vertical compositions in building and
+%%verifying multiple leader-based distributed systems.
+%First, our network model provides a uniform way to combine multiple distributed systems together.
+%Second, we provide a modular and common verification approach,
+%\textit{witness-based specification and verification} by focusing on the shared common
+%routines for their operations --
+%a leader election and a commit routine.
+%% We observe that those common routines can
+%%be handled in a uniform manner, permitting a generic way to specify and verify
+%%multiple distributed systems with significantly reduced effort.
+%%Leader-based distributed systems share common routines for their operations -- a
+%%leader election and a commit routine. We observe that those common routines can
+%%be handled in a uniform manner, permitting a generic way to specify and verify
+%%multiple distributed systems with significantly reduced effort.
+%
+%%Overall, we present a verification approach that uses \textit{witness-based
+%%specification},
+%%Our approach is simple but novel in distributed system verification.
+%Our approach is simple but novel.
+%It is scalable, reusable, and extensible, and it can be directly linked
+%with low-level implementations of distributed protocols through contextual
+%refinement.
+%We demonstrate the power of our approach via multiple examples.
+
+%It also can capture common behaviors of many distributed protocols,
+%and provides both a simple way of understanding the protocols as well as an easy
+%methodology for verifying them.
 
 
 
-extend our engine to support verification of concurrent programs with fine-grained locking. As illustrated in Chapter 5, our definition of certified abstraction layers does not directly work with concurrent programs, as the contextual refinement between the specification and implementation would not hold due to the arbitrary interleaved executions with other devices/CPUs. This is because the way we specify the function does not take into account the potential change to the (shared) abstract states and memory due to the interleavings. On the other hand, it is definitely not practical to encode all possible ways of the state changes from interleaved executions in the specifications themselves.
-Thus, we need a way to effectively represent the shared states among programs on different CPUs, and the non-deterministic accesses to these shared states. We would also want to reuse all the techniques that we have built for verification of sequential programs. Recall that we have successfully handled some limited form of concurrency between the devices and a sequential program in Chapter 5. There, we have developed a new machine model, where the devices are treated as if they do not execute together with the CPU, and only try to replay the states of a device when we disable and enable the interrupts on that device. These two are considered as valid synchronization points because we do not access the states of the device when the interrupt of the device is enabled, and we can recompute the current states of the device solely by applying the device model to the list of external events we observe on that device.
-This is clearly restricted to the limited form of concurrency in consideration, and cannot be directly applied to the reasoning of an arbitrary concurrent program. Yet, the general idea is still
-155
-valid, and we have indeed extended this line of the idea to a concrete framework that is suitable to reason about arbitrary concurrent programs with fine-grained locking in modular ways. By the modular reasoning of concurrent programs, we would expect to reason about each program running on a CPU or thread separately, by making valid assumptions to the rest of programs and outside world, and in the end, link these individual proofs formally to reach a final conclusion about the entire program when they run altogether concurrently. In Chapter 5, we still use the abstract states to model the shared states (the states of devices), which, at synchronization points, get computed by applying the effect of external events on the currently shared states. Naively applying this would cause the discrepancy when the current thread uses the abstract states to represent the shares states, while the rest of the world uses the events. Instead, we always use the list of events to represent the shared states among threads and processes. In this model, modifying shared states can be specified simply as appending a new corresponding event to the event list, and this list can be synchronized by appending the list of events generated by the rest of the world at every carefully chosen synchronization points. The shared states can be derived from the list of events by replaying the effects of each event in the list from an initial state. We attach such replay function for each shared state and related events.
-Recall that in the sequential world, the task of layer based verification is to prove the contextual refinement between the concrete function implementation manipulating concrete in-memory data and the abstract high-level specification described in terms of the corresponding abstract states. In this case, the context would be the user program, other kernel or hypervisor functions, etc. In the concurrent world, we also have the programs running on other CPUs/threads, in parallel with the current function being verified. Thus, in this case, the task involves proving the contextual refinement between the function implementation operating on the shared memory and abstract states, and the abstract high-level atomic specification that triggers an atomic high-level event. In the next section, we present this new framework in more detail.
+%\jieung{incomplete yet. Please revise it if anyone wants to do}
+%\lucas{I took a crack at it. Seems better to me. Anyone else?}
+%\jieung{need to add more about 2-d compositionality????}
+
+%To demonstrate how our generic specifications work, we verify the functional correctness and safety
+%of MultiPaxos, one of the most famous consensus protocols.
+%We also verify other
+%We implement the key routines of Paxos in C, and use Coq to verify both the functional correctness of the implementation as well as the safety properties of the protocol within less than 4 person-months. We also describe how we can apply our approach to other distributed protocols to illustrate its generality.
