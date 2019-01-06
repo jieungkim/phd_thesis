@@ -481,6 +481,14 @@ booktitle="Proc. 2007" # ESOP,
 month=mar, year="2007"
 }
 
+@inproceedings{cap10,
+  author    = {Thomas Dinsdale-Young and Mike Dodds and Philippa Gardner and Matthew J. Parkinson and Viktor Vafeiadis},
+  title     = {Concurrent Abstract Predicates},
+  booktitle = {ECOOP'10},
+  year      = {2010},
+  pages     = {504-528}
+}
+
 @inproceedings{crary99,
 author="Karl Crary and Stephanie Weirich",
 title="Flexible Type Analysis",
@@ -633,6 +641,59 @@ year=1995,
 pages="116-129"
 }
 
+@inproceedings{zhao:2013,
+ author = {Zhao, Jianzhou and Nagarakatte, Santosh and Martin, Milo M.K. and Zdancewic, Steve},
+ title = {Formal Verification of SSA-based Optimizations for LLVM},
+ booktitle = {Proceedings of the 34th ACM SIGPLAN Conference on Programming Language Design and Implementation},
+ series = {PLDI '13},
+ year = {2013},
+ isbn = {978-1-4503-2014-6},
+ location = {Seattle, Washington, USA},
+ pages = {175--186},
+ numpages = {12},
+ url = {http://doi.acm.org/10.1145/2491956.2462164},
+ doi = {10.1145/2491956.2462164},
+ acmid = {2462164},
+ publisher = {ACM},
+ address = {New York, NY, USA},
+ keywords = {coq, llvm, single static assignment},
+}
+
+@inproceedings{kumar:2014,
+ author = {Kumar, Ramana and Myreen, Magnus O. and Norrish, Michael and Owens, Scott},
+ title = {CakeML: A Verified Implementation of ML},
+ booktitle = {Proceedings of the 41st ACM SIGPLAN-SIGACT Symposium on Principles of Programming Languages},
+ series = {POPL '14},
+ year = {2014},
+ isbn = {978-1-4503-2544-8},
+ location = {San Diego, California, USA},
+ pages = {179--191},
+ numpages = {13},
+ url = {http://doi.acm.org/10.1145/2535838.2535841},
+ doi = {10.1145/2535838.2535841},
+ acmid = {2535841},
+ publisher = {ACM},
+ address = {New York, NY, USA},
+ keywords = {ML, compiler bootstrapping, compiler verification, machine code verification, read-eval-print loop, verified garbage collection., verified parsing, verified type checking},
+}
+
+@inproceedings{kang:2018,
+ author = {Kang, Jeehoon and Kim, Yoonseung and Song, Youngju and Lee, Juneyoung and Park, Sanghoon and Shin, Mark Dongyeon and Kim, Yonghyun and Cho, Sungkeun and Choi, Joonwon and Hur, Chung-Kil and Yi, Kwangkeun},
+ title = {Crellvm: Verified Credible Compilation for LLVM},
+ booktitle = {Proceedings of the 39th ACM SIGPLAN Conference on Programming Language Design and Implementation},
+ series = {PLDI 2018},
+ year = {2018},
+ isbn = {978-1-4503-5698-5},
+ location = {Philadelphia, PA, USA},
+ pages = {631--645},
+ numpages = {15},
+ url = {http://doi.acm.org/10.1145/3192366.3192377},
+ doi = {10.1145/3192366.3192377},
+ acmid = {3192377},
+ publisher = {ACM},
+ address = {New York, NY, USA},
+ keywords = {Coq, LLVM, compiler verification, credible compilation, relational Hoare logic, translation validation},
+} 
 
 @phdthesis{tarditi96:phd,
 author="David Tarditi",
@@ -5010,6 +5071,19 @@ year=1991
   pages     = {333-358}
 }
 
+@inproceedings{ogata:mcs-lock,
+ author = {Ogata, Kazuhiro and Futatsugi, Kokichi},
+ title = {Formal Verification of the {MCS} List-Based Queuing Lock},
+ booktitle = {Proceedings of the 5th Asian Computing Science Conference on Advances in Computing Science},
+ series = {ASIAN '99},
+ year = {1999},
+ pages = {281--293},
+ numpages = {13},
+ acmid = {676650},
+ publisher = {Springer-Verlag},
+ address = {London, UK, UK},
+} 
+
 
 @inproceedings{nanevski14,
   author    = {Aleksandar Nanevski and Ruy Ley-Wild and Ilya Sergey and German Andres Delbianco},
@@ -5993,6 +6067,27 @@ author = "Chris Hawblitzel and Erez Petrank and Shaz Qadeer and Serar Tasiran",
   pages     = "459-470",
 }
 
+@article{liang:2017,
+ author = {Liang, Hongjin and Feng, Xinyu},
+ title = {Progress of Concurrent Objects with Partial Methods},
+ journal = {Proc. ACM Program. Lang.},
+ issue_date = {January 2018},
+ volume = {2},
+ number = {POPL},
+ month = dec,
+ year = {2017},
+ issn = {2475-1421},
+ pages = {20:1--20:31},
+ articleno = {20},
+ numpages = {31},
+ url = {http://doi.acm.org/10.1145/3158108},
+ doi = {10.1145/3158108},
+ acmid = {3158108},
+ publisher = {ACM},
+ address = {New York, NY, USA},
+ keywords = {Concurrent Objects, Partial Methods, Progress, Refinement},
+} 
+
 @article{DerrickSW11,
   author    = {John Derrick and
                Gerhard Schellhorn and
@@ -6115,14 +6210,6 @@ month=feb,
 year=2014
 }
 
-@inproceedings {certikos-osdi16,
-author = {Ronghui Gu and Zhong Shao and Hao Chen and Xiongnan (Newman) Wu and Jieung Kim and Vilhelm Sj{\"o}berg and David Costanzo},
-title = {{CertiKOS}: An Extensible Architecture for Building Certified Concurrent {OS} Kernels},
-booktitle = OSDI16,
-year = {2016},
-pages = {653--669},
-}
-
 @Misc{sfm16,
   author = {Stephen Chong and Joshua Guttman and Anupam Datta and Andrew Myers and Benjamin Pierce and Patrick Schaumont and Tim Sherwood and Nickolai Zeldovich},
   title={Report on the {NSF} Workshop on Formal Methods for Security},
@@ -6131,7 +6218,7 @@ pages = {653--669},
 }
 
 @inproceedings{cpp-mcs-lock,
-author = {Vilhelm Sj\"{o}berg and Jieung Kim and Ronghui Gu and Zhong Shao},
+author = {Jieung Kim and Vilhelm Sj\"{o}berg  and Ronghui Gu and Zhong Shao},
 title= {Safety and Liveness of {MCS} Lock---Layer by Layer},
 booktitle=APLAS17,
 pages={273--297},

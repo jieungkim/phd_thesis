@@ -98,7 +98,7 @@
 \begin{document}
 
 % Need to define title before the abstract.
-\title{Modular and Compositional Development of certified Concurrent Software Systems}
+\title{Modular and Compositional Development of Certified Concurrent Software Systems}
 \author{Jieung Kim}
 \advisor{Zhong Shao}
 \date{March, 2019} 
@@ -106,12 +106,14 @@
 \frontmatter
 
 \begin{abstract}
-\input{abstract}
+% ADD CONTENTS
+% \input{abstract}
+% END CONTENTS
 \end{abstract}
 
 
 \maketitle
-\makecopyright{2018} % change as needed.
+\makecopyright{2019} % change as needed.
 
 \input{ack}
 
@@ -125,23 +127,35 @@
 
 \chapter{Introduction}
 \label{chapter:introduction}
-\input{introduction}
+% ADD CONTENTS
+% \input{introduction}
+% END CONTENTS
 
 \chapter{Concurrent Certified Abstraction Layer}
 \label{chapter:ccal}
-
-\input{oldcontents/ccal/intro}     % Introduction (1.5 pages)
-\input{oldcontents/ccal/new-overview}  % Informal Development (1.5 pages) 
-\input{oldcontents/ccal/mach-multicore}     % Concurrent Abstraction Layers (1.5 pages)
+%
+%\input{thesiscontents/ccal/intro}
+%
+%
+%
+%\input{oldcontents/ccal/intro}  
+%\input{oldcontents/ccal/new-overview} 
+%\input{oldcontents/ccal/mach-multicore}    
+%
+%\input{thesiscontents/ccal/conclusion}
 
 
 \chapter{Case Study: MCS Lock}
 \label{chapter:mcs lock}
+
+%\input{thesiscontents/mcslock/intro}
+
+
 %\input{oldcontents/mcslock/abstract}
 %\input{oldcontents/mcslock/intro}
-\input{oldcontents/mcslock/overview}
-\input{oldcontents/mcslock/veri}
-\input{oldcontents/mcslock/evaluation}
+%\input{oldcontents/mcslock/overview}
+%\input{oldcontents/mcslock/veri}
+%\input{oldcontents/mcslock/evaluation}
 %\input{oldcontents/mcslock/related}
 
 
@@ -149,21 +163,31 @@
 \chapter{Multicore and Multithreaded Linking}
 \label{chapter:linking}
 
-\input{oldcontents/conlink/ccaldefinitions}
-\input{oldcontents/conlink/multicore}
-\input{oldcontents/conlink/multicorelink}
-\input{oldcontents/conlink/multicorerefinement}
-\input{oldcontents/ccal/prog-multithread-pldi18}      % Layered Concurrent Programming (3-3.5 pages)
-\input{oldcontents/ccal/comp}      % Certified Compilation and Linking 
-\input{oldcontents/ccal/mach-multithread-impl}     % Concurrent Abstraction Layers (1.5 pages)
+%\input{thesiscontents/conlink/intro}
+
+% ADD CONTENTS
+%\input{oldcontents/conlink/ccaldefinitions}
+%\input{oldcontents/conlink/multicore}
+%\input{oldcontents/conlink/multicorelink}
+%\input{oldcontents/conlink/multicorerefinement}
+%\input{oldcontents/ccal/prog-multithread-pldi18}   
+%\input{oldcontents/ccal/comp}   
+%\input{oldcontents/ccal/mach-multithread-impl}    
+% END CONTENTS
 
 
 
 \chapter{Case Study: Concurrent CertiKOS}
 \label{chapter:concurrent-certikos}
 
-\input{oldcontents/ccal/prog-multicore}      % Layered Concurrent Programming (3-3.5 pages)
-\input{oldcontents/ccal/kernel}      % Layered Concurrent Programming (3-3.5 pages)
+%\input{thesiscontents/certikos/intro}
+
+% ADD CONTENTS
+%\input{oldcontents/ccal/prog-multicore}    
+%\input{oldcontents/ccal/kernel}    
+% END CONTENTS
+
+
 
 %\input{oldcontents/certikos/abstract}
 %\input{oldcontents/certikos/intro}
@@ -178,30 +202,41 @@
 \chapter{Case Study: Multi-registred Paxos}
 \label{chapter:wormspace}
 
+%\input{thesiscontents/multipaxos/intro}
+
+
 %\input{oldcontents/multipaxos/abstract}
 %\input{oldcontents/multipaxos/intro}
-\input{oldcontents/multipaxos/overview}
-\input{oldcontents/multipaxos/datastructure}
-\input{oldcontents/multipaxos/nsdi19_verification}
-\input{oldcontents/multipaxos/paxosproof}
-\input{oldcontents/multipaxos/paxosvariants}
-\input{oldcontents/multipaxos/evaluation}
+
+% ADD CONTENTS
+%\input{oldcontents/multipaxos/overview}
+%\input{oldcontents/multipaxos/datastructure}
+%\input{oldcontents/multipaxos/nsdi19_verification}
+%\input{oldcontents/multipaxos/paxosproof}
+%\input{oldcontents/multipaxos/paxosvariants}
+%\input{oldcontents/multipaxos/evaluation}
+% END CONTENTS
 
 
-\chapter{Beyond Functional Correctness of Distributed Systems}
+
+\chapter{Providing Generic Verification Toolkit for Leader Based Distributed Systems }
 \label{chapter:witness-passing}
 
 %\input{oldcontents/witnesspassing/abstract}
-
 %\input{oldcontents/witnesspassing/intro}
-\input{oldcontents/witnesspassing/background}
-\input{oldcontents/witnesspassing/datastructure}
-\input{oldcontents/witnesspassing/witness}
-\input{oldcontents/witnesspassing/witness-property}
-\input{oldcontents/witnesspassing/lowimplementation}
-\input{oldcontents/witnesspassing/multipaxos}
-\input{oldcontents/witnesspassing/examples}
-\input{oldcontents/witnesspassing/evaluation}
+
+
+% ADD CONTENTS
+%\input{oldcontents/witnesspassing/background}
+%\input{oldcontents/witnesspassing/datastructure}
+%\input{oldcontents/witnesspassing/witness}
+%\input{oldcontents/witnesspassing/witness-property}
+%\input{oldcontents/witnesspassing/lowimplementation}
+%\input{oldcontents/witnesspassing/multipaxos}
+%\input{oldcontents/witnesspassing/examples}
+%\input{oldcontents/witnesspassing/evaluation}
+% END CONTENTS
+
 %\input{oldcontents/witnesspassing/related}
 %\input{oldcontents/witnesspassing/conclusion}
 
