@@ -7,6 +7,8 @@
 \usepackage{amsfonts}
 \usepackage{appendix}
 \usepackage{makecell}
+\usepackage{scalerel}
+\usepackage{relsize}
 
 \usepackage[numbers,square]{natbib}
 \usepackage{times}
@@ -42,6 +44,7 @@
 \usepackage{tcolorbox}
 \usepackage{tikz}
 \usepackage{flushend}
+\usepackage{relsize}
 
 \usetikzlibrary{arrows.meta, decorations.pathmorphing}
 
@@ -122,12 +125,18 @@
 % Starts proper arabic numbering of pages and chapters.
 \mainmatter
 
+
+%%%%%%%%%%%
+% INTRO
+%%%%%%%%%%%
 \chapter{Introduction}
 \label{chapter:introduction}
-% ADD CONTENTS
  \input{introduction}
- % END CONTENTS
-
+ 
+ 
+%%%%%%%%%%%
+% CCAL
+%%%%%%%%%%%
 \chapter{Concurrent Certified Abstraction Layers}
 \label{chapter:ccal}
 
@@ -145,7 +154,9 @@
 %\input{oldcontents/ccal/mach-multicore}    
 %
 
-
+%%%%%%%%%%%
+% MCS LOCK
+%%%%%%%%%%%
 \chapter{Case Study: MCS Lock}
 \label{chapter:mcs-lock}
 
@@ -159,8 +170,9 @@
 \input{oldcontents/mcslock/evaluation}
 %\input{oldcontents/mcslock/related}
 
-
-
+%%%%%%%%%%%
+% CON LINK
+%%%%%%%%%%%
 \chapter{Multicore and Multithreaded Linking}
 \label{chapter:linking}
 
@@ -176,8 +188,9 @@
 %\input{oldcontents/ccal/mach-multithread-impl}    
 % END CONTENTS
 
-
-
+%%%%%%%%%%%
+% CERTIKOS
+%%%%%%%%%%%
 \chapter{Case Study: Concurrent CertiKOS}
 \label{chapter:concurrent-certikos}
 
@@ -200,7 +213,9 @@
 %\input{oldcontents/certikos/concl}
 
 
-
+%%%%%%%%%%%
+% MULTIPAXOS
+%%%%%%%%%%%
 \chapter{Case Study: Write-Once Registers}
 \label{chapter:wormspace}
 
@@ -220,7 +235,9 @@
 % END CONTENTS
 
 
-
+%%%%%%%%%%%
+% WITNESS PASSING
+%%%%%%%%%%%
 \chapter{Providing Generic Verification Toolkit for Leader-based Distributed Systems }
 \label{chapter:witness-passing}
 
@@ -242,11 +259,16 @@
 %\input{oldcontents/witnesspassing/related}
 %\input{oldcontents/witnesspassing/conclusion}
 
-\chapter{Related Work} % First Pass Done
+%%%%%%%%%%%
+% RELATED
+%%%%%%%%%%%
+\chapter{Related Work} 
 \label{chapter:related}
 \input{relatedwork}
 
-
+%%%%%%%%%%%
+% FUTURE WORK
+%%%%%%%%%%%
 \chapter{Limitations, Future Work, and Conclusions}
 \label{chapter:conclusion}
 \input{conclusion}

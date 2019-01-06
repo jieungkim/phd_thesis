@@ -1,3 +1,4 @@
+
 %%% For proofs 
 \newtheorem{definition}{Definition}
 \newtheorem{theorem}{Theorem}
@@ -22,16 +23,45 @@
 %\definecolor{mymauve}{rgb}{0.58,0,0.82}
 %\definecolor{myblue}{HTML}{144B7D}
 
+%%%% For the new operator
+\DeclareMathOperator*{\bigJoin}{\scalerel*{\Join}{\sum}}
 
 %%% general
 \newcommand\ignore[1]{}
+\newcommand{\eg}{{\em e.g.}}
+\newcommand{\ie}{{\em i.e.}}
+\newcommand{\cf}{see }
+\newcommand{\etal}{{\em et al.}}
+\newcommand{\code}[1]{{\texttt{#1}}}
+\newcommand{\codeinmath}[1]{{\mathrm{\texttt{#1}}}}
+
+
+%%% Names 
+\newcommand{\clight}{\mathsf{clight}}
+\newcommand{\compcert}{\mathsf{CompCert}}
+\newcommand{\compcertx}{\mathsf{CompCertX}}
+\newcommand{\certikos}{\mathsf{CertiKOS}}
+
+\renewcommand{\coq}{\mathsf{Coq}}
+\newcommand{\paxos}{\mathsf{Paxos}}
+\newcommand{\raft}{\mathsf{Raft}}
+\newcommand{\verdi}{\mathsf{Verdi}}
+\newcommand{\selfour}{\mathsf{SeL4}}
+
+\newcommand{\lasm}{\mathsf{LAsm}}
+\newcommand{\easm}{\mathsf{EAsm}}
+\newcommand{\tasm}{\mathsf{TAsm}}
+\newcommand{\hasm}{\mathsf{HAsm}}
+
+%%%%
+
 %
 %% COMMENTS 
-\newif \ifcomments \commentsfalse
+\newif \ifcomments \commentstrue
 
 \ifcomments
 \newcommand{\zhong}[1]{\textbf{\textcolor{red}{[ #1 --Zhong]}}}
-\newcommand{\jieung}[1]{\textbf{\textcolor{red}{[ #1 -- Jieung]}}}
+\newcommand{\jieung}[1]{\textbf{\textcolor{blue}{[ #1 -- Jieung]}}}
 
 \else
 \newcommand{\zhong}[1]{}
@@ -42,47 +72,13 @@
 %%%%%%%%%%%%%%%%%%%%%%
 
 
-
-
-%%% for hypertext
-
-\hyphenation{CompCert}
-\hyphenation{CompCertX}
-\hyphenation{Clight}
-\hyphenation{ClightX}
-\hyphenation{CertiKOS}
-\hyphenation{mCertiKOS}
-\hyphenation{mCTOS}
-\hyphenation{CTOS}
-\hyphenation{mCTOS-hyp}
-\hyphenation{mCTOS-rz}
-\hyphenation{mCTOS-emb}
-
-
 %%%%%%%%%%%%%% COMMON 
-\newcommand{\code}[1]{{\texttt{#1}}}
 
-%%% for intros 
-\newcommand{\selfour}{\textsf{SeL4}}
-%%%%
 
 
 %%%%%%%%%%%%%% FROM CCAL 
-\newcommand\oracle{\mathlarger{\varepsilon}}
 
-
-
-\newcommand\raw{x86}
-\newcommand\sys{ker}
 \newcommand\layer[3]{(#1,#2,#3)}
-
-\newcommand\pCTOS{p\CTOS}
-\newcommand\mCTOS{m\CTOS}
-\newcommand\mCTOSbase{\mCTOS{}}
-\newcommand\mCTOShyper{\mCTOS{}-hyp}
-\newcommand\mCTOSringz{\mCTOS{}-rz}
-\newcommand\mCTOSembed{\mCTOS{}-emb}
-\newcommand\cCTOS{c\CTOS}
 
 \newcommand\sem[2]{[\![#2]\!]_{#1}}
 \newcommand\join{\!\bowtie\!}
@@ -90,7 +86,6 @@
 \newcommand\LSem[1]{\textrm{LSem(}#1\textrm{)}}
 \newcommand\ClightX[1]{\textrm{ClightX(}#1\textrm{)}}
 \newcommand\CompCertX[1]{\textrm{CompCertX(}#1\textrm{)}}
-%\newcommand{\code}[1]{{\texttt{#1}}}
 
 
 % Orders on layers and behaviors: \lsim and \lle correspond to QuiverSim,
@@ -98,19 +93,14 @@
 \newcommand{\lle}{\preceq}
 \newcommand{\lsim}[1]{\prec_{#1}}
 \newcommand{\lpath}[1]{\le_{#1}}
-%\newcommand{\lhtap}[1]{\ge_{#1}}
 \newcommand{\id}{\textbf{id}}
 
 % Typing judgements
-\usepackage{relsize}
 \newcommand{\ltyp}[4]{#1 \vdash_{#2} #3 : #4}
 \newcommand{\lltyp}[5]{#2 \vdash^{#1}_{#3} #4 : #5}
 \newcommand{\rulename}[1]{\textsc{\smaller{}#1}}
 
 % Useful shorthands used in layer.tex
-\newcommand{\pcom}{\parallel}
-\usepackage{scalerel}
-\DeclareMathOperator*{\bigJoin}{\scalerel*{\Join}{\sum}}
 \newcommand{\kw}[1]{{\mathsf{#1}}} % render as a keyword
 \newcommand{\pset}[1]{{\mathcal{P}({#1})}}
 \newcommand{\Beh}{\mathsf{Beh}} % the set of behaviors
@@ -121,15 +111,15 @@
 \newcommand{\Env}{\mathcal{E}} % an environment context
 \newcommand{\refines}{\sqsubseteq} % refinement relation
 \newcommand{\EC}[1]{{\kw{EC}({#1})}} % encironment
+\newcommand\oracle{\mathlarger{\varepsilon}}
 \newcommand{\Layer}{\mathcal{L}}
 \newcommand{\Rely}{\mathcal{R}}
 \newcommand{\Guard}{\mathcal{G}}
+\newcommand\abst{\mathcal{A}}
+\newcommand\primt{\mathcal{P}}
 
 %------------------------ Added by OTHERS
-\newcommand{\eg}{{\em e.g.}}
-\newcommand{\ie}{{\em i.e.}}
-\newcommand{\cf}{see }
-\newcommand{\etal}{{\em et al.}}
+
 \newcommand\step[1]{\overset{#1}{\rightarrow}}
 \newcommand\emptye{\epsilon}
 \newcommand\model{\models}
@@ -137,38 +127,31 @@
 \newcommand\opsems[3]{l,ge\model #2 \overset{#1}{\rightarrow^*} #3}
 \newcommand\partialf{\rightharpoonup}
 \newcommand\intp{\rhd}
-\newcommand\CAS{\text{CAS}}
-\newcommand\XADD{\text{XADD}}
-\newcommand\XCHL{\text{XCHL}}
-\newcommand\FAA{\text{FAA}}
-\newcommand\FAI{\text{FAI}}
+\newcommand\CAS{\codeinmath{CAS}}
+\newcommand\XADD{\codeinmath{XADD}}
+\newcommand\XCHL{\codeinmath{XCHL}}
+\newcommand\FAA{\codeinmath{FAA}}
+\newcommand\FAI{\codeinmath{FAI}}
 \newcommand\regs{\rho}
 \newcommand\state{s}
-\newcommand\cpush{\commc{push}}
-\newcommand\cpull{\commc{pull}}
-\newcommand\push{\mathsf{push}}
-\newcommand\pull{\mathsf{pull}}
-\newcommand\abst{\mathcal{A}}
-\newcommand\primt{\mathcal{P}}
+\newcommand\cpush{\codeinmath{push}}
+\newcommand\cpull{\codeinmath{pull}}
+\newcommand\push{\codeinmath{push}}
+\newcommand\pull{\codeinmath{pull}}
 
-\newcommand\commc[1]{\comm{\textcolor{gray}{#1}}}
-\newcommand\incticket{\comm{FAI\_t}}
-\newcommand\incnow{\comm{inc\_n}}
-\newcommand\getnow{\comm{get\_n}}
-\newcommand\tshared{\comm{tshared}}
-\newcommand\holdlock{\comm{hold}}
-\newcommand\lockstatus{\comm{lock\_status}}
-\newcommand\true{\mathsf{true}}
-\newcommand\false{\mathsf{false}}
-
-\newcommand\ccalwaitlock{\mathsf{wait}}
-\newcommand\releaselock{\mathsf{rel}}
+\newcommand\incticket{\codeinmath{FAI\_t}}
+\newcommand\incnow{\codeinmath{inc\_n}}
+\newcommand\getnow{\codeinmath{get\_n}}
+\newcommand\tshared{\codeinmath{tshared}}
+\newcommand\holdlock{\codeinmath{hold}}
+\newcommand\lockstatus{\codeinmath{lock\_status}}
+\newcommand\true{\codeinmath{true}}
+\newcommand\false{\codeinmath{false}}
+\newcommand\ccalwaitlock{\codeinmath{wait}}
+\newcommand\releaselock{\codeinmath{rel}}
 
 \newcommand*{\LargerCdot}{\raisebox{0.25ex}{\scalebox{0.7}{$\bullet$}}}
 \newcommand\cons{\LargerCdot}
-\newcommand\comm[1]{\mathsf{\textcolor{black}{#1}}}
-\newcommand\commb[1]{\mathsf{#1}}
-%\newcommand\mtext[1]{\mathit{#1}}
 \newcommand\set[1]{\{#1\}}
 \newcommand\replay{\mathbb{R}}
 \newcommand\calwait{\mathbb{B}}
@@ -229,7 +212,6 @@
 \newcommand{\disjointunion}[3]{{#1} \disjointunionOP {#2} \simeq {#3}}
 
 \newcommand{\PBoot}{L_\mathsf{x86}}
-\newcommand{\XAsm}{\mathsf{XAsm}}
 
 \newcommand\efrom[1]{(#1\intp)}
 \newcommand\eto[1]{(\intp#1)}
@@ -241,11 +223,11 @@
 \newcommand\PLayer[3]{#1[#2]}
 \newcommand\TLayer[3]{#1[#2][#3]}
 \newcommand\Query[3]{#1[{#3}, #2]}
-\newcommand\Lthread{L_\comm{td}}
-\newcommand\Lbthread{L_\comm{btd}}
-\newcommand\Lhbthread{L_\comm{hbtd}}
-\newcommand\Lhthread{L_\comm{htd}}
-\newcommand\Compose[3]{\comm{compat}(#1, #2, #3)}
+\newcommand\Lthread{L_\codeinmath{td}}
+\newcommand\Lbthread{L_\codeinmath{btd}}
+\newcommand\Lhbthread{L_\codeinmath{hbtd}}
+\newcommand\Lhthread{L_\codeinmath{htd}}
+\newcommand\Compose[3]{\codeinmath{compat}(#1, #2, #3)}
 
 
 
@@ -319,15 +301,14 @@
 
 
 %%%%%%%%%%%%%% FROM MULTICORE AND MULTITHREADED LINKING
-\newcommand{\EAsmM}[1]{\mathsf{EAsm_{#1}}}
-\newcommand{\TAsmM}[1]{\mathsf{TAsm_{#1}}}
+
 \newcommand{\dshare}{\mathsf{sa}}
 \newcommand{\dproc}{\mathsf{pa}}
 \newcommand{\dsnap}{\mathbb{n}\dproc}
 \newcommand{\cpuid}{\mathsf{f_{cpu}}}
 \newcommand{\procid}{\mathsf{f_{proc}}}
 \newcommand{\blocknum}{\mathsf{nb}}
-\newcommand{\compcertx}{\textrm{CompCertX}}
+
 \newcommand{\lval}{\mathsf{Lval}}
 \newcommand{\largs}{\mathsf{Largs}}
 
@@ -362,7 +343,7 @@
 \newcommand{\proofcase}[1]{({Case\ }_{\mathrm{#1}})}
 
 
-\newcommand\Lpthread{L_\comm{pthread}}
+\newcommand\Lpthread{L_\codeinmath{pthread}}
 
 %%%% CALCULUS
 \newcommand{\listlengthkwd}{{\mathrm{len_{lst}}}}

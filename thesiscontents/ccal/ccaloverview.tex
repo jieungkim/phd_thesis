@@ -32,18 +32,18 @@ In this section, to illustrate our layered techniques, we will walk through a sm
 (see Fig.~\ref{fig:exp:ticket_lock_example}) that uses a lock to protect a
 critical section. In this example, the client program $P$ has two threads running on
 two different CPUs; each thread makes one call to the primitive
-$\commc{foo}$ provided by the concurrent  layer interface $L_2$. 
+$\codeinmath{foo}$ provided by the concurrent  layer interface $L_2$. 
 The interface
 $L_2$ is implemented by the concurrent  module $M_2$, which in
-turn is built on top of the interface $L_1$. The method $\commc{foo}$
-calls two primitives $\commc{f}$ and $\commc{g}$ in a critical section
+turn is built on top of the interface $L_1$. The method $\codeinmath{foo}$
+calls two primitives $\codeinmath{f}$ and $\codeinmath{g}$ in a critical section
 protected by a lock.  The lock is implemented over the
 interface $L_0$ using the ticket lock
 algorithm~\cite{mcs91} in module $M_1$.  The lock maintains two 
-integer variables $\commc{n}$ (the ``now serving'' ticket number) and $\commc{t}$ (i.e\, next ticket number). The lock acquire method $\commc{acq}$ fetches-and-increments the next ticket number (by $\commc{FAI\_t}$) 
+integer variables $\codeinmath{n}$ (the ``now serving'' ticket number) and $\codeinmath{t}$ (i.e\, next ticket number). The lock acquire method $\codeinmath{acq}$ fetches-and-increments the next ticket number (by $\codeinmath{FAI\_t}$) 
 and spins until the fetched  number is served.
-The lock release method $\commc{rel}$ simply increments the ``now serving'' ticket number by $\commc{inc\_n}$. These primitives are provided by $L_0$ and  implemented using x86 atomic instructions. $L_0$ also provides the primitives $\commc{f}$ and $\commc{g}$ that are later passed on to $L_1$,
-as well as a no-op primitive $\commc{hold}$ called by $\commc{acq}$ to
+The lock release method $\codeinmath{rel}$ simply increments the ``now serving'' ticket number by $\codeinmath{inc\_n}$. These primitives are provided by $L_0$ and  implemented using x86 atomic instructions. $L_0$ also provides the primitives $\codeinmath{f}$ and $\codeinmath{g}$ that are later passed on to $L_1$,
+as well as a no-op primitive $\codeinmath{hold}$ called by $\codeinmath{acq}$ to
 announce that the lock has been taken.
 
 
@@ -62,7 +62,7 @@ set of abstract {\em shared} primitives and a global log $l$, and a set of {\em 
 Unlike calls to thread-local primitives
 which are not {\em observable} by other threads, each shared primitive call (together with its arguments) is recorded as an
 observable event appended to the end of the global log. 
-For example, $\commc{FAI\_t}$ (see Fig.~\ref{fig:exp:ticket_lock_example}) called from thread
+For example, $\codeinmath{FAI\_t}$ (see Fig.~\ref{fig:exp:ticket_lock_example}) called from thread
 $i$ takes a log $l$ to a log ``$l \cons (i.\incticket)$'' with the symbol
 ``$\cons$'' means ``cons-ing'' an event to the log. 
 
@@ -85,7 +85,7 @@ the last event in $l$ transfers control back to $i$.
   node_t/.style = {circle, fill=white, draw},
 }
 
-For example, suppose thread $i$ only invokes  $\commc{FAI\_t}$, its strategy $\strat{i}$  can be represented as an automaton:%
+For example, suppose thread $i$ only invokes  $\codeinmath{FAI\_t}$, its strategy $\strat{i}$  can be represented as an automaton:%
 \begin{center}
 \begin{tikzpicture}[->,>={stealth[black]}, auto,  node distance=3cm,draw]
 \begin{scope}[every node/.style={font=\sffamily\small}]
@@ -97,13 +97,13 @@ For example, suppose thread $i$ only invokes  $\commc{FAI\_t}$, its strategy $\s
 \begin{scope}[every node/.style={font=\sffamily\small},
 every edge/.style={draw, thick}]
     \path [->] (A) edge (B);
-    \path [->] (B) edge node[above] {$?l, !i.\comm{FAI\_t}, \return t$} (C);
+    \path [->] (B) edge node[above] {$?l, !i.\codeinmath{FAI\_t}, \return t$} (C);
     \path [->] (C) edge [loop right] node[right] {$?l',!\emptye$} (C);
 \end{scope}
 \end{tikzpicture}
 \end{center}%
 Suppose the global log is equal to $l$ when the control is transferred to $i$  (denoted as ``$?l$''). Thread $i$  first generates the event
-$i.\comm{FAI\_t}$ (denoted as ``$!i.\comm{FAI\_t}$'') and returns the ticket number $t$ (denoted as ``$\return t$'') calculated from $l$. It then becomes idle (denoted as a reflexive edge labeled with``$?l',!\epsilon$'')
+$i.\codeinmath{FAI\_t}$ (denoted as ``$!i.\codeinmath{FAI\_t}$'') and returns the ticket number $t$ (denoted as ``$\return t$'') calculated from $l$. It then becomes idle (denoted as a reflexive edge labeled with``$?l',!\epsilon$'')
 and will not produce any more events.
 The ticket number $t$ is calculated by a  function that counts the fetch-and-increment events in $l$. Such functions that reconstruct the current shared state from the log are called \emph{replay} functions (we notate it with $\replay$).
 
@@ -130,13 +130,13 @@ interleaving.
 
 For example, Fig.~\ref{fig:pcomp} shows a system with two threads
 ($t_1$ and $t_2$) and a scheduler. On the left, it shows one execution
-of method $\commc{foo}$ over the layer machine $L'[t_1]$ under a specific
+of method $\codeinmath{foo}$ over the layer machine $L'[t_1]$ under a specific
 environment context $\oracle'_1$.  Here, $\oracle'_1$ is the union of
 the strategy $\stratp{0}$ for the scheduler and $\stratp{2}$ for
-thread $t_2$. In the middle, it shows the execution of $\commc{foo}$
+thread $t_2$. In the middle, it shows the execution of $\codeinmath{foo}$
 (invoked by $t_2$) over $L'[t_2]$ under the environment context
 $\oracle'_2$. On the right, it shows the interleaved execution of
-two invocations to $\commc{foo}$ over $L'[\{t_1,t_2\}]$
+two invocations to $\codeinmath{foo}$ over $L'[\{t_1,t_2\}]$
 where the environment context $\oracle'$ is just the scheduler
 strategy $\stratp{0}$.
 
@@ -180,10 +180,10 @@ for any log $l$ produced by $\strat{}$, there must exist a log $l'$ that can be 
 
 Verifying that a concurrent module satisfies its specification 
 defined as a strategy is as easy as verifying a sequential program.
-Consider the $\commc{acq}$ method of the ticket lock module $M_1$ running 
+Consider the $\codeinmath{acq}$ method of the ticket lock module $M_1$ running 
 over $L_0[i]$ (see Fig.~\ref{fig:exp:ticket_lock_example}). 
 Its  specification
-can be represented as the following strategy $\strat{\comm{acq}}'[i]$:
+can be represented as the following strategy $\strat{\codeinmath{acq}}'[i]$:
 \begin{center}
 \begin{tikzpicture}[->,>={stealth[black]}, auto,  node distance=3cm,draw]
 \begin{scope}[every node/.style={font=\sffamily\small}]
@@ -197,21 +197,21 @@ can be represented as the following strategy $\strat{\comm{acq}}'[i]$:
 \begin{scope}[every node/.style={font=\sffamily\small},
 every edge/.style={draw, thick}]
     \path [->] (A) edge (B);
-    \path [->] (B) edge node[above] {$?\oracle, !i.\comm{FAI\_t}, \return t$} (C);
-    \path [->] (C) edge [loop below] node[below] {$?\oracle,!\comm{i.get\_n}, \return n\ (\neq t)$} (C);
-       \path [->] (C) edge node[above] {$?\oracle, !i.\comm{get\_n}, \return t$} (D);
-              \path [->] (D) edge node[above] {$?\oracle, !i.\comm{hold}$} (E);
+    \path [->] (B) edge node[above] {$?\oracle, !i.\codeinmath{FAI\_t}, \return t$} (C);
+    \path [->] (C) edge [loop below] node[below] {$?\oracle,!\codeinmath{i.get\_n}, \return n\ (\neq t)$} (C);
+       \path [->] (C) edge node[above] {$?\oracle, !i.\codeinmath{get\_n}, \return t$} (D);
+              \path [->] (D) edge node[above] {$?\oracle, !i.\codeinmath{hold}$} (E);
 \end{scope}
 \end{tikzpicture}
 \end{center}
 We write $?\oracle$ for querying $\oracle$.
-We can prove that the simulation ``$\ssem{\commc{acq}}{L_0[i]}\le_\id \strat{\comm{acq}}'[i]$'' holds for the identical relation: for any equal $\oracle$
-and equal initial state, if $\strat{\comm{acq}}'[i]$ takes one step, $\commc{acq}$ can take one (or more) steps to generate the same event and the resulting states are still equal. This correctness property is also used to define certified concurrent layers:
-$$\ltyp{L_0[i]}{\id}{\commc{acq}}{\strat{\comm{acq}}'[i]}
-\quad := \quad  \ssem{\commc{acq}}{L_0[i]}\le_\id \strat{\comm{acq}}'[i]$$
-Let ``$M_1:= \commc{acq} \oplus \commc{rel}$''
-and ``$L_1'[i]:= \strat{\comm{acq}}[i]'\oplus \strat{\comm{rel}}[i]'$''. By showing that the lock release    satisfies its specification
-(i.e.\, ``$\ltyp{L_0[i]}{\id}{\commc{rel}}{\strat{\comm{rel}}'[i]}$'')
+We can prove that the simulation ``$\ssem{\codeinmath{acq}}{L_0[i]}\le_\id \strat{\codeinmath{acq}}'[i]$'' holds for the identical relation: for any equal $\oracle$
+and equal initial state, if $\strat{\codeinmath{acq}}'[i]$ takes one step, $\codeinmath{acq}$ can take one (or more) steps to generate the same event and the resulting states are still equal. This correctness property is also used to define certified concurrent layers:
+$$\ltyp{L_0[i]}{\id}{\codeinmath{acq}}{\strat{\codeinmath{acq}}'[i]}
+\quad := \quad  \ssem{\codeinmath{acq}}{L_0[i]}\le_\id \strat{\codeinmath{acq}}'[i]$$
+Let ``$M_1:= \codeinmath{acq} \oplus \codeinmath{rel}$''
+and ``$L_1'[i]:= \strat{\codeinmath{acq}}[i]'\oplus \strat{\codeinmath{rel}}[i]'$''. By showing that the lock release    satisfies its specification
+(i.e.\, ``$\ltyp{L_0[i]}{\id}{\codeinmath{rel}}{\strat{\codeinmath{rel}}'[i]}$'')
 and by the horizontal composition rule (see Sec.~\ref{boot-linking}), we have:
 \begin{equation} \label{eq:acq} \tag{2.1}
 \ltyp{L_0[i]}{\id}{M_1}{L_1'[i]}\quad:=\quad \ssem{M_1}{L_0[i]}\le_\id L_1'[i]
@@ -257,22 +257,22 @@ every edge/.style={draw, thick}]
 \label{fig:exp:verification}
 \end{figure}%
 
-\para{Higher-level Strategies.} Although the specifications above (e.g., $\strat{\comm{acq}}'[i]$) are abstract (i.e., language independent),
+\para{Higher-level Strategies.} Although the specifications above (e.g., $\strat{\codeinmath{acq}}'[i]$) are abstract (i.e., language independent),
 low-level implementation details and interleavings within the module are still exposed.
-For example, $\strat{\comm{acq}}'[i]$ reveals the loop that repeatedly interacts with the environment to check the serving ticket number.
+For example, $\strat{\codeinmath{acq}}'[i]$ reveals the loop that repeatedly interacts with the environment to check the serving ticket number.
 To simplify the verification of components using locks, we have to \emph{refine} the strategies of $L'_1[i]$ to a higher-level interface $L_1[i]$ that is \emph{atomic}:%
 \begin{center}
 \begin{tikzpicture}[->,>={stealth[black]}, auto,  node distance=3cm,draw]
 \begin{scope}[every node/.style={font=\sffamily\small}]
 
     \node (L1) at (-1.7,0) {$L_1[i]:=$};
-    \node (F1) at (-0.5,0) {$\strat{\comm{acq}}[i]:$};
+    \node (F1) at (-0.5,0) {$\strat{\codeinmath{acq}}[i]:$};
     \node (A) at (0,0) {};
     \node (B) [node_w] at (0.5,0) {};
     \node (C) [node_db] at (2,0) {};
     
     \node (Add) at (2.7,0) {$\oplus$};
-    \node (F2) at (3.5,0) {$\strat{\comm{rel}}[i]:$};
+    \node (F2) at (3.5,0) {$\strat{\codeinmath{rel}}[i]:$};
     \node (A1) at (4,0) {};
     \node (D) [node_b] at (4.5,0) {};
     \node (E) [node_d] at (6,0) {};    
@@ -281,14 +281,14 @@ To simplify the verification of components using locks, we have to \emph{refine}
 \begin{scope}[every node/.style={font=\sffamily\small},
 every edge/.style={draw, thick}]
     \path [->] (A) edge (B);
-    \path [->] (B) edge node[above] {$?\oracle, !i.\comm{acq}$} (C);
+    \path [->] (B) edge node[above] {$?\oracle, !i.\codeinmath{acq}$} (C);
     \path [->] (A1) edge (D);
-       \path [->] (D) edge node[above] {$!i.\comm{rel},\return t$} (E);
+       \path [->] (D) edge node[above] {$!i.\codeinmath{rel},\return t$} (E);
 \end{scope}
 \end{tikzpicture}
 \end{center}
-Here, $\strat{\comm{acq}}[i]$ simply queries $\oracle$
-and produces a single event $i.\comm{acq}$. It then enters  a so-called
+Here, $\strat{\codeinmath{acq}}[i]$ simply queries $\oracle$
+and produces a single event $i.\codeinmath{acq}$. It then enters  a so-called
 \emph{critical} state (marked as gray) to prevent losing the control until  the lock is released. Thus, there is no need to  ask $\oracle$ in critical state. 
 
 To prove the strategy simulation between $L_1'[i]$ and $L_1[i]$, we have to  pose ``rely'' (i.e.,
@@ -298,12 +298,12 @@ validity) conditions $\Rely$ over the environment context of $L_1'[i]$:
 \begin{itemize}\itemsep1em
 \item $L_1'[i].\Rely_{hs}$:~~  the scheduler strategy $\strat{hs}'$ must be \emph{fair}.
 \item $L_1'[i].\Rely_{j}$ ($j\neq i$):~~ lock-related events 
- generated by $\strat{j}$ must follow $\strat{\comm{acq}'}[j]$ and $\strat{\comm{rel}'}[j]$, and the held locks will eventually be released.
+ generated by $\strat{j}$ must follow $\strat{\codeinmath{acq}'}[j]$ and $\strat{\codeinmath{rel}'}[j]$, and the held locks will eventually be released.
 \end{itemize}
 %%%%
 
 \noindent These conditions ensure that the loop (waiting for the ticket 
-to be served) in $\strat{\comm{acq}}'[i]$  terminates. Also, they can be used to prove that each run of $L_1'[i]$ is captured by $L_1[i]$. For example, if the scheduler strategy  $\strat{\comm{hs}}'$ schedules as  ``1, 2, 2, 1, 1, 2, 1, 2, 1, 1, 2, 2,'' running $P$ (see Fig.~\ref{fig:exp:ticket_lock_example}) over $L_1'[D]$ generates the log:%
+to be served) in $\strat{\codeinmath{acq}}'[i]$  terminates. Also, they can be used to prove that each run of $L_1'[i]$ is captured by $L_1[i]$. For example, if the scheduler strategy  $\strat{\codeinmath{hs}}'$ schedules as  ``1, 2, 2, 1, 1, 2, 1, 2, 1, 1, 2, 2,'' running $P$ (see Fig.~\ref{fig:exp:ticket_lock_example}) over $L_1'[D]$ generates the log:%
 
 \begin{small}
 \[
@@ -316,9 +316,9 @@ l'_{g} := &
  (1.\holdlock) \cons 
 (2.\getnow) \\
 &
-\cons (1.\comm{f})
+\cons (1.\codeinmath{f})
 \cons (2.\getnow)
-\cons (1.\comm{g})
+\cons (1.\codeinmath{g})
 \cons (1.\incnow) 
 \cons (2.\getnow)
 \cons (2.\holdlock) 
@@ -326,35 +326,35 @@ l'_{g} := &
 \]
 \end{small}
 
-\noindent This interleaving can be captured by a higher-level scheduler $\strat{\comm{hs}}$ producing ``1, 2'' (recall that thread 1 is in the critical state while holding the lock),
+\noindent This interleaving can be captured by a higher-level scheduler $\strat{\codeinmath{hs}}$ producing ``1, 2'' (recall that thread 1 is in the critical state while holding the lock),
 and the generated log at $L_1[D]$ is:%
 \begin{small}
 \[
 \begin{array}{rl}
 l_{g} := &
- (1.\comm{acq})
-\cons (1.\comm{f})
-\cons (1.\comm{g})
-\cons (1.\comm{rel})
+ (1.\codeinmath{acq})
+\cons (1.\codeinmath{f})
+\cons (1.\codeinmath{g})
+\cons (1.\codeinmath{rel})
 \cons 
- (2.\comm{acq}) 
+ (2.\codeinmath{acq}) 
 \end{array}
 \]
 \end{small}%
 Although logs (and events) at these two layers are different, the order of lock acquiring and 
-the resulting shared state (calculated from logs by replay functions) are exactly the same. By defining the relation $R_1$ over logs as mapping events $i.\comm{acq}$ to $i.\comm{hold}$, $i.\comm{rel}$  to $i.\comm{inc\_n}$ and other lock-related events to empty ones, we can prove:%
+the resulting shared state (calculated from logs by replay functions) are exactly the same. By defining the relation $R_1$ over logs as mapping events $i.\codeinmath{acq}$ to $i.\codeinmath{hold}$, $i.\codeinmath{rel}$  to $i.\codeinmath{inc\_n}$ and other lock-related events to empty ones, we can prove:%
 $$L_1'[i] \le_{R_1} L_1[i]$$
 Then by the predicate (\ref{eq:acq}) and the weakening rule (i.e.\, the \textsc{Wk} rule in Fig.~\ref{fig:calculus}), we have that:%
 \begin{equation}\label{eq:acq:h} \tag{2.2}
 \ltyp{L_0[i]}{\id \circ R_1\ =\ R_1}{M_1}{L_1[i]}
 \end{equation}
 
-Similarly,  for the $\commc{foo}$ method (i.e.\, $M_2$ in Fig.~\ref{fig:exp:ticket_lock_example}), we can also introduce a low-level strategy $\strat{\comm{foo}}'[i]$ as the first step:
+Similarly,  for the $\codeinmath{foo}$ method (i.e.\, $M_2$ in Fig.~\ref{fig:exp:ticket_lock_example}), we can also introduce a low-level strategy $\strat{\codeinmath{foo}}'[i]$ as the first step:
 \begin{center}
 \begin{tikzpicture}[->,>={stealth[black]}, auto,  node distance=3cm,draw]
 \begin{scope}[every node/.style={font=\sffamily\small}]
     \node (L1) at (-1.7,0) {$L_2'[i]:=$};
-    \node (F1) at (-0.5,0) {$\strat{\comm{foo}}'[i]:$};
+    \node (F1) at (-0.5,0) {$\strat{\codeinmath{foo}}'[i]:$};
     \node (A) at (0,0) {};
     \node (B) [node_w] at (0.5,0) {};
     \node (C) [node_b] at (2,0) {};
@@ -366,19 +366,19 @@ Similarly,  for the $\commc{foo}$ method (i.e.\, $M_2$ in Fig.~\ref{fig:exp:tick
 \begin{scope}[every node/.style={font=\sffamily\small},
 every edge/.style={draw, thick}]
     \path [->] (A) edge (B);
-    \path [->] (B) edge node[above] {$?\oracle, !i.\comm{acq}$} (C);
-       \path [->] (C) edge node[above] {$!i.\comm{f}$} (D);
-       \path [->] (D) edge node[above] {$!i.\comm{g}$} (E);
-       \path [->] (E) edge node[above] {$!i.\comm{rel}$} (F);
+    \path [->] (B) edge node[above] {$?\oracle, !i.\codeinmath{acq}$} (C);
+       \path [->] (C) edge node[above] {$!i.\codeinmath{f}$} (D);
+       \path [->] (D) edge node[above] {$!i.\codeinmath{g}$} (E);
+       \path [->] (E) edge node[above] {$!i.\codeinmath{rel}$} (F);
 \end{scope}
 \end{tikzpicture}
 \end{center}
-Then we prove that a high-level atomic interface $\strat{\comm{foo}}$:%
+Then we prove that a high-level atomic interface $\strat{\codeinmath{foo}}$:%
 \begin{center}
 \begin{tikzpicture}[->,>={stealth[black]}, auto,  node distance=3cm,draw]
 \begin{scope}[every node/.style={font=\sffamily\small}]
     \node (L1) at (-1.7,0) {$L_2[i]:=$};
-    \node (F1) at (-0.5,0) {$\strat{\comm{foo}}[i]:$};
+    \node (F1) at (-0.5,0) {$\strat{\codeinmath{foo}}[i]:$};
     \node (A) at (0,0) {};
     \node (B) [node_w] at (0.5,0) {};
     \node (C) [node_d] at (2.5,0) {};
@@ -387,12 +387,12 @@ Then we prove that a high-level atomic interface $\strat{\comm{foo}}$:%
 \begin{scope}[every node/.style={font=\sffamily\small},
 every edge/.style={draw, thick}]
     \path [->] (A) edge (B);
-    \path [->] (B) edge node[above] {$?\oracle, !i.\comm{foo}$} (C);
+    \path [->] (B) edge node[above] {$?\oracle, !i.\codeinmath{foo}$} (C);
 \end{scope}
 \end{tikzpicture}
 \end{center}
-simulates (with some $R_2$) $\strat{\comm{foo}}'$, which
-in turn simulates $\commc{foo}$:%
+simulates (with some $R_2$) $\strat{\codeinmath{foo}}'$, which
+in turn simulates $\codeinmath{foo}$:%
 \begin{equation}\label{eq:foo:h} \tag{2.3}
 L_2'[i] \le_{R_2} L_2[i]
  \qquad\quad

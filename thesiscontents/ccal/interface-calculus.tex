@@ -101,7 +101,7 @@ $
 &
 (\textit{Layer}) & L[A] & := & (\Layer, \Rely, \Guard)
  &
- (\textit{Inv}) & \comm{INV} & \in & \textit{Log} \rightarrow \textit{Prop}
+ (\textit{Inv}) & \codeinmath{INV} & \in & \textit{Log} \rightarrow \textit{Prop}
 \\
 (\textit{Rely, Guar}) & \Rely, \Guard& \in & \textit{Id} \alist\ \textit{Inv}
 &
@@ -317,7 +317,7 @@ shared memory updates from other CPUs are ``retrieved'' by the $\cpush/\cpull$ p
 which  queries $\oracle$, updated the log
 with the query result, and generates the $\cpull$ event.
 Figure~\ref{fig:exp:pull} shows their specifications, which depend on
-a replay function  $\replay_{\comm{shared}}$ to
+a replay function  $\replay_{\codeinmath{shared}}$ to
 reconstruct the shared memory value $v$ for some location $b$ and check the well-formedness (i.e.\, no data race occurs)
 of the resulting log.
 
@@ -333,20 +333,20 @@ Since $\spec_\pull$ is parameterized with $\oracle$, it can also be viewed as th
 \begin{scope}[every node/.style={font=\sffamily\small},
 every edge/.style={draw, thick}]
     \path [->] (A) edge (B);
-    \path [->] (B) edge node[above] {$?\oracle, !c.\pull(b), \return (v, \comm{own}\ c)$} node[below]{$\set{m.b: v}$} (C);
+    \path [->] (B) edge node[above] {$?\oracle, !c.\pull(b), \return (v, \codeinmath{own}\ c)$} node[below]{$\set{m.b: v}$} (C);
 \end{scope}
 \end{tikzpicture}
 \end{center}
-The layer machine enters the \emph{critical state} after calling $\commc{pull}$ by holding the ownership
+The layer machine enters the \emph{critical state} after calling $\codeinmath{pull}$ by holding the ownership
 of a shared location.
-With the replay function ($\replay_{\comm{shared}}$) and the given log, 
+With the replay function ($\replay_{\codeinmath{shared}}$) and the given log, 
 we can derive the value that is mapped with $b$ is $v$, 
 and the $\pull$ primitive
 stores  $v$  into the memory, updates the clean status,
 and finally generates a $\pull$ event.
 The memory state $m$ is updated using the contents delivered
 by the $\cpull$ operation
-and  the clean status is also marked to be $\comm{dirty}(c)$,
+and  the clean status is also marked to be $\codeinmath{dirty}(c)$,
 meaning that it is now only safe for CPU $c$ to access.
 Thus, this memory location will be treated as
 a \emph{local}
@@ -354,7 +354,7 @@ copy of the shared state being accessed by $c$.
 After the $c.\pull$ operation transfers the contents,
 all subsequent shared accesses are performed over this 
 copy as if it were private to CPU $c$.
-It exits the critical state by invoking $\commc{push}$ to free the ownership.
+It exits the critical state by invoking $\codeinmath{push}$ to free the ownership.
 This $\cpush$ primitive also delivers the updated memory contents back 
 by appending the $\cpush$ event that contains the value $v$ into the log.
 
