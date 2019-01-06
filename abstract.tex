@@ -1,56 +1,63 @@
-Concurrent programs are in common these days.
-They are not only related to the local machine concurrency, such as multicore or multithreaded environment, 
-but also  related to external behaviors of the machine (\textit{i.e.} IO devices) and other nodes' behaviors in the cluster of multiple machines. 
- They, however, are known to be difficult to get right 
-and debug 
-because multiple instances of 
-the program running on different cores and/or threads 
-provide the number (usually unbounded) of interleavings. 
-
-The number of Interleavings is also a burden in
-concurrent program verification,
-and 
-compositionality is the most promising approach to fight 
-the case explosion due to interleavings.
-In this sense, formal verification is a key to secure and reliable software. 
-
-
-and  Operating System (OS) kernels and hypervisors form the backbone of every safety-critical software system in the world. 
-Hence it is highly desirable to formally verify the correctness of these programs.
-
-Recent work on \selfour~\cite{klein2009sel4,klein14} has shown that it is feasible to formally prove the functional correctness property of a general-purpose microkernel, but the cost of such verification is still quite prohibitive. 
-It took the \selfour\ team more than 11 person years (effort for tool development excluded) to verify 7500 lines of sequential C code, yet the resulting kernel still contains 1200 lines of additional C code and 600 lines of assembly code that are not verified. 
-Worse still, even after all these efforts, the current verified \selfour\ kernel cannot be used to reason about user-level programs as it does not verify important features such as virtual-memory page faults and address translation.
-
-There are many reasons that make hard to verify the OS kernels formally.
-First, OS kernels are complex artifacts; they contain many interdependent components that are difficult to untangle.
-Their invariants can involve machine level details (e.g., how the virtual memory hardware works) but can also cut across multiple abstraction boundaries (e.g., different views of an address space under kernel/user or host/guest modes).
-Several researchers~\cite{baumann12,vaynberg12} observed that even writing down a good and easy-to-maintain formal specification alone is already a major roadblock for any such verification effort.
-
-Second, OS kernels are often written in C, which only supports limited forms of abstraction.  Verification of C programs is especially hard if they manipulate low-level data structures (e.g., thread queues, allocation tables).  
-The \selfour\ effort used an intermediate executable specification (derived from a Haskell prototype) to hide some messy C specifics, but this alone is not enough for enforcing abstraction among different kernel components; \selfour\ had to introduce capabilities which add significant implementation complexities to the kernel.
-
-Third, OS kernels are developed for managing and multiplexing hardware, so it is important to have a machine model that can describe hardware details.
-The C language (especially ANSI C) is too high level for this purpose. For example, while most kernel code can be written in C, many key kernel concepts (e.g., context switches, address translation, page fault handling) can only be given accurate semantics at the assembly level. Consequently, we need a formal assembly model to define many kernel behaviors, but we also want to verify most kernel code at a much higher abstraction level.
-
-Fourth, OS kernel verification would not scale if it does not  support extensibility.
-One advantage of a verified kernel is the existence of formal specifications for all of its components. 
-In theory, this would allow us to add certified kernel plug-ins as long as they do not violate any existing kernel invariants.
-In practice, however, if we are unable to decompose kernel invariants into small independent pieces, even modifying an existing (or adding a new) verified component may force us to rewrite the proofs for the entire kernel.
-
-Hence, OS kernel and hypervisor verification needs a novel compositional approach that can handle all of the above challenges successfully. 
-Previous work~\cite{deepspec} in our group presents a verified OS kernel and hypervisor with solving those problems. 
-However, there are still limitations in two verified kernels~\cite{deepspec, klein2009sel4}.
-For example, both of them only support single processor systems.
 
 
 
 
-%%%% From MCSLock
 
-The MCS Lock, a small but complex piece of low-level software, is a standard algorithm for providing inter-CPU locks with FIFO ordering guarantee and scalability.
-It is an interesting target for verification---short and subtle, involving both liveness and safety properties. 
-We implemented and verified the MCS Lock algorithm as part of the CertiKOS kernel~\cite{certikos:osdi16}, showing that the C/assembly implementation
- {\em contextually refines} atomic specifications of the acquire and release lock methods.
-Our development follows the methodology of \emph{certified concurrent abstraction layers}~\cite{deepspec,concurrency}. 
-By splitting the proof into layers, we can modularize it into separate parts for the low-level machine model, data abstraction, and reasoning about concurrent interleavings.  This separation of concerns makes the layered methodology suitable for verified programming in the large, and our MCS Lock can be composed with other shared objects in CertiKOS kernel.
+
+
+%Concurrent programs are in common these days.
+%They are not only related to the local machine concurrency, such as multicore or multithreaded environment, 
+%but also  related to external behaviors of the machine (\textit{i.e.} IO devices) and other nodes' behaviors in the cluster of multiple machines. 
+% They, however, are known to be difficult to get right 
+%and debug 
+%because multiple instances of 
+%the program running on different cores and/or threads 
+%provide the number (usually unbounded) of interleavings. 
+%
+%The number of Interleavings is also a burden in
+%concurrent program verification,
+%and 
+%compositionality is the most promising approach to fight 
+%the case explosion due to interleavings.
+%In this sense, formal verification is a key to secure and reliable software. 
+%
+%
+%and  Operating System (OS) kernels and hypervisors form the backbone of every safety-critical software system in the world. 
+%Hence it is highly desirable to formally verify the correctness of these programs.
+%
+%Recent work on \selfour~\cite{klein2009sel4,klein14} has shown that it is feasible to formally prove the functional correctness property of a general-purpose microkernel, but the cost of such verification is still quite prohibitive. 
+%It took the \selfour\ team more than 11 person years (effort for tool development excluded) to verify 7500 lines of sequential C code, yet the resulting kernel still contains 1200 lines of additional C code and 600 lines of assembly code that are not verified. 
+%Worse still, even after all these efforts, the current verified \selfour\ kernel cannot be used to reason about user-level programs as it does not verify important features such as virtual-memory page faults and address translation.
+%
+%There are many reasons that make hard to verify the OS kernels formally.
+%First, OS kernels are complex artifacts; they contain many interdependent components that are difficult to untangle.
+%Their invariants can involve machine level details (e.g., how the virtual memory hardware works) but can also cut across multiple abstraction boundaries (e.g., different views of an address space under kernel/user or host/guest modes).
+%Several researchers~\cite{baumann12,vaynberg12} observed that even writing down a good and easy-to-maintain formal specification alone is already a major roadblock for any such verification effort.
+%
+%Second, OS kernels are often written in C, which only supports limited forms of abstraction.  Verification of C programs is especially hard if they manipulate low-level data structures (e.g., thread queues, allocation tables).  
+%The \selfour\ effort used an intermediate executable specification (derived from a Haskell prototype) to hide some messy C specifics, but this alone is not enough for enforcing abstraction among different kernel components; \selfour\ had to introduce capabilities which add significant implementation complexities to the kernel.
+%
+%Third, OS kernels are developed for managing and multiplexing hardware, so it is important to have a machine model that can describe hardware details.
+%The C language (especially ANSI C) is too high level for this purpose. For example, while most kernel code can be written in C, many key kernel concepts (e.g., context switches, address translation, page fault handling) can only be given accurate semantics at the assembly level. Consequently, we need a formal assembly model to define many kernel behaviors, but we also want to verify most kernel code at a much higher abstraction level.
+%
+%Fourth, OS kernel verification would not scale if it does not  support extensibility.
+%One advantage of a verified kernel is the existence of formal specifications for all of its components. 
+%In theory, this would allow us to add certified kernel plug-ins as long as they do not violate any existing kernel invariants.
+%In practice, however, if we are unable to decompose kernel invariants into small independent pieces, even modifying an existing (or adding a new) verified component may force us to rewrite the proofs for the entire kernel.
+%
+%Hence, OS kernel and hypervisor verification needs a novel compositional approach that can handle all of the above challenges successfully. 
+%Previous work~\cite{deepspec} in our group presents a verified OS kernel and hypervisor with solving those problems. 
+%However, there are still limitations in two verified kernels~\cite{deepspec, klein2009sel4}.
+%For example, both of them only support single processor systems.
+%
+%
+%
+%
+%%%%% From MCSLock
+%
+%The MCS Lock, a small but complex piece of low-level software, is a standard algorithm for providing inter-CPU locks with FIFO ordering guarantee and scalability.
+%It is an interesting target for verification---short and subtle, involving both liveness and safety properties. 
+%We implemented and verified the MCS Lock algorithm as part of the CertiKOS kernel~\cite{certikos:osdi16}, showing that the C/assembly implementation
+% {\em contextually refines} atomic specifications of the acquire and release lock methods.
+%Our development follows the methodology of \emph{certified concurrent abstraction layers}~\cite{deepspec,concurrency}. 
+%By splitting the proof into layers, we can modularize it into separate parts for the low-level machine model, data abstraction, and reasoning about concurrent interleavings.  This separation of concerns makes the layered methodology suitable for verified programming in the large, and our MCS Lock can be composed with other shared objects in CertiKOS kernel.

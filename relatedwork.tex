@@ -1,5 +1,6 @@
 
 \section{Certified Abstraction Layers}
+\label{chatper:related:sec:certified-abstraction-laayers}
 
 Our CCAL toolkit follows the layer-based compositional proof approach proposed by Gu \etal~\cite{deepspec}.
 They proposed certified abstraction layers (CAL) for sequential programs and 
@@ -45,6 +46,9 @@ is required for supporting parallel layer composition.
 
 
 \section{Linearizability}
+\label{chatper:related:sec:linearizability}
+
+
 Linearizabilty~\cite{herlihy90}  is a well-known safety condition for concurrent objects 
 and has been studied for decades. 
 Developing concurrent software using a stack of shared atomic objects has since
@@ -105,6 +109,8 @@ linearizability of leader election.
 
 
 \section{Program Logics for Shared-Memory Concurrency}
+\label{chatper:related:sec:program-logics-for-shared-memory-concurrency}
+
 Multiple program  logics~
 \cite{cap10, ohearn:concur04,brookes:concur04,feng07:sagl,vafeiadis:marriage,LRG,verifast,gotsman13,Turon13popl,Turon13icfp,nanevski13,nanevski14,
 sergey15,sergey15pldi,pinto14,iris15,civl15,pinto16,xu16}
@@ -148,9 +154,8 @@ However, their layers differ from CCAL layers in three aspects;
 3) they do address liveness properties as we have shown in MCS lock verification.
 
 
-
-
-\section{Treatment of Parallel Composition}
+\section{Parallel Composition in Concurrent Program Verification}
+\label{chatper:related:sec:parallel-composition-in-concurrent-program-verification}
 
 \para{RGSim and LiLi.}
 Building contextual refinement proofs for concurrent programs and supporting parallel composition for concurrent program proofs 
@@ -243,36 +248,9 @@ and modeling higher-order sequential features as games is excellent for proving 
 However, it is unclear how it is applied to the large-scale verification in the certified software community.
 
 
-\section{OS Kernel Verification} 
 
-A significant body
-of  work including
-seL4~\cite{klein2009sel4,klein14},
-Verve~\cite{hawblitzel10}, Hyperkernel~\cite{hyperkernel}, and Komodo~\cite{komodo} are 
-addressed OS kernel verification.
-None of these works, however, support concurrency (either with multicore or with multithreaded)  with fine-grained locking.
-Xu \etal~\cite{xu16} developed a new verification framework by facilitating RGSim
-and Feng~\etal's program logic~\cite{feng08:aim} for reasoning
-about interrupts.
-They verified multiple  key modules (written in C) 
-in the $\mu$C/OS-II, a preemptive kernel,
- but progress and proof linking properties are out of the scope of their work. 
-Others~\cite{klein2009sel4,hawblitzel10, hyperkernel, komodo},
-are aiming to prove several properties based on the model of single-threaded, or limited concurrency supports using a per-core big kernel lock.
-
-There is another hypervisor verification work done by the Verisoft team by using VCC~\cite{leinenbach09}.
-The team verifies spinlocks in a hypervisor by directly postulating a Hoare logic rather than building
-on top of an operational semantics for C.
-However, their work is limited to proofs about properties of the low-level primitives 
-instead of showing the full functionality of
-the hypervisor.
-Our work, on the other hand, 
-is an end-to-end verified concurrent system showing that its
-assembly code indeed ``implements'' (contextually simulates) the
-high-level specification by using CCAL.
-
-
-\section{Other Work on the MCS Algorithm}
+\section{Verification on the MCS Algorithm}
+\label{chatper:related:sec:verification-on-the-mcs-algorithm}
 
 As far as we know, two other efforts apply formal verification methods
 to the MCS algorithm.  Ogata and Futatsugi~\cite{ogata:mcs-lock} used the UNITY program logic to develop a mechanized proof for the MCS algorithm.
@@ -355,7 +333,40 @@ we encountered a feature that required thinking about liveness and
 fairness, we were able to do that reasoning without changing the
 underlying logical framework.
 
-\section{Distributed system verification}
+
+\section{OS Kernel Verification} 
+\label{chatper:related:sec:os-kernel-verification}
+
+A significant body
+of  work including
+seL4~\cite{klein2009sel4,klein14},
+Verve~\cite{hawblitzel10}, Hyperkernel~\cite{hyperkernel}, and Komodo~\cite{komodo} are 
+addressed OS kernel verification.
+None of these works, however, support concurrency (either with multicore or with multithreaded)  with fine-grained locking.
+Xu \etal~\cite{xu16} developed a new verification framework by facilitating RGSim
+and Feng~\etal's program logic~\cite{feng08:aim} for reasoning
+about interrupts.
+They verified multiple  key modules (written in C) 
+in the $\mu$C/OS-II, a preemptive kernel,
+ but progress and proof linking properties are out of the scope of their work. 
+Others~\cite{klein2009sel4,hawblitzel10, hyperkernel, komodo},
+are aiming to prove several properties based on the model of single-threaded, or limited concurrency supports using a per-core big kernel lock.
+
+There is another hypervisor verification work done by the Verisoft team by using VCC~\cite{leinenbach09}.
+The team verifies spinlocks in a hypervisor by directly postulating a Hoare logic rather than building
+on top of an operational semantics for C.
+However, their work is limited to proofs about properties of the low-level primitives 
+instead of showing the full functionality of
+the hypervisor.
+Our work, on the other hand, 
+is an end-to-end verified concurrent system showing that its
+assembly code indeed ``implements'' (contextually simulates) the
+high-level specification by using CCAL.
+
+
+
+\section{Distributed System Verification}
+\label{chatper:related:sec:distributed-system-verification}
 
 Approaches to verify distributed systems have been explored actively over the
 past few years. 
@@ -399,6 +410,7 @@ in IronFleet) are not always encodable or verifiable in first-order logic.
 
 
 \section{Paxos Verification and Deconstruction}
+\label{chatper:related:sec:paxos-verification-and-decomposition}
 
 A substantial body of work exists on verifying the Paxos protocol~\cite{paxos}.
 Lamport provided a proof sketch at the time of proposing the protocol~\cite{paxosmadesimple}.
@@ -454,8 +466,8 @@ It allows us to implement and verify a system once, and then reuse it as a compo
 
 
 
-\section{Model of leader-based distributed system}
-
+\section{Model of Leader-based Distributed Systems}
+\label{chatper:related:sec:model-of-leader-based-distributed-systems}
 
 Distributed system verification in this thesis focuses on a leader-based distributed system model, 
 which is based on the two functions,

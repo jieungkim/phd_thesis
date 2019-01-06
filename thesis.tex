@@ -96,7 +96,6 @@
 \bibliographystyle{abbrvunsrt}
 
 \begin{document}
-
 % Need to define title before the abstract.
 \title{Modular and Compositional Development of Certified Concurrent Software Systems}
 \author{Jieung Kim}
@@ -105,10 +104,8 @@
 
 \frontmatter
 
-\begin{abstract}
-% ADD CONTENTS
-% \input{abstract}
-% END CONTENTS
+\begin{abstract} 
+\input{abstract}
 \end{abstract}
 
 
@@ -128,13 +125,13 @@
 \chapter{Introduction}
 \label{chapter:introduction}
 % ADD CONTENTS
-% \input{introduction}
-% END CONTENTS
+ \input{introduction}
+ % END CONTENTS
 
 \chapter{Concurrent Certified Abstraction Layer}
 \label{chapter:ccal}
 %
-%\input{thesiscontents/ccal/intro}
+%\input{thesiscontents/ccal/ccalintro}
 %
 %
 %
@@ -146,9 +143,9 @@
 
 
 \chapter{Case Study: MCS Lock}
-\label{chapter:mcs lock}
+\label{chapter:mcs-lock}
 
-%\input{thesiscontents/mcslock/intro}
+%\input{thesiscontents/mcslock/mcslockintro}
 
 
 %\input{oldcontents/mcslock/abstract}
@@ -163,7 +160,7 @@
 \chapter{Multicore and Multithreaded Linking}
 \label{chapter:linking}
 
-%\input{thesiscontents/conlink/intro}
+%\input{thesiscontents/conlink/linkingintro}
 
 % ADD CONTENTS
 %\input{oldcontents/conlink/ccaldefinitions}
@@ -180,7 +177,7 @@
 \chapter{Case Study: Concurrent CertiKOS}
 \label{chapter:concurrent-certikos}
 
-%\input{thesiscontents/certikos/intro}
+%\input{thesiscontents/certikos/certikosintro}
 
 % ADD CONTENTS
 %\input{oldcontents/ccal/prog-multicore}    
@@ -202,7 +199,7 @@
 \chapter{Case Study: Multi-registred Paxos}
 \label{chapter:wormspace}
 
-%\input{thesiscontents/multipaxos/intro}
+%\input{thesiscontents/multipaxos/multipaxosintro}
 
 
 %\input{oldcontents/multipaxos/abstract}
@@ -240,9 +237,10 @@
 %\input{oldcontents/witnesspassing/related}
 %\input{oldcontents/witnesspassing/conclusion}
 
-\chapter{Related Work}
+\chapter{Related Work} % First Pass Done
 \label{chapter:related}
 \input{relatedwork}
+
 
 \chapter{Limitations, Future Work, and Conclusions}
 \label{chapter:conclusion}
