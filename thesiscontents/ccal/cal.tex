@@ -14,8 +14,8 @@ a layer $L_{\codeinmath{low}}$ contextually refines the higher layer $L_{\codein
  state transitions by $L_{\codeinmath{low}}$ which has the context \code{M} and  \code{Ctxt}.
  Formally, it is defined as a forward simulation~\cite{Lynch95,leroy09,Milner71,Park81} with the (simulation) relation $R$
  and  $\ltyp{L_{\codeinmath{low}}}{R}{\codeinmath{M} \oplus \codeinmath{Ctxt}}{L_{\codeinmath{high}}}'$ is stated as
-$$\forall\ \codeinmath{Ctxt},\ L_{\codeinmath{low}} (\codeinmath{M}_{\codeinmath{high}} \oplus \codeinmath{Ctxt}) \refines_{R} L_{\codeinmath{high}} (\codeinmath{Ctxt}),$$
-where $\refines_{R}$ is the refinement relation with $R$, and $L(\cdot)$ implies  a  behavior of the layer machine based on $L$.
+$$\forall\ \codeinmath{Ctxt},\ \sem{L_{\codeinmath{low}}}{\codeinmath{M}_{\codeinmath{high}} \oplus \codeinmath{Ctxt}} \refines_{R} \sem{L_{\codeinmath{high}}}{\codeinmath{Ctxt}},$$
+where $\refines_{R}$ is the refinement relation with $R$, and $\sem{L}{\cdot}$ implies  a  behavior of the layer machine based on $L$.
 
 
 Contextual refinement, the critical technique of CAL, is powerful since layers can be verified only once individually, and those layers can be linked together.
@@ -24,7 +24,7 @@ Contextual refinement, the critical technique of CAL, is powerful since layers c
 For instance, if we add a new layer $L_{\codeinmath{top}}$ on top of verified layers $L_{\codeinmath{mid}}$ and $L_{\codeinmath{btm}}$, 
 we need one new proof that shows $L_{\codeinmath{mid}}$ contextually refines $L_{\codeinmath{top}}$, but we can reuse the proof for $L_{\codeinmath{btm}} \refines_{R} L_{\codeinmath{mid}}$ without requiring any modification to the proof thanks to the characteristic of the contextual refinement. After the proof of $L_{\codeinmath{mid}} \refines{cr} L_{\codeinmath{top}}$, we are automatically guaranteed that $L_{\codeinmath{btm}}$ contextually refines all the way up to $L_{\codeinmath{top}}$ as follows:
 $$
-\forall\ \codeinmath{Ctxt},\ L_{\codeinmath{btm}} (\codeinmath{M}_{\codeinmath{mid}}\oplus (\codeinmath{M}_{\codeinmath{top}}\oplus \codeinmath{Ctxt})) \refines_{R}  L_{\codeinmath{mid}} (\codeinmath{M}_{\codeinmath{top}} \oplus \codeinmath{Ctxt}) \refines_{R'} L_{\codeinmath{top}} (\codeinmath{Ctxt}). 
+\forall\ \codeinmath{Ctxt},\ \sem{L_{\codeinmath{btm}}}{\codeinmath{M}_{\codeinmath{mid}}\oplus (\codeinmath{M}_{\codeinmath{top}}\oplus \codeinmath{Ctxt})} \refines_{R}  \sem{L_{\codeinmath{mid}}}{\codeinmath{M}_{\codeinmath{top}} \oplus \codeinmath{Ctxt}} \refines_{R'} \sem{L_{\codeinmath{top}}}{\codeinmath{Ctxt}}. 
 $$ 
 where $R$ is the relation between states of $ L_{\codeinmath{btm}}$ and $L_{\codeinmath{mid}}$ and $R'$ is the relation between states of 
  $ L_{\codeinmath{mid}}$ and $L_{\codeinmath{top}}$.

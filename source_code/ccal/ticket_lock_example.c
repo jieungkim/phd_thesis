@@ -1,36 +1,52 @@
 struct ticket_lock {
-  volatile uint n, t;
+  volatile unsigned int 
+    now, ticket;
 };
-//Methods provided by <@$L_0$@>
-extern uint get_n();
-extern void inc_n();
-extern uint FAI_t();
-extern void f();
-extern void g();
-extern void hold();
-//<@$M_1$@> module
-void acq () {
-  uint my_t = FAI_t();
-  while(get_n()!=my_t){};
-  hold();
-}
-void rel () { inc_n(); }
-//Methods provided by <@$L_1$@>
-extern void acq();
-extern void rel();
-extern void f();
-extern void g();
-//<@$M_2$@> module
-void foo () {
-  acq();
-  f(); g();
-  rel();
-}
-//Methods provided by <@$L_2$@>
-extern void foo();
 
-//Client program <@$P$@>
-//Thread running on CPU 1
-void T1 () { foo(); }
-//Thread running on CPU 2
-void T2 () { foo(); }
+// Primitives provided by layer <@$L_0$@>
+extern unsigned int get_now();
+extern void increase_now();
+extern unsigned int FAI_ticket(); 
+extern void foo();
+extern void goo();
+extern void hold_lock();
+
+// Module <@$M_1$@> - ticket lock
+void acquire () {
+  unsigned int my_ticket;
+  my_ticket = FAI_ticket();
+
+  while(get_now()!=my_ticket);
+
+  hold_lock();
+}
+void release () {
+ increase_now(); 
+}
+
+// Primitives provided by layer <@$L_1$@>
+extern void acquire();
+extern void release();
+extern void foo();
+extern void goo();
+
+// Module <@$M_2$@> - client code with locking
+void lkclient () {
+  acquire();
+  foo();
+  goo();
+  release();
+}
+
+// Primitives provided by <@$L_2$@>
+extern void lkclient();
+
+// Client program <@$P$@>
+// Thread 1 running on CPU 1
+void T1 () { 
+  lkclient(); 
+}
+// Thread 2 running on CPU 2
+void T2 () { 
+  lkclient(); 
+}

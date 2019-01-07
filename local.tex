@@ -37,6 +37,7 @@
 
 
 %%% Names 
+\newcommand{\intelmachine}{\mathsf{x86}}
 \newcommand{\clight}{\mathsf{clight}}
 \newcommand{\compcert}{\mathsf{CompCert}}
 \newcommand{\compcertx}{\mathsf{CompCertX}}
@@ -80,7 +81,7 @@
 
 \newcommand\layer[3]{(#1,#2,#3)}
 
-\newcommand\sem[2]{[\![#2]\!]_{#1}}
+\newcommand\sem[2]{[\![{#1} \langle {#2} \rangle]\!]}
 \newcommand\join{\!\bowtie\!}
 \newcommand\Refrel{\sqsubseteq}
 \newcommand\LSem[1]{\textrm{LSem(}#1\textrm{)}}
@@ -118,6 +119,15 @@
 \newcommand\abst{\mathcal{A}}
 \newcommand\primt{\mathcal{P}}
 
+\tikzset{
+  node_w/.style = {circle, fill=white, draw, inner sep=3pt},
+  node_b/.style = {circle, fill=lightgray, draw, inner sep=3pt},
+  node_d/.style = {circle, double, fill=white, draw, inner sep=3pt},
+  node_db/.style = {circle, double, fill=lightgray, draw, inner sep=3pt},
+  arc_b/.style = {very thick, draw=red, >={stealth[black]}},
+  node_t/.style = {circle, fill=white, draw},
+}
+
 %------------------------ Added by OTHERS
 
 \newcommand\step[1]{\overset{#1}{\rightarrow}}
@@ -139,16 +149,16 @@
 \newcommand\push{\codeinmath{push}}
 \newcommand\pull{\codeinmath{pull}}
 
-\newcommand\incticket{\codeinmath{FAI\_t}}
-\newcommand\incnow{\codeinmath{inc\_n}}
-\newcommand\getnow{\codeinmath{get\_n}}
+\newcommand\incticket{\codeinmath{FAI\_ticket}}
+\newcommand\incnow{\codeinmath{inc\_now}}
+\newcommand\getnow{\codeinmath{get\_now}}
 \newcommand\tshared{\codeinmath{tshared}}
 \newcommand\holdlock{\codeinmath{hold}}
 \newcommand\lockstatus{\codeinmath{lock\_status}}
 \newcommand\true{\codeinmath{true}}
 \newcommand\false{\codeinmath{false}}
-\newcommand\ccalwaitlock{\codeinmath{wait}}
-\newcommand\releaselock{\codeinmath{rel}}
+\newcommand\ccalwaitlock{\codeinmath{wait\_lock}}
+\newcommand\releaselock{\codeinmath{release\_lock}}
 
 \newcommand*{\LargerCdot}{\raisebox{0.25ex}{\scalebox{0.7}{$\bullet$}}}
 \newcommand\cons{\LargerCdot}
@@ -162,8 +172,8 @@
 
 
 \newcommand\ccalcode{\kappa}
-\newcommand\acq{\mathsf{acq}}
-\newcommand\rel{\mathsf{rel}}
+\newcommand\acq{\mathsf{acquire}}
+\newcommand\rel{\mathsf{release}}
 \newcommand\deq{\mathsf{deQ}}
 \newcommand\enq{\mathsf{enQ}}
 \newcommand\reach{\mathsf{reachable}}
@@ -191,7 +201,7 @@
 \newcommand\boot{\mathsf{x86}}
 \newcommand\allid{ID}
 
-\newcommand\ssem[2]{\llparenthesis #1 \rrparenthesis_{#2}}
+\newcommand\ssem[2]{\llparenthesis {#2}\langle {#1} \rangle \rrparenthesis}
 
 \newcommand{\strat}[1]{\varphi_{#1}}
 \newcommand{\stratp}[1]{\varphi'_{#1}}

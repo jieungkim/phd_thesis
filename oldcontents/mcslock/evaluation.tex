@@ -14,7 +14,8 @@
 \label{fig:palloc-example}
 \end{figure}
 
-\paragraph{Clients}
+\subsection{Clients}
+
 The verified MCS lock code is used by multiple clients in the CertiKOS
 system. To be practical the design should require as little extra work
 as possible compared to verifying non-concurrent programs, both to
@@ -113,7 +114,8 @@ bound number, they cannot add push/pull events forever. On the other
 hand, the framework completely abstract away how long time (in microseconds) elapses
 between any two events in the log.
 
-\paragraph{Code reuse} The same
+\subsection{Code reuse} 
+The same
 \lstinline$acquire$/\lstinline$release_lock$ specifications can be
 used for all clients of the lock. The only proofs that need to be done
 for a given client is the refinement into abstracted primitives like
@@ -123,7 +125,8 @@ atomic primitive like \lstinline$lpalloc_spec$ (which is very
 short). We never need to duplicate the thousands of lines of proof
 related to the lock algorithm itself.
 
-\paragraph{Using more than one lock}
+\subsection{Using more than one lock}
+
 The layers approach is particularly nice when verifying code that uses more than one
 lock. To avoid deadlock, all functions must acquire the locks in the
 same order, and to prove the correctness the ordering must be

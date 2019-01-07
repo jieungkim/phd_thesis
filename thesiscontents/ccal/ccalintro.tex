@@ -1,15 +1,12 @@
 
 %In this chapter, we present our work published in PLDI 2018~\cite{concurrency}.
-Concurrent abstraction layers are a common way to 
-build modern software systems 
-because concurrency raised by multicore environment and multithreaded programming. 
-They, however, are well known to get to be right or to debug due to 
-the complex interleaving among multiple components in the system. 
-In this sense, formal treatments of concurrent abstraction layers 
-are highly desirable to provide a 
+Concurrent abstraction layers are a common way to build modern software systems because concurrency raised by multicore environment and multithreaded programming. 
+They, however, are well known to get to be right or to debug due to the complex interleaving among multiple components in the system. 
+In this sense, formal treatments of concurrent abstraction layers are highly desirable to provide a 
 high-assurance concurrent software development. 
 
 In this sense, we present Certified Concurrent Abstraction Layers (CCAL), which is a fully mechanized programming toolkit.
 The toolkit aids programmers to specify, compose, compile, and link programs written in
-concurrent abstraction layers. 
-
+concurrent abstraction layers.
+It is a robust methodology to decompose complex concurrent systems into multiple layers for modular building and verification,
+and the goal of this chapter is providing high-level descriptions of CCAL without exposing low-level details that contains various subtleties and challenges, which will be addressed in later chapters. 

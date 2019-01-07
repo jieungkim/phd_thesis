@@ -1,13 +1,10 @@
-\section{Example: Building Spinlock Layers using CCAL}
+\section{Fun-Lift and Log-Lift}
 \label{chapter:ccal:sec:example}
 
-
-In this section, we start to show how to apply our techniques to verify shared objects in the CCAL toolkit.
-We begin by considering the ones
-shared among CPUs: spinlocks and shared queue objects protected by spinlocks.
-All layers are built upon the CPU-local layer interface
+This section revisits the example in Section~\ref{chapter:ccal:sec:ccal-overview} to show two common patterns 
+when building layers using the CCAL toolkit, Fun-Lift and Log-Lift. 
+We assume that all layers are built upon the bottom layer of the CPU-local layer interface
 $\PLayer{\PBoot}{c}{\oracle}$.
-
 
 \begin{figure}[t]
 \lstinputlisting [language = C, multicols=2] {source_code/ccal/ticket_lock.c}
@@ -15,10 +12,8 @@ $\PLayer{\PBoot}{c}{\oracle}$.
 \label{fig:exp:real_ticket_lock}
 \end{figure}
 
-Spinlocks (e.g., the ticket lock algorithm described in Sec.~\ref{sec:informal}) 
-are one of the most basic synchronization
-methods for multicore machines; they are used as building
-blocks for shared objects and more sophisticated synchronizations.
+
+
 
 A spinlock enforces mutual exclusion by restricting CPU access to
 a memory location $b$. Therefore, lock operations can be viewed
@@ -29,8 +24,11 @@ to be ``free'', meaning that it is safe to
 pull the contents to the local copy at this point (line 4 in Fig.~\ref{fig:exp:real_ticket_lock}).
 Therefore, as can be seen in Fig.~\ref{fig:exp:real_ticket_lock},
 the $\acq/\rel$ functions invoke the $\push/\pull$ primitives.
-We now show how to build layers for the spinlock
-in Fig.~\ref{fig:exp:real_ticket_lock}, which uses a ticket lock algorithm. Note that query points are denoted as ``$\intp$'' in pseudocode.
+
+To map the previous ticket lock example with $\cpush$ and $\cpull$ primitives in the layer $\PBoot[c]$, 
+the ticket lock implementation in Figure~\ref{fig:chapter:ccal:sec:ccal-overview:ticket_lock_example} need to be slightly changed, and
+Figure~\ref{fig:exp:real_ticket_lock} shows the ticket lock implementation with proper $\cpush$ and $\cpull$ primitive calls in it.
+Note that query points are denoted as ``$\intp$'' in pseudocode.
 
 \para{Bottom Interface $\PBoot[c]$.}
 We begin with the CPU-local interface $\PBoot[c]$ extended with shared primitives
@@ -80,4 +78,3 @@ ending with $c'.\rel$. The distance between $c'.\acq$ and $c'.\rel$ in the log i
 By enforcing the fairness of the scheduler in rely conditions, saying that any CPU can be scheduled
 within $m$ steps, we can show the liveness property (i.e., starvation-freedom): the while-loop in $\codeinmath{acq}$ terminates
 in ``$n \times m \times \#CPU$'' steps.
-
