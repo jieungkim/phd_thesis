@@ -31,7 +31,7 @@ extern void foo();
 extern void goo();
 
 // Module <@$M_2$@> - client code with locking
-void lkclient () {
+void lockclient () {
   acquire();
   foo();
   goo();
@@ -44,9 +44,9 @@ extern void lkclient();
 // Client program <@$P$@>
 // Thread 1 running on CPU 1
 void T1 () { 
-  lkclient(); 
+  lockclient(); 
 }
 // Thread 2 running on CPU 2
 void T2 () { 
-  lkclient(); 
+  lockclient(); 
 }

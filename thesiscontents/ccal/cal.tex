@@ -1,11 +1,11 @@
 \section{Certified Abstraction Layers}
 \label{chapter:ccal:sec:cal}
 
-Certified Abstraction Layers (CAL)~\cite{deepspec} provides us to build and verify the system by dividing it into modular layers, 
+Certified Abstraction Layers ($\calname$)~\cite{deepspec} provides us to build and verify the system by dividing it into modular layers, 
 proving the correctness of each layer independently, and connecting the proofs of all layers in the system to show the correctness of the system's end-to-end behavior via \textit{contextual refinement} between layers. 
 It only supports sequential program verification but works as a basis of our concurrent certified abstraction layers.
 
-CAL is a predicate over two layers with a context program, 
+$\calname$ is a predicate over two layers with a context program, 
 ``$\ltyp{L_{\codeinmath{low}}}{R}{\codeinmath{Prog}}{L_{\codeinmath{high}}}$'', 
 and a mechanized proof object (written in $\coq$) for the predicate where layer $L_{\codeinmath{low}}$ and $L_{\codeinmath{high}}$ are state machines, \code{Prog} is a program written in C and/or Assembly, $R$ is a relation between states of two layers.
 Informally, the predicate implies that 
@@ -30,7 +30,7 @@ where $R$ is the relation between states of $ L_{\codeinmath{btm}}$ and $L_{\cod
  $ L_{\codeinmath{mid}}$ and $L_{\codeinmath{top}}$.
 
 
-Each layer in CAL is internally composed of the C implementation, specifications, and proofs.
+Each layer in $\calname$ is internally composed of the C implementation, specifications, and proofs.
 To develop a layer $L_k$, 
 the developer writes 
 1) source code written in C and/or Assembly; 
@@ -44,7 +44,7 @@ The proofs $p_k$ and $r_k$ guarantee that the C code (\ie , its verified $\coq$ 
  With the contextual refinement proof $R_{k-1, k}$, we are assured that the C code in $L_k$ never uses the code in $L_{k-1}$ in an undefined way; 
  calls to C functions in $L_{k-1}$ always return defined results to $L_k$; and variables 
  used and allocated in each layer have their memory locations and are safely accessed.
- This process will remain as same after we extend CAL to support concurrency.
+ This process will remain as same after we extend $\calname$ to support concurrency.
 
 %
 %Consequently, proving the contextual refinement relation for each pair of layers in the 
