@@ -113,3 +113,8 @@ By fairness of scheduling, the CPU at the head of the queue will get scheduled p
 First, it will execute the code in \code{mcs$\_$acquire}; because it is at the head of the queue the loop will terminate immediately. 
 Then it executes the code in the critical section; by assumption this is over after some finite number $k$ of operations. 
 Finally it executes \code{mcs$\_$release}; this either finishes immediately, or enters the waiting loop, in which case it will complete as soon as the next CPU in the queue gets scheduled. 
+
+
+
+
+

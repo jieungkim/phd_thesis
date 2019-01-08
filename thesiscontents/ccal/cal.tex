@@ -1,7 +1,10 @@
 \section{Certified Abstraction Layers}
 \label{chapter:ccal:sec:cal}
 
-Certified Abstraction Layers ($\calname$), proposed by Gu \etal~\cite{deepspec}, is a basis of our concurrent layer framework.
+
+Building certified software in a layered approach was already addressed in the previous work by Gu \etal~\cite{deepspec},
+but the work does not address handling concurrent programs in it.
+However, this approach, Certified Abstraction Layers ($\calname$), works as a basis of our concurrent layer framework.
 It provides us to build and verify the (sequential) system by dividing it into modular layers, 
 proving the correctness of each layer independently, and connecting the proofs of all layers in the system to show the correctness of the system's end-to-end behavior via \textit{contextual refinement} between layers. 
 It only supports sequential program verification but works as a basis of our concurrent certified abstraction layers.
