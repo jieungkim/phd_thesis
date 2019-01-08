@@ -69,14 +69,20 @@
 \section{Events, logs, and concurrent contexts}
 \label{subsec:eventlogandoracle}
 
-In order to handle concurrent programs, the verification framework
-imposes some structure on the specifications~\cite{ccal16}.  Each
-record type $A$ must include at least a \emph{log of events} (written
-$l$) and a \emph{concurrent context} (written $\oracle$, further
-explained in Sec.~\ref{subsec:abstractoperationlayer}). For almost
-all of the MCS Lock development, these are the only two fields that
-matter. Instead of representing the state of shared
-memory by an arbitrary type $A$, it will be represented using the log.
+As discussed in Chapter~\ref{chapter:ccal}, 
+modeling a shared state among CPUs is 
+closely related to define a set of events, a concurrent context, and a replay function that are suitable for
+the state.
+
+%In order to handle concurrent programs, the verification framework
+%imposes some structure on the specifications~\cite{ccal16}.  
+%Each
+%record type $A$ must include at least a \emph{log of events} (written
+%$l$) and a \emph{concurrent context} (written $\oracle$, further
+%explained in Sec.~\ref{subsec:abstractoperationlayer}). For almost
+%all of the MCS Lock development, these are the only two fields that
+%matter. Instead of representing the state of shared
+%memory by an arbitrary type $A$, it will be represented using the log.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{figure}

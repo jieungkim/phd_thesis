@@ -1,7 +1,8 @@
 \section{Certified Abstraction Layers}
 \label{chapter:ccal:sec:cal}
 
-Certified Abstraction Layers ($\calname$)~\cite{deepspec} provides us to build and verify the system by dividing it into modular layers, 
+Certified Abstraction Layers ($\calname$), proposed by Gu \etal~\cite{deepspec}, is a basis of our concurrent layer framework.
+It provides us to build and verify the (sequential) system by dividing it into modular layers, 
 proving the correctness of each layer independently, and connecting the proofs of all layers in the system to show the correctness of the system's end-to-end behavior via \textit{contextual refinement} between layers. 
 It only supports sequential program verification but works as a basis of our concurrent certified abstraction layers.
 
@@ -15,10 +16,10 @@ a layer $L_{\codeinmath{low}}$ contextually refines the higher layer $L_{\codein
  Formally, it is defined as a forward simulation~\cite{Lynch95,leroy09,Milner71,Park81} with the (simulation) relation $R$
  and  $\ltyp{L_{\codeinmath{low}}}{R}{\codeinmath{M} \oplus \codeinmath{Ctxt}}{L_{\codeinmath{high}}}'$ is stated as
 $$\forall\ \codeinmath{Ctxt},\ \sem{L_{\codeinmath{low}}}{\codeinmath{M}_{\codeinmath{high}} \oplus \codeinmath{Ctxt}} \refines_{R} \sem{L_{\codeinmath{high}}}{\codeinmath{Ctxt}},$$
-where $\refines_{R}$ is the refinement relation with $R$, and $\sem{L}{\cdot}$ implies  a  behavior of the layer machine based on $L$.
+where $\refines_{R}$ is a refinement relation with $R$, and $\sem{L}{\cdot}$ denotes a  behavior of the layer machine based on $L$.
 
 
-Contextual refinement, the critical technique of CAL, is powerful since layers can be verified only once individually, and those layers can be linked together.
+Contextual refinement, the underlying technique of $\calname$, is powerful since layers can be verified only once individually, and those layers can be linked together.
  When the stack is extended with a new verified layer on top, 
  the inter-layer contextual refinement proofs can be reused with an updated context to include the new layer continuously. 
 For instance, if we add a new layer $L_{\codeinmath{top}}$ on top of verified layers $L_{\codeinmath{mid}}$ and $L_{\codeinmath{btm}}$, 
@@ -45,16 +46,3 @@ The proofs $p_k$ and $r_k$ guarantee that the C code (\ie , its verified $\coq$ 
  calls to C functions in $L_{k-1}$ always return defined results to $L_k$; and variables 
  used and allocated in each layer have their memory locations and are safely accessed.
  This process will remain as same after we extend $\calname$ to support concurrency.
-
-%
-%Consequently, proving the contextual refinement relation for each pair of layers in the 
-%stack guarantees the functional correctness of the entire system by connecting all the layers in the software stack:
-%all layers from $L_{\codeinmath{btm}}$ to $L_{\codeinmath{top}}$ function correctly independently and together.
-% With the help of the verified $\compcertx$\ compiler, the correctness of system continues to hold even after the C code is compiled into assembly. 
-%To build an application on top of a verified system, we simply add layers corresponding to the application on top of $L_{\codeinmath{top}}$. The application uses $L_{\codeinmath{top}}$ as its bottom layer for verification and is oblivious to the layers underneath.
-%The contextual refinement relation between $L_{\codeinmath{top}}$ and the application guarantees 
-%that the application uses the underlying system (from $L_{\codeinmath{btm}}$ to $L_{\codeinmath{top}}$) correctly. 
-%
-%%
-%%Such \textit{co-verification} of the application and the system is critical, but often overlooked and considered difficult.
-%Without co-verification, the application and the system can be verified independently but still be incorrect as a whole, since the application can abuse the system interface or take actions based on wrong assumptions~\cite{shimlayer}. For example, for the same write interface, the system and the application may have different address bounds and the application can write beyond the system's address limit. Another example involves slightly different definitions for correctness conditions: a storage system may interpret durability as ``flushing to local disk'', while the application may expect durability from the storage system to mean ``stored on a backup machine''; both can be verified correct, yet the combination will be incorrect. Such mismatches can neutralize the verification effort. Contextual refinement not only guarantees that the application uses the system interface correctly but also guarantees that the application's assumptions about the interface are valid. 

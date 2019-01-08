@@ -53,132 +53,120 @@
 %\label{chapter:ccal:subsec:extended-concurrent-semantics}
 
 To support concurrency, 
-we extends the layer definition in Chapter~\ref{chapter:ccal:sec:cal},
+we extend the layer definition in Chapter~\ref{chapter:ccal:sec:cal},
 by parameterizing it with a set $A$, 
-a focused set for the layer.
-The set $A$ is always a subset of the complete set $D$ (usually the set contains all CPUs/threads). 
-The concurrent layer interface $L[A]$ is a state transition machine
+a focused set for the layer, which is always a subset of the set $D$ for all participants of the concurrent system (usually the set contains all CPUs/threads).
+Then, the concurrent layer interface $L[A]$ is a state transition machine
 that defines the execution for all members in $A$. 
 Transitions of other members outside $A$  ($\forall \ i . \ i \in\ (D - A)$)
 is treated as the environment of $L[A]$. 
-%For example the domain $D$ is $\set{1, 2}$ in the Figure~\ref{fig:chapter:ccal:sec:ccal-overview:ticket_lock_example}, 
-%and if we consider $\set{1}$ as a focused set, then the set for the environment is $\set{2}$.
-In most circumstances, we only focus on a singleton set; thus we often abbreviate $L[\{i\}]$ as $L[i]$ where $i\in{}D$ for readability in those cases.
+In most circumstances, we only focus on a singleton set; 
+thus we often abbreviate $L[\{i\}]$ as $L[i]$ where $i\in{}D$ for readability in those cases.
 
-A concurrent layer interface also extends the representation of states and primitive specifications in $\calname$.
-It extends the concurrent abstraction layers by adding a set of abstract \textit{shared} primitives, a global log (the representation of shared states).
-Previous thread local-primitive (in CAL) calls are not observable by other threads;
-thus it only updates their private states (that are disjoint from other threads' private states) which are not visible from other threads. 
+A concurrent layer interface also extends the representation of states and primitive specifications in $\calname$ to handle shared resources in the system. 
+Instead of only having thread-local primitives and a private abstract state in $\calname$, 
+a concurrent layer is extended adding abstract \textit{shared} primitives, 
+and a global log. 
+Previous thread local primitive (in $\calname$) calls are not observable by other threads; thus it only updates their private states (that are disjoint from other threads' private states) which are not visible from other threads. 
 On the other hands, each shared primitive call and the related information (\ie, arguments passed to the call) 
-need to be recorded as an event to the end of the global log, that is observable in all members of the system. 
+need to be recorded as an event to the end of the global log that
+is observable in all members of the system.
 
-%Using them, the goal of $\ccalname$ with the example in Figure~\ref{fig:chapter:ccal:sec:ccal-overview:ticket_lock_example} is 
-%providing atomic specifications for acquire lock and release lock functions in layer $L_1$. 
-
-
-Those newly added ingredients are crucial 
-components to build the operational semantics of a concurrent program \code{P} 
-in a generic way
-with achieving novel compositionality based on
+These newly added ingredients are core parts to form the operational semantics of a concurrent program 
+\code{P} in a generic way with achieving novel compositionality based on
 ideas from game semantics~\cite{gsinvite}. 
 In our semantics, 
-each program execution of $p$ over 
-$L[D]$ is considered as a game play with all members of $D$ (and a scheduler for $D$ -- the key component to hide interleaving):
-each participant $i$ ($i\in{}D$) contributes its
-play by adding events into the global log $l$; its {\em strategy}
+each program execution of \code{P} over 
+$L[D]$ is considered as a game play with all members of $D$ 
+(and a scheduler for $D$ -- the key component to hide interleaving):
+Each round play of each participant $i$ ($i\in{}D$) contributes the game 
+by adding events into the global log $l$; its {\em strategy}
 $\strat{i}$ is a deterministic partial function from
 the current log $l$ to its next move $\strat{i}(l)$ whenever
 the last event in $l$ transfers control back to $i$. 
 
 \begin{figure}
-
 \begin{center}
 \includegraphics[scale=.8]{figs/ccal/faiexample}
 \end{center}%
-\caption{Game for Fetch and Increase Ticket Primitive Call}
-\label{fig:chapter:ccal:game-for-fetch-and-increase-ticket-primitive-call}
+\caption{Game for Fetch-and-Increase Primitive Calls.}
+\label{fig:chapter:ccal:game-for-fetch-and-increase-primitive-call}
 \end{figure}
 
-
-Figure~\ref{fig:chapter:ccal:game-for-fetch-and-increase-ticket-primitive-call} shows how 
-this approach can be used for defining  atomic primitive calls (fetch-and-increase function calls) in our layered framework.
-When thread $1$ achieves the control, the strategy  $\strat{1}$ transfers the global log $l$  to thread $1$. 
-Then, thread $1$ can generate a pair consists of one event and the result value of the game, 
-$\incticket$ and $t\_n$ (denoted as $!i.\incticket$ and $\return t\_n$ respectively). 
-Then it becomes ideal, which is represented as a reflexive edge) updating the global log as $l \cons i.\incticket$ (denoted as $?(l \cons i.\incticket),!\epsilon$).
-Finding out the result value of the $\incticket$ game, $t\_n$, 
-also requires the function that can calculate the ticket number from the initial log $l$.
-The function counts the number of fetch-and-increase events ($\incticket$) in $l$ that
+Figure~\ref{fig:chapter:ccal:game-for-fetch-and-increase-primitive-call} illustrates 
+a part of the game between two participants $1$ and $2$ (when $D = \set{1, 2}$), together with a scheduler,
+when participants only can call one single atomic fetch-and-increase primitive.
+In the example, thread $1$ achieves the control for the first round,
+and the strategy  $\strat{1}$ transfers the global log $l$  to thread $1$. 
+Then, thread $1$ can generate a pair consists of one event and the result value of the game,
+$\incticket$ (\textbf{F}etch-\textbf{A}nd-\textbf{I}ncrease) and $res$, respectively.
+After that move of thread $1$, the scheduler plays the game.
+The strategy of the scheduler  $(\strat{sched}$  transfers the control 
+to thread 2, and the strategy  $\strat{2}$ at that moment will transfer the global log $l \cons (1.\incticket)$ when $\cons$ implies ''cons-ing'' an event to the log.
+Similar to the case of thread $1$, fetch-and-increase calls from thread 2 also return $(2.\incticket), res')$ of the first round of thread $2$
+and $(2.\incticket), res'')$ during the second round of thread $2$. 
+More complex games also follow a similar structure with this example and the interaction among all components in the system 
+can be expressed via the interaction among multiple strategies.
+Some moves such as fetch-and-increase primitive calls in this game have to return values as their result,
+and deriving them is available by interpreting the global log. 
+For instance, finding out result values ($res$, $res'$, and $res''$) in Figure~\ref{fig:chapter:ccal:game-for-fetch-and-increase-primitive-call}
+requires the function that can calculate the ticket number from the log.
+The function counts the number of fetch-and-increase events ($\incticket$) in (\eg. $l$ for $res$) that
 also corresponds to the current value of the next serving ticket number of the shared data for the ticket lock.
 Such reconstruct functions for the current shared state from the log are called \emph{replay} functions and we notate it with $\replay$.
 
-One hidden participant in all our games is a scheduler node. 
 The strategy of the scheduler ($\strat{sched}$) acts as a judge of the game to abstract away complex interleavings, 
-and it picks up one thread at each round using the strategy. 
-The selected thread then makes a move  (and generate events)  as we have seen in Figure~\ref{fig:chapter:ccal:game-for-fetch-and-increase-ticket-primitive-call}.
+and it picks up one thread at each round using its strategy. 
+The selected thread then makes a move  (and generate events)  as we have seen in Figure~\ref{fig:chapter:ccal:game-for-fetch-and-increase-primitive-call}.
 The \emph{behavior} of the \emph{whole} layer machine (denoted as ``$L[D](\cdot)$'') 
 is then the set of  logs generated by playing the game under all possible schedulings, and it can represent all non-deterministic behaviors of concurrent programs 
 while they are hidden in our concurrent abstraction layers via the strategy of the scheduler.
 
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{figure}[t]
 \centering
-\includegraphics[width=\textwidth]{figs/ccal/pcomp}
-\caption{Environment contexts and parallel layer composition.}
-\label{fig:chapter:ccal:env-contexs-andparallel-layer-composition}
+\includegraphics[scale=0.6]{figs/ccal/pcomp}
+\caption{Environment contexts.}
+\label{fig:chapter:ccal:env-contexs}
 \end{figure}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
-
-
 
 When focusing on a subset of threads $A$, the semantics (or execution) of the (concurrent) layer machine based on an
 interface $L[A]$ is defined over its set of \emph{valid environment
 contexts}. 
-Each environment context (denoted as $\oracle$) provides a
-strategy for its ``environment,'' i.e., the union of the strategies
-by the scheduler plus those participants {\em not} in $A$.
-By doing that it specifies the observable behaviors of the
+The definition of each  environment context (denoted as $\oracle$) is
+a composition  of strategies for other components outside of the focused set($D - A$) in the 
+system (plus scheduler).
+This gives us the ability to address observable behaviors of the
 execution of those threads/CPUs in the environment under one possible
-interleaving.
+interleaving (specified by the strategy of the scheduler).
 
-
-For example, Fig.~\ref{fig:chapter:ccal:env-contexs-andparallel-layer-composition} shows a system with two threads
-($t_1$ and $t_2$) and a scheduler. On the left, it shows one execution
-of method $\codeinmath{f}$ over the layer machine $L[t_1]$ under a specific
-environment context $\oracle_1$.  Here, $\oracle_1$ is the union of
-the strategy $\stratp{sched}$ for the scheduler and $\stratp{2}$ for
-thread $t_2$. In the middle, it shows the execution of $\codeinmath{f}$
-(invoked by $t_2$) over $L[t_2]$ under the environment context
-$\oracle_2$. On the right, it shows the interleaved execution of
-two invocations to $\codeinmath{f}$ over $L[\{t_1,t_2\}]$
-where the environment context $\oracle'$ is just the scheduler
+For example, Fig.~\ref{fig:chapter:ccal:env-contexs}, 
+the system with two threads
+($t_1$ and $t_2$) and a scheduler,
+shows how
+environment contexts for thread $1$ works with $L[t_1]$.  
+On the right, it shows the interleaved execution of
+two invocations to $\incticket$ over $L[\{t_1,t_2\}]$
+where the environment context $\oracle$ is just the scheduler
 strategy $\stratp{sched}$.
+On the left, it shows one execution
+of method $\incticket$ over the layer machine $L[t_1]$ under a specific
+environment context $\oracle_1$, when $\oracle_1$ is the union of
+the strategy $\stratp{sched}$ for the scheduler and $\stratp{2}$ for
+thread $t_2$. 
 
-The Environment context $\oracle$ which also contains a specific
-scheduler strategy, $\sem{L[A]}{\codeinmath{P}}$ (the execution of \code{P} over $L[A]$) is
-deterministic thanks to the strategy of the scheduler; 
-the concurrent machine will run \code{P} when the control is
-transferred to any member of $A$, but will ask $\oracle$ for the next 
-move when the control is transferred to the environment.
 
 To enforce the safety of environmental moves,
 each layer interface also specifies its set of valid environment contexts.
-The semantics $\sem{L[A]}{P}$ is then just a set of global logs
-generated from running $P$ over $L[A]$ under all {\em valid}
+The semantics for the (globally) observable operations of $\sem{L[A]}{P}$ is then a set of global logs
+generated from running $P$ over $L[A]$ under all valid
 environment contexts. 
-The definition of validity here is customized
-by each layer interface.
-This validity  corresponds to a generalized version of
-the ``rely'' (or ``assume'') condition in rely-guarantee-based
-reasoning~\cite{feng07:sagl,vafeiadis:marriage,LRG,fu10:roch,sergey15}. Each layer interface can also
-provide its own ``guarantee'' condition. These conditions  are simply expressed as
-invariants over the global log. 
+The validity definition depends on each layer interface which is stated as invariants over the global log. 
+At each layer, we assume (thus ``rely'' on) the validity of environmental contexts based on the ``guarantee'' about the validity of the current global log and the local update of it. 
+This is a generalized version of the rely-guarnatee-idea in previous works ~\cite{feng07:sagl,vafeiadis:marriage,LRG,fu10:roch,sergey15}. 
 
-
-\subsection{Sequential-like Layer Interface} 
+\subsection{Building Local Layers}
 
 This section focuses on the case when the thread set of concurrent layers is a singleton set, $\set{i}$.
 In this case, 
