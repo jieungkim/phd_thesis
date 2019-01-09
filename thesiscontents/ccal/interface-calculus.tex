@@ -10,18 +10,18 @@ as well as the extension of the theorem by linking multiple layers together usin
 
 
 \subsection{Multicore Machine Model}
-\label{capther:ccal:subsec:multicore-machine-model}
+\label{chapter:ccal:subsec:multicore-machine-model}
 
 
 We first define a machine model for the full participants ($D$), which is a multicore machine model, 
 to provide a better understanding of our machine model for local layers.
-This multicore machine model is a part of TCB in our framework, but it is a conventional model (such as $\intelmachine$) with enforcing sequentially consistent program
+This multicore machine model is a part of TCB in our framework, but it be instantiated as a conventional model (such as $\intelmachine$ -- see Chapter~\ref{chapter:linking} for  details) with enforcing sequentially consistent program
 execution and allowing arbitrary interleaving
 and shared memory accesses. 
 
 
 \subsubsection{Machine State} 
-The state of  $\intelmachine$ machine model is denoted as a tuple ``$\state := (c, f_{\regs}, m, a, l)$"
+The state of  multicore machine model is denoted as a tuple ``$\state := (c, f_{\regs}, m, a, l)$"
 consists of
  the current running CPU ID $c$,
 all CPUs' private states $f_\regs$ (a partial map from CPU ID to  private state $\regs$)
@@ -110,8 +110,10 @@ This relation determines the state update after the $f$ call (with the given arg
 We show how we efficiently connect program transition relations in 
 $\intelmachine$ model with transition rules in $\compcertx$ in Chapter~\ref{chapter:linking}.
 
-\textbf{Scheduler transitions} are performed by one logical component, a hardware scheduler in our multicore machine.
-This logical component uses its strategy 
+\textbf{Scheduler transitions} are environmental moves in the multicore machine model and
+ performed by one logical component, a hardware scheduler  (\ie, the only one element which participates in the game, but is not in the set $D$),
+  in our multicore machine.
+This logical component uses its strategy  $(\strat{sched}$)
 to determine  the CPU that will perform its program transition 
 in the next turn (as discussed in Section~\ref{chapter:ccal:subsec:concurrent-layer-with-environment}).
 In detail, when the current CPU ID $c$ changes
@@ -135,721 +137,148 @@ one hardware scheduling strategy at once for the verification process.
 
 
 
-\subsection{Local Layer Interface}
+\subsection{Partial  Machine Model and Concurrent Layer Interface}
+\label{chapter:ccal:subsec:concurrent-layer-interface}
+
+The state definition ``$\state := (c, f_{\regs}, m, a, l)$'' and the memory model in our partial machine model are
+same with those of a multicore machine model, 
+except the domain of its private state ($f_{\regs}$) is only for the focused set $A$ instead of the full CPU set $D$.
+The partial machine model, however, requires one more transition rules to handle  environmental steps for the participants that are not in the focused set.
+When focusing on a partial machine works with a subset of CPUs $A$,
+the execution of the machine needs to handle 
+the steps for its environments ($D - A$ plus the hardware scheduler) with a \textit{valid} environmental context ($\oracle$);
+thus we want to  achieve a way to semantically verify the part for $A$ of the whole program locally, 
+by making the assumptions on the rest of programs (as discussed in Secion~\ref{chapter:ccal:subsec:concurrent-layer-with-environment}).
+
+Those assumptions are also need to be able to guaranteed by the execution of the other part of the entire system for 
+the compositionality of multiple partial machines.
+For example, the assumption of transitions with $L[A, \oracle_{A}]$ should be consistent with the invariants guaranteed by the transitions of $L[(D - A), \oracle_{(D-A)}]$, and vice versa, when $D$ implies the set that contains the whole CPUs.
+In this sense, our layer can be defined as
+$L[A, \oracle] := (\Layer, \Rely,\Guard)$ when $\Layer$ is a set of primitives in the layer $L$,
+$\Rely : log \rightarrow Prop$ is  rely invariant that provides assumptions about  environmental movements,
+and $\Guard: log \rightarrow Prop$ is guarantee invariant that local movements of $L[A, \oracle]$ need to satisfy.
+
+\emph{Environmental Transitions} then can be simply defined as 
+a oracle ($\oracle$) query when  transitions are performed by participants outside of the focused set;
+thus return a certain sequence of events for one specific run of the concurrent program 
+that satisfies $\Rely$ condition.
+
+\subsection{Local Machine Model and Local Layer Interface}
 \label{chapter:ccal:subsec:local-layer-interface}
 
-When focusing on a single CPU $c$, $L[c]$ is called 
-a CPU-local layer interface.
-Its machine state is $(\regs, m, a, l)$,
+With the singleton focused set, $\set{c}$, 
+simplification is possible for the definition of the transition machine.
+The sate for the singleton set is a tuple ``$(\regs, m, a, l)$'',
 where $\regs$ is the private state of the CPU $c$
 and $m$ is just a \emph{local copy} of the shared memory.
 
-This $m$ can only be accessed locally by $c$. The primitives $\cpush/\cpull$ of
-$L[c]$  ``deliver'' the effects of shared memory operations.
-In detail, the memory ($m$) can be treated locally
-because the current CPU $c$ can only observe 
-the context events instead of other CPUs'  concrete memory
-operations. The memory contents are ``delivered''  by the  shared primitives
-between $c$ and other CPUs.
-On the other hand, 
-shared memory updates from other CPUs are ``retrieved'' by the $\cpush/\cpull$ primitive, 
-which  queries $\oracle$, updated the log
-with the query result, and generates the $\cpull$ event.
-Figure~\ref{fig:exp:pull} shows their specifications, which depend on
-a replay function  $\replay_{\codeinmath{shared}}$ to
-reconstruct the shared memory value $v$ for some location $b$ and check the well-formedness (i.e.\, no data race occurs)
-of the resulting log.
 
+This $m$ can only be accessed locally by $c$ with the $\cpush$ and $\cpull$ primitives discussed in our multicore memory model. 
+The shared  memory update by $c$ in this local copy, however, 
+keeps consistency with 
+that update by $c$ at the shared memory model in
+Section~\ref{chapter:ccal:subsec:multicore-machine-model}.
 
+The local memory update by CPU $1$ needs to be followed by the corresponding $\pull$ event.
+In the example in Figure~\ref{fig:chapter:ccal:push-pull-memory-model-and-shared-memory},
+the pull event, $1.pull(b)(v)$, tells the local machine that the current memory value is 
+$v$ for the block $b$ by replaying the global log up to that point ($l$)
+and updates the block in the local copy $m$ with the value ($b \rightarrow v$). 
+After that, CPU $1$ operates on the memory based on the value $v$ until it pushes the change (as well as frees the ownership for the block).
+The value $v$ for the block in here is exactly same with the value in the global shared memory accessed by multiple CPUs in Section~\ref{chapter:ccal:subsec:multicore-machine-model}.
+All shared memory (and abstract state) updates are recorded in the global log; thus
+updating the local copy of block $b$ by replaying the log $l$ gives the exact same status for the shared memory block $b$ (in multicore machine mode) at the moment
+(\ie, notes that the local copy of the memory breaks the consistency when it does not have its ownership for the memory block). 
 
+Similarly,  in between $(1.\pull(b)(v))$ and $(1.\push(b)(v'))$, 
+CPU $1$ is the only one CPU that can modify the contents in the block $b$
+because other CPUs cannot own the ownership for the block.
+Therefore, the local update for the memory block $b$ in the log $l'$ 
+is consistent with the operations for the block $b$ of the shared memory (in our multicore machine model).
 
+The machine model for this singleton focused set has significant similarity with the machine model in $\compcertx$. 
+We, therefore, can easily connect this machine model with the $\compcertx$ compiler, 
+so our local layer interface can freely use the correctness guarantee of the compiler for C. 
+Due to this advantage of local machine model, local layer interface is the only place that we build layers with facilitating multiple libraries and generic proofs of the previous work for sequential programs~\cite{deepspec}. 
+When building private primitives that only updates the private state of $c$, 
+layer building is same with the layer constructions in $\calname$.
+Building layers for shared primitives, however, is slightly different in here, and usually can be divided into 
+two patterns.
 
+\subsubsection{Fun-lift}
+The fun-lift pattern is usually abstracting shared physical memory into shared abstract states,
+which is similar to the abstraction layer building for sequential programs.
+This pattern does not change any potential interleavings, 
+thus the environmental context in the layer $L_{low}[c, \oracle_{low}]$ remains 
+as same in the higher layer $L_{high}[c, \oracle_{high}]$ ($\oracle_{low} = \oracle_{high}$), thus the 
+relation for two environmental contexts is defined as a identity relation 
+for the contextual refinement property between two layers (see Definition~\ref{def:chapter:ccal:contextual-refinement}).
+This fun-lift pattern, however, possibly breaks the atomicity because the behavior of $L_{high}$ depends on other concurrent programs’ behavior in the middle of the primitive executions. 
 
+\subsubsection{Log-lift}
 
-\begin{figure}[t]
-\lstinputlisting [language = Caml] {source_code/ccal/push.v}
-\caption{Pseudocode of $\push/\pull$ specifications of $L[c]$ in Coq.}
-\label{fig:exp:pull}
-\end{figure}
-
-Since $\spec_\pull$ is parameterized with $\oracle$, it can also be viewed as the following special strategy  with private state updates:%
-%\begin{center}
-%\begin{tikzpicture}[->,>={stealth[black]}, auto,  node distance=3cm,draw]
-%\begin{scope}[every node/.style={font=\sffamily\small}]
-%    \node (A) at (0,0) {};
-%    \node (B) [node_w] at (0.5,0) {};
-%    \node (C) [node_db] at (4.5,0) {};
-%\end{scope}
-%
-%\begin{scope}[every node/.style={font=\sffamily\small},
-%every edge/.style={draw, thick}]
-%    \path [->] (A) edge (B);
-%    \path [->] (B) edge node[above] {$?\oracle, !c.\pull(b), \return (v, \codeinmath{own}\ c)$} node[below]{$\set{m.b: v}$} (C);
-%\end{scope}
-%\end{tikzpicture}
-%\end{center}
-The layer machine enters the \emph{critical state} after calling $\codeinmath{pull}$ by holding the ownership
-of a shared location.
-With the replay function ($\replay_{\codeinmath{shared}}$) and the given log, 
-we can derive the value that is mapped with $b$ is $v$, 
-and the $\pull$ primitive
-stores  $v$  into the memory, updates the clean status,
-and finally generates a $\pull$ event.
-The memory state $m$ is updated using the contents delivered
-by the $\cpull$ operation
-and  the clean status is also marked to be $\codeinmath{dirty}(c)$,
-meaning that it is now only safe for CPU $c$ to access.
-Thus, this memory location will be treated as
-a \emph{local}
-copy of the shared state being accessed by $c$.
-After the $c.\pull$ operation transfers the contents,
-all subsequent shared accesses are performed over this 
-copy as if it were private to CPU $c$.
-It exits the critical state by invoking $\codeinmath{push}$ to free the ownership.
-This $\cpush$ primitive also delivers the updated memory contents back 
-by appending the $\cpush$ event that contains the value $v$ into the log.
-
-
-
-
-
-
-
-
-
-
-
-
-\subsection{Concurrent Layer Interface}
-\label{capther:ccal:sec:concurrent-layer-interface}
-
-We now zoom in on the execution of a subset of CPUs $A$,
-introducing the \emph{concurrent layer interface} $\PLayer{L}{A}{\oracle}$
-defined as a tuple
-$(\Layer, \Rely, \Guard)$.
-The machine based on this concurrent interface is ``open'' in the sense that it is eligible to  capture  a subset of the
-CPUs and then be composed with any acceptable execution of the rest of CPUs. 
-The domain of the private state map $f_\regs$ is also this captured (or focused) subset.
-The interface $\PLayer{L}{A}{\oracle}$  equips this open machine with a 
-collection of primitives that  are defined in $\Layer $ and can be invoked  at this level,
-the rely condition $\Rely$  that
-specifies a set of acceptable environment 
-contexts, and
-the guarantee condition $\Guard$
- that the log $l$ should hold.
-The instruction transitions are defined as before,
-but all hardware scheduling is replaced by queries to
-the environment context.
-
-\para{Environment Context.} $\oracle$
-is a partial function from a CPU ID to its \emph{strategy} $\strat{}$. A strategy is an automata
-that generates events in response to given logs. 
-When focusing on a CPU set $A$, all the observable behaviors of the hardware scheduling
-and the program transitions of other CPUs
-can be specified as a union of strategies (i.e.\, $\oracle$).
-This union serves
-as a specification for other CPUs and the hardware scheduler.
-Thus,
-whenever there is a potential interleaving,
-the machine can \emph{query} $\oracle$ about the events from other CPUs (and the  scheduler).
-
-These environmental events cannot influence the behaviors
-of  instructions and private primitive calls. This also applies to
-shared memory read/write, because the push/pull memory model encapsulates
-other CPUs' effects over the shared memory into $\push$/$\pull$ events.
-Thus, during the execution of instructions
-and private primitives, it is unnecessary to query $\oracle$, and the appended environmental events will be received by the next
-so-called \emph{query point}, that is, the point just
-before executing shared primitives.
-The intuition of this query point is that
-the current CPU only needs to be informed of other CPUs' non-local changes
-just before invoking its own shared primitives.
-
-To be more specific, at each query point, the machine repeatedly
-queries $\oracle$.
-Each query takes the current log $l$
-as the argument and returns an event (i.e.\, ``$\oracle(c', l)$'') from a CPU $c'$ not in
-$A$. That event is then appended to $l$, and this querying continues
-until there is a hardware transition event back to $A$ (assuming the hardware scheduler is fair).
-In the following, we write
-``$\Query{\oracle}{l}{A}$'' to mean this entire process of extending $l$ with
-multiple events from other CPUs. 
-
-In this way, we are able to define the semantics of instructions
-and private primitives in a sequential style 
-with considering concurrency
-and interleavings  just only before 
-shared primitive calls by querying its environmental context.
-This makes concurrent program verification far more scalable.
-
-\para{Rely and Guarantee Conditions.}
-The $\Rely$ and $\Guard$ of the layer interface specify the validity of the environment context and the invariant of the log (containing the locally-generated events).
-After each step of threads in $A$ over interface $L[A]$, 
-the resulting log $l$  must satisfy the guarantee condition $L[A].\Guard$, i.e.\, $l \in L[A].\Guard(c)$ if $c$ is the current CPU ID indicated by $l$. 
-To prove that
- guarantee conditions always hold,  we not only need to validate the events generated locally
-but also need to rely on the validity of the environment context. The rely condition $L[A].\Rely$ specifies a set of
-valid environment contexts, which take valid input logs
-and return a valid list of events.
-
-
-
-
-
-
-
-
-
+Once all the low-level details are abstracted away for the shared primitive via using the \textit{fun-lift} pattern, we use the \textit{log-lift} pattern to lift non-atomic behaviors on shared abstract states to atomic behaviors, which only generate own single atomic event as the strategy for the primitive call, on the states. 
+Proving the contextual refinement with the \textit{log-lift} pattern requires reductions on the log, 
+which includes merging and shuffling events to show 
+that a consecutive list of  events in underlay, $L_{low}[c, \oracle_{low}]$ , corresponds to a single new event in overlay, 
+$L_{high}[c, \oracle_{high}]$.  Changes of the event generated by the local movement 
+implies that this refinement also need to relates two different environmental movements specified by $\oracle_{low}$ and $\oracle_{high}$.
+Section~\ref{chapter:ccal:subsec:local-layer-with-environmental-context-and-local-layer-linking} shows the relation,
+which is $\forall\ (j \in \codeinmath{EnvSet})\ 
+(\strat{j} \in \oracle(c)) .\ \exists \stratp{j} . \ \stratp{j} \in \oracle'(c) \wedge R_{\strat{}}(\stratp{j}, \strat{j})$ when 
+$\codeinmath{EnvSet} = ((D - \{ c\}) \cup \{ sched\})$
 
 \subsection{Layer Linking}
 \label{chapter:ccal:subsec:linking}
 
+
 To build and compose concurrent layers, 
-our framework also extends the layered calculus in $\calname$~\cite{deepspec}
-Our definition borrows the notations
-from $\calname$
+our framework also extends the layered calculus in $\calname$~\cite{deepspec} with 
+borrowing the following notations 
+from $\calname$:
 \begin{itemize}
 \item $\varnothing$ : An  empty program module
 \item $\oplus$ : the union of two modules (or two layers' primitive collections)
 \item $(i\mapsto \cdot)$ : a singleton map with a pointer or location $i$ as its domain.
 \end{itemize}
 
-Two rules, \textsc{Empty} and \textsc{Run}, works as bases of our layered calculus , which 
-provide identity relation and a relation for one primitive. 
+Two rules, \textsc{Empty} and \textsc{Var}, works as bases of our layered calculus , which 
+provide identity relations when $i$ and  $\spec_i$ implies a primitive specification for $i$.
  \begin{mathpar}
-\inferrule*[Right=Empty]{ }{\ltyp{\PLayer{L}{A}{\oracle}}{\id}{\varnothing}{\PLayer{L}{A}{\oracle}}}
+\inferrule*[Right=Empty]{ }{\ltyp{\PLayer{L}{c, \oracle}{}}{\id}{\varnothing}{\PLayer{L}{c, \oracle}{}}}
 \and
-\inferrule*[Right=Fun]{\ssem{\kappa}{\PLayer{L}{c}{\oracle}} \le_R \spec}{\ltyp{\PLayer{L}{c}{\oracle}}{\id}{i \mapsto \kappa}{i \mapsto \spec}}
+\inferrule*[Right=Var]{ }{\ltyp{\PLayer{L}{c, \oracle}{}}{\id}{i \mapsto \spec_i}{i \mapsto  \spec_i}}
 \end{mathpar}
 
-The vertical composition rule (\textsc{Vcomp}) allows us
+The vertical composition rule allows us
 to verify the modules $M$ and $N$ (where $N$ may depend on $M$) 
-in two separate steps.
+in two separate steps, and provides us to build layer stacks.
     \begin{mathpar}
-\inferrule*[Right=Vcomp]{ \ltyp{\PLayer{L_1}{A}{\oracle_1}}{R}{M}{\PLayer{L_2}{A}{\oracle_2}} \\
- \ltyp{\PLayer{L_2}{A}{\oracle_2}}{S}{N}{\PLayer{L_3}{A}{\oracle_3}}}{\ltyp{\PLayer{L_1}{A}{\oracle_1}}{R \circ S}{M \oplus N}{\PLayer{L_3}{A}{\oracle_3}}}
+\inferrule*[Right=Vcomp]{ \ltyp{\PLayer{L_1}{c, \oracle_1}{}}{R}{M}{\PLayer{L_2}{c, \oracle_2}{}} \\
+ \ltyp{\PLayer{L_2}{c, \oracle_2}{}}{S}{N}{\PLayer{L_3}{c, \oracle_3}{}}}{\ltyp{\PLayer{L_1}{c, \oracle_1}{}}{R \circ S}{M \oplus N}{\PLayer{L_3}{c, \oracle_3}{}}}
 \end{mathpar}
 
-The horizontal composition rule
-(\textsc{Hcomp}) enables local reasoning for independent
-modules $M$ and $N$ belonging to the same level. These two composition rules can only compose layers over the same  CPU set.
+The horizontal composition rule enables local reasoning for independent
+modules $M$ and $N$ belonging to the same level. Note that rely and guarantee invariant and the environmental context in $L_1$ and $L_2$ should 
+be same for this horizontal composition.
  \begin{mathpar}
 \inferrule*[Right=Hcomp]{
-\ltyp{\PLayer{L}{A}{\oracle}}{R}{M}{\PLayer{L_1}{A}{\oracle'}} \\ \ltyp{\PLayer{L}{A}{\oracle}}{R}{N}{\PLayer{L_2}{A}{\oracle'}} \\\\
-L'[A].\Layer=L_1[A].\Layer\oplus \L_2[A].\Layer \\
-L'[A].\Rely=L_1[A].\Rely = \L_2[A].\Rely \\
-L'[A].\Guard=L_1[A].\Guard = \L_2[A].\Guard
-}{\ltyp{\PLayer{L}{A}{\oracle}}{R}{M \oplus N}{\PLayer{L'}{A}{\oracle'}}}
+\ltyp{\PLayer{L}{c, \oracle}{}}{R}{M}{\PLayer{L_1}{c, \oracle_1}{}} \\ \ltyp{\PLayer{L}{c, \oracle}{}}{R}{N}{\PLayer{L_2}{c, \oracle_2}{}} \\\\
+L'[c, \oracle'].\Layer=L_1[c, \oracle_1].\Layer\oplus L_2[c, \oracle_2].\Layer \\
+L'[c, \oracle'].\Rely=L_1[c, \oracle_1].\Rely = L_2[c, \oracle_2].\Rely \\
+L'[c, \oracle'].\Guard=L_1[Ac, \oracle_1].\Guard = L_2[c, \oracle_2].\Guard \\
+\oracle = \oracle_1 = \oracle_2
+}{\ltyp{\PLayer{L}{c,\oracle}{}}{R}{M \oplus N}{\PLayer{L'}{c, \oracle'}{}}}
 \end{mathpar}
 
+
 Besides them, 
-the parallel compositions rule (between $L[A]$ and $L[B]$) 
+the concurrent linking rule (between $L[A, \oracle_A]$ and $L[B, \oracle_B]$) 
 also can be defined in a logical level. 
-It is, however, not well supported in our framework since we do not provide
-any canonical forms to support the parallel composition 
+It is, however, not well supported in our framework; we do not provide
+any canonical forms to support the concurrent linking
 in our implementation.
-Another part of this dissertation (Chapter~\ref{chapter:linking}) addresses 
-the parallel composition. 
+Later part of this dissertation (Chapter~\ref{chapter:linking}) addresses the concurrent linking. 
 
 
 
-
-%
-%
-%\section{Concurrent Layer Interface and Calculus}
-%\label{sec:mach}
-%In this section we instantiate our compositional model
-%for the x86 multicore hardware and explain the concurrent layer interface and the layer calculus in more detail.
-%We begin by defining the concurrent machine model $\Mach_{\boot}$ in
-%Sec.~\ref{boot-total}. This is our (trusted)%
-%specification to the multiprocessor x86 hardware. It
-%is a fairly conventional model of sequentially consistent program
-%execution, which allows arbitrary interleaving
-%and shared-memory
-%accesses. 
-%
-%It would be difficult to directly verify programs running 
-%over $\Mach_{\boot}$, as it would require
-%simultaneously considering
-%all possible interleaving among all CPUs.
-%Instead, we show in Sec.~\ref{boot-partial} how to enable local reasoning
-%by introducing the concurrent layer interface.
-%The concurrent layer $\PLayer{L}{A}{\oracle}$ represents program execution 
-%on a parameterized CPU set $A$,
-%and specifies a set of \emph{environment contexts} $\oracle$
-%that are ``acceptable'' by this layer. The environment context $\oracle$
-%models both a logical \emph{hardware scheduler} $\strat{hs}$
-%that picks a particular interleaving, as well as all 
-%\emph{observable events} produced by CPUs that are not present in 
-%the parameterized CPU set $A$.
-%
-%When taking  a single CPU $c$ as the parameter,
-%all  transitions
-%fall into two categories:
-%local execution on CPU $c$
-%and environmental execution  interacting with $\oracle$.
-%We refer to such a layer $\PLayer{L}{c}{\oracle}$
-%as a ``CPU-local layer'' because the programs running on 
-%it can be verified in a sequential style.
-%
-%Finally, we describe in Sec.~\ref{boot-linking} the layer calculus used to build and compose concurrent layer interfaces.
-%We show how we
-%prove a multicore linking theorem, stating that there is a refinement connecting $\Mach_{\boot}$ to
-%a layer that runs all of the individual CPU-local layers 
-%in parallel.
-%This means that we can reason about a program over the CPU-local layer
-%using usual verification techniques for sequential programs,
-%then conclude the correctness of the whole system over the
-%multiprocessor machine model.
-%The same idea is used again in
-%Sec.~\ref{sec:multi-threaded-partial}, when we further decompose the CPU-local layer 
-%into a collection of ``thread-local'' layers.
-%
-%\subsection{Multiprocessor Machine Model}
-%\label{boot-total}
-%
-%\begin{figure}[t]
-%\lstinputlisting [language = Caml] {source_code/ccal/lpull.v}
-%\caption{Pseudocode of the $\pull$ specification of $\Mach_{\boot}$  in Coq.}
-%\label{fig:exp:lpull}
-%\end{figure}
-%
-%\begin{figure*}
-%\begin{center}
-%$
-%{\small
-%\begin{array}{llllllllllll}
-%(\textit{Id, Loc}) & c, b & \in &\textit{Nat}
-%& 
-%(\textit{Bytes})  &\bytelist & \in & \textit{List Byte}
-%&
-%(\textit{Val}) & v & := & \bytelist \ | \ b \ |\ \vundef
-%\\
-% (\textit{Mem}) & pm, m & \in & \textit{Loc} \rightarrow  \textit{Val} 
-%&
-%(\textit{Reg})  &r & := & \mathsf{EIP} \ | \ \mathsf{EAX} \ | \  \cdots
-%& 
-%(\textit{RegSet}) & \regset & \in & \textit{Reg} \rightarrow \textit{Val}  
-%\\
-%(\textit{PvtSt}) & \regs & := & (pm, rs)
-%& 
-%(\textit{PvtStMap}) & f_\regs &\in & \textit{Id} \alist \textit{PvtSt}  
-%&
-%(\textit{Abs}) & a & \in & \textit{Type}  
-%\\ 
-%(\textit{Event}) & e & := & \emptye \ | \ c.\push(b,v)
-%\ |\  \cdots
-%&
-%(\textit{Log}) & l & \in & \textit{List}\ \textit{Event}
-%& 
-%(\textit{State}) & s & := & (c, f_\regs,m,a,l)
-%\\
-%(\textit{AsmFn}) & \kappa_{x86} & \in &  \textit{List x86Instr}  
-%&
-%(\textit{AsmModule}) & M_{x86} & \in & \textit{Loc} \partialf  \textit{AsmFn} 
-% \\
-%(\mathit{Prim}) & \spec{} & \in & 
-%\multicolumn{5}{l}{
-%\mathit{State} \rightarrow
-%\textit{List Val} \rightarrow 
-%\mathit{State}  \rightarrow
-%\textit{Val} \rightarrow 
-%\textit{Prop}}
-% \\
-%(\textit{PrimList}) & \Layer & \in & \textit{Loc} \alist \textit{Prim}
-%&
-%(\textit{Layer}) & L[A] & := & (\Layer, \Rely, \Guard)
-% &
-% (\textit{Inv}) & \comm{INV} & \in & \textit{Log} \rightarrow \textit{Prop}
-%\\
-%(\textit{Rely, Guar}) & \Rely, \Guard& \in & \textit{Id} \alist\ \textit{Inv}
-%&
-%(\textit{Strategy}) & \strat{} & \in & \textit{Log} \alist \textit{Log}
-%&
-%(\textit{EC}) & \oracle & \in & \textit{Id} \alist\ \textit{Strategy}
-%\end{array}
-%}
-%$
-%\end{center}
-%\caption{The machine state for the concurrent machine model and the concurrent layer interface.}
-%\label{fig:mach:syntax}
-%\end{figure*}
-%
-%The multiprocessor machine model $\Mach_{\boot}$ is defined by the machine state, the  transition relation, and the memory model.
-%
-%\para{Machine State.} As shown in Fig.~\ref{fig:mach:syntax},  the state of $\Mach_\boot$ is denoted as a tuple ``$\state := (c, f_\regs, m, a, l)$,''
-%where the components are
-%the current CPU \allid{} $c$,
-%all CPUs' private states $f_\regs$
-%(i.e.\, a partial map from CPU \allid{} to private state $\regs$),
-%a shared memory state $m$,
-%an abstract state $a$, and a global event log $l$.
-%%The assembly language
-%%contains an extra register set component $regset$.
-%The private state $\regs$ consists of CPU-private memory $pm$
-%(invisible to other CPUs) and a register set $rs$.
-%The shared memory state  $m$ is shared among all CPUs.
-%Each location $b$ in both local and shared memories
-%contains a memory value $v$.
-%The abstract state $a$ is generally used in our layered approach to
-%summarize in-memory data structures from lower layers. It is not just
-%a ghost state, because it affects program execution when making
-%primitive calls. 
-%At the lowest layer $\Mach_\boot$, $a$ contains
-%information about whether shared memory is ``dirty'' or not (we will explain it later in
-%this section).
-%
-%The global log $l$ is a list of observable events, 
-%recording all shared operations that affect more than
-%one CPU.
-%Events generated by different CPUs are
-%interleaved in the log, following the actual chronological order of events.
-%Therefore, all shared state, including the shared memory
-%and shared abstract state, can be reconstructed
-%from the log $l$ alone by using \emph{replay function}.
-%The global log is also used as an index to query the environment context
-%$\oracle$, which returns the next event generated by environment CPUs.
-%
-%
-%
-%\para{Transition Relation.} The machine $\Mach_\boot$
-%has two types of transitions that are arbitrarily and nondeterministically 
-%interleaved: 
-%program transitions and hardware scheduling.
-%
-%\emph{Program transitions} are one of three possible types:
-%instruction executions, private primitive calls, and shared primitive calls.
-%The first two types are ``silent'', in that they do not
-%generate events.
-%Shared primitives, on the other hand, provide the only means 
-%for accessing and appending events to the global log.
-%The transitions for instructions only change $\regs$, $pm$, and $m$, and are defined as standard operational semantics
-%for C or x86-assembly, similar to (and in fact based on) the
-%operational semantics used in
-%CompCert~\cite{leroy09}. 
-%Primitive calls are specific to our style of verification: they
-%directly specify the semantics of function $f$ from underlying layers as a relation $\spec_f$
-%defined in Coq. This relation specifies how the state is updated after $f$
-%is called with the given arguments and what the return value is.
-%
-%\emph{Hardware scheduling} 
-%transitions  change the
-%current CPU \allid{} $c$ to some  \allid{} $c'$. 
-%They also record this 
-%change of CPU \allid{} as an observable event $(c \switch c')$ in the global log.
-%These hardware scheduling
-%and can be arbitrarily interleaved with
-%program transitions.
-%In other words, at any step,
-%$\Mach_{\boot}$ can take either a program transition staying
-%on the current CPU,
-%or a hardware scheduling to another CPU.
-%The \emph{behavior} of a client program $P$ over this multicore machine (denoted as $\sem{\Mach_\boot}{P}$) is  a set of global logs generated by executing $P$ via these two kinds of transitions.
-%
-%\para{Memory Model.}
-%In the multiprocessor setting,
-%one major challenge is to model shared-memory accesses
-%in a way that enables local reasoning.
-%On one hand, we have to expose shared-memory changes
-%at the log level, making their effects visible to the whole system.
-%On the other hand,  we should only expose the resulting memory
-%content and hide the concrete manipulation details.
-%Furthermore, we also rely on the memory model
-%to detect and forbid dangerous accesses like data races.
-%To address these issues, we introduce
-%a  ``push/pull'' memory model for the shared memory $m$
-%(the private memory is separately handled in $\regs$),
-%which encapsulates the shared memory operations
-%into $\push/\pull$ events and can detect data races.
-%
-%In this model, each shared memory location $b$ is associated
-%with an ownership status in the abstract state $a$, which can only be manipulated by 
-%two shared primitives called $\cpull$ and $\cpush$. The $\cpull$ operation modifies the ownership from ``free'' to  ``owned by $c$'', after which shared memory accesses
-%can be performed by CPU $c$. The $\cpush$ operation frees the ownership and records its memory updates in the log.
-%Figure~\ref{fig:exp:lpull} shows  the specification $\spec_\pull'$
-%, where ``$r\ \set{i:v}$''
-%means updating the record $r$ at field $i$ 
-%with value $v$.
-%
-%
-%If a program tries to $\pull$  a  not-free  location,
-%or tries to access or push to a location not owned by the current CPU,
-%a \emph{data race} may occur and the machine gets \emph{stuck}. 
-%One goal of concurrent program verification is to show
-%that a program is data-race free; in our setting, we accomplish 
-%this by showing that the program does not get stuck.
-%
-%\subsection{Concurrent Layer Interface}
-%\label{boot-partial}
-%We now zoom in on the execution of a subset of CPUs $A$,
-%introducing the \emph{concurrent layer interface} $\PLayer{L}{A}{\oracle}$
-%defined as a tuple
-%$(\Layer, \Rely, \Guard)$.
-%The machine based on this concurrent interface is ``open'' in the sense that it is eligible to  capture  a subset of the
-%CPUs and then be composed with any acceptable execution of the rest of CPUs. 
-%The domain of the private state map $f_\regs$ is also this captured (or focused) subset.
-%The interface $\PLayer{L}{A}{\oracle}$  equips this open machine with a 
-%collection of primitives that  are defined in $\Layer $ and can be invoked  at this level,
-%the rely condition $\Rely$  that
-%specifies a set of acceptable environment 
-%contexts, and
-%the guarantee condition $\Guard$
-% that the log $l$ should hold.
-%The instruction transitions are defined as before,
-%but all hardware scheduling is replaced by queries to
-%the environment context.
-%
-%\para{Environment Context.} $\oracle$
-%is a partial function from a CPU ID to its \emph{strategy} $\strat{}$. A strategy is an automata
-%that generates events in response to given logs. 
-%When focusing on a CPU set $A$, all the observable behaviors of the hardware scheduling
-%and the program transitions of other CPUs
-%can be specified as a union of strategies (i.e.\, $\oracle$).
-%This union serves
-%as a specification for other CPUs and the hardware scheduler.
-%Thus,
-%whenever there is a potential interleaving,
-%the machine can \emph{query} $\oracle$ about the events from other CPUs (and the  scheduler).
-%
-%These environmental events cannot influence the behaviors
-%of  instructions and private primitive calls. This also applies to
-%shared memory read/write, because the push/pull memory model encapsulates
-%other CPUs' effects over the shared memory into $\push$/$\pull$ events.
-%Thus, during the execution of instructions
-%and private primitives, it is unnecessary to query $\oracle$, and the appended environmental events will be received by the next
-%so-called \emph{query point}, that is, the point just
-%before executing shared primitives.
-%The intuition of this query point is that
-%the current CPU only needs to be informed of other CPUs' non-local changes
-%just before invoking its own shared primitives.
-%
-%To be more specific, at each query point, the machine repeatedly
-%queries $\oracle$.
-%Each query takes the current log $l$
-%as the argument and returns an event (i.e.\, ``$\oracle(c', l)$'') from a CPU $c'$ not in
-%$A$. That event is then appended to $l$, and this querying continues
-%until there is a hardware transition event back to $A$ (assuming the hardware scheduler is fair).
-%In the following, we write
-%``$\Query{\oracle}{l}{A}$'' to mean this entire process of extending $l$ with
-%multiple events from other CPUs. 
-%
-%In this way, we are able to define the semantics of instructions
-%and private primitives in a sequential style 
-%with considering concurrency
-%and interleavings  just only before 
-%shared primitive calls by querying its environmental context.
-%This makes concurrent program verification far more scalable.
-%
-%\para{Rely and Guarantee Conditions.}
-%The $\Rely$ and $\Guard$ of the layer interface specify the validity of the environment context and the invariant of the log (containing the locally-generated events).
-%After each step of threads in $A$ over interface $L[A]$, 
-%the resulting log $l$  must satisfy the guarantee condition $L[A].\Guard$, i.e.\, $l \in L[A].\Guard(c)$ if $c$ is the current CPU ID indicated by $l$. 
-%To prove that
-% guarantee conditions always hold,  we not only need to validate the events generated locally
-%but also need to rely on the validity of the environment context. The rely condition $L[A].\Rely$ specifies a set of
-%valid environment contexts, which take valid input logs
-%and return a valid list of events.
-%
-%\para{CPU-Local Layer Interface.}
-%When focusing on a single CPU $c$, $\PLayer{L}{c}{\oracle}$ is called 
-%a CPU-local layer interface.
-%Its machine state is $(\regs, m, a, l)$,
-%where $\regs$ is the private state of the CPU $c$
-%and $m$ is just a \emph{local copy} of the shared memory.
-%
-%\begin{figure}[t]
-%\lstinputlisting [language = Caml] {source_code/ccal/push.v}
-%\caption{Pseudocode of $\push/\pull$ specifications of $L[c]$ in Coq.}
-%\label{fig:exp:pull}
-%\end{figure}
-%
-%
-%This $m$ can only be accessed locally by $c$. The primitives $\cpush/\cpull$ of
-%$L[c]$  ``deliver'' the effects of shared memory operations.
-%In detail, the memory ($m$) can be treated locally
-%because the current CPU $c$ can only observe 
-%the context events instead of other CPUs'  concrete memory
-%operations. The memory contents are ``delivered''  by the  shared primitives
-%between $c$ and other CPUs.
-%On the other hand, 
-%shared memory updates from other CPUs are ``retrieved'' by the $\cpush/\cpull$ primitive, 
-%which  queries $\oracle$, updated the log
-%with the query result, and generates the $\cpull$ event.
-%Figure~\ref{fig:exp:pull} shows their specifications, which depend on
-%a replay function  $\replay_{\comm{shared}}$ to
-%reconstruct the shared memory value $v$ for some location $b$ and check the well-formedness (i.e.\, no data race occurs)
-%of the resulting log.
-%
-%Since $\spec_\pull$ is parameterized with $\oracle$, it can also be viewed as the following special strategy  with private state updates:%
-%\begin{center}
-%\begin{tikzpicture}[->,>={stealth[black]}, auto,  node distance=3cm,draw]
-%\begin{scope}[every node/.style={font=\sffamily\small}]
-%    \node (A) at (0,0) {};
-%    \node (B) [node_w] at (0.5,0) {};
-%    \node (C) [node_db] at (4.5,0) {};
-%\end{scope}
-%
-%\begin{scope}[every node/.style={font=\sffamily\small},
-%every edge/.style={draw, thick}]
-%    \path [->] (A) edge (B);
-%    \path [->] (B) edge node[above] {$?\oracle, !c.\pull(b), \return (v, \comm{own}\ c)$} node[below]{$\set{m.b: v}$} (C);
-%\end{scope}
-%\end{tikzpicture}
-%\end{center}
-%The layer machine enters the \emph{critical state} after calling $\commc{pull}$ by holding the ownership
-%of a shared location.
-%With the replay function ($\replay_{\comm{shared}}$) and the given log, 
-%we can derive the value that is mapped with $b$ is $v$, 
-%and the $\pull$ primitive
-%stores  $v$  into the memory, updates the clean status,
-%and finally generates a $\pull$ event.
-%The memory state $m$ is updated using the contents delivered
-%by the $\cpull$ operation
-%and  the clean status is also marked to be $\comm{dirty}(c)$,
-%meaning that it is now only safe for CPU $c$ to access.
-%Thus, this memory location will be treated as
-%a \emph{local}
-%copy of the shared state being accessed by $c$.
-%After the $c.\pull$ operation transfers the contents,
-%all subsequent shared accesses are performed over this 
-%copy as if it were private to CPU $c$.
-%It exits the critical state by invoking $\commc{push}$ to free the ownership.
-%This $\cpush$ primitive also delivers the updated memory contents back 
-%by appending the $\cpush$ event that contains the value $v$ into the log.
-%
-%\subsection{Concurrent Layer Calculus}
-%\label{boot-linking}
-%
-%\begin{figure*}
-%\hspace*{-2.5em}
-%\begin{minipage}{1\textwidth}
-%\begin{small}
-%    \begin{mathpar}
-%\inferrule*[Right=Empty]{ }{\ltyp{\PLayer{L}{A}{\oracle}}{\id}{\varnothing}{\PLayer{L}{A}{\oracle}}}
-%\and
-%\inferrule*[Right=Fun]{\ssem{\kappa}{\PLayer{L}{c}{\oracle}} \le_R \spec}{\ltyp{\PLayer{L}{c}{\oracle}}{\id}{i \mapsto \kappa}{i \mapsto \spec}}
-%\and
-%\inferrule*[Right=Vcomp]{ \ltyp{\PLayer{L_1}{A}{\oracle_1}}{R}{M}{\PLayer{L_2}{A}{\oracle_2}} \\
-% \ltyp{\PLayer{L_2}{A}{\oracle_2}}{S}{N}{\PLayer{L_3}{A}{\oracle_3}}}{\ltyp{\PLayer{L_1}{A}{\oracle_1}}{R \circ S}{M \oplus N}{\PLayer{L_3}{A}{\oracle_3}}}
-%\and
-%\inferrule*[Right=Hcomp]{
-%\ltyp{\PLayer{L}{A}{\oracle}}{R}{M}{\PLayer{L_1}{A}{\oracle'}} \\ \ltyp{\PLayer{L}{A}{\oracle}}{R}{N}{\PLayer{L_2}{A}{\oracle'}} \\\\
-%L'[A].\Layer=L_1[A].\Layer\oplus \L_2[A].\Layer \\
-%L'[A].\Rely=L_1[A].\Rely = \L_2[A].\Rely \\
-%L'[A].\Guard=L_1[A].\Guard = \L_2[A].\Guard
-%}{\ltyp{\PLayer{L}{A}{\oracle}}{R}{M \oplus N}{\PLayer{L'}{A}{\oracle'}}}
-%\and
-%\inferrule*[Right=Wk]{L_1'[A] \lpath{R} L_1 [A]\\
-%\ltyp{\PLayer{L_1}{A}{\oracle}}{S}{M}{\PLayer{L_2}{A}{\oracle'}} \\
-% L_2[A] \lpath{T} L_2'[A] }{\ltyp{\PLayer{L_1'}{A}{\oracle}}{R \circ S \circ T}{M}{\PLayer{L_2'}{A}{\oracle'}}}
-%\and
-%    \inferrule*[Right=Compat]{A \perp B \\
-%    \forall i \in A,  L[B].\Rely(i) \subseteq  L[A].\Guard(i)  \\
-%    \forall i \in B,  L[A].\Rely(i) \subseteq  L[B].\Guard(i)  \\\\
-%     \PLayer{L}{A \cup B}{\oracle_C}.\Layer =  \PLayer{L}{A}{\oracle_C}.\Layer  =  \PLayer{L}{B}{\oracle_C}.\Layer \\
-%    \PLayer{L}{A \cup B}{\oracle_C}.\Rely
-%    =  L[A].\Rely \cap L[B].\Rely  \\
-%    \PLayer{L}{A \cup B}{\oracle_C}.\Guard
-%    =  L[A].\Guard \cup L[B].\Guard
-%    }
-%    { 
-%    \Compose{\PLayer{L}{A}{\oracle_A}}{\PLayer{L}{B}{\oracle_B}}{\PLayer{L}{A \cup B}{\oracle_C}}}
-%\and
-%\inferrule*[Right=Pcomp]{
-%\ltyp{\PLayer{L_1}{A}{\oracle_A}}{R}{M}{\PLayer{L_2}{A}{\oracle_A'}} \\
-%\ltyp{\PLayer{L_1}{B}{\oracle_B}}{R}{M}{\PLayer{L_2}{B}{\oracle_B'}
-%}\\
-%\Compose{\PLayer{L_1}{A}{\oracle_A}}{\PLayer{L_1}{B}{\oracle_B}}{\PLayer{L_1}{A \cup B}{\oracle_C}} \\
-%\Compose{\PLayer{L_2}{A}{\oracle_A}}{\PLayer{L_2}{B}{\oracle_B}}{\PLayer{L_2}{A \cup B}{\oracle_C}}
-%}{\ltyp{\PLayer{L_1}{A \cup B}{\oracle_C}}{R}{M}{\PLayer{L_2}{A \cup B}{\oracle_C'}}}
-%\end{mathpar}
-%    \end{small}
-%
-%\end{minipage}
-%    \caption{The fine-grained layer calculus in the concurrent setting.}
-%    \label{fig:calculus}
-%\end{figure*}
-%
-%To build and compose   concurrent layers ``$\ltyp{\PLayer{L}{A}{\oracle_C}}{R}{M}{\PLayer{L'}{A}{\oracle_C'}}$,''
-%we introduce a  layer calculus shown in
-%Fig.~\ref{fig:calculus}. We borrow the notations
-%from \citet{dscal15}: ``$\varnothing$'' stands for an empty program module, ``$\oplus$'' computes the union of two modules (or two layers' primitive collections), and
-%``$(i\mapsto \cdot)$'' is a singleton map with a pointer or location $i$ as its domain.
-%
-%\para{Composition Rules.}
-%The vertical composition rule (\textsc{Vcomp}) allows us
-%to verify the modules $M$ and $N$ (where $N$ may depend on $M$)
-%in two separate steps, while the horizontal composition rule
-%(\textsc{Hcomp}) enables local reasoning for independent
-%modules $M$ and $N$ belonging to the same level. These two composition rules can only compose layers over the same  CPU set.
-%
-%Layers on different CPUs can be composed
-%by the parallel composition rule (\textsc{Pcomp}) if
-% simulation relations are the same, and
-% both overlay and underlay interfaces are \emph{compatible}.
-% This compatibility is denoted as ``$\Compose{\PLayer{L}{A}{}}{\PLayer{L}{B}{}}{\PLayer{L}{A\cup B}{}}$.''
-%It says that each guarantee condition of $L[A]$ implies the corresponding rely condition of  $L[B]$ and vice versa. The composed interface
-%$\PLayer{L}{A\cup B}{}$
-%merges the primitives of two layers and is equipped with
-%stronger guarantees and weaker rely conditions.
-%The machine based on this composed layer interface only queries  $\oracle$
-%about the events not from $A\cup B$.
-%
-%The layer transitions
-%can be divided into two categories:
-%(1) querying the environment context $\oracle$  if the switched CPU is not active;
-%and (2) instruction and primitive executions
-%of an active CPU.
-%When composing layers, e.g.\, CPU sets $A$ and $B$,
-%some context events of $A$ are generated
-%by $B$ and vice versa.
-%In this way, the transitions of two CPUs
-%are interleaved, and the log keeps track of whose turn it is to run.
-%
-%To make sure that these two layers are composable,
-%we have to show that each guarantee condition $\Guard$
-%can imply the rely condition $\Rely$ of the other.
-%Thus, the resulting composed layer only relies on the events
-%generated by the CPUs outside the union
-%active CPU set  $A\cup B$, but will hold
-%a stronger guarantee over the events generated by $A\cup B$.
-%In this way, we build layers for one CPU at a time, and then
-%compose them into layers for the entire machine.
-%
-%\para{Multicore Linking Theorem.}
-%By composing all the CPUs in the machine (denoted as the set $D$), the resulting 
-%layer interface does not depend on any environmental events except those from the hardware scheduler.
-%We construct such a layer interface $\PBoot[D]$
-%using the primitives provided by the hardware $\Mach_{\boot}$. 
-%We can then prove a contextual refinement from  $\Mach_{\boot}$ to $\PLayer{\PBoot}{D}{}$  by
-%picking a suitable hardware scheduler of $\PBoot[D]$  for every interleaving (or log) of $\Mach_{\boot}$.
-%\begin{theorem}[Multicore Linking]
-%\label{thm:link}
-%\begin{small}
-%%\vspace{-5px}
-%$$\forall P, \sem{\Mach_{\boot}}{P} \refines_R \sem{\PLayer{\PBoot}{D}{}}{P}$$
-%%$\ltyp{\Mach_{\boot}}{\id}{\varnothing}{\PLayer{\PBoot}{D}{}}$
-%\end{small}
-%\end{theorem}%
-%As for this layer refinement, our layer calculus does not help and we have to
-% directly construct the proof. By
-%Thm.~\ref{thm:link}, we can
-%ensures that all code verification over $\PBoot[D]$ can be propagated down to the x86 multicore hardware 
-%$\Mach_{\boot}$.
-%
-%\para{Building Leaf Certified Layers.}
-%As the unit of certified concurrent layers, leaf layers can be built by applying the \textsc{Fun} rule, which requires to prove the strategy simulation.
-%Two most common patterns, \emph{fun-lift} and \emph{log-lift}, for this proof have already been shown in Sec.~\ref{sec:informal}.
-%The fun-lift pattern abstracts a concrete implementation into a low-level strategy without changing the potential interleaving. In this pattern, language dependent details (e.g.\, silent moves changing temporal variables) are hidden
-%and data representation details (e.g.\, memory values carried by $\push$ events) are replaced with abstract state values.
-%
-%
-%The log-lift pattern always involves the events merging
-%and the interleavings shuffling to form an atomic interface.
-%As a result, this pattern lifts the environment context as well,
-%and we have to establish the \emph{environmental relation} separately.
-%The layers built in these two patterns also can be vertically
-%composed using the vertical composition rule (\textsc{Vcomp}) in Fig.~\ref{fig:calculus}.
-%
-%
-%
