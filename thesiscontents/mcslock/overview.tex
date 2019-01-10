@@ -20,17 +20,13 @@ specification. With a non-fair lock, we would have to settle for
 either an ugly specification that allowed non-termination, or for a
 weaker notion of correctness such as termination-insensitive
 refinement.
-
-\begin{figure*}
-\begin{minipage}{\linewidth}
+\begin{figure}
 \lstinputlisting [language = C, multicols=2] {source_code/mcslock/mcs_struct.h}
-\end{minipage}
-\\
 
 \lstinputlisting [language = C, multicols=2] {source_code/mcslock/mcs_lock_acquire.c}
 \caption{Data Structure and the Implementation of MCS Lock (Written in C).}
 \label{fig:chapter:mcslock:mcs_lock}
-\end{figure*}
+\end{figure}
 
 Figure~\ref{fig:chapter:mcslock:mcs_lock} shows the implementation of the MCS Lock algorithm written in C. 
 The data structure of an MCS Lock (Figure~\ref{fig:chapter:mcslock:mcs_lock}) has
