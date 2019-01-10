@@ -1,5 +1,5 @@
 \section{The MCS algorithm}
-\label{sec:overview}
+\label{chapter:mcslock:sec:overview}
 
 The MCS algorithm~\cite{mcs91} is a list-based queuing lock,
 providing a \emph{fair} and \emph{scalable} mutex mechanism for
@@ -32,8 +32,8 @@ refinement.
 \label{fig:chapter:mcslock:mcs_lock}
 \end{figure*}
 
-Figure~\ref{fig:chapter:mcs-lock:mcs_lock} shows the implementation of the MCS Lock algorithm written in C. 
-The data structure of an MCS Lock (Fig.~\ref{fig:chapter:mcs-lock:mcs_lock}) has
+Figure~\ref{fig:chapter:mcslock:mcs_lock} shows the implementation of the MCS Lock algorithm written in C. 
+The data structure of an MCS Lock (Figure~\ref{fig:chapter:mcslock:mcs_lock}) has
 one global field pointing to the last node of the queue structure, and
 per-CPU nodes forming each node in the queue. This is similar to an
 ordinary queue data structure(, but note that it only has a
@@ -57,7 +57,7 @@ each process can pick up one node, and use it as its node during the lock operat
 All nodes are uniquely distinguished by lock ID and CPU ID, but those
 things can be reused for the same purpose.
 
-Figure~\ref{fig:chapter:mcs-lock:mcs_lock} also shows the code for the acquire lock and
+Figure~\ref{fig:chapter:mcslock:mcs_lock} also shows the code for the acquire lock and
 release lock operations.  The acquire lock function uses an atomic {\em
 fetch-and-store} expression to {\em fetch} the current \code{last}
 value and {\em store} its CPU-id as the \code{last} value of
@@ -83,13 +83,13 @@ waiting queue by assigning \code{busy}.
 
 \begin{figure}
 \begin{center}
-\includegraphics[width=1\linewidth]{figs/mcslock/mcsex}
+\includegraphics[width=0.8\linewidth]{figs/mcslock/mcsex}
 \end{center}
 \caption{A Possible Execution Sequence for an MCS Lock.}
 \label{fig:chapter:mcslock:mcs-example}
 \end{figure}
 
-Figure~\ref{fig:mcs-example} illustrates a possible sequence of states taken by the algorithm. 
+Figure~\ref{fig:chapter:mcslock:mcs-example} illustrates a possible sequence of states taken by the algorithm. 
 At the beginning (a), the lock is free, and CPU 1 can take it in a single atomic \code{FAS} operation (b).
 Since CPU 1 did not have to wait for the lock, it does not need to update its \emph{next}-pointer. 
 After that, CPUs 2 and 3 each try to take the lock ((c) and (d)). 

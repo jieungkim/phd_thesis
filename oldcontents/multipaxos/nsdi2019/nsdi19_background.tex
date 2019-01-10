@@ -1,0 +1,129 @@
+%\section{Background}
+
+\subsection{Verification Approach}
+\label{sec:background}
+
+%Modularity enables verification based on the certified concurrent abstraction layer (CCAL)~\cite{deepspec}, where we divide the system into modular layers, verify the correctness of each layer independently, and verify the end-to-end behavior of the system via \textit{contextual refinement} between the layers. Each layer is a state machine. Informally, a layer contextually refines the layer immediately below it if each state transition with any context $t$ in the higher layer, corresponds to a sequence of lower-level state transitions in the bottom layer with a context consisting of $t$ and the layers running above it. For example, to prove a three-layer stack ${L_T, L_M, L_B}$ correct, we show that $L_M$ with any $t$ refines $L_B$ with $(t + L_M)$ as a context; $L_T$ with any $t'$ refines $L_M$ with $(t' + L_T)$ as a context.
+
+\bulletpoint{introduces and defines contextual refinement}
+Modularity of \WOR{} enables verification based on the certified concurrent abstraction layer (CCAL) approach~\cite{deepspec, concurrency}, where we divide the system into modular layers, verify the correctness of each layer independently, and verify the end-to-end behavior of the system via \textit{contextual refinement} between layers. Each layer $L$ is a state machine which has its corresponding implementation $i$ and an execution environment context $t$. The context $t$ includes programs and configurations that can run on the state machine; and such context is not limited to a sequential program but it can be a concurrent operating system or even an entire distributed system.
+Informally, a layer $L_{low}$ contextually refines the higher layer $L_{high}$ if each state transition made by $L_{high}$ based on any context $t$ corresponds to a sequence of state transitions by $L_{low}$ which has the context $t$ and $L_{high}$'s implementation $i_{high}$. We can formally represent contextual refinement $L_{low} \sqsubseteq_{cr} L_{high}$ as verifying the following: 
+\centerline{
+%\[
+	$\forall t, L_{low} (i_{high} \oplus t) \sqsubseteq L_{high} (t),$
+%\]
+}
+where $\sqsubseteq$ is the refinement relation and $\oplus$ computes the union of implementation modules and contexts.
+
+\bulletpoint{why contextual refinement is good; where this property comes from (arbitrary context)}
+Contextual refinement is powerful since layers can be verified only once independently; and layers can be linked by verifying that each layer contextually refines the layer above it for an arbitrary context.
+\tojyshin{Is it possible to improve the previous sentence a little bit more? We use contextually refines to define contextual refinement}
+ When the stack is extended with a new verified layer on top, the inter-layer contextual refinement proofs can be reused with an updated context to include the new layer. For example, if we add a new layer $L_{top}$ on top of verified layers $L_{mid}$ and $L_{btm}$, we need one new proof that shows $L_{mid}$ contextually refines $L_{top}$, but we can reuse the proof for $L_{btm} \sqsubseteq_{cr} L_{mid}$ without requiring any modification to the proof because the proof holds ``for all" context $t$. After the proof of $L_{mid} \sqsubseteq_{cr} L_{top}$, we are automatically guaranteed that $L_{btm}$ contextually refines all the way up to $L_{top}$ as follows:
+\centerline{
+$\forall t, L_{btm} (i_{mid}\oplus (i_{top} \oplus t)) $
+$\sqsubseteq L_{mid} (i_{top} \oplus t) \sqsubseteq L_{top} (t).$
+}
+%$\forall t, L_{top} (t) \sqsupseteq L_{mid} (i_{top} \oplus t)$
+%	$\sqsupseteq L_{btm} (i_{mid}\oplus (i_{top} \oplus t)). $
+
+%Contextual refinement is a powerful technique since each layer can be verified once independently; and each layer can be verified to contextually refine the layer below it for an arbitrary context. When the stack is extended with new layers on top, the inter-layer contextual refinement proofs can be reused with an updated context to include the new layer. For example, if we add a new application layer $L_{app}$ on top of verified layers $L_{top}, L_{mid}$ and $L_{btm}$, we need one new proof showing that $L_{app}$ contextually refines $L_{top}$, but we can reuse proofs for $L_{top} \sqsupseteq_{cr} L_{mid}$ and $L_{mid} \sqsupseteq_{cr} L_{btm}$ without requiring any modification to either proof because the proofs hold for ``forall" context $t$. After the proof of $L_{app} \sqsupseteq_{cr} L_{top}$, we are automatically guaranteed that $L_{app}$ contextually refines all the way down to $L_{btm}$ as follows: 
+%	$\forall t, L_{app} (t) \sqsupseteq L_{top} (i_{app} \oplus t) \sqsupseteq L_{mid} (i_{top} \oplus (i_{app} \oplus t))$
+%	$\sqsupseteq L_{btm} (i_{mid}\oplus (i_{top} \oplus i_{app} \oplus t)). $
+%\centerline{
+%	$\forall t, L_{app} (t) \sqsupseteq L_{top} (i_{app} \oplus t) \sqsupseteq L_{mid} (i_{top} \oplus (i_{app} \oplus t))$
+%}
+%\centerline{
+%	$\sqsupseteq L_{btm} (i_{mid}\oplus (i_{top} \oplus i_{app} \oplus t)). $
+%}
+
+%Each layer models a set of primitives derived from C code and accessed data as a state machine. The state machine includes memory and abstract data in memory as the state and C function's behavior as state transition functions. % all using the Coq proof assistant
+\cmt{MB: removed text: which already includes $i_{app}$}
+%The model can include CPU registers and assembly instructions to precisely represent a x86-like state machine, but this features were not used as we did not use assembly in our C code.
+
+%And contextual refinement between two layer shows that any behavior that the upper layers state machine does is observable by the lower layer. 
+
+%\bulletpoint{what exactly is a layer?}
+%Internally, each layer is composed of C implementation, specifications, and proofs: 
+%\begin{itemize}[leftmargin=*]
+%\item{$L_k$: a layer definition which specifies the initial state, the layer invariants, and the interface.}% in $h_k$.}
+%\item{$C_k$: C source code that implements the interface in $L_k$ and invokes C functions in the lower layer $C_{k-1}$.}
+%\item{$i_k$: intermediate Coq representation (in Clight), which is auto-generated from $C_k$ and compiled to assembly by CompCertX~\cite{deepspec}, a verified C compiler.}
+%\item{$h_k$: a high-level specification which defines the transition function between abstract states.}
+%\item{$l_k$: a low-level specification which defines the memory changes induced by the code.}
+%\item{$p_k$: a proof that $i_k$ refines $l_k$.}
+%\item{$r_k$: a proof that $l_k$ refines $h_k$.}
+%\item{$R_{k-1,k}$: a proof using $p_k$ and $r_k$ to verify that $L_{k-1}$ contextually refines $L_{k}$.}
+%\end{itemize}
+%
+
+%To develop a layer, the developer writes source code in C ($C_k$); the high-level ($h_k$) and low-level specification ($l_k$) in Coq; auto-generates the Coq representation ($i_k$) using CompCertX; and writes the three proofs $r_k$, $p_k$, and finally $R_{k-1,k}$. The proofs $p_k$ and $r_k$ guarantee that the C code (i.e., its verified Coq representation $i_k$) is correct as defined by the specifications $l_k$ and $h_k$. With the contextual refinement proof $R_{k-1, k}$, we are assured that the C code in $L_k$ never uses the code in $L_{k-1}$ in an undefined way; calls to C functions in $L_{k-1}$ always return defined results to $L_k$; and variables used and allocated in each layer have their own memory locations and are safely accessed.
+
+\bulletpoint{how is a layer developed?}
+Internally, each layer is composed of the C implementation, specifications, and proofs.
+To develop a layer $L_k$, the developer writes source code in C; the high-level and the low-level specifications in Coq, which specify how the code changes abstract state and memory, respectively; auto-generates the Coq representation of C source code using CompCertX~\cite{deepspec}; and writes three proofs: 1) $p_k$, a proof that the generated code refines the low-level specification; 2) $r_k$, a proof that the low-level specification refines the high-level specification; and 3) $R_{k-1,k}$, a proof using $p_k$ and $r_k$ to verify that $L_{k-1}$ contextually refines $L_{k}$. The proofs $p_k$ and $r_k$ guarantee that the C code (i.e., its verified Coq representation) is correct as defined by the specifications. With the contextual refinement proof $R_{k-1, k}$, we are assured that the C code in $L_k$ never uses the code in $L_{k-1}$ in an undefined way; calls to C functions in $L_{k-1}$ always return defined results to $L_k$; and variables used and allocated in each layer have their own memory locations and are safely accessed.
+
+
+%To develop a layer $L_k$, the developer writes source code in C ($C_k$); the high-level ($h_k$) and low-level specification ($l_k$) in Coq, which specify how the code changes abstract state and memory, respectively; auto-generates the Coq representation ($i_k$) using CompCertX~\cite{deepspec}; and writes the three proofs: 1) $p_k$, a proof that the generated code $i_k$ refines the low level specification $l_k$; 2) $r_k$, a proof that the low level specification $l_k$ refines the high level specification $h_k$; and 3) $R_{k-1,k}$, a proof using $p_k$ and $r_k$ to verify that $L_{k-1}$ contextually refines $L_{k}$. The proofs $p_k$ and $r_k$ guarantee that the C code (i.e., its verified Coq representation $i_k$) is correct as defined by the specifications $l_k$ and $h_k$. With the contextual refinement proof $R_{k-1, k}$, we are assured that the C code in $L_k$ never uses the code in $L_{k-1}$ in an undefined way; calls to C functions in $L_{k-1}$ always return defined results to $L_k$; and variables used and allocated in each layer have their own memory locations and are safely accessed.
+
+%Each layer $k$ is composed of layer definition $L_k$, which specifies the interface to the layer; a C source code $C_k$ that implements $L_k$ and uses the interface in the lower layer $L_{k-1}$; $c_k$'s intermediate Coq representation $i_k$, which is generated and can be compiled to assembly code by CompCert, a verified C compiler; high-level specification $h_k$, which defines the high level behavior of the code; low-level specification $l_k$, which defines the memory state change by the code; proof $r_k$ that verifies $h_k$ refines $l_k$; proof $p_k$ that verifies $l_k$ refines $i_k$; and proof $R_{k,k-1}$ that verifies $L_k$ refines $L_{k-1}$. 
+
+
+
+%The proof $R_{k,k-1}$ guarantees that given the verified state machine model and its implementation in $L_k$ as a context, all possible behaviors of this state machine has bisimilar mappings in the state machine in $L_{k-1}$. 
+
+
+%The proofs $p_k$ and $r_k$ guarantee that the C code (i.e., its verified Coq representation $i_k$) is correct as defined by the specifications $l_k$ and $h_k$. The proof $R_{k,k-1}$ guarantees that given the verified state machine model and its implementation in $L_k$ as a context, all possible behaviors of this state machine has bisimilar mappings in the state machine in $L_{k-1}$. This means that the C code in $L_k$ never uses the code in $L_{k-1}$ in an undefined way, calls to C functions in $L_{k-1}$ always return defined results to $L_k$, and variables used and allocated in each layer have their own place and safely accessed in memory.
+
+\bulletpoint{reiterating what contextual refinement gives us plus highlighting extensibility}
+Consequently, proving the contextual refinement relation for each pair of layers in the stack guarantees the functional correctness of the entire system: all layers from $L_{btm}$ to $L_{top}$ function correctly independently and together. With the help of the verified CompCertX compiler, the correctness of system continues to hold even after the C code is compiled into assembly. 
+To build an application on top of a verified system, we simply add layers corresponding to the application on top of $L_{top}$. The application uses $L_{top}$ as its bottom layer for verification and is oblivious to the layers underneath. The contextual refinement relation between $L_{top}$ and the application guarantees that the application uses the underlying system (from $L_{btm}$ to $L_{top}$) correctly. 
+%To build an application on top of a verified system, we simply add layers corresponding to the application on top of $L_{top}$. The application uses $L_{top}$ as its bottom layer for verification and is oblivious to the layers underneath. The contextual refinement relation between the application and the system guarantees that the application uses the underlying system correctly. 
+
+%In fact,  linearizability proofs often require event reordering that preserves the happens-before relation. Contextual refinement in the concurrent setting requires that for any ε , we can find a semantically related ε ′ such that K & ε refines S & ε ′ . Several researchers [ 22 , 42 , 40 ] have shown that contextual refinement is precisely equivalent to the linearizability and progress requirements for implementing compositional concurrent objects
+
+%Refinement from the bottom layer $L_B$ to the top layer $L_T$ guarantees the functional correctness of the system. This means that all layers from $L_T$ to $L_B$ function correctly independently and together, and the relevant C code compiles to assembly code correctly. 
+%\cmt{A figure can explain this cleanly but may be not enough space for it.}
+\cmt{MB: what is the refinement relation? is $i_k$ auto-generated from $C_K$? is the auto-generation verified? what is high-level behavior -- semantics of the interface? Can you make a rough figure? We can decide if we want to include it or not... Is it fair to say that we have three specifications, one C source code, one Coq representation, and three proofs? Is $L_k$ a specification?}
+
+\cmt{WH: my understanding of clightgen (the translator from $C_k$ to $i_k$) is that it is not verified, but it doesn't matter for us. This is because all our proofs are based on the Clight code and when we compile CertiKOS the assembly code is extracted from the Clight ($i_k$) code. In that sense the actual C source code isn't really a part of the layer definition. It's just easier to write in C and then have clightgen generate the Clight code than to write it by hand}
+
+\bulletpoint{why is coverification important?}
+%While verifying an application's correctness with respect to the underlying system is simple in our verification approach -- because the application only need to know and reason about $L_{top}$ of the system --
+%such \textit{co-verification} of the application and the system is often overlooked and considered difficult.
+Such \textit{co-verification} of the application and the system is critical, but often overlooked and considered difficult.
+Without co-verification, the application and the system can be verified independently but still be incorrect as a whole, since the application can abuse the system interface or take actions based on wrong assumptions~\cite{shimlayer}. For example, for the same write interface, the system and the application may have different address bounds and the application can write beyond the system's address limit. Another example involves slightly different definitions for correctness conditions: a storage system may interpret durability as ``flushing to local disk'', while the application may expect durability from the storage system to mean ``stored on a backup machine''; both can be verified correct, yet the combination will be incorrect. Such mismatches can neutralize the verification effort. Contextual refinement not only guarantees that the application uses the system interface correctly but also guarantees that the application's assumptions about the interface are valid. 
+
+%application's behaviors based on assumptions about the system state is correct with respect to the actual system state.
+
+%This problem surrounding the verified software and its trusted computing base (TCB) has been studied in recent work. 
+%Our contextual refinement, which is based on high-order logic and can use the entire application as a state machine for verification, becomes a powerful systematic tool for co-verification.
+
+\cmt{MB: i like having an example here; this one makes sense.}
+%, the system may return the write after it stores the data only in the primary whereas the application may access the replicas assuming that the write returned after the data has been written to all replicas.
+
+\tozhong{Does the example about write semantics make sense for contextual refinement? Can this be easily done using the tools using first order logic (Dafny, Z3)? Can we claim that this can be easily done only in our approach whereas first order logic based tools need additional tools or steps to do this or it is impossible?}
+
+
+%Such \textit{co-verification} of the application and the system is critical, but often overlooked and considered difficult. Our contextual refinement, which is based on high-order logic and can use the entire application as a state machine, provides a powerful structured tool for co-verification. The contextual refinement can not only guarantees that the application uses the external interface of the system correctly but also guarantees that application's internal behavior based on application's assumptions about the system state is correct with respect to the actual system state. For example, 
+
+%Without the co-verification, the application and the system can be verified independently but incorrect as a whole, since the application can abuse the system interface. For example, assume that a system's write interface is verified to work up to a certain address limit, but the application is verified correct with a larger address bound. If the application issues a write beyond the system's address limit, the system can return an undefined behavior from the systems viewpoint and this behavior may violate the application's assumption about the system, which is the basis of the application's verification. Such problems surrounding the mismatching behavior of verified software and its external trusted computing base (TCB) has been studied in a recent work~\cite{shimlayer}.
+
+%\cmt{Such problems have been well studied in the context of distributed systems~\cite{shimlayer}. But we don't want to include this in this section because this paper partially talks about how untrusted network can break verified software and we also make assumptions about the network.}
+%\cmt{MB: let's cite the paper and later state our assumptions about the network as a limitation.} 
+
+In addition to the functional correctness proof, we verify the distributed protocols and global properties of the entire system that are not immediately visible from the code by adding a \textit{\ghostlayer{}}. The \ghostlayer{} includes a network model and ties together independent nodes in distributed systems to enable the verification of their collective behavior such as distributed nodes maintaining consensus.
+Although the \ghostlayer{} is a logical layer without a C implementation, it is part of our contextual refinement chain where the verified properties are guaranteed to hold in any layer above.
+%In addition to the functional correctness proof, we verify the distributed protocols and global properties of the entire system by adding a \textit{\ghostlayer{}}. The \ghostlayer{} ties together independent applications/nodes in distributed systems and enables the verification of their collective behavior such as reaching a consensus. The \ghostlayer{} includes a network model and refines high level specifications that are relevant to the distributed protocol in the verified software. 
+%Our approach for proving the distributed protocol is similar to techniques for proving multi-threading and concurrency in CertiKOS~\cite{concurrency}, which we detail in a later section.
+
+\cmt{Ironfleet did this as well and did this correctly under certain constraints. Their model of interleaving requests wasn't actually done and they only sketched the proof. But we have done this!}
+%We later show that the verification of \sysname{} extends to easy verification of applications on top. Further more, we link the verification of \sysname{} to CertiKOS, a fully verified operating system (OS), to present the first distributed applications that are verified starting from the OS layer.
+\nsdinew{
+We later show that the verification of \sysname{} leads to easy verification of applications on top and can extend the verification of a fully verified OS stack.
+}
+%Further more, we link the verification of \sysname{} to CertiKOS, a fully verified operating system (OS), to present the first distributed applications that are verified starting from the OS layer.
+
+
+
+
+

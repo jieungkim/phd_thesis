@@ -1,0 +1,15 @@
+#classic-paxos-final-out.txt 
+MAX_BATCH=50
+CLIENT_BATCH=100
+MIN_THREADS=5
+MAX_THREADS=200
+datapoints : increments of 10 threads
+
+
+#e-paxos-final-out.txt
+MAX_BATCH=250
+CLIENT_BATCH=100
+MIN_THREADS=5
+MAX_THREADS=200
+datapoints : increments of 10 threads
+

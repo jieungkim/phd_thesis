@@ -1,0 +1,46 @@
+     spec     proof     comment
+clib
+     2452     2881     1676 total
+
+invariants
+     2978     3208     1393 total
+
+layerlib
+    14155    12320     2747 total
+
+objects
+    11330     4861     3844 total
+
+
+devdrivers
+    10048    11983      629 total
+
+
+ipc 
+     5932     5651     2384 total
+
+mm
+    18790    18553     6452 total
+
+virt/intel
+    12056    11313     2284 total
+
+mcslock
+     8988    21375     2258 total
+
+multiprocessor
+     5510     1836     2642 total
+
+proc
+    15781    19437     7001 total
+
+singleprocessor
+     4409     4887     1416 total
+
+ticketlog
+     6029     9105      974 total
+
+trap
+    13521     7091     5291 total
+------------------------------------
+   131979   134501     

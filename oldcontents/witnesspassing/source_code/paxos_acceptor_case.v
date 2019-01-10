@@ -1,0 +1,6 @@
+Definition CAL_ACC_RECV (owner: Z) (src: Z) (msg : MSG) (alst : LSTATE) :=
+  match (msg, alst) with
+  | (PREPARE, n, _, _) (rnda, vrnda, vala) =>
+    if rnda < n then let new_alst := (n, vrnda, vala) in
+                     let new_pkt := [owner.SEND<cid>[PROMISE, m_rnd, vrnda, vala].src] in ...
+    else let new_pkt := [owner.SEND<cid>[PROMISE, rnda, vrnda, vala].src] in ...

@@ -1,0 +1,25 @@
+\ProvidesPackage{tightheaders}
+\renewcommand{\floatpagefraction}{0.9}
+\renewcommand{\dblfloatpagefraction}{0.9}
+
+\renewcommand\section{\@startsection {section}{1}{\z@}%
+                                   %{-1.0ex \@plus -1ex \@minus -.2ex}%
+                                   {-6pt}%
+                                   %{0.05ex }%
+                                   {5pt }%
+                                   {\normalfont\large\bfseries}}
+\renewcommand\subsection{\@startsection{subsection}{2}{\z@}%
+                                   %  {-1.0ex\@plus -1ex \@minus -.2ex}%
+                                   {-6pt}%
+                                     {5pt } %{0ex }%
+                                     {\normalfont\large\bfseries}}
+%\renewcommand\subsubsection{\@startsection{subsubsection}{3}{\z@}%
+%                                     {-2.0ex\@plus -1ex \@minus -.2ex}%
+%                                     {0.2ex }%
+%                                     {\normalfont\normalsize\bfseries}}
+
+\renewcommand\paragraph{\@startsection{paragraph}{4}{\z@}%
+                                   % {1.0ex \@plus1ex \@minus.2ex}%
+				    {3.25ex \@plus1ex \@minus.2ex}
+                                    {-1em}%
+                                    {\normalfont\normalsize\bfseries}}

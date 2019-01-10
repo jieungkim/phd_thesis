@@ -1,0 +1,7 @@
+The experiments are run on a 4-machine AWS-m4.xlarge cluster, with one master node and 3 replicas, each with the following configuration: 4 X 2.3 GHz Intel Xeon® E5-2686 v4 (Broadwell) processors/2.4 GHz Intel Xeon® E5-2676 v3 (Haswell) processors with 16GB of memory and 750MBps of dedicated bandwidth. Client requests are sent from a dedicated machine with identical specs as the servers. 
+
+Clients send put requests to a replicated key-value store in an open loop, and the service responds to the client only after a request has successfully completed. Latency is measured as the time between request initiation from the client and a successful response from the service that the request has completed successfully. Clients send requests in batch sizes of 100 requests per write - i.e., put requests are buffered and flushed a 100 requests at a time. 
+
+We compare our  wormpaxos implementation with open source implementations of classical paxos(c-paxos) and egalitarian paxos(e-paxos) implementations. For ease of comparision, the batch-sizes of c-paxos and e-paxos are set so that the maximum client throughput is around 40-50k requests/second. The maximum allowable throughput of clients is controlled by setting the batch-size of messages processed on the server. Wormpaxos does no batching of requests[is this true?]. To increase throughput, the number of client threads sending requests is incrementally increased from 10 to 200 - latency and throughput for each set of clients is averaged over a 1-minute run of the clients. 
+
+
