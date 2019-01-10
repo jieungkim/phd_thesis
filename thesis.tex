@@ -63,6 +63,26 @@
 \definecolor{dkred}{rgb}{0.5,0,0}
 %----------------------------------------------------
 
+%
+\newtheoremstyle{custom}% name
+  {\topsep}%         Space above, empty = `usual value'
+  {\topsep}%         Space below
+   {\itshape}% {\upshape} % Body font
+  {}%         Indent amount (empty = no indent, \parindent = para indent)
+  {\bfseries}% Thm head font
+  {.}%        Punctuation after thm head
+  {\newline }% Space after thm head: \newline = linebreak
+  {}%         Thm head spec
+\theoremstyle{custom}
+
+%\newenvironment{myTheorem}[1][]
+%{\savebox\mybox{\hbox{Theorem \thetheorem}}%
+%\xdef\mdim{\the\dimexpr\wd\mybox+10pt}%
+%\xdef\mybdim{\the\dimexpr\textwidth-\mdim-\myspbetween}%
+%\noindent\begin{minipage}[t]{\mdim}%
+%\begin{theorem}[#1]\end{theorem}\end{minipage}\hspace{\fill}\begin{minipage}[t]{\mybdim}}
+%{\end{minipage}\medskip}
+
 \lstset{ %
 	backgroundcolor=\color{white},   % choose the background color; you must add \usepackage{color} or \usepackage{xcolor}
 	basicstyle=\ttfamily,      % the size of the fonts that are used for the code
@@ -77,8 +97,8 @@
 	keepspaces=true,                 % keeps spaces in text, useful for keeping indentation of code (possibly needs columns=flexible)
 	keywordstyle=\color{blue},       % keyword style
 	language=Octave,                 % the language of the code
-	otherkeywords={*, Inductive, Fixpoint, Record, typedef, struct, Function , Definition, Prop, then, true, false, ...},           % if you want to add more keywords to the set
-	emph = {in, uint, match, end, with, let, ret, do, forall, exist, :=, =>, ->},
+	otherkeywords={*, Inductive, Fixpoint, Record, typedef, struct, Function , Definition, Prop, then, ...},           % if you want to add more keywords to the set
+	emph = {in, uint, match, end, with, let, ret, do, forall, exist,  :=, =>, ->},
 	emphstyle=\bf,%
 	moredelim=[is][emphstyle]{|>}{<|},%
 	numbers=left,                    % where to put the line-numbers; possible values are (none, left, right)

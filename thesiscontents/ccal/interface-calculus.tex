@@ -210,7 +210,8 @@ Due to this advantage of local machine model, local layer interface is the only 
 When building private primitives that only updates the private state of $c$, 
 layer building is same with the layer constructions in $\calname$.
 Building layers for shared primitives, however, is slightly different in here, and usually can be divided into 
-two patterns.
+two patterns. 
+Similar to $\calname$, layers built by two patterns are connected via contextual refinement between layers. 
 
 \subsubsection{Fun-lift}
 The fun-lift pattern is usually abstracting shared physical memory into shared abstract states,
@@ -234,6 +235,49 @@ Section~\ref{chapter:ccal:subsec:local-layer-with-environmental-context-and-loca
 which is $\forall\ (j \in \codeinmath{EnvSet})\ 
 (\strat{j} \in \oracle(c)) .\ \exists \stratp{j} . \ \stratp{j} \in \oracle'(c) \wedge R_{\strat{}}(\stratp{j}, \strat{j})$ when 
 $\codeinmath{EnvSet} = ((D - \{ c\}) \cup \{ sched\})$
+
+
+\subsubsection{Contextual Refinement}
+
+The contextual refinement property for the local layer interface also requires 
+modification to cover those patterns in a uniform way. 
+The contextual refinement property in here is similarly using forward simulation technique as shown in the 
+Section~\ref{chapter:ccal:sec:cal}.
+On the other hand, one challenge in defining the refinement property in here is the relation is not only related to layer definitions but also related to different environmental contexts over two layers. 
+\begin{figure}
+\begin{center}
+\includegraphics[width=0.6\textwidth]{figs/ccal/locallayerrefinement}
+\end{center}
+\caption{Simulation Relation Between Two Local Layers.}
+\label{fig:chapter:ccal:refinement-between-two-layers}
+\end{figure}
+Figure~\ref{fig:chapter:ccal:refinement-between-two-layers} shows the key simulation relation for 
+the contextual refinement property with two concurrent layers, which is stated  in Definition~\ref{def:chapter:ccal:contextual-refinement}.
+\begin{definition}[Contextual Refinement]
+\label{def:chapter:ccal:contextual-refinement}
+$$
+\forall \ i\  \codeinmath{Ctxt} \ \oracle \ \oracle .\ \sem{L_{low}[i, \oracle]}{\codeinmath{M}_{high} \oplus \codeinmath{Ctxt}} \refines_R \sem{L_{high}[i, \oracle']}{\codeinmath{Ctxt}}
+$$
+\end{definition}
+This contextual refinement property is informally expressed as follows:
+\begin{quote}
+``For every thread $i$,  code modules $\codeinmath{M}_{high}$ and  $\codeinmath{Ctxt}$,  and environmental contexts
+  $\oracle$ and $\oracle'$ (for thread $i$), we say the underlay system   $\sem{L_{low}[i, \oracle]}{\codeinmath{M}_{high} \oplus \codeinmath{Ctxt}}$
+     \textit{contextually
+ refines} the overlay system $ \sem{L_{high}[i, \oracle']}{\codeinmath{Ctxt}}$ when there always exists 
+ multiple  transition steps in the underlay system for every  single  transition step
+  in the overlay system that can be associated with the relation $R$,
+which also contains the relation between strategies ($R_{\strat{}}$)
+ of two layer systems that satisfies the property:
+$\forall\ (j \in \codeinmath{EnvSet})\ 
+(\strat{j} \in \oracle(i)) .\ \exists \stratp{j} . \ \stratp{j} \in \oracle'(i) \wedge R_{\strat{}}(\stratp{j}, \strat{j})$ when 
+$\codeinmath{EnvSet} = ((D - \{ i\}) \cup \{ sched\})$.''
+\end{quote}
+
+{\noindent}We notate this contextual refinement with simpler notation, 
+``$\ltyp{\PLayer{L_{low}{i, \oracle}{}}}{R}{\code{Ctxt}}{\PLayer{L_{high}}{i, \oracle'}{}}$'', and
+
+
 
 \subsection{Layer Linking}
 \label{chapter:ccal:subsec:linking}
