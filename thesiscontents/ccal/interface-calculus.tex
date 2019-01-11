@@ -274,8 +274,8 @@ $\forall\ (j \in \codeinmath{EnvSet})\
 $\codeinmath{EnvSet} = ((D - \{ i\}) \cup \{ sched\})$.''
 \end{quote}
 
-{\noindent}We notate this contextual refinement with simpler notation, 
-``$\ltyp{\PLayer{L_{low}{i, \oracle}{}}}{R}{\code{Ctxt}}{\PLayer{L_{high}}{i, \oracle'}{}}$'', and
+{\noindent}We also state this contextual refinement with simpler notation, 
+``$\ltyp{\PLayer{L_{low}}{i, \oracle}{}}{R}{\code{Ctxt}}{\PLayer{L_{high}}{i, \oracle'}{}}$''. 
 
 
 
@@ -290,15 +290,11 @@ from $\calname$:
 \begin{itemize}
 \item $\varnothing$ : An  empty program module
 \item $\oplus$ : the union of two modules (or two layers' primitive collections)
-\item $(i\mapsto \cdot)$ : a singleton map with a pointer or location $i$ as its domain.
 \end{itemize}
 
-Two rules, \textsc{Empty} and \textsc{Var}, works as bases of our layered calculus , which 
-provide identity relations when $i$ and  $\spec_i$ implies a primitive specification for $i$.
+The empty rule works as bases of our layered calculus.
  \begin{mathpar}
 \inferrule*[Right=Empty]{ }{\ltyp{\PLayer{L}{c, \oracle}{}}{\id}{\varnothing}{\PLayer{L}{c, \oracle}{}}}
-\and
-\inferrule*[Right=Var]{ }{\ltyp{\PLayer{L}{c, \oracle}{}}{\id}{i \mapsto \spec_i}{i \mapsto  \spec_i}}
 \end{mathpar}
 
 The vertical composition rule allows us
