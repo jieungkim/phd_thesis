@@ -274,11 +274,11 @@ Suppose that `\code{loc}' is among the proper field accessors for the MCS Lock, 
 `\code{last}', `\code{ndpool[$i$].next}', or  `\code{ndpool[$i$].busy}' when `$0 \leq i <$  \code{TOTAL$\_$CPU}'.
  And, assuming that `\code{lk\_id}' is a lock identifier satisfies `$0 \leq$ \code{lk\_id} $<$ \code{lock$\_$range}' and \code{l} is a shared log. Then define \newline
   \begin{tabular}{P{0.90\textwidth}}
-    \code{match$\_$MCSLOCK (l: Log) (b: block) loc}\\
+    \code{match$\_$MCSLOCK (l:Log) (b:block) loc}\\
     %$\forall$ \code{(l: Log) (b: block) lk_id loc,}\\
-      iff \code{(}$\exists$ \code{val}, \code{Mem.load Mint32 m b loc = Some(val)}\\
+      iff \code{(}$\exists$ \code{val}, \code{Mem.load Mint32 m b loc=Some(val)}\\
        $\wedge$  \code{Mem.valid$\_$access m b loc}\\
-      $\wedge$ \code{(CalMCSLock(l) = Some(mcsval)} $->$ \code{loc$_{a}$}\code{@mcsval = val})
+      $\wedge$ \code{(CalMCSLock(l)=Some(mcsval)} $\rightarrow$ \code{loc$_{a}$}\code{@mcsval = val})
 \end{tabular}\newline
     when `\code{loc$_{a}$}\code{@mcsval}' represents the corresponding 
     value to the `\code{loc$_{a}$}' in the `\code{mcsval}' 
@@ -288,10 +288,11 @@ Suppose that `\code{loc}' is among the proper field accessors for the MCS Lock, 
 Intuitively, the definition says that the value that
 \code{CalMCSLock} calculates from the log always corresponds to the value 
 in the memory with the same identifiers. The memory access functions \code{Mem.load} and \code{Mem.valid$\_$access} are
-from CompCert's operational semantics for C.
+from $\compcert$'s operational semantics for C.
 Using the definition, we prove one theorem for each primitive, which
 shows that the memory refines the shared log. E.g., for \code{mcs$\_$SET$\_$NEXT} we prove:
 
+\jieung{Need to modify the following theorem. The current notations are not quite correct}
 \begin{theorem}[Simulation for $\codeinmath{{mcs}}\_\codeinmath{{SET}}\_\codeinmath{{NEXT}}$]
     \label{thm:chapter:mcslock:machine-state-refinement} Let $R_{\codeinmath{MMCSLockIntro}}$ be the relation defined as \code{match$\_$MCSLOCK}
     over \code{LK@}$mem$ and \code{LOG@}$A_1$, 
@@ -362,7 +363,7 @@ To recall what the environmental (concurrent context) is,
 the concurrent context $\oracle_{mcs}$ (sometimes called the ``oracle'') is
 a function of the CPU-id and the log which has the type\newline
 \begin{tabular}{P{0.95\textwidth}}
-$\oracle_{mcs}: \codeinmath{Z -> list event -> list event}.$\\
+    $\oracle_{mcs}: \codeinmath{Z}\rightarrow\codeinmath{list event}\rightarrow \codeinmath{list event}.$\\
 \end{tabular}\newline
 It is one component of the abstract state in our implementation, and it represents the specific behavior of \emph{all
 the other CPUs}, from the perspective of code running on the current
@@ -484,7 +485,7 @@ we introduce an intermediate layer, which keeps the same sequence of operations 
 but manipulates an \emph{abstracted data representation}.
 We provide a different replay function (\code{QS$\_$CalLock}) with the type \newline
 \begin{tabular}{P{0.95\textwidth}}
-\code{QS$\_$CalLock : Multi$\_$Log ->} \\
+\code{QS$\_$CalLock : Multi$\_$Log $\rightarrow$} \\
 \code{option (nat * nat * head$\_$status * list Z * ZSet.t * list nat)}
 \end{tabular}\newline
 The tuple returned by this replay function provides the information we
@@ -527,7 +528,7 @@ considerations hold executing memory operations (you must be in the critical sec
 \paragraph*{Invariant} The replay function plays two different roles. When it returns \code{Some v}, for some tuple \code{v}, it describes what the current state of the system is, which lets us write the specifications for the primitives. At the same time, the cases where the function is defined to return \code{None} are also important, because this can be read as a description of events that are \emph{not} possible. For example, from inspecting the program, we know that each CPU will create
 exactly one \code{SET$\_$NEXT} event before it starts generating \code{GET$\_$BUSY} events, and this fact will be needed when doing the proofs in the later layers (Section~\ref{chapter:mcslock:sec:liveness-atomicity}). By taking advantage of  the side conditions in the replay function, we can express all the invariants about the log in a single statement, ``the replay function is defined'':\newline
 \begin{tabular}{P{0.95\textwidth}}
-    $\exists$ \code{c1 c2 b q s t. QS$\_$CalLock(l) = Some(c1, c2, b, q, s, t)}
+    $\exists$ \code{c1 c2 b q s t$.$ QS$\_$CalLock(l)=Some(c1, c2, b, q, s, t)}
 \end{tabular}
 
 This type for the replay function is optimized to only expose exactly the information needed by the subsequent liveness proof. 
@@ -561,14 +562,14 @@ As we prove this, we need lemmas to show that we can satisfy the preconditions f
 \begin{lemma}[tail is busy]
 \label{lem:chapter:mcslock:Q_CalMCSLock_tail_is_busy}
 
-    If \code{CalMCSLock l = Some (tl, la, tq)} and \\
-    \code{QS$\_$CalLock = Some (c1,c2,i::q,s,t)} and $j \in$ \code{q}, then \code{lock$\_$array[}$j$\code{] = (true, $\_$)}.
+    If \code{CalMCSLock l=Some (tl,la,tq)} and 
+    \code{QS$\_$CalLock=Some (c1,c2,i::q,s,t)} and $j \in$\code{q}, then \code{lock$\_$array[}$j$\code{] = (true, $\_$)}.
 \end{lemma}
 
 \begin{theorem}[simulation for the ghost layer] 
-Suppose \code{d} satisfies the invariant and
-\code{wait$\_$qslock$\_$spec(d)= Some(d')}.\\
- Then \code{mcs$\_$acquire$\_$spec(d)= Some(d')}.
+    Let's assume that  \code{d} satisfies the invariant of two layers,
+    \code{MMCSLockOp} and \code{MQMCSLockOp}. When 
+\code{wait$\_$qslock$\_$spec(d)=Some(d')}, then \code{mcs$\_$acquire$\_$spec(d)=Some(d')}.
 \end{theorem}
 
 
@@ -706,6 +707,7 @@ We then prove a one-step refinement theorem from the atomic specification
 to the implementation, in other words, that if a call to the atomic primitive returns a 
 value, then a call to its implementation also returns with a related log:
 
+\jieung{Let's simplify this theorem by simplify notations}
 \begin{theorem}[MCS Wait Lock Exist]
   \label{thm:chapter:mcslock:mcs_wait_lock_exist}
 
@@ -738,13 +740,13 @@ model as it is, and can reuse most previous proofs.
 Specifically, we assume that there exists some constant $F$ (for ``fairness'') such that no CPU that enters the queue has to wait for more than $F$ events until it runs again. 
 In $\coq$ we provide a function \code{CalBoun} which ``counts down'' 
 until CPU $i$ gets a chance to 
-execute (\code{CalBound : Z -> MultiLog -> nat}).
+execute (\code{CalBound : Z$\rightarrow$MultiLog$\rightarrow$nat}).
 \lstinputlisting [language = Caml, firstline=1] {source_code/mcslock/calbound.v}
 
 The fairness assumption, then is that for all logs \code{l}, 
 when the low level log replay function returns a 
-value (\code{QS$\_$CalLock(l) = Some(c1,c2,h,q,s,t)}) and $j$ is 
-in the waiting queue (\code{$j \in$ q}), then \code{CalBound $j$ l $>$ 0}. 
+value (\code{QS$\_$CalLock(l)=Some(c1,c2,h,q,s,t)}) and $j$ is 
+in the waiting queue (\code{$j \in$q}), then we can conclude that \code{CalBound $j$ l$>$0}. 
 We then define a natural-number valued termination measure \code{Msr$_i$(c1,c2,h,q,s,l)}.  
 This is a bound on how many events the CPU $i$ will
 have to wait for in a state represented by the log \code{l}, and where
