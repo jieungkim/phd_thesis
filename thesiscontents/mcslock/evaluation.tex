@@ -10,7 +10,7 @@
 \lstinputlisting[numbers = left]{source_code/mcslock/sharedeventtype.v}
 \end{multicols}
 \end{minipage}
-\caption{\code{palloc} Example}
+\caption{$\pallocfunc$ Example.}
 \label{fig:chapter:mcslock:palloc-example}
 \end{figure}
 
@@ -26,85 +26,85 @@ For this reason, we don't want our machine model to generate an event
 for every single memory access to shared memory. Instead we use what
 we call a \emph{push/pull memory model} in Section~\ref{chapter:ccal:sec:interface-calculus}.
 To recall it,
- A CPU that wants to access shared memory first generates a ``\code{pull}''
+ A CPU that wants to access shared memory first generates a ``$\pull$''
 event, which declares that that CPU now owns a particular block of
-memory. After it is done it generates a ``\code{push}'' event, which
+memory. After it is done it generates a ``$\push$'' event, which
 publishes the CPU's local view of memory to the rest of the system. In
 this way, individual memory reads and writes are treated by the same
 standard operational semantics as in sequential programs, but the
 state of the shared memory can still be replayed from the log.  The
-\code{push}/\code{pull} operations are logical (generate no machine code) but
+$\push$/$\pull$ operations are logical (generate no machine code) but
 because the replay function is undefined if two different CPUs try to
 pull at the same time, they force the programmer to prove that
 programs are well-synchronized and race-free. Like we did for atomic
 memory operations, we extend the machine model at the lowest layer by
-adding logical primitives, e.g. $\codeinmath{release\_shared}$ which takes a
+adding logical primitives, e.g. $\releaseshared$ which takes a
 memory block identifier as an argument and adds a
-$\codeinmath{OMEME (l:list Integers.Byte.int)}$ event to the log, where the byte list is a
+$\mcsomeme{\codeinmath{(l:list Integers.Byte.int)}}$ event to the log, where the byte list is a
 copy of the contents of the shared memory block when the primitive was
 called.
 
-When we use $\codeinmath{acquire}$/$\codeinmath{release\_shared}$ we
+When we use $\acquirereleaselock$ we
 need a lock to make sure that only one CPU pulls, so we begin
-by defining combined functions $\codeinmath{acquire\_lock}$ which
+by defining combined functions $\acquirelockfunc$ which
 takes the lock (with a bound of 10) and then pulls, and
-$\codeinmath{release\_lock}$ which pushes and then releases the
-lock. The specification is similar to $\codeinmath{pass\_hlock\_spec}$,
+$\releaselockfunc$ which pushes and then releases the
+lock. The specification is similar to $\mcspasshlockspec$,
 except it appends \emph{two} events.
 
 Similar to Section~\ref{chapter:mcslock:sec:liveness-atomicity}, logs for different
 layers can use different types of pull and push events.
 Figure~\ref{fig:chapter:mcslock:palloc-example} (right) shows the events for the
-$\codeinmath{palloc}$ function (which uses a lock to protect the page
+$\pallocfunc$ function (which uses a lock to protect the page
 allocation table). The lowest layer in the palloc-verification adds
-$\codeinmath{OMEME}$ events, while higher layers instead add
-($\codeinmath{OATE (a: ATable)}$) events, where the relation between logs
+$\mcsOMEME$ events, while higher layers instead add
+($\mcsoateev{(a:\ \mcsalloctabletype)}$) events, where the relation between logs
 uses the same relation as between raw memory and abstract
-$\codeinmath{ATable}$ data. Therefore, we write wrapper functions
-$\codeinmath{acquire}$/$\codeinmath{release\_lock\_AT\_spec}$, where the
-implementation just calls $\codeinmath{acquire}$/$\codeinmath{release\_lock}$
+$\mcsalloctabletype$ data. Therefore, we write wrapper functions
+$\acquirereleaselockATspec$, where the
+implementation just calls $\acquirereleaselock$
 with the particular memory block that contains the allocation table,
-but the specification adds an $\codeinmath{OATE}$ event.
+but the specification adds an $\mcsOATEev$ event.
 This refinement step, which changes the log replay function to compute
 allocation tables instead of byte lists, is
-specific to the $\codeinmath{palloc}$ function.
+specific to the $\pallocfunc$ function.
 
 \begin{figure}
 
 \lstinputlisting{source_code/mcslock/release_lock_AT_spec_short.v}
 \lstinputlisting{source_code/mcslock/palloc_spec_short.v}
 
-\caption{Specification for $\codeinmath{palloc}$}
+\caption{$\pallocfunc$ Specification.}
 \label{fig:chapter:mcslock:palloc-spec}
 \end{figure}
 
 We can then ascribe a low-level functional specification
-$\codeinmath{palloc'\_spec}$ to the $\codeinmath{palloc}$ function. As shown
+$\pallocpspec$ to the $\pallocfunc$ function. As shown
 in Figure~\ref{fig:chapter:mcslock:palloc-spec}, this is decomposed into three parts, the
 acquire/release lock, and the specification for the critical
 section. The critical section spec is exactly the same in a sequential
-program: it does not modify the log, but instead only affects the $\codeinmath{AT}$ field in the abstract data.
+program: it does not modify the log, but instead only affects the $\mcsalloctable$ field in the abstract data.
 
 Then in a final, pure refinement step, we ascribe a high-level atomic
-specification $\codeinmath{lpalloc\_spec}$ to the $\codeinmath{palloc}$
+specification $\lpallocspec$ to the $\pallocfunc$
 function. In this layer we no longer have any lock-related events at
-all, a call to $\codeinmath{palloc}$ appends a single
-$\codeinmath{OPALLOCE}$ event to the log. This is when we see the
+all, a call to $\pallocfunc$ appends a single
+$\mcsopalloce$ event to the log. This is when we see the
 proof obligations related to liveness of the locks.
 Specifically, in order to prove the downwards refinement, we need to
-show that the call to $\codeinmath{palloc'\_spec}$ doesn't return
-$\codeinmath{None}$, so we need to show that $\codeinmath{H\_CalLock l'}$ is
+show that the call to $\pallocpspec$ doesn't return
+$\None$, so we need to show that $\HCalLock\codeinmath{ l'}$ is
 defined, so in particular the bound counter must not hit zero.
 By expanding out the definitions, we see that
-$\codeinmath{palloc'\_spec}$ takes a log $\codeinmath{l}$ as its initial global log
+$\pallocpspec$ takes a log $\codeinmath{l}$ as its initial global log
 and generates the result,
-$\code{REL$\_$LOCK::(OATE (AT adt))::(TSHARED OPULL)::(WAIT$\_$LOCK 10)::l}.$
+$\rellock\codeinmath{::}\mcsoateev{(\mcsalloctable\ adt)}\codeinmath{::} \mcstshared{\mcsopullev}\codeinmath{::}\waitlock{10}\codeinmath{::l}.$
 The initial bound is 10, and there are two shared memory events, so the
 count never goes lower than 8. If a function modified more than one
 memory block there would be additional push- and pull-events, which
 could be handled by a larger initial bound.
 
-Like all kernel-mode primitives in $\certikos$, the $\codeinmath{palloc}$ function is
+Like all kernel-mode primitives in $\certikos$, the $\pallocfunc$ function is
 total: if its preconditions are satisfied it always returns. So
 when verifying it, we show that all loops inside the critical section
 terminate. Through the machinery of bound numbers, this guarantee is
@@ -117,12 +117,12 @@ between any two events in the log.
 
 \subsection{Code reuse} 
 The same
-$\codeinmath{acquire}$/$\codeinmath{release\_lock}$ specifications can be
+$\acquirereleaselock$ specifications can be
 used for all clients of the lock. The only proofs that need to be done
 for a given client is the refinement into abstracted primitives like
-$\codeinmath{release\_lock\_AT\_spec}$ (easy if we already have a sequential
+$\releaselockATspec$ (easy if we already have a sequential
 proof for the critical section), and the refinement proof for the
-atomic primitive like $\codeinmath{lpalloc\_spec}$ (which is very
+atomic primitive like $\lpallocspec$ (which is very
 short). We never need to duplicate the thousands of lines of proof
 related to the lock algorithm itself.
 
@@ -136,10 +136,10 @@ verification in a single layer, by having a single log with different
 events for the two locks, with the replay function being undefined if
 the events are out of order. But the layers approach provides a
 better way. Once we have ascribed an atomic specification to
-$\codeinmath{palloc}$, as above, all higher layers can use it
-freely without even knowing that the $\codeinmath{palloc}$ implementation
+$\pallocfunc$, as above, all higher layers can use it
+freely without even knowing that the $\pallocfunc$ implementation
 involves a lock (Note that the lock is not re-exported from the
-$\codeinmath{palloc}$ layer, and if it was the proof of the atomic
+$\pallocfunc$ layer, and if it was the proof of the atomic
 specification would not go through.)  For example, some function in a
 higher layer could acquire a lock, allocate a page, and release the
 lock; in such an example the the order of the layers provides an order
@@ -162,34 +162,34 @@ rather than the efficient lock verification itself.
 
 Among the whole proofs, the most challenging parts are the proofs for starvation 
 freedom theorems like Theorem~\ref{thm:chapter:mcslock:mcs_wait_lock_exist}, 
-and the functional correctness proofs for $\codeinmath{mcs\_acquire}$ 
-and $\codeinmath{mcs\_release}$ functions
+and the functional correctness proofs for $\mcsacquire$ 
+and $\mcsrelease$ functions
 in Section~\ref{chapter:mcslock:subsec:atomicoperation}.
 The total lines of codes for starvation freedom is 2.5K lines, 0.6K lines for specifications, 
 and 1.9k lines for proofs. This is because of the subtlety of those proofs. 
 To prove the starvation freedom theorems and show the evidence of loop termination,
 lots of lemmas are required to express
 state changes by replaying the log. 
-When $\codeinmath{QS\_CalLock(l)=Some(c1, c2, b, q, s, t)}$
-and $\codeinmath{q=nil}$, 
-for instance, the mechanized proof for $\codeinmath{s}$$=\emptyset$ 
-and $\codeinmath{t=nil}$ is necessary. It looks trivial in the hand-written proofs, 
+When $\QSCalLock\codeinmath{(l)=}\Some\codeinmath{(c1,c2,b,q,s,t)}$
+and $\codeinmath{q=}\nil$, 
+for instance, the mechanized proof for $\codeinmath{s=}\emptyset$ 
+and $\codeinmath{t=}\nil$ is necessary. It looks trivial in the hand-written proofs, 
 but requires multiple lines of codes in the mechanized proof. 
 
 The total lines of codes for the low-level functional correctness
-of two main C functions, $\codeinmath{mcs\_acquire}$ and $\codeinmath{mcs\_release}$, are 3.2K lines,  
+of two main C functions, $\mcsacquire$ and $\mcsrelease$, are 3.2K lines,  
 0.7K lines for specifications, and 2.5K lines for proofs.
 It is much bigger than other code correctness proofs for while-loops in $\certikos$, which we will
 discuss in Chapter~\ref{chapter:concurrent-certikos},
 because these loops do not have any explicit decreasing value.
 One another big part in our MCS Lock proofs is the proofs for 
 Theorem~\ref{thm:chapter:mcslock:machine-state-refinement} and the lines of code for this part is 
-approximately 5K lines. The log replay function ($\codeinmath{CalMCSLock}$) always 
-return the whole MCS Lock values ($\codeinmath{MCSLock}$) related 
+approximately 5K lines. The log replay function ($\calmcslock$) always 
+return the whole MCS Lock values ($\lockabsloc$) related 
 to the  $\codeinmath{mcs\_lock}$ structure defined in Figure~\ref{fig:chapter:mcslock:mcs_lock}. 
 In this sense, we always have to give the exact values for all memory 
 chunks and prove the correspondence between the memory and the abstract 
-data even the event associated with reading values (\eg, $\codeinmath{GET\_NEXT}$).
+data even the event associated with reading values (\eg, $\getnext$).
 Hence, those proofs contain a lot of duplicate proofs for the memory access. 
 However, they are quite straightforward and easy to produce. 
 On top of that, we strongly believe 
@@ -203,7 +203,7 @@ and inter-process communication, a monolithic proof
 would become much bigger than the current one, and would be quite
 unmanageable. The modular lock specification is essential here.
 
-By contrast, the proofs for them in CertiKOS are quite tractable, 
+By contrast, the proofs for them in $\certikos$ are quite tractable, 
 because the proofs for the locks are modular, re-usable, and can 
 be combined with other client-part proofs like we have briefly 
 mentioned earlier in this Section.

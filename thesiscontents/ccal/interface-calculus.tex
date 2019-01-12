@@ -72,13 +72,13 @@ Figure~\ref{fig:chapter:ccal:push-pull-memory-model-and-shared-memory} shows
 how this model works as well as push/pull events correspond to the changes in the associated memory block and an ownership field of a shared abstract state.
 The memory is a map from a block identifier to its value,
 and the ownership field of our shared abstract state is also a map form a block identifier to the ownership flag.
-Only two shared primitives, $\cpull$ and $\cpush$,
+Only two shared primitives, $\pull$ and $\push$,
 provide a way to manipulate them.
-In this example CPU 1 tries to access the memory block $b$ by calling primitive $\cpull$. 
-The $\cpull$ operation modifies the ownership from \code{free} to \code{own} $1$. 
+In this example CPU 1 tries to access the memory block $b$ by calling primitive $\pull$. 
+The $\pull$ operation modifies the ownership from \code{free} to \code{own} $1$. 
 Then, other CPUs cannot change the ownership flag of the block until CPU $1$ change it back to \code{free} 
 by a $\push$ operation.
-The $\push$ operation also update the shared memory block $b$ (from $v$ to $v'$), which is the result of the operations for the memory block $b$ performed by CPU $1$ in between $\cpull$ and $\cpush$ calls. 
+The $\push$ operation also update the shared memory block $b$ (from $v$ to $v'$), which is the result of the operations for the memory block $b$ performed by CPU $1$ in between $\pull$ and $\push$ calls. 
 Those two shared operations also generate $1.\push(b)(v)$ (the memory snapshot when CPU $1$ start its shared memory manipulation) 
 and  $1.\pull(b)(v)$ (the result of shared memory manipulation by CPU $1$), respectively.
 By doing that, those two $\push$ and $\pull$ encapsulates the shared memory operations
@@ -180,19 +180,30 @@ where $\regs$ is the private state of the CPU $c$
 and $m$ is just a \emph{local copy} of the shared memory.
 
 
-This $m$ can only be accessed locally by $c$ with the $\cpush$ and $\cpull$ primitives discussed in our multicore memory model. 
+This $m$ can only be accessed locally by $c$ with the $\push$ and $\pull$ primitives discussed in our multicore memory model. 
 The shared  memory update by $c$ in this local copy, however, 
 keeps consistency with 
 that update by $c$ at the shared memory model in
 Section~\ref{chapter:ccal:subsec:multicore-machine-model}.
 
-The local memory update by CPU $1$ needs to be followed by the corresponding $\pull$ event.
-In the example in Figure~\ref{fig:chapter:ccal:push-pull-memory-model-and-shared-memory},
-the pull event, $1.pull(b)(v)$, tells the local machine that the current memory value is 
+
+
+\begin{figure}
+\includegraphics[width=\textwidth]{figs/ccal/pushpullsharedmemorylocal}
+\caption{Push/Pull Memory Model and Local Memory.}
+\label{fig:chapter:ccal:push-pull-memory-model-and-local-memory}
+\end{figure}
+
+Figure~\ref{fig:chapter:ccal:push-pull-memory-model-and-local-memory} shows how
+all local memory updates keep consistency with the corresponding shared memory updates. 
+In the example, the model has the same sequence of updates with the example 
+in Figure~\ref{fig:chapter:ccal:push-pull-memory-model-and-shared-memory}.
+The local memory update by CPU $1$ needs to be followed by the corresponding $\pull$ event, 
+so the pull event, $1.pull(b)(v)$, tells the local machine that the current memory value is 
 $v$ for the block $b$ by replaying the global log up to that point ($l$)
 and updates the block in the local copy $m$ with the value ($b \rightarrow v$). 
 After that, CPU $1$ operates on the memory based on the value $v$ until it pushes the change (as well as frees the ownership for the block).
-The value $v$ for the block in here is exactly same with the value in the global shared memory accessed by multiple CPUs in Section~\ref{chapter:ccal:subsec:multicore-machine-model}.
+The value $v$ for the block in here is exactly same with the value in the global shared memory accessed by multiple CPUs. 
 All shared memory (and abstract state) updates are recorded in the global log; thus
 updating the local copy of block $b$ by replaying the log $l$ gives the exact same status for the shared memory block $b$ (in multicore machine mode) at the moment
 (\ie, notes that the local copy of the memory breaks the consistency when it does not have its ownership for the memory block). 
@@ -275,7 +286,7 @@ $\codeinmath{EnvSet} = ((D - \{ i\}) \cup \{ sched\})$.''
 \end{quote}
 
 {\noindent}We also state this contextual refinement with simpler notation, 
-``$\ltyp{\PLayer{L_{low}}{i, \oracle}{}}{R}{\code{Ctxt}}{\PLayer{L_{high}}{i, \oracle'}{}}$''. 
+``$\ltyp{\PLayer{L_{low}}{i}{\oracle}}{R}{\codeinmath{M}_{\codeinmath{high}}}{\PLayer{L_{high}}{i}{\oracle'}}$''. 
 
 
 
@@ -289,20 +300,21 @@ borrowing the following notations
 from $\calname$:
 \begin{itemize}
 \item $\varnothing$ : An  empty program module
-\item $\oplus$ : the union of two modules (or two layers' primitive collections)
+\item $\modulecomposekwd$ : the union of two modules (or two layers' primitive collections)
+\item $\relcomposekwd$ : the composition of two refinement relations (between layers)
 \end{itemize}
 
 The empty rule works as bases of our layered calculus.
  \begin{mathpar}
-\inferrule*[Right=Empty]{ }{\ltyp{\PLayer{L}{c, \oracle}{}}{\id}{\varnothing}{\PLayer{L}{c, \oracle}{}}}
+\inferrule*[Right=Empty]{ }{\ltyp{\PLayer{L}{c}{\oracle}}{\id}{\varnothing}{\PLayer{L}{c}{\oracle}}}
 \end{mathpar}
 
 The vertical composition rule allows us
 to verify the modules $M$ and $N$ (where $N$ may depend on $M$) 
 in two separate steps, and provides us to build layer stacks.
     \begin{mathpar}
-\inferrule*[Right=Vcomp]{ \ltyp{\PLayer{L_1}{c, \oracle_1}{}}{R}{M}{\PLayer{L_2}{c, \oracle_2}{}} \\
- \ltyp{\PLayer{L_2}{c, \oracle_2}{}}{S}{N}{\PLayer{L_3}{c, \oracle_3}{}}}{\ltyp{\PLayer{L_1}{c, \oracle_1}{}}{R \circ S}{M \oplus N}{\PLayer{L_3}{c, \oracle_3}{}}}
+\inferrule*[Right=Vcomp]{ \ltyp{\PLayer{L_1}{c}{ \oracle_1}}{R}{M}{\PLayer{L_2}{c}{ \oracle_2}} \\
+ \ltyp{\PLayer{L_2}{c}{\oracle_2}}{S}{N}{\PLayer{L_3}{c}{ \oracle_3}}}{\ltyp{\PLayer{L_1}{c}{\oracle_1}}{\relcompose{R}{S}}{\modulecompose{M}{N}}{\PLayer{L_3}{c}{\oracle_3}}}
 \end{mathpar}
 
 The horizontal composition rule enables local reasoning for independent
@@ -320,8 +332,8 @@ L'[c, \oracle'].\Guard=L_1[Ac, \oracle_1].\Guard = L_2[c, \oracle_2].\Guard \\
 
 
 Besides them, 
-the concurrent linking rule (between $L[A, \oracle_A]$ and $L[B, \oracle_B]$) 
-also can be defined in a logical level. 
+the concurrent linking rule (\ie, $L[C, \oracle_C] = \parallelcompose{L[A, \oracle_A]}{L[B, \oracle_B]}$, when $C = A \cup B$ and $\oracle_C = \oracle_A \cap \oracle_B$)  
+also can be defined in a conceptual level for any layers.
 It is, however, not well supported in our framework; we do not provide
 any canonical forms to support the concurrent linking
 in our implementation.

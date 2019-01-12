@@ -1,4 +1,4 @@
-Function mcs_pass_hslock_spec (index ofs :Z) (adt: RData) : option RData :=
+Function pass_hlock_spec (index ofs :Z) (adt: RData) : option RData :=
   let cpu := CPU_ID adt in
   match (ikern adt, ihost adt, index2Z index ofs) with
   | (true, true, Some abid) =>

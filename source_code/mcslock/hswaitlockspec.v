@@ -1,4 +1,4 @@
-Definition mcs_wait_hlock_spec (bound index ofs :Z) (adt: RData) : option RData :=
+Definition wait_hlock_spec (bound index ofs :Z) (adt: RData) : option RData :=
   let cpu := CPU_ID adt in
   match (ikern adt, ihost adt, index2Z index ofs) with
   | (true,  true, Some abid) =>

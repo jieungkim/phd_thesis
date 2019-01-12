@@ -1,0 +1,115 @@
+\section{Events, Logs, and  Contexts for MCS Lock}
+\label{chapter:mcslock:sec:eventlogandoracle}
+
+As discussed in Chapter~\ref{chapter:ccal}, 
+modeling a shared state among CPUs is 
+closely related to define a set of events, a concurrent context, and a replay function that are suitable for
+the state.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{figure}
+\begin{minipage}{\linewidth}
+\lstinputlisting[numbers = left, language = C]{source_code/mcslock/lockeventtype.v}
+\end{minipage}
+\caption{Event set for MCS Lock.}
+\label{fig:chapter:mcslock:lock_event_type}
+\end{figure}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Again, an \emph{event} is any action which has observable consequences for
+other CPUs. Each specification must define events for all the points
+in the program where it reads or writes to shared memory (but not for
+accesses to thread-local memory). The \emph{log} is a list of
+events, representing all actions that have happened in the system
+since it began running. Actions from different CPUs are interleaved in
+the list.
+When we write a specification we can chose the set of events, as long
+as it is fine-grained enough to capture all scheduling interleavings
+that may happen.
+Figure~\ref{fig:chapter:mcslock:lock_event_type} shows the event definition used to
+model lock acquire and release. They correspond to the part of the MCS lock source code in Figure~\ref{fig:chapter:mcslock:mcs_lock}
+and acquiring/releasing the lock after we show starvation freedom. 
+
+Followed by the assumptions in our machine models in Section~\ref{chapter:ccal:sec:interface-calculus},  we again assumes that the
+machine is sequentially consistent (all CPUs see a single linear log). 
+This rules out 
+Even with this assumption,
+verifying the MCS algorithm is not easy (the other proofs we are aware
+of assume sequential consistency too), so we leave weak memory models
+to future work.
+
+\begin{itemize}
+
+\item \textbf{${\swaptail{bound}{success}}$} event is for the
+operations from line 5 to 7 in Figure~\ref{fig:chapter:mcslock:mcs_lock} and takes
+two arguments. The second argument is a boolean flag indicating
+whether the previous ``last'' value of MCS lock was $\invalidmcsval$,
+which means it records whether the if-statement at line 9 took the fast path or not.
+The first argument is the \emph{bound number}, which is a key idea in
+our development. Every client that invokes $\mcsacquire$ has
+to promise a bound for the critical section. This number
+does not influence the compiled code in any way, but the
+\emph{specification} says that it is invalid to hold the critical
+section for longer than that (\cf,  the counter $c_1$ in
+Section~\ref{chapter:mcslock:sec:representation-ghost}).
+This bound number enables \emph{local} reasoning about liveness.
+For the thread waiting for acquiring or releasing a lock,
+its wait time can be estimated based on other threads' bound number. For the lock holder, it has to guarantee
+to exit the critical section within its own bound. 
+Thus, by showing that each thread follows this protocol,
+we can derive the liveness property for the whole system.
+
+To be precise, the bound number is a limit on the number of events
+that can get appended to the log, see the counter $\codeinmath{c1}$ in
+Section~\ref{chapter:mcslock:sec:representation-ghost}.
+Every CPU adds at least
+one event every time it "does something", \eg, each loop iteration in $\mcsrelease$ appends a $\getnext$
+event, so
+as we will see in
+Section~\ref{chapter:mcslock:sec:liveness-atomicity} this sufficies to give a bound of
+the number of loop iterations in the lock acquire function. In the following we often speak of
+``number of operations'', which does not mean single CPU instructions,
+but instead whatever operation is represented by particular events.
+
+
+\item \textbf{$\setnext{prev\_last}$} event corresponds to the code at line 10. 
+the $\codeinmath{prev\_last}$ represents the $\codeinmath{prev\_id}$ in the code.
+
+\item\textbf{$\getbusy{busy}$} event shows the busy waiting in the acquire lock function.
+The first argument will be true when the last value is same with the current CPU ID that calls the primitive which generates this event.
+It will be false when the last value is not same with the current CPU ID that calls the primitive.
+\end{itemize}
+
+Next, other threes are enough to represent release lock in Figure~\ref{fig:chapter:mcslock:mcs_lock}.
+
+\begin{itemize}
+
+\item \textbf{$\castail{busy}$} represents the atomic expression at line 21  in Figure~\ref{fig:chapter:mcslock:mcs_lock}. 
+In addition, the ``busy'' corresponds to the result of the $\CAS$ operation in Figure~\ref{fig:chapter:mcslock:mcs_lock}.
+
+\item  \textbf{$\getnext$} corresponds to the primitive that try to get the next value of the current CPU's node, and abstracts busy waiting in release lock function.
+
+\item  \textbf{$\setbusy$} represents the last three lines in $\mcsrelease$.
+\end{itemize}
+
+Those six events are used to show the functional correctness of
+an MCS Lock. However, for clients that use the MCS Lock to build shared
+objects they expose too much implementation details.
+In Section~\ref{chapter:mcslock:sec:liveness-atomicity} we will prove linearizability and
+starvation freedom,  to replace them
+with just two events.
+
+
+\begin{itemize} 
+\item \textbf{$\waitlock{bound}$} corresponds to lock acquire. The ``bound'' number in here is exactly same with the ``bound'' number in $\swaptail{bound}{success}$ event.
+
+\item \textbf{$\rellock$} corresponds to the lock release.
+\end{itemize}
+
+In addition to the above eight events, which are generated by the lock
+acquire and release functions, the clients of the lock will also
+generate events while they are in the critical section. Mutex locks in
+CertiKOS are used to protect blocks of shared memory, so we call the
+events generated by the client code \textbf{shared memory events}. The
+final specification we prove will entail that a shared memory event
+from CPU $i$ can only happen in the interval between a lock acquire
+event for $i$ and a lock release event for $i$, which is how we
+express the mutual exclusion property.

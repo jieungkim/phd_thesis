@@ -1,3 +1,69 @@
+\definecolor{mygreen}{rgb}{0,0.6,0}
+\definecolor{mygray}{rgb}{0.5,0.5,0.5}
+\definecolor{mymauve}{rgb}{0.58,0,0.82}
+\definecolor{ltblue}{rgb}{0,0.4,0.4}
+\definecolor{dkblue}{rgb}{0,0.1,0.6}
+\definecolor{dkgreen}{rgb}{0,0.35,0}
+\definecolor{dkviolet}{rgb}{0.3,0,0.5}
+\definecolor{dkred}{rgb}{0.5,0,0}
+%----------------------------------------------------
+
+%
+\newtheoremstyle{custom}% name
+  {\topsep}%         Space above, empty = `usual value'
+  {\topsep}%         Space below
+   {\itshape}% {\upshape} % Body font
+  {}%         Indent amount (empty = no indent, \parindent = para indent)
+  {\bfseries}% Thm head font
+  {.}%        Punctuation after thm head
+  {\newline }% Space after thm head: \newline = linebreak
+  {}%         Thm head spec
+\theoremstyle{custom}
+
+%\newenvironment{myTheorem}[1][]
+%{\savebox\mybox{\hbox{Theorem \thetheorem}}%
+%\xdef\mdim{\the\dimexpr\wd\mybox+10pt}%
+%\xdef\mybdim{\the\dimexpr\textwidth-\mdim-\myspbetween}%
+%\noindent\begin{minipage}[t]{\mdim}%
+%\begin{theorem}[#1]\end{theorem}\end{minipage}\hspace{\fill}\begin{minipage}[t]{\mybdim}}
+%{\end{minipage}\medskip}
+
+% for tabular
+\newcolumntype{P}[1]{>{\centering\arraybackslash}p{#1}}
+\newcolumntype{M}[1]{>{\centering\arraybackslash}m{#1}}
+
+\lstset{ %
+	backgroundcolor=\color{white},   % choose the background color; you must add \usepackage{color} or \usepackage{xcolor}
+	basicstyle=\ttfamily,      % the size of the fonts that are used for the code
+	breakatwhitespace=false,         % sets if automatic breaks should only happen at whitespace
+	breaklines=true,                 % sets automatic line breaking
+	%captionpos=b,                   % sets the caption-position to bottom
+	commentstyle=\color{mygreen},    % comment style
+	deletekeywords={...},            % if you want to delete keywords from the given language
+	escapeinside={<@}{@>},          % if you want to add LaTeX within your code
+	extendedchars=true,              % lets you use non-ASCII characters; for 8-bits encodings only, does not work with UTF-8
+	frame=none,	                   % adds a frame around the code
+	keepspaces=true,                 % keeps spaces in text, useful for keeping indentation of code (possibly needs columns=flexible)
+	keywordstyle=\color{blue},       % keyword style
+	language=Octave,                 % the language of the code
+	otherkeywords={*, Inductive, Fixpoint, Record, typedef, struct, Function , Definition, Prop, then, ...},           % if you want to add more keywords to the set
+	emph = {in, uint, match, end, with, let, ret, do, forall, exist,  :=, =>, ->},
+	emphstyle=\bf,%
+	moredelim=[is][emphstyle]{|>}{<|},%
+	numbers=left,                    % where to put the line-numbers; possible values are (none, left, right)
+	numbersep=5pt,                   % how far the line-numbers are from the code
+	numberstyle=\scriptsize\color{mygray}, % the style that is used for the line-numbers
+	rulecolor=\color{black},         % if not set, the frame-color may be changed on line-breaks within not-black text (e.g. comments (green here))
+	showspaces=false,                % show spaces everywhere adding particular underscores; it overrides 'showstringspaces'
+	showstringspaces=false,          % underline spaces within strings only
+	showtabs=false,                  % show tabs within strings adding particular underscores
+	stepnumber=1,                    % the step between two line-numbers. If it's 1, each line will be numbered
+	stringstyle=\color{mymauve},     % string literal style
+	tabsize=2,	                   % sets default tabsize to 2 spaces
+	%title=\lstname                   % show the filename of files included with \lstinputlisting; also try caption instead of title
+}
+
+\lstset{basicstyle=\small\ttfamily }
 
 %%% For proofs 
 \newtheorem{definition}{Definition}
@@ -9,11 +75,15 @@
 \renewcommand\qedsymbol{$\blacksquare$}
 \newenvironment{myproof}{{\bf Proof:}}{\hfill\rule{2mm}{2mm}}
 
+\newrefformat{fig}{Figure~\ref{#1}}
+\newrefformat{tab}{Table~\ref{#1}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \newcommand{\pref}[1]{\prettyref{#1}}
 \newcommand{\Pref}[1]{\prettyref{#1} \vpageref[]{#1}}
 \newcommand{\ppref}[1]{\vpageref[]{#1}}
-\newrefformat{fig}{Figure~\ref{#1}}
-\newrefformat{tab}{Table~\ref{#1}}
+
 
 
 %%%% For Color
@@ -25,16 +95,42 @@
 
 %%%% For the new operator
 \DeclareMathOperator*{\bigJoin}{\scalerel*{\Join}{\sum}}
+\newcommand*{\LargerCdot}{\raisebox{0.25ex}{\scalebox{0.7}{$\bullet$}}}
+\newcommand\cons{\LargerCdot}
+\newcommand{\doubleplus}{{+\kern-1.3ex+\kern0.8ex}}
 
 %%% general
 \newcommand\ignore[1]{}
 \newcommand{\eg}{{\em e.g.}}
 \newcommand{\ie}{{\em i.e.}}
-\newcommand{\cf}{see }
+\newcommand{\cf}{{\em c.f.}}
 \newcommand{\etal}{{\em et al.}}
 \newcommand{\code}[1]{{\texttt{#1}}}
 \newcommand{\codeinmath}[1]{{\mathrm{\texttt{#1}}}}
+\newcommand\nil{\codeinmath{nil}}
+\newcommand{\para}[1]{\paragraph{#1}}
 
+\newcommand\set[1]{\{#1\}}
+
+\newcommand{\bfalse}{{\codeinmath{false}}}
+\newcommand{\btrue}{{\codeinmath{true}}}
+\newcommand{\toptype}{{\top_{\codeinmath{TYPE}}}}
+\newcommand{\nattype}{{\mathbb{N}}}
+\newcommand{\booltype}{{\mathbb{B}}}
+\newcommand{\ztype}{{\mathbb{Z}}}
+\newcommand{\optionsome}{{\Some}}
+\newcommand{\optionnone}{{\None}}
+\newcommand{\nulllist}{{\nil}}
+\newcommand{\listcons}[2]{{{#1}\cons{#2}}}
+\newcommand{\listapp}[2]{{{#1}\doubleplus{#2}}}
+\newcommand\zmapfunc{\codeinmath{ZMap}}
+
+\newcommand\None{\codeinmath{None}}
+\newcommand\Some{\codeinmath{Some}}
+\newcommand\optiondef{\codeinmath{option}}
+
+\newcommand{\listconstructorkwd}{\mathrm{lst}}
+\newcommand{\listconstructor}[1]{{\listconstructorkwd \ {#1}}}
 
 %%% Names 
 \newcommand{\intelmachine}{\mathrm{x86}}
@@ -59,9 +155,25 @@
 \newcommand{\tasm}{\mathrm{TAsm}}
 \newcommand{\hasm}{\mathrm{HAsm}}
 
+\newcommand{\ignorechar}{\_}
 %%%%
 
-%
+%%%%%%%% MEMORY
+\newcommand{\memintregulartype}{\codeinmath{Mint32}}
+
+\newcommand{\memkwd}{\codeinmath{Mem}}
+\newcommand{\loadinmemkwd}{\codeinmath{load}}
+\newcommand{\memloadkwd}{\memkwd . \loadinmemkwd}
+\newcommand{\memloadnoeq}[4]{\memloadkwd ~~{#1}~~ {#2} ~~ {#3} ~~ {#4}}
+\newcommand{\memloadsome}[5]{\memloadnoeq{#1}{#2}{#3}{#4}={\Some}~~{#5}}
+\newcommand{\memloadnone}[4]{\memloadnoeq{#1}{#2}{#3}{#4}~=~{\None}}
+
+\newcommand{\accessinmemkwd}{\codeinmath{valid\_access}}
+\newcommand{\memaccesskwd}{\memkwd . \accessinmemkwd}
+\newcommand{\memaccess}[3]{\memaccesskwd ~~{#1} ~~ {#2} ~~ {#3}}
+
+
+%%%%%%%%%%%%%%%%
 %% COMMENTS 
 \newif \ifcomments \commentstrue
 
@@ -78,238 +190,187 @@
 %%%%%%%%%%%%%%%%%%%%%%
 
 
-%%%%%%%%%%%%%% COMMON 
+
 
 
 
 %%%%%%%%%%%%%% FROM CCAL 
 
-\newcommand\layer[3]{(#1,#2,#3)}
+%\newcommand\layer[3]{(#1,#2,#3)}
 
-\newcommand\sem[2]{[\![{#1} \langle {#2} \rangle]\!]}
-\newcommand\join{\!\bowtie\!}
-\newcommand\Refrel{\sqsubseteq}
-\newcommand\LSem[1]{\textrm{LSem(}#1\textrm{)}}
-\newcommand\ClightX[1]{\textrm{ClightX(}#1\textrm{)}}
-\newcommand\CompCertX[1]{\textrm{CompCertX(}#1\textrm{)}}
-
-
-% Orders on layers and behaviors: \lsim and \lle correspond to QuiverSim,
-% whereas \lpath corresponds to CategorySim.
-\newcommand{\lle}{\preceq}
-\newcommand{\lsim}[1]{\prec_{#1}}
-\newcommand{\lpath}[1]{\le_{#1}}
-\newcommand{\id}{\textbf{id}}
 
 % Typing judgements
-\newcommand{\ltyp}[4]{#1 \vdash_{#2} #3 : #4}
-\newcommand{\lltyp}[5]{#2 \vdash^{#1}_{#3} #4 : #5}
-\newcommand{\rulename}[1]{\textsc{\smaller{}#1}}
-
-% Useful shorthands used in layer.tex
-\newcommand{\kw}[1]{{\mathsf{#1}}} % render as a keyword
-\newcommand{\pset}[1]{{\mathcal{P}({#1})}}
-\newcommand{\Beh}{\mathsf{Beh}} % the set of behaviors
-\newcommand{\Ev}{\mathbb{E}} % the set of events
-\newcommand{\Prog}{\mathbb{P}} % a set of programs
-\newcommand{\Lang}{\mathbb{L}} % a language with log
-\newcommand{\Mach}{\mathbb{M}} % a machine
-\newcommand{\Env}{\mathcal{E}} % an environment context
-\newcommand{\refines}{\sqsubseteq} % refinement relation
-\newcommand{\EC}[1]{{\kw{EC}({#1})}} % encironment
+\newcommand{\sem}[2]{[\![{#1} \langle {#2} \rangle]\!]}
 \newcommand{\oracle}{{\varepsilon}}
 \newcommand{\Layer}{\mathcal{L}}
 \newcommand{\Rely}{\mathcal{R}}
 \newcommand{\Guard}{\mathcal{G}}
-\newcommand\abst{\mathcal{A}}
-\newcommand\primt{\mathcal{P}}
+\newcommand{\id}{\textbf{id}}
+\newcommand{\ltyp}[4]{#1 \vdash_{#2} #3 : #4}
+\newcommand{\lltyp}[5]{#2 \vdash^{#1}_{#3} #4 : #5}
+\newcommand{\refines}{\sqsubseteq} % refinement relation
+\newcommand{\modulecomposekwd}{\oplus}
+\newcommand{\modulecompose}[2]{{#1} \modulecomposekwd {#2}}
+\newcommand{\relcomposekwd}{\circ}
+\newcommand{\relcompose}[2]{{#1} \relcomposekwd {#2}}
+\newcommand\parallelcomposekwd{\!\bowtie\!}
+\newcommand{\parallelcompose}[2]{{#1} \parallelcomposekwd {#2}}
 
-%\tikzset{
-%  node_w/.style = {circle, fill=white, draw, inner sep=3pt},
-%  node_b/.style = {circle, fill=lightgray, draw, inner sep=3pt},
-%  node_d/.style = {circle, double, fill=white, draw, inner sep=3pt},
-%  node_db/.style = {circle, double, fill=lightgray, draw, inner sep=3pt},
-%  arc_b/.style = {very thick, draw=red, >={stealth[black]}},
-%  node_t/.style = {circle, fill=white, draw},
-%}
 
-%------------------------ Added by OTHERS
+\newcommand\spec{\sigma}
+\newcommand\PLayer[3]{#1[#2, #3]}
 
-\newcommand\step[1]{\overset{#1}{\rightarrow}}
-\newcommand\emptye{\epsilon}
-\newcommand\model{\models}
-\newcommand\opsem[3]{l,ge\model #2 \step{#1} #3}
-\newcommand\opsems[3]{l,ge\model #2 \overset{#1}{\rightarrow^*} #3}
-\newcommand\partialf{\rightharpoonup}
-\newcommand\intp{\rhd}
-\newcommand\CAS{\codeinmath{CAS}}
-\newcommand\XADD{\codeinmath{XADD}}
-\newcommand\XCHL{\codeinmath{XCHL}}
-\newcommand\FAA{\codeinmath{FAA}}
-\newcommand\FAI{\codeinmath{FAI}}
 \newcommand\regs{\rho}
 \newcommand\state{s}
-\newcommand\cpush{\codeinmath{push}}
-\newcommand\cpull{\codeinmath{pull}}
-\newcommand\push{\codeinmath{push}}
-\newcommand\pull{\codeinmath{pull}}
-
-\newcommand\incticket{\codeinmath{FAI}}
-\newcommand\incnow{\codeinmath{inc\_now}}
-\newcommand\getnow{\codeinmath{get\_now}}
-\newcommand\tshared{\codeinmath{tshared}}
-\newcommand\holdlock{\codeinmath{hold}}
-\newcommand\lockstatus{\codeinmath{lock\_status}}
-\newcommand\true{\codeinmath{true}}
-\newcommand\false{\codeinmath{false}}
-\newcommand\ccalwaitlock{\codeinmath{wait\_lock}}
-\newcommand\releaselock{\codeinmath{release\_lock}}
-
-\newcommand*{\LargerCdot}{\raisebox{0.25ex}{\scalebox{0.7}{$\bullet$}}}
-\newcommand\cons{\LargerCdot}
-\newcommand\set[1]{\{#1\}}
-\newcommand\replay{\mathbb{R}}
-\newcommand\calwait{\mathbb{B}}
-\newcommand\any{\cdot}
-\newcommand\nonev{\_}
-\newcommand\spec{\sigma}
-\newcommand\integer{\mathbb{N}}
-
-
-\newcommand\ccalcode{\kappa}
-\newcommand\acq{\mathsf{acquire}}
-\newcommand\rel{\mathsf{release}}
-\newcommand\deq{\mathsf{deQ}}
-\newcommand\enq{\mathsf{enQ}}
-\newcommand\reach{\mathsf{reachable}}
-\newcommand\now{\mathsf{now}}
-\newcommand\ticket{\mathsf{ticket}}
-\newcommand{\partf}{\rightharpoonup}
-\newcommand\bytelist{\textit{bl}}
-\newcommand\spawn{\mathsf{spawn}}
-\newcommand\yield{\mathsf{yield}}
-\newcommand\cyield{\mathsf{cyield}}
-\newcommand\sleep{\mathsf{sleep}}
-\newcommand\vundef{\mathsf{vundef}}
-\newcommand\ofs{\mathsf{ofs}}
-\newcommand\wakeup{\mathsf{wakeup}}
-\newcommand\regset{rs}
-%\newcommand\tid{\mathsf{tid}}
-\newcommand\alist{\rightharpoonup}
-\newcommand\tid{t}
-\newcommand\eempty{\mathsf{empty}}
-\newcommand\option{\mathsf{option}}
-\newcommand\qloc{\mathsf{q\_loc}}
-\newcommand\perm[1]{\mathsf{status}(#1)}
-\newcommand\LAsm{\mathsf{LAsm}}
-\newcommand\TAsm{L_\mathsf{pthread}}
-\newcommand\boot{\mathsf{x86}}
-\newcommand\allid{ID}
-
-\newcommand\ssem[2]{\llparenthesis {#2}\langle {#1} \rangle \rrparenthesis}
-
+\newcommand\emptye{\epsilon}
 \newcommand{\strat}[1]{\varphi_{#1}}
 \newcommand{\stratp}[1]{\varphi'_{#1}}
 
-%% BEGIN CompCert memory model and extensions
-\newcommand{\nextblockOP}[0]{\mathsf{nb}}
-\newcommand{\nextblock}[1]{\nextblockOP({#1})}
-\newcommand{\liftnextblockOP}[0]{\mathsf{liftnb}}
-\newcommand{\liftnextblock}[2]{\liftnextblockOP({#1}, {#2})}
-\newcommand{\extends}[2]{{#1} \subseteq {#2}}
-\newcommand{\inject}[3]{{#2} \stackrel{#1}{\hookrightarrow} {#3}}
-\newcommand{\alloc}[3]{\mathsf{alloc}({#1}, {#2}, {#3})}
-\newcommand{\store}[3]{\mathsf{st}({#1}, {#2}, {#3})}
-\newcommand{\load}[2]{\mathsf{ld}({#1}, {#2})}
-\newcommand{\some}[1]{\left\lfloor {#1} \right\rfloor}
-
-\newcommand{\disjointunionOP}[0]{\circledast}
-\newcommand{\disjointunion}[3]{{#1} \disjointunionOP {#2} \simeq {#3}}
-
-\newcommand{\PBoot}{L_\mathsf{x86}}
-
-\newcommand\efrom[1]{(#1\intp)}
-\newcommand\eto[1]{(\intp#1)}
-\newcommand\ssame{\odot}
-\newcommand\sdiff{\triangle}
+\newcommand\replay{\mathbb{R}}
 \newcommand\switch{\!\Rightarrow\!}
-\newcommand\mysout[1]{\text{\sout{$#1$}}}
-%\newcommand\PLayer[3]{#1^{#3}[#2]}
-\newcommand\PLayer[3]{#1[#2]}
-\newcommand\TLayer[3]{#1[#2][#3]}
-\newcommand\Query[3]{#1[{#3}, #2]}
-\newcommand\Lthread{L_\codeinmath{td}}
-\newcommand\Lbthread{L_\codeinmath{btd}}
-\newcommand\Lhbthread{L_\codeinmath{hbtd}}
-\newcommand\Lhthread{L_\codeinmath{htd}}
-\newcommand\Compose[3]{\codeinmath{compat}(#1, #2, #3)}
 
 
+%------------------------ FOR Section 2
 
-\newcommand{\sstepr}[5]{#1(#2, #3) \ni (#4, #5)}
-\newcommand{\sstep}[4]{#1(#2, #3) \ni (#4)}
-\newcommand{\para}[1]{\paragraph{#1}}
-\newcommand{\modulef}[1]{#1 \mapsto \kappa_{#1}}
-
-\newcommand{\remove}[1]{\textcolor{red}{\sout{#1}}}
-\newcommand{\added}[1]{\textcolor{blue}{#1}}
-\newcommand{\return}[0]{\downarrow\!}
-
-
+\newcommand\push{\codeinmath{push}}
+\newcommand\pull{\codeinmath{pull}}
+\newcommand\incticket{\codeinmath{FAI}}
 
 
 %%%%%%%%%%%%%% FROM MCSLOCK
-\newcommand{\swaptail}[2]{\code{SWAP$\_$TAIL #1 #2}}
-\newcommand{\castail}[1]{\code{CAS$\_$TAIL #1}}
-\newcommand{\getnext}{\code{GET$\_$NEXT}}
-\newcommand{\setnext}[1]{\code{SET$\_$NEXT #1}}
-\newcommand{\getbusy}[1]{\code{GET$\_$BUSY #1}}
-\newcommand{\setbusy}{\code{SET$\_$BUSY}}
-\newcommand{\invalidmcsval}{\code{MCS\_TOTAL\_CPU}}
-\newcommand{\rellock}{\code{REL$\_$LOCK}}
-\newcommand{\waitlock}[1]{\code{WAIT$\_$LOCK #1}}
-\newcommand{\mcsmboot}{\code{MMCSMBoot}}
-\newcommand{\mmcslockintro}{\code{MMCSLockIntro}}
-\newcommand{\mmcslockabsintro}{\code{MMCSLockAbsIntro}}
-\newcommand{\mmcslockop}{\code{MMCSLockOp}}
-\newcommand{\mqmcslockop}{\code{MQMCSLockOp}}
-\newcommand{\mhmcslockop}{\code{MHMCSLockOp}}
-%\newcommand{\mathlarger}[1]{#1}
-%\newcommand{\mathsmaller}[1]{#1}
 
-%\newcommand\mimp{M_C}
-%\newcommand\mabs{M_A}
-%\newcommand\layer[3]{(#1,#2,#3)}
+\newcommand{\swaptail}[2]{\codeinmath{SWAP\_TAIL}~{#1}~{#2}}
+\newcommand\SWAPTAIL{\codeinmatht{SWAP\_TAIL}}
+\newcommand\FAS{\codeinmath{FAS}}
+\newcommand\CAS{\codeinmath{CAS}}
+\newcommand{\castail}[1]{\codeinmath{CAS\_TAIL}~{#1}}
+
+\newcommand{\getnext}{\codeinmath{GET\_NEXT}}
+\newcommand{\setnext}[1]{\codeinmath{SET\_NEXT}~{#1}}
+\newcommand\SETNEXT{\codeinmath{SET\_NEXT}}
+
+\newcommand{\getbusy}[1]{\codeinmath{GET\_BUSY}~{#1}}
+\newcommand\GETBUSY{\codeinmath{GET\_BUSY}}
+
+\newcommand{\setbusy}{\codeinmath{SET\_BUSY}}
+\newcommand{\invalidmcsval}{\codeinmath{TOTAL\_CPU}}
+\newcommand{\rellock}{\codeinmath{REL\_LOCK}}
+\newcommand{\waitlock}[1]{\codeinmath{WAIT\_LOCK}~{#1}}
+\newcommand{\WAITLOCK}{\codeinmath{WAIT\_LOCK}}
+
+\newcommand{\mcstshared}[1]{\codeinmath{TSHARED}~{#1}}
+
+
+\newcommand{\mmcsboot}{\codeinmath{Boot}}
+\newcommand{\mmcslockintro}{\codeinmath{Intro}}
+\newcommand{\mmcslockabsintro}{\codeinmath{AbsIntro}}
+\newcommand{\mmcslockop}{\codeinmath{LkOp}}
+\newcommand{\mqmcslockop}{\codeinmath{QLkOp}}
+\newcommand{\mhmcslockop}{\codeinmath{HLkOp}}
+
+\newcommand{\mmcsbootfull}{\codeinmath{MMCSBoot}}
+\newcommand{\mmcslockintrofull}{\codeinmath{MMCSLockIntro}}
+\newcommand{\mmcslockabsintrofull}{\codeinmath{MMCSLockAbsIntro}}
+\newcommand{\mmcslockopfull}{\codeinmath{MMCSLockOp}}
+\newcommand{\mqmcslockopfull}{\codeinmath{MQMCSLockOp}}
+\newcommand{\mhmcslockopfull}{\codeinmath{MHMCSLockOp}}
+
+
+
+\newcommand\LEMPTY{\codeinmath{LEMPTY}}
+\newcommand\LHOLD{\codeinmath{LHOLD}}
+
+\newcommand{\mcsacquire}{\codeinmath{mcs\_acquire}}
+\newcommand{\mcsrelease}{\codeinmath{mcs\_release}}
+
+\newcommand{\waitlockfunc}{\codeinmath{wait\_lock}}
+\newcommand{\passlockfunc}{\codeinmath{pass\_lock}}
+
+\newcommand{\mcswaitlockfunc}{\codeinmath{mcs\_wait\_lock}}
+\newcommand{\mcspasslockfunc}{\codeinmath{mcs\_pass\_lock}}
+
+\newcommand{\mcsswaptailabs}{\codeinmath{mcs\_swap\_tail}}
+\newcommand{\mcssetnextabs}{\codeinmath{mcs\_set\_next}}
+\newcommand{\mcsgetbusyabs}{\codeinmath{mcs\_get\_busy}}
+\newcommand{\mcslog}{\codeinmath{mcs\_log}}
+
+\newcommand{\mcssetnext}{\codeinmath{mcs\_SET\_NEXT}}
+
+
+\newcommand{\atomicmcslog}{\codeinmath{atomic\_mcs\_log}}
+\newcommand{\atomicmcsswap}{\codeinmath{atomic\_mcs\_SWAP}}
+\newcommand{\atomicmcscas}{\codeinmath{atomic\_mcs\_CAS}}
+\newcommand{\mcsinitnodelog}{\codeinmath{mcs\_init\_node\_log}}
+\newcommand{\mcsgetnextlog}{\codeinmath{mcs\_GET\_NEXT\_log}}
+\newcommand{\mcssetnextlog}{\codeinmath{mcs\_SET\_NEXT\_log}}
+\newcommand{\mcsgetbusylog}{\codeinmath{mcs\_GET\_BUSY\_log}}
+\newcommand{\mcssetbusylog}{\codeinmath{mcs\_SET\_BUSY\_log}}
+
+
+\newcommand{\lockmemloc}{\codeinmath{LK}}
+\newcommand{\lockabsloc}{\codeinmath{MCSLock}}
+\newcommand{\lockmultilogpool}{\codeinmath{multi\_log}}
+\newcommand{\lockmultilog}{\codeinmath{MULTILOG}}
+
+\newcommand{\matchmcslock}{\codeinmath{match\_MCSLOCK}}
+
+\newcommand{\calmcslock}{\codeinmath{CalMCSLock}}
+\newcommand\CalBound{\codeinmath{CalBound}}
+\newcommand\QSCalLock{\codeinmath{QS\_CalLock}}
+\newcommand\CalWaitGet{\codeinmath{CalWaitGet}}
+\newcommand{\calmcsacqwait}{\codeinmath{CalMCS\_AcqWait}}
+\newcommand{\CalWaitLockTime}{\codeinmath{CalWaitLockTime}}
+\newcommand{\BoundValAux}{\codeinmath{BoundValAux}}
+\newcommand\QCalMCSLock{\codeinmath{Q\_CalMCSLock}}
+\newcommand\HCalLock{\codeinmath{H\_CalLock}}
+
+\newcommand{\mcslempty}{\codeinmath{LEMPTY}}
+ \newcommand{\mcslhold}{\codeinmath{LHOLD}}
+ \newcommand{\mcsmeasure}{\codeinmath{Msr}}
+
+\newcommand{\waitqslockspec}{\codeinmath{wait\_qslock\_spec}}
+\newcommand{\passqslockspec}{\codeinmath{pass\_qslock\_spec}}
+
+\newcommand{\mcsacquirespec}{\codeinmath{mcs\_acquire\_spec}}
+\newcommand{\mcswaithlockspec}{\codeinmath{wait\_hlock\_spec}}
+\newcommand{\mcspasshlockspec}{\codeinmath{pass\_hlock\_spec}}
+\newcommand{\mcslockown}{\codeinmath{LockOwn}}
+\newcommand{\mcsockfalse}{\codeinmath{LockFalse}}
+\newcommand{\mcslockabsfield}{\codeinmath{lock}}
+\newcommand{\mcsabsdata}{\codeinmath{RData}}
+\newcommand{\zeqkwd}{\codeinmath{zeq}}
+\newcommand{\zeqop}[2]{\zeqkwd \ {#1} \ {#2}}
+\newcommand{\relatemcslogkwd}{\codeinmath{relate\_log}_{(lk, mcs)}}
+\newcommand{\relatemcslognoeq}[1]{\relatemcslogkwd({#1})}
+\newcommand{\relatemcslog}[2]{\relatemcslognoeq{#1} = {#2}}
+\newcommand{\pallocfunc}{\codeinmath{palloc}}
+\newcommand{\acquirelockfunc}{\codeinmath{acquire\_lock}}
+\newcommand{\releaselockfunc}{\codeinmath{release\_lock}}
+
+\newcommand{\acquirereleaselock}{\codeinmath{acquire}/\codeinmath{release\_lock}}
+\newcommand{\releaselockATspec}{\codeinmath{release\_lock\_AT\_spec}}
+\newcommand{\acquirereleaselockATspec}{\codeinmath{acquire}/\codeinmath{release\_lock\_AT\_spec}}
+\newcommand{\pallocpspec}{\codeinmath{palloc'\_spec}}
+
+\newcommand{\lpallocspec}{\codeinmath{lpalloc\_spec}}
+\newcommand{\releaseshared}{\codeinmath{release\_shared}}
+
+
+\newcommand{\mcsopullev}{\codeinmath{OPULL}}
+\newcommand{\mcsoateev}[1]{\codeinmath{OATE}~{#1}}
+\newcommand{\mcsOATEev}{\codeinmath{OATE}}
+
+\newcommand{\mcsalloctable}{\codeinmath{AT}}
+\newcommand{\mcsalloctabletype}{\codeinmath{ATable}}
+\newcommand{\mcsopalloce}{\codeinmath{OPALLOCE}}
+\newcommand{\mcsOMEME}{\codeinmath{OMEME}}
+\newcommand{\mcsomeme}[1]{\codeinmath{OMEME}~{#1}}
+
 %
-%\newcommand\pCTOS{p\CTOS}
-%\newcommand\mCTOS{mC2}
-%\newcommand\mCTOSbase{\mCTOS{}}
-%\newcommand\mCTOShyper{\mCTOS{}-hyp}
-%\newcommand\mCTOSringz{\mCTOS{}-rz}
-%\newcommand\mCTOSembed{\mCTOS{}-emb}
-%
-%\newcommand\sem[2]{[\![#2]\!]_{#1}}
-%\newcommand\join{\!\bowtie\!}
-%\newcommand\Refrel{\sqsubseteq}
-%\newcommand\LSem[1]{\textrm{LSem(}#1\textrm{)}}
-%\newcommand\ClightX[1]{\textrm{ClightX(}#1\textrm{)}}
-%\newcommand\CompCertX[1]{\textrm{CompCertX(}#1\textrm{)}}
 
 
-\newcommand\None{\mathsf{None}}
-\newcommand\Some{\mathsf{Some}}
 
-\newcommand\nil{\mathrm{\texttt{nil}}}
-\newcommand\QSCalLock{\mathsmaller{\mathrm{\texttt{QS\_CalLock}}}}
-\newcommand\CalBound{\mathsmaller{\mathrm{\texttt{CalBound}}}}
-\newcommand\CalWaitGet{\mathsmaller{\mathrm{\texttt{CalWaitGet}}}}
-\newcommand\LEMPTY{\mathsmaller{\mathrm{\texttt{LEMPTY}}}}
-\newcommand\LHOLD{\mathsmaller{\mathrm{\texttt{LHOLD}}}}
 
-\newcommand\SWAPTAIL{\mathsmaller{\mathrm{\texttt{SWAP\_TAIL}}}}
-\newcommand\GETNEXT{\mathsmaller{\mathrm{\texttt{GET\_NEXT}}}}
-\newcommand\SETNEXT{\mathsmaller{\mathrm{\texttt{SET\_NEXT}}}}
-\newcommand\SETBUSY{\mathsmaller{\mathrm{\texttt{SET\_BUSY}}}}
 %\newcommand\true{\mathrm{\texttt{true}}}
 %\newcommand\false{\mathrm{\texttt{false}}}
 
@@ -439,29 +500,13 @@
 
 
 %keyword
-\newcommand{\compcertkwd}{\textrm{CompCert}}
-
-\newcommand{\ignorechar}{\_}
 %\newcommand{\set}[1]{\{#1\}}
 %\newcommand{\compcertx}{\textrm{CompCertX}}
 
 
 %type
-\newcommand{\doubleplus}{{+\kern-1.3ex+\kern0.8ex}}
-\newcommand{\nattype}{{\mathbb{N}}}
-\newcommand{\booltype}{{\mathbb{B}}}
-\newcommand{\bfalse}{{\mathrm{false}}}
-\newcommand{\btrue}{{\mathrm{true}}}
-\newcommand{\toptype}{{\top_{\mathrm{TYPE}}}}
-\newcommand{\ztype}{{\mathbb{Z}}}
-\newcommand{\optionsome}{{\mathrm{Some}}}
-\newcommand{\optionnone}{{\mathrm{None}}}
-\newcommand{\nulllist}{{\mathrm{nil}}}
-\newcommand{\listcons}[2]{{{#1}::{#2}}}
-\newcommand{\listapp}[2]{{{#1}\doubleplus{#2}}}
 
-\newcommand{\listconstructorkwd}{\mathrm{lst}}
-\newcommand{\listconstructor}[1]{{\listconstructorkwd \ {#1}}}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
 % for CompCertX
@@ -535,7 +580,7 @@
 \newcommand{\mcoracle}[3]{{\varepsilon_{mc[{#1}, {#2}, {#3}]}}}
 \newcommand{\ogetkwd}{{\mathrm{\textbf{oget}}}}
 \newcommand{\ogetnoeq}[5]{{\ogetkwd_{[{#1}, {#2}, {#3}]}({#4}, {#5})}}
-\newcommand{\oget}[6]{{\ogetnoeq{#1}{#2}{#3}{#4}{#5} = \mathrm{Some} \ {#6}}}
+\newcommand{\oget}[6]{{\ogetnoeq{#1}{#2}{#3}{#4}{#5} = \optionsome \ {#6}}}
 
 
 %event and command 
@@ -945,4 +990,160 @@
 \newcommand\mdoubleplus{\ensuremath{\mathbin{+\mkern-4mu+}}}
 
 
-\lstset{basicstyle=\small\ttfamily }
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% BACK UP From old Section 2
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%\newcommand\join{\!\bowtie\!}
+%\newcommand\Refrel{\sqsubseteq}
+%\newcommand\LSem[1]{\textrm{LSem(}#1\textrm{)}}
+%\newcommand\ClightX[1]{\textrm{ClightX(}#1\textrm{)}}
+%\newcommand\CompCertX[1]{\textrm{CompCertX(}#1\textrm{)}}
+
+
+% Orders on layers and behaviors: \lsim and \lle correspond to QuiverSim,
+% whereas \lpath corresponds to CategorySim.
+%\newcommand{\lle}{\preceq}
+%\newcommand{\lsim}[1]{\prec_{#1}}
+%\newcommand{\lpath}[1]{\le_{#1}}
+
+%\newcommand{\rulename}[1]{\textsc{\smaller{}#1}}
+%\newcommand{\kw}[1]{{\mathsf{#1}}} % render as a keyword
+%\newcommand{\pset}[1]{{\mathcal{P}({#1})}}
+%\newcommand{\Beh}{\mathsf{Beh}} % the set of behaviors
+%\newcommand{\Ev}{\mathbb{E}} % the set of events
+%\newcommand{\Prog}{\mathbb{P}} % a set of programs
+%\newcommand{\Lang}{\mathbb{L}} % a language with log
+%\newcommand{\Mach}{\mathbb{M}} % a machine
+%\newcommand{\Env}{\mathcal{E}} % an environment context
+%\newcommand{\EC}[1]{{\kw{EC}({#1})}} % encironment
+
+%\newcommand\abst{\mathcal{A}}
+%\newcommand\primt{\mathcal{P}}
+
+%\tikzset{
+%  node_w/.style = {circle, fill=white, draw, inner sep=3pt},
+%  node_b/.style = {circle, fill=lightgray, draw, inner sep=3pt},
+%  node_d/.style = {circle, double, fill=white, draw, inner sep=3pt},
+%  node_db/.style = {circle, double, fill=lightgray, draw, inner sep=3pt},
+%  arc_b/.style = {very thick, draw=red, >={stealth[black]}},
+%  node_t/.style = {circle, fill=white, draw},
+%}
+
+%\newcommand\step[1]{\overset{#1}{\rightarrow}}
+%\newcommand\model{\models}
+%\newcommand\opsem[3]{l,ge\model #2 \step{#1} #3}
+%\newcommand\opsems[3]{l,ge\model #2 \overset{#1}{\rightarrow^*} #3}
+%\newcommand\partialf{\rightharpoonup}
+%\newcommand\intp{\rhd}
+%\newcommand\XADD{\codeinmath{XADD}}
+%\newcommand\XCHL{\codeinmath{XCHL}}
+%\newcommand\FAA{\codeinmath{FAA}}
+%\newcommand\FAI{\codeinmath{FAI}}
+
+%\newcommand\cpush{\codeinmath{push}}
+%\newcommand\cpull{\codeinmath{pull}}
+
+%\newcommand\incnow{\codeinmath{inc\_now}}
+%\newcommand\getnow{\codeinmath{get\_now}}
+%\newcommand\tshared{\codeinmath{tshared}}
+%\newcommand\holdlock{\codeinmath{hold}}
+%\newcommand\lockstatus{\codeinmath{lock\_status}}
+%\newcommand\true{\codeinmath{true}}
+%\newcommand\false{\codeinmath{false}}
+%\newcommand\ccalwaitlock{\codeinmath{wait\_lock}}
+%\newcommand\releaselock{\codeinmath{release\_lock}}
+
+
+
+%\newcommand\calwait{\mathbb{B}}
+%\newcommand\any{\cdot}
+%\newcommand\nonev{\_}
+%\newcommand\integer{\mathbb{N}}
+
+%%
+%%\newcommand\ccalcode{\kappa}
+%\newcommand\acq{\mathsf{acquire}}
+%\newcommand\rel{\mathsf{release}}
+%\newcommand\deq{\mathsf{deQ}}
+%\newcommand\enq{\mathsf{enQ}}
+%\newcommand\reach{\mathsf{reachable}}
+%\newcommand\now{\mathsf{now}}
+%\newcommand\ticket{\mathsf{ticket}}
+%\newcommand{\partf}{\rightharpoonup}
+%\newcommand\bytelist{\textit{bl}}
+%\newcommand\spawn{\mathsf{spawn}}
+%\newcommand\yield{\mathsf{yield}}
+%\newcommand\cyield{\mathsf{cyield}}
+%\newcommand\sleep{\mathsf{sleep}}
+%\newcommand\vundef{\mathsf{vundef}}
+%\newcommand\ofs{\mathsf{ofs}}
+%\newcommand\wakeup{\mathsf{wakeup}}
+%\newcommand\regset{rs}
+%\newcommand\tid{\mathsf{tid}}
+%\newcommand\alist{\rightharpoonup}
+%\newcommand\tid{t}
+%\newcommand\eempty{\mathsf{empty}}
+%\newcommand\option{\mathsf{option}}
+%\newcommand\qloc{\mathsf{q\_loc}}
+%\newcommand\perm[1]{\mathsf{status}(#1)}
+%\newcommand\LAsm{\mathsf{LAsm}}
+%\newcommand\TAsm{L_\mathsf{pthread}}
+%\newcommand\boot{\mathsf{x86}}
+%\newcommand\allid{ID}
+
+%\newcommand\ssem[2]{\llparenthesis {#2}\langle {#1} \rangle \rrparenthesis}
+
+
+
+%%% BEGIN CompCert memory model and extensions
+%\newcommand{\nextblockOP}[0]{\mathsf{nb}}
+%\newcommand{\nextblock}[1]{\nextblockOP({#1})}
+%\newcommand{\liftnextblockOP}[0]{\mathsf{liftnb}}
+%\newcommand{\liftnextblock}[2]{\liftnextblockOP({#1}, {#2})}
+%\newcommand{\extends}[2]{{#1} \subseteq {#2}}
+%\newcommand{\inject}[3]{{#2} \stackrel{#1}{\hookrightarrow} {#3}}
+%\newcommand{\alloc}[3]{\mathsf{alloc}({#1}, {#2}, {#3})}
+%\newcommand{\store}[3]{\mathsf{st}({#1}, {#2}, {#3})}
+%\newcommand{\load}[2]{\mathsf{ld}({#1}, {#2})}
+%\newcommand{\some}[1]{\left\lfloor {#1} \right\rfloor}
+%
+%\newcommand{\disjointunionOP}[0]{\circledast}
+%\newcommand{\disjointunion}[3]{{#1} \disjointunionOP {#2} \simeq {#3}}
+%
+%\newcommand\TLayer[3]{#1[#2][#3]}
+%\newcommand\Query[3]{#1[{#3}, #2]}
+%\newcommand\Compose[3]{\codeinmath{compat}(#1, #2, #3)}
+
+%\newcommand\efrom[1]{(#1\intp)}
+%\newcommand\eto[1]{(\intp#1)}
+%\newcommand\ssame{\odot}
+%\newcommand\sdiff{\triangle}
+%\newcommand\mysout[1]{\text{\sout{$#1$}}}
+%\newcommand\PLayer[3]{#1^{#3}[#2]}
+
+%\newcommand\Lthread{L_\codeinmath{td}}
+%\newcommand\Lbthread{L_\codeinmath{btd}}
+%\newcommand\Lhbthread{L_\codeinmath{hbtd}}
+%\newcommand\Lhthread{L_\codeinmath{htd}}
+
+
+
+
+%\newcommand{\sstepr}[5]{#1(#2, #3) \ni (#4, #5)}
+%\newcommand{\sstep}[4]{#1(#2, #3) \ni (#4)}
+%
+%\newcommand{\modulef}[1]{#1 \mapsto \kappa_{#1}}
+
+%\newcommand{\remove}[1]{\textcolor{red}{\sout{#1}}}
+%\newcommand{\added}[1]{\textcolor{blue}{#1}}
+%\newcommand{\return}[0]{\downarrow\!}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+

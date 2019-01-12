@@ -1,1 +1,0 @@
-CalMCSLock : MultiLog -> option MCSLock

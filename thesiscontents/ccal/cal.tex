@@ -10,28 +10,40 @@ proving the correctness of each layer independently, and connecting the proofs o
 It only supports sequential program verification but works as a basis of our concurrent certified abstraction layers.
 
 $\calname$ is a predicate over two layers with a context program, 
-``$\ltyp{L_{\codeinmath{low}}}{R}{\codeinmath{Prog}}{L_{\codeinmath{high}}}$'', 
-and a mechanized proof object (written in $\coq$) for the predicate where layer $L_{\codeinmath{low}}$ and $L_{\codeinmath{high}}$ are state machines, \code{Prog} is a program written in C and/or Assembly, $R$ is a relation between states of two layers.
+``$\ltyp{L_{\codeinmath{low}}}{R}{\codeinmath{M}_\codeinmath{high}}{L_{\codeinmath{high}}}$'', 
+and a mechanized proof object (written in $\coq$) for the predicate where layer $L_{\codeinmath{low}}$ and $L_{\codeinmath{high}}$ are state machines, $\codeinmath{M}_\codeinmath{high}$ is a program written in C and/or Assembly, $R$ is a relation between states of two layers.
 Informally, the predicate implies that 
 a layer $L_{\codeinmath{low}}$ contextually refines the higher layer $L_{\codeinmath{high}}$ with the relation $R$
- if each state transition made by $L_{\codeinmath{high}}$ based on any context program \code{Ctxt} (when \code{Prog} = \code{M} $\oplus$ \code{Ctxt}, where $\oplus$ computes the union of implementation modules and contexts) corresponds to (with the relation $R$)  a sequence of 
- state transitions by $L_{\codeinmath{low}}$ which has the context \code{M} and  \code{Ctxt}.
+ if each state transition made by $L_{\codeinmath{high}}$ based on any context program \code{Ctxt} 
+% (when \code{Prog} = $\codeinmath{M}_{\codeinmath{high}} \oplus \codeinmath{Ctxt}$, where $\oplus$ computes the union 
+% of implementation modules and contexts) 
+ corresponds to (with the relation $R$)  a sequence of 
+ state transitions by $L_{\codeinmath{low}}$ which has the context $\codeinmath{M}_{\codeinmath{high}}$ and  \code{Ctxt} together.
  Formally, it is defined as a forward simulation~\cite{Lynch95,leroy09,Milner71,Park81} with the (simulation) relation $R$
- and  $\ltyp{L_{\codeinmath{low}}}{R}{\codeinmath{M} \oplus \codeinmath{Ctxt}}{L_{\codeinmath{high}}}'$ is stated as
-$$\forall\ \codeinmath{Ctxt},\ \sem{L_{\codeinmath{low}}}{\codeinmath{M}_{\codeinmath{high}} \oplus \codeinmath{Ctxt}} \refines_{R} \sem{L_{\codeinmath{high}}}{\codeinmath{Ctxt}},$$
-where $\refines_{R}$ is a refinement relation with $R$, and $\sem{L}{\cdot}$ denotes a  behavior of the layer machine based on $L$.
+ and  $\ltyp{L_{\codeinmath{low}}}{R}{\codeinmath{M}_{\codeinmath{high}} }{L_{\codeinmath{high}}}$ is stated as
+ \begin{center}
+$\forall\ \codeinmath{Ctxt},\ \sem{L_{\codeinmath{low}}}{\modulecompose{\codeinmath{M}_{\codeinmath{high}}}{\codeinmath{Ctxt}}} \refines_{R} \sem{L_{\codeinmath{high}}}{\codeinmath{Ctxt}},$
+\end{center}
+where $\refines_{R}$ is a refinement relation with $R$, 
+$\modulecomposekwd$ computes the union 
+ of implementation modules and contexts,
+and $\sem{L}{\cdot}$ denotes a  behavior of the layer machine based on $L$.
 
 
 Contextual refinement, the underlying technique of $\calname$, is powerful since layers can be verified only once individually, and those layers can be linked together.
- When the stack is extended with a new verified layer on top, 
+ When the layer stack is extended with a new verified layer on top, 
  the inter-layer contextual refinement proofs can be reused with an updated context to include the new layer continuously. 
 For instance, if we add a new layer $L_{\codeinmath{top}}$ on top of verified layers $L_{\codeinmath{mid}}$ and $L_{\codeinmath{btm}}$, 
-we need one new proof that shows $L_{\codeinmath{mid}}$ contextually refines $L_{\codeinmath{top}}$, but we can reuse the proof for $L_{\codeinmath{btm}} \refines_{R} L_{\codeinmath{mid}}$ without requiring any modification to the proof thanks to the characteristic of the contextual refinement. After the proof of $L_{\codeinmath{mid}} \refines{cr} L_{\codeinmath{top}}$, we are automatically guaranteed that $L_{\codeinmath{btm}}$ contextually refines all the way up to $L_{\codeinmath{top}}$ as follows:
-$$
-\forall\ \codeinmath{Ctxt},\ \sem{L_{\codeinmath{btm}}}{\codeinmath{M}_{\codeinmath{mid}}\oplus (\codeinmath{M}_{\codeinmath{top}}\oplus \codeinmath{Ctxt})} \refines_{R}  \sem{L_{\codeinmath{mid}}}{\codeinmath{M}_{\codeinmath{top}} \oplus \codeinmath{Ctxt}} \refines_{R'} \sem{L_{\codeinmath{top}}}{\codeinmath{Ctxt}}. 
-$$ 
-where $R$ is the relation between states of $ L_{\codeinmath{btm}}$ and $L_{\codeinmath{mid}}$ and $R'$ is the relation between states of 
- $ L_{\codeinmath{mid}}$ and $L_{\codeinmath{top}}$.
+we need one new proof that shows $L_{\codeinmath{mid}}$ contextually refines $L_{\codeinmath{top}}$, but we can reuse the proof for $L_{\codeinmath{btm}} \refines_{R} L_{\codeinmath{mid}}$ without requiring any modification to the proof thanks to the characteristic of the contextual refinement. After the proof of $L_{\codeinmath{mid}} \refines_{{R}_{total}} L_{\codeinmath{top}}$, we are automatically guaranteed that $L_{\codeinmath{btm}}$ contextually refines all the way up to $L_{\codeinmath{top}}$ as follows:
+\begin{center}
+$
+\forall\ \codeinmath{Ctxt},\ \sem{L_{\codeinmath{btm}}}{\modulecompose{\codeinmath{M}_{\codeinmath{mid}}}{(\modulecompose{\codeinmath{M}_{\codeinmath{top}}}{\codeinmath{Ctxt})}}} \refines_{R_{(\codeinmath{mid}, \codeinmath{low})}}  \sem{L_{\codeinmath{mid}}}{\modulecompose{\codeinmath{M}_{\codeinmath{top}}}{\codeinmath{Ctxt}}} \refines_{R_{(\codeinmath{high}, \codeinmath{mid})}} \sem{L_{\codeinmath{top}}}{\codeinmath{Ctxt}}. 
+$
+\end{center}
+where $R_{(\codeinmath{mid}, \codeinmath{low})}$ and $R_{(\codeinmath{high}, \codeinmath{mid})}$ are relations between states of $ L_{\codeinmath{btm}}$ and $L_{\codeinmath{mid}}$ as well as
+ $ L_{\codeinmath{mid}}$ and $L_{\codeinmath{top}}$, respectively, 
+and $\relcomposekwd$ is an operator that combines two refinement relations which is used for representing  
+ ${R}_{total} =\relcompose{R_{(\codeinmath{mid}, \codeinmath{low})}}{{R_{(\codeinmath{high}, \codeinmath{mid})}}}$ in here.
 
 
 Each layer in $\calname$ is internally composed of the C implementation, specifications, and proofs.
