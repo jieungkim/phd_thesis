@@ -1,0 +1,25 @@
+\section{Per Thread Modules}
+\label{chapter:certikos:sec:per-thread-modules}
+
+Due to the restrictions that we mentioned,
+we only includes small pieces of our operating system in oure per-thread modules.
+
+\subsection{IPC Module}
+\label{chapter:certikos:subsec:ipc-module}
+
+IPC is the module that provides the communication between threads.
+It's communication is inter-thread/CPU, so all threads in our system can communicate with others if it does not exceed the capacity of our system. 
+
+One reason of this module to be allocated in the thread local machine is that 
+the receive function relies on the sleep function call to avoid busy waiting. 
+
+\subsection{Trap Handler Module}
+\label{chapter:certikos:subsec:trap-handler-module}
+
+The Trap handler module is providing the top-level API of our operating systems to users.  
+
+\subsection{Connecting All Layers in Per-Thread Modules}
+\label{chapter:certikos:subsec:per-thread-layers-connect}
+
+All the ingredients that we have mentioned in here is to provide a single correctness 
+theorem for the all system. 

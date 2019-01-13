@@ -1,9 +1,15 @@
 
+Our verification approach has been inspired by $\certikos$ project,
+but the applicability of our framework is not restricted to the operating system verification, but general enough
+to build and verify other interesting system software. 
+Among them, we choose one distributed system as another example to demonstrate our 
+verification framework.
 Distributed systems are notoriously complex due to the many possible interleavings of their coarsely-connected 
 instances as well as the possibility of errors in both  those instances and the network environment. 
 For these reasons, verification of distributed systems is desirable to remove the possibility of bugs and guarantee their safety and correctness. 
 However, much current verification work still requires a great deal of effort and sometimes has limitations.
 Paxos~\cite{paxos}, proposed by Lamport, is an old distributed consensus protocol but still in use. 
+
 %Based on Paxos, 
 %we propose the Write-Once Register (WOR) which consists of multiple 
 

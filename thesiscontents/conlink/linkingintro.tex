@@ -1,2 +1,25 @@
 
-CCAL propose high-level overview to show how compositions works with multiple components in concurrent programs. 
+Our previous chapters address how we build 
+certified layers via $\ccalname$ to prove concurrent programs and show the example of it, MCS Lock. 
+Chapter~\ref{chapter:ccal} also slightly mention that 
+providing a  parallel composition rule for 
+concurrent layers associated with a partial focused set of participants in the system. 
+It, however, does not give us a useful information 
+about how they are actually supported in our framework (via connected with all other parts, such as a compiler 
+as well as machine models). 
+To make them clear, 
+we focus on parallel compositions in this Chapter 
+by providing 
+detailed information and proofs. 
+
+
+% lining - multicore linking -  a single local laye can be reifned by all composed local layers 
+% all composed local layers are actually refined by the multicore machine model 
+
+% linking - multithreaded linking  -  a single local laye can be reifned by all composed local layers 
+% all composed local layers are actually refined by the multithreaded machine model, and thus a local lyaer interface with a single CPU.
+
+
+
+% Need to provide the proof that I have used in DeepSpec Workshop
+

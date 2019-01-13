@@ -1,0 +1,27 @@
+\section{Multicore Linking for CertiKOS}
+\label{chapter:certikos:sec:multicore-linking-for-certikos}
+
+Multicore linking in CertiKOS facilitates all the intermediate languages
+and proofs in Section~\ref{chapter:linking:sec:multicore-linking}.
+
+\subsection{Hardware Configuration Instance}
+\label{chapter:certikos:subsec:hardware-configuration-instance}
+
+The hardware configuration in Section~\ref{chapter:linking:subsec:hardware-configuration} works as a 
+template for users to instantiate all intermediate machine models in multicore linking. 
+
+
+\subsection{Intermediate Machine Instantiation}
+\label{chapter:certikos:subsec:intermediate-machine-instantiation}
+
+Our intermediate machine models are abstract languages, but 
+our goal is connecting them with backward simulation proofs in $\compcert$. 
+For that purpose, 
+we need to instantiate those abstract languages to make them fit into 
+the semantics definition in $\compcert$.
+
+
+\subsection{Connect Layers on Multicore Machine and CPU-Local Machine}
+\label{chapter:certikos:subsec:connect-multicore}
+
+Connecting all proofs for mluticore linking is then possible by using the result of previous sections.

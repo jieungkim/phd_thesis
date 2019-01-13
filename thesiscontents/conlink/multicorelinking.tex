@@ -1,30 +1,83 @@
 \section{Multicore Linking}
-\label{chapter:conlink:sec:multicore-linking}
+\label{chapter:linking:sec:multicore-linking}
 
+Multicore Linking is to provide the evidence that the progrma execution on
+our local layer (CPU local layer) is actually connected to the execution of the same program 
+on our multicore machine model. 
+
+Section~\ref{chapter:ccal:sec:ccal-overview} provides the way to handle 
+
+
+\subsection{Hardware Configurations}
+\label{chapter:linking:subsec:hardware-configuration}
+
+Abstraction is key to handle complex problems, and it is also same for this multicore linking problem.
+To hide the machine-dependent and subtle definitions in detail while providing multicore lining framework, 
+we define our semantics with hardware configuration, 
+which contains the abstract form for us to follow for multicore linking.
 
 \subsection{Multicore Machine Model}
-\label{chapter:conlink:subsec:multicore-machine-model}
+\label{chapter:linking:subsec:multicore-machine-model}
+
+We briefly introduce our multicore machine model in Section~\ref{chapter:ccal:subsec:multicore-machine-model}.
+This section provides the full syntax and semantics (based on the hardware configuration) of our multicore machine model. 
 
 
 \subsection{Multicore Machine Model with Hardware Scheduler}
-\label{chapter:conlink:subsec:multicore-machine-model-with-hardware-scheduler}
+\label{chapter:linking:subsec:multicore-machine-model-with-hardware-scheduler}
+
+As discussed in Section~\ref{chapter:ccal:subsec:concurrent-layer-with-environment}, 
+one hidden component in multicore machine model is a logical participant, hardware scheduler. 
+The hardware scheduler builds a specific scheduling strategy for the single game that the 
+verification wants to consider at that time.  
 
 
 \subsection{Concurrent Machine Model}
-\label{chapter:conlink:subsec:multicore-machine-model}
+\label{chapter:linking:subsec:concurrent-machine-model}
 
+Concurrent machine model is a language that is able to run programs with partially focused set on it,
+and it is associated with the concurrent layer interface in Section~\ref{chapter:ccal:subsec:concurrent-layer-interface}. 
+This machine model does not provide the interface for us to build 
+layers on top of it, but provide the 
+key connection between oracle machine model (thus multicore machine model) and 
+the single CPU machine model.  
 
-\subsubsection{Concurrent Machine Model with Full CPU Set}
+\subsubsection{Concurrent Machine Model with the Full CPU Set}
 
+Since the set for this concurrent machine model can be a set exactly same with the full CPU set, 
+we first show that the program runs with the oracle machine refines the concurrent machine model with full CPU set. 
+Formally speaking, 
+this is the parallel composition rule for all threads; thus it can be stated as follows:
+% full thread parallel compositon 
 
 \subsubsection{Concurrent Machine Model with a Single CPU}
 
-
+Now, we focus on a single CPU. 
+% Decrementing the size of focused set one by one is possible, but it does not provide any benefits at all for our proof.
+In this step, 
+the key part that we have to prove is that the multiple shared steps in full CPU sets can
+ refine environmental steps in a single CPU machine. 
 
 \subsection{Single Core Machine Model}
-\label{chapter:conlink:subsec:single-core-machine-model}
+\label{chapter:linking:subsec:single-core-machine-model}
+
+Now, we are ready to build a local layer interface described in Section~\ref{chapter:ccal:subsec:local-layer-interface}. 
+The machine state of it is exactly same with 
+
+\subsection{Global Log Optimization to Link with LAsm}
+\label{chapter:linking:subsec:global-log-optimization}
 
 
-\subsection{Single Core Machine Model with Big Step Environmental Steps}
-\label{chapter:conlink:subsec:single-core-machine-model-with-big-step-env-steps}
+\subsubsection{Big Step Oracle Query}
+
+
+Querying the environmental context at each step is subtle in defining local layer interface. 
+In this sense, simplification is necessary for us to 
+
+\subsubsection{Reordering}
+
+\subsubsection{Zipping}
+
+
+\subsubsection{Divide the Global Log}
 

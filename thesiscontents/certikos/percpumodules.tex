@@ -1,0 +1,49 @@
+\section{Per CPU Modules}
+\label{chapter:certikos:sec:per-cpu-modules}
+
+
+Based on the lowest layer that are connected with our multicore machine model, 
+we build six modules that are tied with a single CPU.
+
+\subsection{Spinlock Module}
+\label{chapter:certikos:subsec:spinlock-module}
+
+Spinglock provides the protection mechanism for shared resources by using its property, mutual exclusion of the owner for each lock. 
+We built two different spinlock modules, ticket Lock and MCS Lock.
+
+
+\subsection{Device Driver Module}
+\label{chapter:certikos:subsec:device-driver-module}
+
+CertiKOS supports device driver handling, and all this works are from the previous work.
+
+\subsection{Memory Management Module}
+\label{chapter:certikos:subsec:memory-management-module}
+
+We built memory management module with 14 layers, 
+which supports 2-level page tables, dynamic page allocations for users, 
+container to manage resources, 
+as well as shared memory between two threads. 
+
+\subsection{Process Management Module}
+\label{chapter:certikos:subsec:process-management-module}
+
+The key of our process management is providing 
+thread spawn (thus process create), yield, and sleep functions.
+It also relies on providing the proofs about 
+context switching as well as scheduling queues.
+
+\subsection{Virtual Machine Support Module}
+\label{chapter:certikos:subsec:virtual-machine-support-module}
+
+$\certikos$ supports virtual machine related code. 
+
+\subsection{Connecting All Layers in Per-CPU Modules}
+\label{chapter:certikos:subsec:per-cpu-layers-connect}
+
+
+Connecting the whole CPU-local layers are possible and 
+our layer library provides the canonical forms for this process. 
+In short, the layer calculus described in Section~\ref{chapter:ccal:subsec:linking} is sufficient for us to 
+connect all layers and provide the theorem that 
+the bottom-most layer in all per-CPU modules contextually refines the top-most layer in all per-CPU modules.

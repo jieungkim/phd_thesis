@@ -1,0 +1,75 @@
+\section{Multithreaded Linking}
+\label{chapter:linking:sec:multithreaded-linking}
+
+The purpose of building a framework for multithreaded linking is similar to 
+the purpose of our multicore linking. 
+It, however, has multiple differences. 
+First, multithreaded linking is 
+strictly relies on the definition and the specification of software scheduler.
+Second, each thread usually has a capacity for their own resources (\eg, containers),
+and those capacities are usually dynamically allocated. 
+Third, the invaraint proof for the thread local layers has to preserved. 
+Fourth, within memory, we do not know who owns how many pages for the memory 
+and who owns which block of the memory at all. 
+
+
+% overview with figures and list challenges
+%% compiler reusability 
+%% hide context switching in its local view 
+%% assing the proper initial state for each thread (one thread machine may be affected by others 
+
+\subsection{Multithreaded Environment Configuration}
+\label{chapter:linking:subsec:multithreaded-env-configuration}
+
+Similar to the multicore machine model, we provide configurations 
+for mutlithreaded linking. 
+We first provide the set of full threads on the CPU that we want to introduce the multithreaded machine model. 
+
+\subsubsection{Thread Machine Memory Model}
+
+% algebraic memory model
+
+\subsubsection{Auxiliary Functions}
+
+Based on the configurations, we provide multiple auxiliary functions 
+for thread local machines to calculate necessary information. 
+
+Later, when we want to link the concrete layer definitions using our multithreaded linking library, users need to define them.
+
+\subsubsection{Auxiliary Properties}
+
+Those are the property about the auxiliary functions. 
+
+\section{Multithreaded Machine Model}
+\label{chapter:linking:subsec:multithreaded-machine-model}
+
+Using them, we are able to provide the generic multithreaded machine mode, $\easm$
+
+\section{Concurrent Multithreaded Machine Model}
+\label{chapter:linking:subsec:concurrent-multithreaded-machine-model}
+
+Our multithreaded machine model relies not on the fixed thread set, but on 
+the dynamic thread set specified by our configuration variables.
+In this sense, the machine model $\easm$ is already a machine model that can run 
+any kind of thread sets on it. 
+Only one rule in $\easm$ need to be added to handle environment threads. 
+
+
+One another level is introducing one more level of multithreaded machine model,
+which only has two memories (memory for self thread and memory for othres).
+This is required due to the current limitaiton of our algebraic memory model. 
+The current algebraic memory model does not support 
+1) n-ary relations; 2) commutativity very well. 
+Thus, providing the refinement theorem is a little bit tricky. 
+
+
+\section{Single-threaded Machine Model}
+\label{chapter:linking:subsec:single-threaded-machine-model}
+When the focused thread set in $\easm$ is a single thread, then the machien itself is 
+already a single threaded machine model. 
+It, however, has a huge differences between the model that we want to introduce ($\compcertx$ like model).
+
+\section{Connecting with Thread Local Machine Model}
+\label{chapter:linking:subsec:connecting-with-thread-local-machine-model}
+
+The connection with multiple thread local machine model is to provide the  following theorem. 

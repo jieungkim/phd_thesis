@@ -1,0 +1,57 @@
+\section{Multithreaded Linking for CertiKOS}
+\label{chapter:certikos:sec:multithreaded-linking-for-certikos}
+
+Multithreaded linking for $\certikos$ is connecting the top-most layer of CPU layer
+ interface with
+the corresponding bottom-most layer in the thread layer interface. 
+The biggest difference between those two layers is 
+the way to handle scheduling primitive. 
+
+
+
+\section{Top-most Layer of CPU Layer Interface}
+\label{chapter:certikos:subsec:pbthread}
+
+The top-most layer in our CPU machine is ``pbthread''.
+
+\subsection{Multithreaded Configuration Instance}
+\label{chapter:certikos:subsec:multithreaded-configuration-instance}
+
+Two big challenge in here is related initial state of thread local machines; 
+1) how we assing the initial state; 2) how we prove the invariant about initial state 
+of each thread. 
+Both of them are possible by using our global log. 
+
+
+\subsection{Layer on Intermediate Languages in Multithreaded Linking}
+\label{chapter:certikos:subsec:layer-on-intermediate-languages-in-multithreaded-linking}
+
+Our intermediate layer definition has a different state definition (not only for the memory and registers, but also for the abstract data); thus we also provide the 
+layer that can be used for those intermediate machine models. 
+In addition to that, our intermediate machine models has explicit 
+transition rules for yield ans sleep. 
+
+\section{Bottom-most Layer of Thread Layer Interface}
+\label{chapter:certikos:subsec:phthread}
+
+The bottom most layer definition has the exactly same set of primitives with those in 
+the top-most layer definition of CPU-local layers. 
+
+\subsection{Connect Layers on Per-CPU Machine with Per-Thread Machine}
+\label{chapter:certikos:subsec:multithreaded-connect}
+
+By using the framework discussed in the previous chapter, connecting them to provide the backward simulation proofs is striaghtforward.
+It, however, relies on two bg assumptions, 
+AbstractRel and AbstractRelT as we have discussed. 
+
+All assumptions need to be addressed correctly.
+
+\subsubsection{AbstractRel}
+
+This provides the relation bewteen PHBThread layer runs with EAsm and PBThread layer runs with LAsm. 
+
+\subsubsection{AbstractRelT}
+
+This provides the relation bewteen PHThread layer runs with Hasm and PHBThread layer runs with TAsm. 
+
+
