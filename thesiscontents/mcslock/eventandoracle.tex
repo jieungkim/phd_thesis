@@ -10,7 +10,7 @@ the state.
 \begin{minipage}{\linewidth}
 \lstinputlisting[numbers = left, language = C]{source_code/mcslock/lockeventtype.v}
 \end{minipage}
-\caption{Event set for MCS Lock.}
+\caption{Event set for $\mcsname$ Lock.}
 \label{fig:chapter:mcslock:lock_event_type}
 \end{figure}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -25,14 +25,14 @@ When we write a specification we can chose the set of events, as long
 as it is fine-grained enough to capture all scheduling interleavings
 that may happen.
 Figure~\ref{fig:chapter:mcslock:lock_event_type} shows the event definition used to
-model lock acquire and release. They correspond to the part of the MCS lock source code in Figure~\ref{fig:chapter:mcslock:mcs_lock}
+model lock acquire and release. They correspond to the part of the $\mcsname$ lock source code in Figure~\ref{fig:chapter:mcslock:mcs_lock}
 and acquiring/releasing the lock after we show starvation freedom. 
 
 Followed by the assumptions in our machine models in Section~\ref{chapter:ccal:sec:interface-calculus},  we again assumes that the
 machine is sequentially consistent (all CPUs see a single linear log). 
 This rules out 
 Even with this assumption,
-verifying the MCS algorithm is not easy (the other proofs we are aware
+verifying the $\mcsname$ algorithm is not easy (the other proofs we are aware
 of assume sequential consistency too), so we leave weak memory models
 to future work.
 
@@ -41,7 +41,7 @@ to future work.
 \item \textbf{${\swaptail{bound}{success}}$} event is for the
 operations from line 5 to 7 in Figure~\ref{fig:chapter:mcslock:mcs_lock} and takes
 two arguments. The second argument is a boolean flag indicating
-whether the previous ``last'' value of MCS lock was $\invalidmcsval$,
+whether the previous ``last'' value of $\mcsname$ lock was $\invalidmcsval$,
 which means it records whether the if-statement at line 9 took the fast path or not.
 The first argument is the \emph{bound number}, which is a key idea in
 our development. Every client that invokes $\mcsacquire$ has
@@ -91,7 +91,7 @@ In addition, the ``busy'' corresponds to the result of the $\CAS$ operation in F
 \end{itemize}
 
 Those six events are used to show the functional correctness of
-an MCS Lock. However, for clients that use the MCS Lock to build shared
+an $\mcsname$ Lock. However, for clients that use the $\mcsname$ Lock to build shared
 objects they expose too much implementation details.
 In Section~\ref{chapter:mcslock:sec:liveness-atomicity} we will prove linearizability and
 starvation freedom,  to replace them

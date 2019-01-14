@@ -6,3 +6,6 @@ Our certified kernel is written in 6500 lines of C and x86 assembly
 and runs on stock x86 multicore machines. This is
 the first proof of functional correctness of a complete,
 general-purpose concurrent OS kernel with fine-grained locking.
+
+
+We have successfully developed a fully certified concurrent OS kernel (called mC2) in Coq [46]. Using mC2 as the base, we have also built a few additional cer- tified kernels with hypervisor or ring-0 process supports. Our kernels support both fine-grained locking and sleep- wakeup primitives and can run on stock x86 multicore hardware. Our certified hypervisor kernel consists of 6000 lines of C and x86 assembly, and can boot a version of Linux as a guest. To our knowledge, this is the first proof of functional correctness of a complete, general-purpose concurrent OS kernel with fine-grained locking.

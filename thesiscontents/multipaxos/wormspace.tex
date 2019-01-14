@@ -1,0 +1,289 @@
+\section{Paxos} 
+\label{sec:paxos} 
+
+\begin{figure}
+\begin{minipage}{\linewidth}
+\begin{multicols}{2}
+\lstinputlisting[numbers = left, language=TeX]{source_code/multipaxos/paxos_spec.c}
+\end{multicols}
+\end{minipage}
+\caption{Paxos: Informal Description}
+\label{fig:chapter:multipaxos:paxos-pseudocode}
+\end{figure}
+
+Before we directly introduce $\WOR$,
+we first illustrates $\paxos$, which is used for instantiating $\WOR$ as $\wormspace$ in our case study.
+We also illustrates the common challenges in distributed systems verification using this small example.
+
+The $\paxos$ algorithm~\cite{paxos}
+is  one of the most popular asynchronous consensus algorithms, and was even almost treated as a synonym of
+consensus for decades.
+Although an informal description of $\paxos$ can be expressed in a single page,
+implementations of the algorithm often exceed thousands of lines of code due to its underlying complexity.
+Moreover, this hidden complexity is made evident by the difficulty that many people have in trying to understand the algorithm.
+Several works~\cite{raft, rvrpaxos} have noted $\paxos$' lack of clarity despite multiple attempts to present
+it in a more understandable way ~\cite{paxosmadesimple, Lampson1996, Lampson2001, dpaxos}.
+Part of the difficulty stems from the fact that all nodes in the distributed system perform their transitions in a local manner in a fault-prone environment.
+Their states and behaviors need to be consistent, but
+the only way to learn another node's state is through the network, which can fail in multiple ways.
+The result is a system that guarantees global properties through local behaviors, but the relation between the two is not made clear by the algorithm.
+
+\begin{figure}
+\begin{center}
+\includegraphics[width=0.7\textwidth]{figs/multipaxos/paxos_example_nowitness}
+\end{center}
+\caption{Paxos: Execution Example.}
+\label{fig:chapter:multipaxos:paxos-example}
+\end{figure}
+
+$\paxos$ can be treated as a concurrent state machine consisting of a cluster of two types of nodes: proposers and acceptors.
+Proposers operate with arbitrary speed and their role is to propose a value to write in the system.
+Although there can be multiple proposers in the system, they are isolated from one another;
+thus they do not coordinate to reach consensus.
+Acceptors, on the other hand, are responsible for deciding which values suggested by the proposers to write.
+The system is said to reach consensus if a majority of the acceptors (here defined to simply be more than half), have chosen the same value.
+In this sense, the acceptors are cooperating to reach consensus, but they do not actually communicate with one another.
+Instead, each acceptor works only using its local state, and certain invariants of the algorithm guarantee that the states of all acceptors remains consistent.
+
+Figure~\ref{fig:chapter:multipaxos:paxos-pseudocode} informally illustrates the key steps of $\paxos$.
+Both proposers and acceptors participate in two phases, which are notated as Phase 1 (Prepare) and Phase 2 (Write) in the figure.
+In addition to modifying local state, transitions in both phases can also involve network communications between nodes.
+When a proposer wants to write a value, it first asks acceptors to prepare (Phase 1a) with a unique round number ($rnd$).
+This number is totally ordered among the whole system, but proposers cannot know which numbers have been proposed by other proposers directly.
+When an acceptor receives the message, it will first compare the round number with the highest round number it has seen up to that point.
+If the new number is higher, it will respond with its stored value and the round in which it was stored (Phase 1b).
+If no such value and round exist then it returns a special null value and the round number that is smaller than any that can be proposed.
+If a proposer receives Phase 1b responses from a majority of acceptors it can send a Phase 2a message with a value to write.
+If any of the Phase 1b messages contained a non-null value then the proposer must try to write the value associated with the highest round number.
+Otherwise, if all of the values are null, the proposer is free to choose any value.
+Upon receiving the Phase 2a message, acceptors will again check the round number to ensure that it is greater or equal to the maximum it has seen.
+Otherwise they do not update their state and they ignore the request.
+
+%%%%%%%
+% fault tolerant 
+%%%%%% 
+
+This high-level description is relatively short and seemingly simple.
+The complexity, however, arises when all nodes run together concurrently in an asynchronous environment with the possibility of multiple types of failures.
+In an asynchronous environment, nodes are loosely connected with others.
+There are no bounds on timing, so each clock on each node can run arbitrarily fast or slow.
+Additionally, network communication may take a potentially unbounded amount of time,
+and nodes themselves may be unpredictably slow in responding to messages.
+The possibility of failures then compounds the complexity.
+Communication may involve message duplication, loss, and reordering, which means that a simple send-receive pair can have many possible interleavings.
+Figure~\ref{fig:chapter:multipaxos:paxos-example} (a) shows some of the possible interleavings of messages sent between multiple acceptors and a proposer.
+In the example, the proposer (P1) communicates with three acceptors (A1, A2, and A3).
+It first proposes the round number 5, and gets an acknowledgement from A1 and A2.
+A3 also responds, but its message is duplicated, and one of them is lost.
+The other one is delayed and does not arrive until after P1 has already heard from a majority of acceptors, so it is ignored.
+Then, in Phase 2, P1 tries to write the value $v$, which will succeed assuming its messages reaches a majority of the acceptors and no
+other proposer has proposed a larger round number in the meantime.
+Although $\paxos$ does guarantee that it will still work under these conditions, even in this simple example,
+the number of cases to consider is large and proving it even informally is not straightforward.
+
+%%%%%%%
+% mininum requirement for distributed system verificatiaon
+%%%%%% 
+In general, implementation and verification of distributed systems
+(including $\paxos$, $\wormspace$, \etc) must handle the following:
+\begin{enumerate}
+\item \textbf{Network model}:
+Most distributed systems and consensus protocols are based on certain assumptions about the network,
+such as packet duplication, loss, and reordering. In order to verify such a system, one must make a model of the network that matches
+those assumptions.
+
+\item \textbf{Functional correctness}: 
+To reason about correctness at all, there must be a specification of how the system should behave.
+A key part of the verification of a system is showing that the implementation correctly simulates this specification.
+Distributed systems, including Paxos, can often have a large gap between their implementation and specification due to optimizations and careful handling of failure cases.
+This mismatch between code and specification makes proofs of functional correctness especially important.
+
+\item \textbf{Safety of the protocol}: 
+Proving that the implementation refines the specification is necessary, but is often insufficient in distributed system verification.
+Since distributed systems consist of multiple nodes, which may have different functionalities,
+functional correctness of one node does not imply the correctness or safety of the whole system.
+Instead, verification of such global properties requires modeling the entire system and
+proving that the behaviors of individual nodes ensures that the system runs correctly.
+\end{enumerate}
+
+\section{Write Once Register}
+\label{chapter:wormspace:sec:write-once-register}
+
+We now introduce $\WOR$, an abstraction of fundamental services for distributed systems. 
+The $\WOR$ has a simple API: a client can \textit{prepare} a $\WOR$; \textit{write} to a captured $\WOR$ via prepare; and \textit{read} the  $\WOR$. 
+The operations in $\WOR$ differ from $\paxos$ regarding its read operation. 
+The read operation works as a non-write prepare, which tells the current value of acceptors to the proposer that wants to read the value.
+It also offers linearizable consistency and is safe for concurrent accesses as many distributed systems need to provide; 
+if multiple clients attempt to prepare and write the same $\WOR$ only one will succeed.
+
+$\WOR$s can be naturally implemented via the $\paxos$ protocol (with modifications to support quorum reads), 
+offering durability and availability against a minority of storage servers failing. 
+In fact, the $\WOR$  prepare/write API mirrors the phases of single-shot $\paxos$. 
+\footnote{$\WOR$ can also be implemented via other protocols such as Primary-Backup or Chain Replication~\cite{chainreplication}, 
+obtaining different durability and availability guarantees.}
+Most distributed services embed $\WOR$s, but hide them underneath a higher-level API:
+
+\begin{itemize}
+\item \textbf{\textit{A sequence of $\WOR$s}} is often used to impose a total order, but hidden behind restrictive interfaces such as replicated state machines~\cite{smr, rvrpaxos}, shared logs~\cite{corfu}, groups~\cite{GC, horus}, namespaces~\cite{chubby, zookeeper}, filesystems, databases~\cite{hyder}, or objects.~\cite{tango} Often, the implementation of the $\WOR$ is fused with the machinery that implements the high-level API.
+
+\item \textbf{\textit{A set of $\WOR$s}} represents decisions taken by participants in distributed transaction protocols such as 2PC; the final commit decision for a transaction is a function of these $\WOR$s. In fault-tolerant protocols, each decision $\WOR$ is either layered inefficiently over a replicated state machine, or entwined with a transaction coordination logic.~\cite{gray:2006}
+\end{itemize}
+
+In this sense, $\WOR$ can work as a first-class system-building abstraction.
+ By providing single-shot consensus via a simple yet versatile data-centric API, 
+ the $\WOR$ acts as the bottom layer in a modular stack for building strongly consistent distributed systems. 
+ The resulting modularity has two benefits.
+ First, it enables \textit{simple} systems: the code and logic for consensus can be provided by a small number of high-quality implementations
+  (\eg, $\paxos$ and Chain Replication) and reused across different systems. 
+  Second, it enables \textit{verified} end-to-end systems.
+   With the verification approach in Section~\ref{chapter:ccal}, 
+  the $\WOR$ implementation can be verified once and reused for the verification of applications that use the $\WOR$.
+   The application can be verified easily without dealing with the complexity of distributed asynchrony and failures. 
+   Also, the $\WOR$ can be layered over a verified OS to enable full-stack verification from the application to the OS. 
+
+\section{Wormspace}
+\label{chapter:wormspace:sec:wormspace}
+
+\begin{figure}
+\centering
+\includegraphics[width=0.7\textwidth, page=1]{figs/multipaxos/pics-small.pdf}
+\caption{$\wormspace$ Architecture: clients can access a shared address space of write-once registers.}
+\label{fig:chapter:multipaxos:overview}
+\end{figure}
+
+Accordingly, we present the design, implementation, and verification of $\wormspace$ (contracted from \textbf{W}rite-\textbf{O}nce-\textbf{R}ead-\textbf{M}any Address \textbf{Space}), which provides applications with a shared address space of durable, highly available, and strongly consistent $\WOR$s (see Figure~\ref{fig:chapter:multipaxos:overview}). $\wormspace$ divides the address space into contiguous write-once segments (which act as coarse-grained units for allocation, notification, reconfiguration, and garbage collection. Internally, each $\WOR$ is implemented via a conventional single-shot Paxos instance; $\wormspace$ can be viewed as a system to organize, access, and manipulate these Paxos instances via data-centric APIs. We implement $\wormspace$ via a combination of a client-side library and storage servers. We formally verify the client-side library and the server code written in C using the Coq~\cite{coq} proof assistant. We verify the functional correctness of the code, as well as distributed properties (\eg, write-once semantics) achieved collaboratively by the client library and the server code.
+
+Applications built over $\wormspace$ consist entirely of prepare/write/read commands on the write-once address space, rather than message-passing protocols. As a result, they are easy to develop and verify. We implement three applications over $\wormspace$: WormPaxos, a Multi-Paxos implementation; WormLog, a distributed shared log; and WormTX, a distributed, fault tolerant transaction coordinator. All these applications are built entirely over the $\WOR$ API, yet provide efficiency comparable to or better than handcrafted implementations. Specifically, we do not `open the Paxos box' while implementing these applications; the logic for consensus and durability remains strictly contained within the $\WOR$ abstraction. In contrast, state-of-the-art implementations for all three applications require the complex melding of Paxos logic with other protocols to obtain efficiency. Further, separating out the $\WOR$ enables novel design points: for example, a shared log that uses Paxos (rather than Chain Replication) to replicate each command, supporting appends in just two round-trips in the failure-free case.
+
+Verification of applications can also hugely benefit from $\wormspace$. We show that contextual refinement, which is the key to the layered verification approach discussed in Chapter~\ref{chapter:ccal}, encapsulates the complexity of distributed coordination within $\wormspace$ and allows the application to be easily verified as non-distributed code; still, verified distributed properties in $\wormspace$ are guaranteed to hold in the application. Applications verified on top of $\wormspace$ are guaranteed to use both the client and server code of $\wormspace$ correctly such that they use the system interface only in a defined way and shares the same semantics about the interface with $\wormspace$. Verifying the application on $\wormspace$ requires only linking a modular top-most layer proof of $\wormspace$ with the application. Similarly, we can easily link the proofs of $\wormspace$ to $\certikos$ in Chapter~\ref{chapter:certikos} and present a verified end-to-end stack from the OS to distributed application.
+
+Our verification model assumes non-Byzantine network: packets can be arbitrarily delayed, lost, and/or duplicated, but never corrupted. Applications built on top of WormSpace are easy to verify: the applications can directly use the verified proof from the $\wormspace$ layer and do not have to verify the distributed protocols. our $\ccalname$ also enables extension and migration of our proofs. Similarly, we show that our system can be linked to $\certikos$ easily leading an end-to-end verified software from OS to distributed system.
+%
+%In this paper, we make three contributions.
+%First, we identify the $\WOR$ abstraction inherent in many distributed systems and present a simple, 
+%data-centric $\WOR$ API as a first-class programming abstraction. Second, we implement three distributed applications over this API; 
+%for each one, our modular design easily allows new configurations with different performance and availability properties, 
+%while matching or surpassing the performance of an existing monolithic implementation in a similar configuration. 
+%Finally, we show that the modular design of the resulting systems, when combined with the layered verification approach, 
+%facilitates the reuse of software correctness proofs, and enables verification that crosses distributed system/application boundaries.
+
+
+\subsection{The WormSpace System}
+\label{chapter:wormspace:subsec:wormspace-system}
+
+
+\lstdefinelanguage{rock}
+{morekeywords={WS_alloc, WS_prefixtrim, WOS_capture, WOS_write, WOS_listen, WS_trim, WOR_capture, WOR_write, WOR_read, WOAS_write},
+sensitive=false,
+morecomment=[l]{//},
+morecomment=[s]{/*}{*/},
+morestring=[b]",
+}
+%
+%\lstset{
+%  basicstyle={\footnotesize\linespread{0.5}\normalfont}, %\ttfamily %\small, %\ttfamily
+%  showstringspaces=false,
+%  columns=flexible,
+%  breakatwhitespace=false, 
+%  breaklines=true, 
+%  commentstyle=\color[HTML]{444444},%\textit,
+%  keywordstyle=\color{black}\textbf
+%}
+
+\begin{figure}
+
+\begin{lstlisting}[language=rock]%, basicstyle=\linespread{0.5}]
+
+//allocates a WOS
+int WS_alloc(char *metadata, int size, segno_t *newsegno);
+
+//trims a segment
+int WS_trim(segno_t seg); 
+
+//batch captures a sub-range within the WOS
+int WOS_capture(segno_t seg, int *retcodes, off_t start,
+    off_t end);
+
+//batch writes a sub-range within the WOS
+int WOS_write(segno_t seg, char *buf, int size,
+    int *retcodes, off_t start, off_t stop);
+
+//registers a listener for write notifications
+int WOS_listen(segno_t seg, callback_t listener);
+
+//captures a WOR
+int WOR_capture(segno_t seg, off_t addr, int *captureID);
+
+//writes a single WOR
+int WOR_write(segno_t seg, off_t addr, char *buf, int size,
+    int captureID);
+
+//reads a single WOR
+int WOR_read(segno_t seg, off_t addr, char *buf, int size);
+\end{lstlisting}
+\caption{The $\wormspace$ API.}
+\label{fig:chapter:multipaxos:api}
+\end{figure}
+
+
+%; returns E_SUCCESS / 
+%// E_ALREADY_WRITTE; returns E_SUCCESS / E_UNWRITTEN //// N / E_TRIMMED%// E_TRIMMED
+
+The $\wormspace$ API (Figure \ref{fig:chapter:multipaxos:api}) provides applications running on client machines with a shared, 
+random-access address space of $\WOR$s. 
+All calls in the $\wormspace$ API are safe for concurrent access, providing linearizable semantics for the address space. 
+The address space is divided into write-once segments (WOSes) of fixed size; 
+\ie, WOS \#0 contains $\WOR$s [0-100), \#1 contains [100-200), and so on. 
+Segments are explicitly allocated via an \textit{alloc} call that takes in a segment ID and succeeds if it is as yet unallocated. 
+The \textit{alloc} takes an optional metadata payload to be associated with the new segment.
+ Clients can \textit{check} a segment to see if it is allocated by some other client, obtaining the metadata if this is the case. 
+
+Once a client has allocated a WOS, any client in the system can operate on $\WOR$s within the segment. 
+Specifically, it can \textit{prepare} a $\WOR$; \textit{write} to it; and \textit{read} from it.
+Any call to a $\WOR$ in an unallocated segment fails with an error code. 
+%Clients must prepare an address before writing to it.
+% Preparing a $\WOR$ is similar to locking it with special semantics: the lock is strictly enforced rather than advisory, and can be stolen (hence the name `capture') by other clients.
+Clients must prepare an address before writing to it to coordinate replicated servers to make the write atomic and immutable.
+Preparing a $\WOR$ is similar to locking with a preemptable lock: the lock must be acquired to write, but it can be stolen (hence the name `capture') by others.
+
+A successful prepare call returns a unique, non-zero prepareID; a subsequent write by the same thread is automatically parameterized with this ID, and succeeds if the $\WOR$ has not been prepared by some other client in the meantime. Alternatively, threads, processes, and even clients can  a $\WOR$ and then hand over the prepareID to some other thread/process/client that passes it in explicitly as a parameter to a write, allowing the prepare and write to be decoupled in space. Finally, a write parameterized with a prepareID of 0 does not require a prior prepare; we call this an \textit{unsafe write}. 
+%Unsafe writes are not safe for concurrent access; applications must ensure that there is only one client in the system that will issue an unsafe write to any particular $\WOR$.
+Unsafe writes are fast because preparing is unnecessary, but not safe for concurrent access; applications must ensure that at most one client issues an unsafe write to a particular $\WOR$.
+
+The WOS provides a \textit{prepare} and \textit{write} API, which act as batched or vectorized operations, preparing all the $\WOR$s in the segment or writing a single value to all of them.
+%A client can also request to be notified when $\WOR$s in a particular WOS are written to, via the \textit{listen} call. 
+A client can also receive notifications when $\WOR$s in a particular WOS are written to, via the \textit{listen} call.
+Garbage collection can be triggered by the application via the \textit{trim} call, which trims individual WOSes. 
+$\wormspace$ returns an error code when a trimmed address is subsequently accessed.
+%Importantly, allocation and de-allocation must happen sequentially: the \textit{alloc} call fails unless all segments prior to the passed-in segment number are allocated and all segments after it are unallocated. Garbage collection can be triggered by the application via the \textit{prefixtrim} call, which takes a segment number as a parameter and trims all prior segment numbers.
+
+
+%The \textit{trim} call can create holes in the address space and $\wormspace$ returns a special error code when the hole is accessed; we leave it to the application to maintain and access valid addresses.}
+
+%, or the \textit{prefixtrim} call, which takes a segment number as a parameter and trims all prior segments
+
+%WOS allocation occurs sequentially in the system; the application can expect the \textit{alloc} call to return \WOSes{} in strict increasing order. The $\wormspace$ instance acts as a linearizable object for the purposes of allocation.
+
+ %The \textit{alloc} call optionally take in parameters that determine the durability and availability requirements for the new WOS. Consequently, a single $\wormspace$ instance can combine $\WOR$s types with different durability / availability guarantees (though a single WOS has $\WOR$s of the same type).
+
+\subsection{Design and Implementation}
+\label{chapter:wormspace:subsec:design-and-implementation}
+
+
+$\wormspace$ is implemented via a combination of a client-side library exposing the API shown in Figure \ref{fig:chapter:multipaxos:api} and a collection of servers (which we call wormservers). In a sense, the $\wormspace$ design is similar to a distributed key-value store: $\WOR$s are associated with 32-bit IDs for our verified version (and 64bit IDs for non-verified version, consists of segment IDs concatenated with offsets within the segment) and mapped to partitions, which in turn consist of replica sets of wormservers. Partitioning occurs at WOS granularity; to perform an operation on a $\WOR$ within a WOS, the client determines the partition storing the segment (via a modulo function) and issues the operation to the replica set.
+
+Each $\WOR$ is implemented via a single-shot $\paxos$ consensus protocol, with the wormservers within a partition acting as a set of acceptors. In the context of a single $\WOR$, the wormservers act identically to Paxos acceptors~\cite{paxosmadesimple}; a \textit{prepare} call translates to a phase 1a prepare message, whereas a \textit{write} call is a phase 2a accept message. The \textit{read} protocol mirrors a phase 1a message, but if it encounters a half-written quorum, it completes the write. Each wormserver maintains a map from $\WOR$ IDs to the acceptor state for that single-shot Paxos instance. If a map entry is not found, the $\WOR$ is treated as unwritten.
+
+
+Above this basic $\WOR$ interface, the client-side library layers the logic for enforcing write-once segments. Each WOS segment is implemented via a set of data $\WOR$s (one per each address in that segment), a single metadata $\WOR$, and a single trim $\WOR$. Allocating the WOS requires writing to the metadata $\WOR$. If two clients race to allocate a WOS, the first one to capture and write the $\WOR$ wins.
+The \textit{trim} call for garbage collection is implemented via a special message where the client instructs the wormserver to return errors on requests for affected $\WOR$s, and delete all states of the $\WOR$s. The trim $\WOR$ in each WOS enables consensus on a trim command. On subsequent reads or writes to a trimmed $\WOR$, if a subset of the accessed quorum replies that the ID is trimmed, the client-side library completes the trim by issuing it to the remainder of the quorum, and then returns an \textit{E$\_$TRIMMED} error to the application.
+
+%
+%
+%\textbf{Reconfiguration} Replacing a minority of wormservers from a partition requires a reconfiguration protocol along the lines of Vertical Paxos~\cite{vertpaxos}. In essence, a reconfiguring client `seals' the existing configuration by contacting a majority of the servers. The servers promise to respond with errors to messages sent by clients with the existing configuration to prevent progress using this configuration. A new configuration is installed at an auxiliary location; this could be an external membership service, a different partition of the $\wormspace$ deployment, or a different instance of $\wormspace$ altogether. Clients that receive error messages from servers due to a sealed configuration must go check this location for the new configuration, and reissue the command to the new set of servers in the partition.
+%
+%
+%\textbf{Alternative $\WOR$ implementations} Within each $\wormspace$ partition, wormservers can be organized in different ways to realize other consensus protocols. For example, instead of Paxos, we access the wormservers via a client-driven variant of Chain Replication used in CORFU~\cite{corfu}. The client captures and writes to each server in the chain in sequence, and issues reads to the tail. Such a protocol has the benefit of efficient reads which contact a single server rather than a majority quorum, and provides durability against $f$ failures with $f+1$ nodes rather than $2f+1$. The downside is the increased write latency, which is linear in the number of servers, and unavailability for writes if a single server goes down until a reconfiguration. In our implementation, we did not implement the CRAQ~\cite{craq} optimization, which allows for reads to go to any replica instead of the tail. We call our two implementations chain-$\WOR$ and paxos-$\WOR$. $\WOR$s could be implemented via Byzantine consensus~\cite{pbft, hq}; we leave this for future work.
+
+%
+%In a sense, the $\WOR$ is analogous to the logical block device abstraction found at the bottom of a single-machine storage stack. The $\WOR$ simplifies the construction of systems such as shared logs and MultiPaxos by hiding the complexity of asynchrony and failures; a block device simplifies the construction of filesystems by hiding the complexity of storage hardware. Following this analogy, it is possible to implement the $\WOR$ itself over a shared log or MultiPaxos (in the same way that a block device can be implemented over a filesystem). However, the more conventional layering places the $\WOR$ at the bottom of the stack to simplify higher-level systems, as we now describe. 

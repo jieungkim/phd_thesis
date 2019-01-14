@@ -1,24 +1,31 @@
 
 Our verification approach has been inspired by $\certikos$ project,
-but the applicability of our framework is not restricted to the operating system verification, but general enough
+but the applicability of our framework in Chapter~\ref{chapter:ccal} is not restricted to the operating system verification, but general enough
 to build and verify other interesting system software. 
-Among them, we choose one distributed system as another example to demonstrate our 
+Among them, we choose distributed systems as another example to demonstrate our 
 verification framework.
 Distributed systems are notoriously complex due to the many possible interleavings of their coarsely-connected 
-instances as well as the possibility of errors in both  those instances and the network environment. 
+instances as well as the possibility of errors in both those instances and the network environment. 
 For these reasons, verification of distributed systems is desirable to remove the possibility of bugs and guarantee their safety and correctness. 
 However, much current verification work still requires a great deal of effort and sometimes has limitations.
-Paxos~\cite{paxos}, proposed by Lamport, is an old distributed consensus protocol but still in use. 
 
-%Based on Paxos, 
-%we propose the Write-Once Register (WOR) which consists of multiple 
+Even without interleavings and errors, 
+modern distributed applications is not built on top of one single distributed protocol (or system), but with multiple protocols.
+They are composed of distributed systems that provide replication, 
+logging, and transactions to achieve properties such as durability, concurrency control, failure atomicity, high availability, and strong consistency.
+While the high-level APIs and implementations of such systems vary widely, 
+the properties provided by them and the protocols used to provide the properties are similar. 
+Still, developers re-implement the system (such as Paxos~\cite{paxos} and 
+Two-Phase Commit (2PC)~\cite{2PC}) in slightly different ways to obtain different APIs and performance 
+characteristics despite the difficulty of implementing distributed systems correctly.
 
+To handle those issues, we propose Write-Once Registers ($\WOR$) as an abstraction for building and verifying distributed systems. 
+A $\WOR$ exposes a simple, data-centric API: 
+clients can capture, write, and read it. 
+Applications can use a sequence or a set of $\WOR$s to obtain properties such as durability, concurrency control, and failure atomicity. 
+By hiding the logic for distributed coordination underneath a data-centric API, the $\WOR$ abstraction enables easy, incremental, 
+and extensible implementation and verification of applications built above it. 
+Accordingly, we present the design, implementation, and verification of a system called $\wormspace$ 
+that provides developers with an address space of $\WOR$s, implementing each $\WOR$ via a $\paxos$ instance,
+which is the most popular consensus protocol that is still in use. 
 
-%
-%A WOR exposes a simple, data-centric API: clients can capture, write, and read it. Applications can use a sequence or a set of WORs to obtain properties such as durability, concur- rency control, and failure atomicity. By hiding the logic for distributed coordination underneath a data-centric API, the WOR abstraction enables easy, incremental, and extensible implementation and verification of applications built above it. We present the design, implementation, and verification of a system called WormSpace that provides developers with an address space of WORs, implementing each WOR via a Paxos instance. We describe three applications built over WormSpace: a flexible, efficient Multi-Paxos implementa- tion; a shared log implementation with lower append latency than the state-of-the-art; and a fault-tolerant transaction co- ordinator that uses an optimal number of round-trips. We show that these applications are simple, easy to verify, and match or surpass the performance of monolithic implementa- tions. We use a modular layered verification approach to link the verification proofs for the applications, the WormSpace system, and a verified OS to produce an end-to-end verified distributed system stack from the application to the OS.
-%
-%
-%
-%We present a verification approach that uses \textit{write-witness-passing}, which is simple but novel in distributed system verification. It is a scalable, reusable, and extensible approach that can be directly linked with the low-level implementations of distributed protocols through contextual refinement. Write-witness-passing can capture the common behaviors of many distributed protocols, and provides both a simple way of understanding the protocols as well as an easy methodology for verifying them.
-%
-%To demonstrate how write-witnesses work, we verify the functional correctness and safety of Paxos, one of the most famous consensus protocols. We implement the key routines of Paxos in C, and use Coq to verify both the functional correctness of the implementation as well as the safety properties of the protocol within less than 4 person-months. We also describe how we can apply our approach to other distributed protocols to illustrate its generality.

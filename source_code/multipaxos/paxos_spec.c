@@ -1,32 +1,40 @@
-The local state definition: (rnd, vrnd, val)
-Asusmptions:
+Local state: (rnd, vrnd, val)
+Assumptions:
 1. Node identifiers are disjoint
-2. The generated round numbers are disjoint
-   if their node identifiers are not same
+2. Generated round numbers are unique
+3. 2F + 1 acceptors
 
 Phase 1 (Prepare):
-a. Proposer - state: (crndp, _, _)
-   1. Selects a unique proposal number n > crndp
-      set cval to none and crndp to n
-   2. Send a prepare (n) to all acceptors
-b. Acceptor - state: (rnda, vrand, aval)
-   Acceptor a receives prepare(n) from p:
-   1. If n > rnda then set rnda to n
-      send promise(rnda, vrnda, vala) to p
-   2. else, ignore request
-Phase 2 (Write):
-a. Proposer - state: (crndp, _, _)
-   Proposer c receives promise(rnda, vrnda, vala)
-   from a majority of acceptors with rnda = crndp 
-   1. If all reply with vrnda = 0, then set cvalc
-      to any proposed value
-      Else set cvalc to vala associated with
-      largest received value of vrnda
-   2. Send accept(crndc, cvalc) to all acceptors
-b. Acceptor - state: (rnda, vrand, _)
-   Acceptor a revives accept(n,v) from p
-   1. If n >= rnda then set vrnda and rnda
-      to n and vala to v
-      send written(n, n, v) to p
-   2. Else ignore request
+a. Proposer:
+ // Value client wants to write
+ c_val := get_client_val() 
+ // new_rnd(rnd) > rnd
+ rnd := new_rnd(rnd)
+ // broadcast to acceptors
+ send(PREPARE, rnd) 
+b. Acceptor:
+ from, p_rnd := recv()
+ if p_rnd > rnd
+  rnd := p_rnd
+  send(PROMISE, from, vrnd, val)
 
+Phase 2 (Write):
+a. Proposer:
+ promises = {}
+ for i=1 to 2F + 1
+  promises = promises <@$\bigcup$@> recv()
+ if count(promises) >= F + 1 
+  if $\forall{}$ promises.val = null
+   val := c_val
+  else
+   val := promise.val
+    such that
+     promise.vrnd = max(promises.vrnd)
+   // construct a new witness
+   send(WRITE, rnd, val)
+
+b. Acceptor:
+ from, p_rnd, p_val := recv()
+ if p_rnd >= rnd
+  vrnd, val := p_rnd, p_val
+  send(WRITTEN, from, vrnd, val)

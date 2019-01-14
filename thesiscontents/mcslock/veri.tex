@@ -5,7 +5,7 @@
 \begin{center}
 \includegraphics[width=\textwidth]{figs/mcslock/layer_overview}
 \end{center}
-\caption{MCS Lock Layers.}
+\caption{$\mcsname$ Lock Layers.}
 \label{fig:chapter:mcslock:layeroverview}
 \end{figure}
 
@@ -17,12 +17,12 @@ For simplicity the figure only includes lock primitives, and
 primitives passed through from below are hidden in it.
 We also omits the current focused set ($cid$ -- CPU ID) and the environmental context ($\oracle$) in the figure
  as well as the rest (except in lemmas and theorems) of this section for simplification.
-The CPU ID will not be changed at all during the whole layers (note that all  layer interfaces in this MCS Lock module 
+The CPU ID will not be changed at all during the whole layers (note that all  layer interfaces in this $\mcsname$ Lock module 
 are local layer interfaces), but there is a place that we need a simplification of the global log to guarantee the atomicity of 
 acquire/release locks as mentioned in Section~\ref{chapter:ccal:subsec:local-layer-interface}.
 We will clearly state that which layer is related to the \textit{log-lift} pattern; 
 thus require the change in the environmental context.
-Each big and outer rectangle in the figure means each layer in the MCS Lock Module, 
+Each big and outer rectangle in the figure means each layer in the $\mcsname$ Lock Module, 
 and small and inner rectangles in each layer implies the primitives defined in the layer.
 The arrows show dependencies between adjacent layers,
 for example the definition of $\waitlockfunc$ in  $\mmcslockopfull$
@@ -86,7 +86,7 @@ when $cid$ is the focused current CPU ID and\\
 The interface ($\mmcsbootfull$) represents the machine model that our compiled code will run on.
 All primitives defined in $\mmcslockintrofull$ are part of the trusted computing base, and correspond to empty functions in our compiled code.
 
-Eight of the primitives in $\mmcsbootfull$  are closely related to the MCS Lock verification:
+Eight of the primitives in $\mmcsbootfull$  are closely related to the $\mcsname$ Lock verification:
 
 \begin{center}
 \begin{tabular}{P{0.95\textwidth}}
@@ -152,10 +152,10 @@ where
 The return type of this log replay function closely corresponds to C data structures, which makes it easy to prove the refinement ($\zmapfunc$ is a finite map from $\ztype$ to $\booltype$*$\ztype$.)
 The second ingredient is a relation $R_{\mmcslockintro}$ which shows the relationship between the concrete memory in underlay $\mmcsbootfull$ and the abstract state in overlay $\mmcslockintrofull$.
 As a part of $R$, we define $\matchmcslock$, which is a part related to 
-the MCS lock in $R_{(\mmcslockintro, \mmcsboot)}$,  as follows:
+the $\mcsname$ lock in $R_{(\mmcslockintro, \mmcsboot)}$,  as follows:
 
 \begin{definition}[$\matchmcslock$]
-Suppose that `$loc$' is among the proper field accessors for the MCS Lock, which are `$\codeinmath{last}$', `$\codeinmath{ndpool[}i\codeinmath{].next}$', or  `$\codeinmath{ndpool[}i\codeinmath{].busy}$' when `$0 \leq i < \invalidmcsval$'.
+Suppose that `$loc$' is among the proper field accessors for the $\mcsname$ Lock, which are `$\codeinmath{last}$', `$\codeinmath{ndpool[}i\codeinmath{].next}$', or  `$\codeinmath{ndpool[}i\codeinmath{].busy}$' when `$0 \leq i < \invalidmcsval$'.
  And, assuming that `$\codeinmath{lk\_id}$' is a lock identifier satisfies `$0 \leq \codeinmath{lk\_id} < \codeinmath{lock\_range}$' and $\codeinmath{l}$ is a shared log. Then define \newline
   \begin{tabular}{P{0.90\textwidth}}
     $\matchmcslock\ \codeinmath{(l:Log) (}\lockmemloc\codeinmath{ :block) loc}$\\
@@ -199,7 +199,7 @@ Assuming that
 2) and, $A_{\mmcsboot}$ and $A_{\mmcslockintro}$ are abstract datum for $L_{\mmcsboot}$ and $L_{\mmcslockintro}$, respectively.
     With the given $R_{(\mmcslockintro, \mmcsboot)}$, defined as $\matchmcslock$
      over the $\lockmemloc$ block in the memory  (\ie,$\lockmemloc\codeinmath{@}mem$) and 
-the MCS Lock related data structure in the abstract data of the overlay layer (\ie, $\lockabsloc\codeinmath{@}A_{\mmcslockintro}$), 
+the $\mcsname$ Lock related data structure in the abstract data of the overlay layer (\ie, $\lockabsloc\codeinmath{@}A_{\mmcslockintro}$), 
  identity relation for other parts of $A_{\mmcsboot}$ and $A_{\mmcslockintro}$, 
  The specification for the function $f$, $\sigma_f$, in $L_{\mmcslockintro}$ refines that in $L_{\mmcsboot}$ when:
  \begin{center}
@@ -252,7 +252,7 @@ well-formed shared log, the updated log after the oracle query will
 be well-formed.
 The first assumption is straightforward because the purpose of the oracle is to represent the behavior of others' operation on the shared object.
 The second one is also trivial when we prove 1) the initial shared log satisfy the well-formed condition, and 2) all the operations on the shared object with the given well-formed log return a well-formed shared log.
-Those two assumptions, however, do not reduce the generality of the oracle, and the oracle can capture the proper interleaving that we hope to achieve in the MCS Lock verification.
+Those two assumptions, however, do not reduce the generality of the oracle, and the oracle can capture the proper interleaving that we hope to achieve in the $\mcsname$ Lock verification.
 
 Similar to Section~\ref{chapter:mcslock:subsec:lowestmachinemodel}, 
 we provide primitives in $\mmcsbootfull$ which query $\oracle_{mcs}$ and extend the log.
@@ -570,7 +570,7 @@ In other words, when proving the simulation,
 we find a function $f_{(lk, mcs)}$ for the logs, such that $f_{(lk, mcs)}(\codeinmath{l}_{\mqmcslockop}) = \codeinmath{l}_{\mhmcslockop}$.
 
 
-As for the MCS Lock, we define a function $\relatemcslogkwd$ from the
+As for the $\mcsname$ Lock, we define a function $\relatemcslogkwd$ from the
 implementation log to the atomic log. Figure~\ref{fig:chapter:mcslock:logsequence}
 shows by example what it does. It keeps the shared memory events as
 they are, discards the events that are generated while a CPU wait for
@@ -587,7 +587,7 @@ We then prove a one-step refinement theorem from the atomic specification
 to the implementation, in other words, that if a call to the atomic primitive returns a 
 value, then a call to its implementation also returns with a related log:
 
-\begin{theorem}[MCS Wait Lock Exist]
+\begin{theorem}[$\mcsname$ Wait Lock Exist]
   \label{thm:chapter:mcslock:mcs_wait_lock_exist}
 
   Suppose $\codeinmath{d}_{\mhmcslockop}$ and $\codeinmath{d}_{\mqmcslockop}$, abstract datum for two layers ($\mhmcslockop$ and $\mqmcslockop$, respectively),

@@ -5,42 +5,71 @@
 Based on the lowest layer that are connected with our multicore machine model, 
 we build six modules that are tied with a single CPU.
 
-\subsection{Spinlock Module}
-\label{chapter:certikos:subsec:spinlock-module}
+\paragraph{Spinlock Module}
+
+depends on an atomic ticket object, which consists of two fields: ticket and now. Figure 6 shows one implementation of a ticket lock. The atomic increment to the ticket is achieved through the atomic fetch-and-increment (FAI) operation (implemented using the xaddl instruction with the lock prefix in x86). As described in Sec. 3.5, the switch points at this abstraction level have been shuffled and merged so that there is exactly one switch point in front of each atomic operation. Thus, the lock implementations generate a list of events; for example, when CPU t attempts to acquire the lock i, it continuously generates the event
+“t.get now i” (line 9) until the latest now is increased to the ticket value returned by the event “t.inc ticket i” (line 8), and then followed by the event “t.pull i” (line 10):
+
+Certifying the atomic ticket lock object consists of two main proof obligations: (1) the lock guarantees mutual exclu-
+ueue i
+sion,Qand (2) the lock implementation is starvation-free.
+
+Mutual exclusion is straightforward for a ticket lock. At any time, only the thread whose ticket is equal to the current serving ticket (i.e., the value of now) can hold the lock. Furthermore, each thread’s ticket is unique as the fetch-and-increment operation is atomic (line 8 in Fig. 6). Thanks to this mutual exclusion property, it is safe to pull the shared memory associated with the lock i to the local copy at line 10. Before releasing the lock, the local copy is pushed back to the shared memory at line 13 in Fig. 6.
+
+Starvation-freedom can be proved by showing that lock acquire eventually succeeds. To prove this, we impose a set of invariants on the environment context at this layer.
+
 
 Spinglock provides the protection mechanism for shared resources by using its property, mutual exclusion of the owner for each lock. 
 We built two different spinlock modules, ticket Lock and MCS Lock.
 
+is known to have better scalability than ticket lock on large numbers of CPUs. In the mC2 kernel, we have also implemented a version of MCS locks [37]. The starvation-freedom proof of the MCS lock is similar to that of the ticket lock. The difference is that the MCS lock release operation waits in a loop until the next waiting thread (if it exists) has added itself to a linked list, so we need similar proofs for both acquire and release instead of only for acquire.
 
-\subsection{Device Driver Module}
-\label{chapter:certikos:subsec:device-driver-module}
 
-CertiKOS supports device driver handling, and all this works are from the previous work.
+\paragraph{Device Driver Module}
 
-\subsection{Memory Management Module}
-\label{chapter:certikos:subsec:memory-management-module}
+$\certikos$ supports device driver handling, and all this works are from the previous work.
+
+ Chen \etal~\jieung{need to cite}
+ present a framework to allow interrupts inside the kernel for better interrupt-processing latency of their verified kernel with device drivers. The work has been successfully ported into our setting relatively easily thanks to the fact that their event-based machine model is consistent with our interleaving machine model.
+ 
+
+\paragraph{Memory Management Module}
 
 We built memory management module with 14 layers, 
 which supports 2-level page tables, dynamic page allocations for users, 
 container to manage resources, 
 as well as shared memory between two threads. 
 
-\subsection{Process Management Module}
-\label{chapter:certikos:subsec:process-management-module}
+\textbf{Physical memory management} maintains the physical pages and provides a dynamic page allocator palloc (cf. Fig. 7). As the page allocation table AT is shared among different CPUs, we associate it with a lock lock AT. The dynamic page allocator is then refined into an atomic ob- ject where the palloc implementation is proved to satisfy an atomic interface, with the proof that lock utilization for lock AT satisfies Invariant 1. Once the dynamic page allocator is introduced as an atomic object, the lock acquire and lock release for lock AT are not allowed to be invoked at higher
+
+layers. Thus, in this layered approach, it is not possible that a thread holding a lock defined in a lower layer tries to acquire another lock introduced in a higher layer, i.e., the order that a thread acquires different locks is guided by the order that the locks are introduced in the layers. This implicit order of lock acquisitions prevents deadlocks in the mC2 kernel.
+Another function of the physical memory management is to dynamically track and bound the memory usage of each thread. A container object is used to record information for each thread (array cn in Fig. 7); one piece of information tracked is the thread’s quota. Inspired by the notions of con- tainers and quotas in HiStar [51], a thread in mC2 is spawned with some quota specifying the maximum number of pages that the thread will ever be allowed to allocate. As can be seen in Fig. 7, palloc returns an error code if the requesting thread has no remaining quota (lines 4 and 5), and the quota is decremented when a page is successfully allocated (line 17). Quota enforcement allows the kernel to prevent a denial-of- service attack, where one thread repeatedly allocates pages and uses up all available memory (thus denying other threads from allocating pages). From a security standpoint, it also pre- vents the undesirable information channel between different threads that occurs due to such an attack
+
+
+\textbf{Virtual memory management}
+provides consecutive virtual address spaces on top of physical memory management (cf. Fig. 8(b)). Because much of the code assumes that the memory management sets up the virtual address space properly, initialization has been a sticking point in previous verification efforts [26, 47], in which the virtual address space setup is either not verified, or verified separately as an external lemma. We address this challenge by modeling the memory management unit (MMU) explicitly in our abstraction layers. As shown in Fig. 8(a), the hardware MMU is modeled in a way that mirrors the paging hardware, and memory accesses made by both the kernel and the user programs are translated using the two-level page maps. We proved not only that the primitives of virtual memory management manipulate the page maps correctly, but also that the initialization procedure sets up the two-level page maps properly in terms of the hardware address translation.
+
+
+
+\paragraph{Process Management Module}
 
 The key of our process management is providing 
 thread spawn (thus process create), yield, and sleep functions.
 It also relies on providing the proofs about 
 context switching as well as scheduling queues.
 
-\subsection{Virtual Machine Support Module}
-\label{chapter:certikos:subsec:virtual-machine-support-module}
+
+introduces the thread control block (TCB) and manages the resources of dynamically spawned threads (e.g., quotas) and their meta-data (e.g., parent, chil-
+dren, thread state). For each thread, one page (4KB) is allo- cated for its kernel stack. We use an external tool [8] to prove that the stack usage of our compiled kernel is much less than 4KB, so stack overflows cannot occur inside the kernel.
+The thread scheduling is done by the three primitives yield, sleep, and wakeup, using the abstract queue library (cf. Fig. 9). Each CPU has a private ready queue ReadQ and a shared pending queue PendQ. The context CPUs can insert threads to the current CPU’s pending queue. The mC2 kernel also provides a set of sleeping queues SleepQs, which are shared among all CPUs.
+As shown in Fig. 9, the yield primitive takes three steps: (1) dequeue the head of its pending queue (if it exists) and add it to its ready queue; (2) enqueue the running thread to the ready queue; and (3) dequeue the head of its ready queue and let it run. The sleep primitive simply adds the running thread to the sleeping queue and runs the next ready thread. The wakeup primitive contains two cases. If the thread to be woken up belongs to the current CPU, then the primitive adds the thread to its ready queue. Otherwise, wakeup adds the thread to the pending queue of the CPU it belongs to. Except for the manipulation of the private ready queue, all the other thread queue operations are protected by fine-grained locks.
+
+
+\paragraph{Virtual Machine Support Module}
 
 $\certikos$ supports virtual machine related code. 
 
-\subsection{Connecting All Layers in Per-CPU Modules}
-\label{chapter:certikos:subsec:per-cpu-layers-connect}
-
+\paragraph{Connecting All Layers in Per-CPU Modules}
 
 Connecting the whole CPU-local layers are possible and 
 our layer library provides the canonical forms for this process. 

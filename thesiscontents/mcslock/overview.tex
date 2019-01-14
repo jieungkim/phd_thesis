@@ -1,7 +1,7 @@
 \section{The MCS algorithm}
 \label{chapter:mcslock:sec:overview}
 
-The MCS algorithm~\cite{mcs91} is a list-based queuing lock,
+The $\mcsname$ algorithm~\cite{mcs91} is a list-based queuing lock,
 providing a \emph{fair} and \emph{scalable} mutex mechanism for
 multi-CPU computers. Fairness means that
 CPUs that compete for the lock are guaranteed to receive it in the same
@@ -25,12 +25,12 @@ refinement.
 \vspace{1em}
 
 \lstinputlisting [language = C, multicols=2] {source_code/mcslock/mcs_lock_acquire.c}
-\caption{Data Structure and the Implementation of MCS Lock (Written in C).}
+\caption{Data Structure and the Implementation of $\mcsname$ Lock (Written in C).}
 \label{fig:chapter:mcslock:mcs_lock}
 \end{figure}
 
-Figure~\ref{fig:chapter:mcslock:mcs_lock} shows the implementation of the MCS Lock algorithm written in C. 
-The data structure of an MCS Lock (Figure~\ref{fig:chapter:mcslock:mcs_lock}) has
+Figure~\ref{fig:chapter:mcslock:mcs_lock} shows the implementation of the $\mcsname$ Lock algorithm written in C. 
+The data structure of an $\mcsname$ Lock (Figure~\ref{fig:chapter:mcslock:mcs_lock}) has
 one global field pointing to the last node of the queue structure, and
 per-CPU nodes forming each node in the queue. This is similar to an
 ordinary queue data structure(, but note that it only has a
@@ -48,7 +48,7 @@ not scale past 10-40 CPUs~\cite{Boyd-wickizer12}.
 
 We follows the programming style of $\ccalname$ in Chapter~\ref{chapter:ccal}; thus
 the verified version that we have made has a property that all lock node and variables are statically assigned.
-However, this doesn't restrict the functionality of our verified MCS Lock.
+However, this doesn't restrict the functionality of our verified $\mcsname$ Lock.
 Instead of creating the new node when acquiring lock and removing the node when releasing lock,
 each process can pick up one node, and use it as its node during the lock operation. 
 All nodes are uniquely distinguished by lock ID and CPU ID, but those
@@ -82,7 +82,7 @@ waiting queue by assigning $\codeinmath{busy}$.
 \begin{center}
 \includegraphics[width=0.9\linewidth]{figs/mcslock/mcsex}
 \end{center}
-\caption{A Possible Execution Sequence for an MCS Lock.}
+\caption{A Possible Execution Sequence for an $\mcsname$ Lock.}
 \label{fig:chapter:mcslock:mcs-example}
 \end{figure}
 

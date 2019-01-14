@@ -1,13 +1,13 @@
 
-The MCS Lock is a small but complex piece of low-level software.
+The $\mcsname$ Lock is a small but complex piece of low-level software.
 It is considered as a standard algorithm for providing inter-CPU locks with FIFO ordering guarantee and scalability.
-The MCS Lock is an interesting target for verification---short and subtle, involving both liveness and safety properties. 
+The $\mcsname$ Lock is an interesting target for verification---short and subtle, involving both liveness and safety properties. 
 To show the applicability of $\ccalname$ presented in Chapter~\ref{chapter:ccal},
-we implemented and verified the MCS Lock algorithm using the $\ccalname$ toolkit, 
+we implemented and verified the $\mcsname$ Lock algorithm using the $\ccalname$ toolkit, 
 showing that the C/assembly implementation {\em contextually refines} atomic specifications of the acquire and release lock methods.
 
 By using the $\ccalname$ toolkit, splitting the proof into layers are possible by using \textit{fun-lift} and \textit{log-lift} patterns of local layer interface;
 thus we can modularize the verification into separate parts for the low-level machine model, data abstraction, and reasoning about concurrent interleavings.
 This separation of concerns makes the layered methodology suitable for verified programming in the large, and our 
-MCS Lock can be composed with other shared objects.
+$\mcsname$ Lock can be composed with other shared objects.
 

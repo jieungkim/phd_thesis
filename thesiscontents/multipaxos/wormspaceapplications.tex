@@ -1,0 +1,245 @@
+
+\section{WormSpace Applications}
+\label{chapter:wormspace:sec:applications}
+
+To illustrate the applicability of our $\wormspace$ as well as extensibility and reusability of our verification, 
+we present   WormPaxos, WormLog, and WormTX. 
+We do not expose the whole details for those applications, but briefly explain them to introduce what we have implemented.
+%To illustrate how $\wormspace$ simplifies applications, we present WormPaxos, WormLog, and WormTX, 
+
+\subsection{WormPaxos: MultiPaxos over WormSpace}
+\label{chapter:wormspace:subsec:wormpaxos}
+
+\begin{figure}
+\centering
+\includegraphics[width=0.7\textwidth, page=2]{figs/multipaxos/pics.pdf}
+\caption{WormPaxos: servers replicate state by ordering proposals on the WormSpace address space.}
+.\label{fig:chapter:multipaxos:paxosarch}
+\end{figure}
+
+In principle, implementing $\multipaxos$ over $\wormspace$ is simple: the sequence of commands is stored on the $\wormspace$ address space.
+WormPaxos is an implementation of $\multipaxos$ over $\wormspace$, exposing a conventional state machine replication API to applications. 
+In WormPaxos, servers that wish to replicate state act as $\wormspace$ clients; we call these WP-servers. 
+They can \textit{propose} new commands by preparing and writing to the next free address in the $\wormspace$;
+and \textit{learn} commands by reading the address space in sequential order. 
+If a proposing client finds that the current tail is at the end of a WOS, it allocates a new one and then writes to the next address.
+
+The chief benefit of this layered design is extreme simplicity; the $\multipaxos$ consists of a few hundreds of lines of code,
+which calls data-centric commands over the $\wormspace$ address space. This design also enables flexibility along a number of dimensions 
+(Figure~\ref{fig:chapter:multipaxos:paxosarch}) compared to conventional $\multipaxos$ designs, 
+matching the performance of monolithic designs while providing new capabilities.
+ \ignore{
+% add the following parts if it is ok. 
+ Specifically:
+
+\paragraph{Flexible Consensus} \textit{(\ie, how is the $\WOR$ implemented?)}: 
+Consensus in WormPaxos is hidden under the WOR abstraction and can be implemented via many different protocols, 
+ranging from variants of $\paxos$, atomic broadcast protocols such as ZAB, and protocols such as 
+Primary-Backup and Chain Replication. In contrast, 
+existing $\multipaxos$ designs weld together the single-decision consensus engine -- 
+typically $\paxos$ -- with the state machine replication machinery responsible for consistency and availability. 
+For example, the WormPaxos codebase can run with zero modification over a $\WOR$ implementation based on 
+Chain Replication rather than $\paxos$; in contrast, existing $\multipaxos$ implementations require extensive modification to run
+over a different single-shot consensus protocol.
+
+\paragraph{Flexible Leadership} \textit{(i.e., who calls \textit{prepare}?)}: 
+Sticky leadership -- \ie, retaining a single leader across multiple commands --
+is a key performance imperative for $\multipaxos$ implementations, since it A) allows commands 
+to be decided within a single round-trip rather than two in the absence of failures, and B) eliminates contention 
+between leaders. In many $\multipaxos$ implementations, leadership strategy is baked into the system design; 
+for example, Raft~\cite{raft} is explicitly designed to support sticky leadership as a first-class consideration. 
+In WormPaxos, a WP-server becomes a sticky leader simply by using a batch \textit{prepare} on a WOS; accordingly, 
+leadership strategies such as sticky leader, rotating leader, etc. can be implemented simply as policies on who 
+should call the batch \textit{prepare} and when. Further, the leader's identity can be stored within the metadata for each segment, 
+obviating the need for $\wormspace$ to know about the notion of a leader or the leadership strategies involved.
+
+\paragraph{Flexible Durability} \textit{(i.e., when is \textit{trim} called?)}: By varying when it calls \textit{trim}, 
+WormPaxos can employ different strategies for durability. For instance, a WP-server can \textit{trim} a prefix of the $\wormspace$ 
+as soon as a certain number of WP-servers{} have seen it, or some WP-server has stored a snapshot in an external data store; 
+this information can be piggybacked on new commands appended to the address space. 
+In contrast, existing $\multipaxos$ designs are tied to a particular strategy for durability (e.g., when all replicas have seen a command~\cite{rvrpaxos}).
+
+\paragraph{Flexible Consistency} \textit{(i.e., what addresses do we \textit{write} and \textit{read}?)}: 
+WormPaxos derives consistency properties such as linearizability, sequential consistency, 
+or eventual consistency via strategies for writing/reading to the address space. 
+The state at each WP-server reflects some subset of updates in the $\wormspace$. 
+For linearizable writes and reads, each command has to locate a slot after any completed writes in the address space, 
+but before any empty slots that could be filled by later commands. For a weaker guarantee such as sequential consistency, 
+WP-servers{} can allocate separate segments and write to them in parallel. 
+Similarly, causal consistency can be obtained by ensuring that new writes from a WP-server go to a later address than any it has already seen.
+For these weaker consistency guarantees, the random write / random read nature of the $\wormspace$ 
+API allows us to parallelize proposing in a way that we could not do over a conventional SMR 
+(sequential write / sequential read) or shared log (sequential write / random read) interface. }
+
+For linearizability, the total order of writes imposed by the address space has to reflect real-time order 
+(\ie, if an update $U_1$ completed before another update $U_2$ started, then the position of $U_1$ has to be earlier in the address space than $U_2$.).
+Note that the sticky leader is allowed to issue multiple outstanding writes to consecutive addresses in the WOS; 
+this can result in concurrent commands being ordered arbitrarily, which does not violate linearizability.
+
+\subsection{WormLog: Shared Log over WormSpace}
+\label{chapter:wormspace:subsec:wormlog}
+
+\begin{figure}
+\centering
+\includegraphics[width=0.7\textwidth, page=3]{figs/multipaxos/pics.pdf}
+\caption{WormLog: clients can append by obtaining a token from the sequencer and writing to $\wormspace$}
+.\label{fig:wormlogarch}
+\end{figure}
+
+A shared log is a shared address space that provides an \textit{append} / \textit{read} API to clients. 
+CORFU~\cite{corfu} is a system that implements a shared log API over a set of write-once addresses. 
+To append a new entry to the shared log, a client first contacts a centralized sequencer machine to reserve and increment 
+a tail position on the address space. It then issues a write to a write-once address. In CORFU, 
+each write-once address is implemented via a client-driven variant of Chain Replication, 
+where the client writes to each replica in sequence. 
+The write-once semantics are derived by using the head replica of the chain to arbitrate between competing writes to the same address.
+ A key aspect of this design is that the sequencer is merely a soft-state hint about the tail of the log, and does not have to be durable or available. 
+
+Achieving a CORFU-like design over $\wormspace$ is straightforward: 
+we simply have each client contact a sequencer node when it wants to append an entry, obtain a slot in the $\wormspace$ address space, 
+and then write to that position (Figure~\ref{fig:wormlogarch}). 
+With this design (which we call WormLog), 
+we obtain the two properties that differentiate a shared log from a $\multipaxos$ system~\cite{corfupaxos}: the decoupling of sequencing 
+from I/O, since the sequencer does not see the append payload; and the time-slicing of individual commands over different replica sets, 
+assuming that the WOS size is small compared to the volume of in-flight appends in the system.
+
+\ignore{
+% add the following parts if it is ok.
+WormLog addresses a problem with the CORFU system's use of Chain Replication: appends no longer take latency linear in the number of replicas, 
+since they simply issue a $\wormspace$ prepare/write, which in turn invokes the $\paxos$ two-phase protocol. 
+However, the WormLog design described thus far takes three round-trips: one to the sequencer, one to prepare the $\WOR$, and one to write to it. 
+By decoupling I/O from sequencing, we lose `sticky leadership'; we can no longer perform a batch prepare on the 
+WOS and write to the $\WOR$ in a single round-trip, since multiple clients are writing to a single WOS.
+
+
+Eliminating this extra round-trip is simple. The sequencer allocates WOSes before handing out sequence numbers to clients. 
+The sequencer also pre-captures the WOS and provides the client with the captureID; the client can then predicate its write with this captureID.
+ Accordingly, WormLog realizes a CORFU-like design that uses $\paxos$ (reducing latency to 2 round-trips from the $N+1$ 
+ required by client-driven Chain Replication). Further, it eliminates the extra prepare round-trip despite CORFU's 
+ lack of a leader node, leveraging the $\wormspace$ API in a simple way.
+
+One option is to have the sequencer allocate WOSes before handing out sequence numbers to clients.
+The sequencer can also pre-capture the WOS and provide the client with the captureID; 
+the client can then predicate its write with this captureID. Alternatively, we can avoid having the sequencer 
+pre-capture the WOS, and instead have the client use the unsafe write API to write to the address without preparing it first, 
+since it is guaranteed to be the only client issuing an unsafe write to that $\WOR$. Even if there are somehow multiple 
+sequencers in the system handing out tokens, it is guaranteed that only one will successfully allocate each segment; 
+as a result, two clients cannot get the same slot from some sequencer.
+
+Alternatively, if we have a fencing mechanism to ensure that there is only one active sequencer in the system, 
+clients can obtain a token from the sequencer, allocate the segment themselves if they are the first to write to it, 
+and then use an unsafe write. This option is preferable if the sequencer is a passive entity (like a counter in shared memory),
+and it is easier to ensure that a single sequencer exists in the system than to have it interact with $\wormspace$. 
+Our implementation uses the first option: the sequencer allocates and pre-captures the WOS.}
+
+
+\subsection{WormTX: Two-Phase Commit over WormSpace}
+\label{chapter:wormspace:subsec:wormtx}
+
+Two-Phase Commit (2PC)~\cite{distsys} solves the transaction commit problem via a transaction manager (TM). 
+Any participant (RMs, or resource managers) that wishes to initiate a commit contacts the TM (message delay \#1). 
+The TM contacts all participants to elicit a yes/no vote (\#2). Each RM votes, records its vote in local stable storage and responds to the TM (\#3). 
+The TM makes a decision based on the votes it receives, and sends back a commit or abort command to the RMs (\#4). 
+The TM's decision can be a deterministic function of the RM votes -- i.e., the decision is yes if all the votes are yes. 
+Alternatively, the TM can decide no even if all the votes are yes, in which case it stores its decision in stable storage before sending the decision.
+
+The failure model for 2PC is that nodes -- TMs or RMs -- can crash, but will subsequently come back online. 
+2PC is known to be a blocking protocol in the presence of such failures. In the case where the decision is deterministic, 
+if a single RM fails -- after it has locally stored its vote in stable storage, but before it has responded to the 
+TM -- then the protocol has to block until the RM comes back online. In the case where the TM fails --
+ after storing its final decision in stable storage but before sending commit messages -- 
+ the protocol has to block until the TM comes back online. In both cases, the remaining RMs cannot determine the decision. 
+
+%If a RM fails in 2PC, the TM can simply time-out and abort the transaction. However, if the TM fails after collecting all the votes but before sending out its decision, the protocol blocks; RMs have no way to determine what the decision was.
+
+
+\begin{figure}
+\centering
+\includegraphics[width=0.7\textwidth]{figs/multipaxos/pics-2pc}
+\caption{WormTX: $\WOR$-based non-blocking atomic commit protocols. Dashed arrows are notifications. \label{fig:commit}}
+\end{figure}
+
+
+We consider making the deterministic (\ie., the TM does not have a separate vote) version of 2PC non-blocking. 
+We come up with a number of variants that use $\WOR$s. We describe them below and in Figure \ref{fig:commit}.
+
+\textbf{[Variant A8: 8 message delays]} An obvious solution is to simply store the votes in a set of per-RM $\WOR$s. 
+If the TM decision is non-deterministic, a $\WOR$ is used to store the decision as well. In the $\WOR$-based 2PC protocol, 
+an RM initiates the protocol by contacting the TM (message delay \#1); the TM contacts the RMs (\#2); 
+they prepare the $\WOR$ (\#3 and \#4), and then write to it (\#5 and \#6); send back their decision to the TM (\#7), 
+which sends back a commit message to all the RMs (\#8). This corresponds exactly to using $\paxos$ as a black-box.
+% fashion.% to durably store the votes.
+
+%The number of messages is 1 + N + 4(F + 1) + N + N = 3N + 1 + 4(F+1)
+
+\textbf{[Variant B6: 6 message delays]} A simple optimization involves eliminating the prepare messages from the critical path. 
+Each RM can allocate a dedicated WOS for its decisions and batch prepare the WOS in advance. 
+This eliminates delays \#3 and \#4 from variant A8.%, bringing us down to 6 message delays.
+
+%The number of messages is 3N + 1 + 2(F+1) (+ delta for batched prepare)
+
+\textbf{[Variant C5: 5 message delays]} Further, rather than have the RM wait for an ACK on the write (message delay \#6 in variant A8) and 
+relay it to the TM (\#7 in A8), the TM can directly observe the decision by listening for write notifications on the WOS. 
+This compresses \#6 and \#7 of variant A8 into a single step.
+%, bringing us down to 5 message delays. 
+
+%The number of messages is 3N + 1 + 2(F+1) + (F+1)N. If we have batched notifications, the final term is just F+1.
+
+\textbf{[Variant D4: 4 message delays]} Finally, rather than have the TM wait to be notified of all the $\WOR$ 
+writes and then send out a commit message to all the participants (\#8 of variant A8), 
+individual RMs can directly listen to each other's WOSes; this brings us down to 4 message delays.
+
+%The number of messages is 2N + 1 + 2(F+1) + (F+1)*N*N. If we have batched notifications, the final term is just (F+1)N.
+
+%2N + 1 + 2F + 2 + (F+1)N
+%= 2N + 3 + 2F + NF + N
+%= 3N + 3 + 2F + NF
+%= 3(N+1) + F(N+1) + F
+
+This progression of increasingly fast protocols exactly matches the description by Gray and Lamport~\cite{gray:2006}; 
+they too proceed from an unoptimized 8-step protocol to an optimized 4-step one in identical fashion, via 6-step and 5-step protocols. 
+In their case, this is achieved by opening up the $\paxos$ protocol and rewiring the flow of requests and ACKs between the various 
+$\paxos$ roles of acceptors, leaders, proposers, and learners. In our case, the optimizations are achieved via the $\wormspace$ API, 
+without requiring any knowledge of the $\paxos$ protocol.
+
+\textbf{[Variant E3: 3 message delays]} We now observe that we do not need a TM, 
+since the final decision is a deterministic function of the $\WOR$s, 
+and any RM can time-out on the commit protocol and write a no vote to a blocking RM's $\WOR$ to abort the transaction. 
+The initiating RM can simply contact the other RMs on its own to start the protocol (combining \#1 and \#2 of variant A8), 
+bringing down the number of delays to 3. Interestingly, this variant is not described by Gray and Lamport.
+
+%The number of messages is 3N + 2(F+1) + (F+1)*N*N
+
+\textbf{[Variant F2: 2 message delays]} Finally, if RMs can `spontaneously' start the protocol and vote, 
+we eliminate delays \#1 and \#2 of variant A8, bringing the protocol down to two delays, 
+the theoretical minimum for atomic commit. Since this is not a realistic assumption for many systems, we choose variant E3 as our final solution.
+
+Our protocol is in contrast to other non-blocking commit protocols, 
+which require complex message passing logic~\cite{distsys}. Instead, we assemble a non-blocking protocol via simple, 
+intuitive, and data-centric commands on $\WOR$s.
+
+
+
+\ignore{
+\textbf{Concurrency Control:} The proposed atomic commit schemes can be integrated with concurrency control schemes based on timestamps,
+deadlock detection, etc. We implemented a simple concurrency control protocol based on locking that uses Immediate-Restart~\cite{agrawal1987} 
+for deadlock prevention.
+
+Consider variant E3. The server that performs a transaction notifies all servers involved. 
+Each server tries to acquire a lock on its local data for the transaction. If it succeeds, the server writes a write-ahead log and then a yes vote to its 
+$\WOR$. Upon failure to lock, the server immediately aborts the transaction by writing a no vote to its $\WOR$.
+
+If each server receives yes ACKs for its own yes write from all servers involved, it updates the data and releases the lock. 
+Otherwise, it releases the lock without the update. This protocol provides strict serializability and failure atomicity.
+
+
+Consider performing a transactional update on a partitioned key-value store. Using variant E3, 
+a client or one of the servers that wants to perform this transaction sends a message to the two servers involved. 
+Each server attempts to acquire a local lock on the key being modified. If it succeeds, it writes a write-ahead log entry to local storage 
+(in case it crashes and reboots). It then writes a yes vote to its $\WOR$. 
+If the lock is currently held, the server follows the Immediate-Restart policy and aborts the new transaction by writing a no vote to its $\WOR$.
+
+If each server receives an ACK for its own yes write, and a notification that yes has been written to the other $\WOR$, 
+it proceeds with the update and then releases the lock. If a server votes yes but is notified that the other server voted no, 
+then it releases its local lock without performing the update. This simple protocol provides strict serializability as well as failure atomicity.}
+

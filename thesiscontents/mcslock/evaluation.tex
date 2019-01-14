@@ -16,7 +16,7 @@
 
 \subsection{Clients}
 
-The verified MCS lock code is used by multiple clients in the $\certikos$ (in Chapter~\ref{chapter:concurrent-certikos})
+The verified $\mcsname$ lock code is used by multiple clients in the $\certikos$ (in Chapter~\ref{chapter:certikos})
 system. To be practical the design should require as little extra work
 as possible compared to verifying non-concurrent programs, both to
 better match the programmer's mental model, and to allow code-reuse
@@ -149,15 +149,15 @@ on the locks implicitly.
 
 
 As an evaluation, we do not count the total lines of code in $\coq$ for our entire 
-MCS Lock module due to the two following reasons. First, our MCS Lock implementation 
-is a part of $\certikos$ (in Chapter~\ref{chapter:concurrent-certikos}). Therefore, our MCS Lock module also contains several definitions 
-and proofs that are totally irrelevant to MCS Lock verification. 
-This implies that counting the total lines of code for MCS Lock module has a 
+$\mcsname$ Lock module due to the two following reasons. First, our $\mcsname$ Lock implementation 
+is a part of $\certikos$ (in Chapter~\ref{chapter:certikos}). Therefore, our $\mcsname$ Lock module also contains several definitions 
+and proofs that are totally irrelevant to $\mcsname$ Lock verification. 
+This implies that counting the total lines of code for $\mcsname$ Lock module has a 
 high possibility of misinterpretation due to the lines of code for those definitions and proofs.
 Second, we intensively use contextual refinement approach to 
 build the whole system rather than focusing on verifying the correctness and 
-liveness of MCS Lock. Therefore, our proof efforts are mainly focus on proving 
-MCS Lock that is able to be easily combined with multiple client codes 
+liveness of $\mcsname$ Lock. Therefore, our proof efforts are mainly focus on proving 
+$\mcsname$ Lock that is able to be easily combined with multiple client codes 
 rather than the efficient lock verification itself.  
 
 Among the whole proofs, the most challenging parts are the proofs for starvation 
@@ -180,12 +180,12 @@ The total lines of codes for the low-level functional correctness
 of two main C functions, $\mcsacquire$ and $\mcsrelease$, are 3.2K lines,  
 0.7K lines for specifications, and 2.5K lines for proofs.
 It is much bigger than other code correctness proofs for while-loops in $\certikos$, which we will
-discuss in Chapter~\ref{chapter:concurrent-certikos},
+discuss in Chapter~\ref{chapter:certikos},
 because these loops do not have any explicit decreasing value.
-One another big part in our MCS Lock proofs is the proofs for 
+One another big part in our $\mcsname$ Lock proofs is the proofs for 
 Theorem~\ref{thm:chapter:mcslock:machine-state-refinement} and the lines of code for this part is 
 approximately 5K lines. The log replay function ($\calmcslock$) always 
-return the whole MCS Lock values ($\lockabsloc$) related 
+return the whole $\mcsname$ Lock values ($\lockabsloc$) related 
 to the  $\codeinmath{mcs\_lock}$ structure defined in Figure~\ref{fig:chapter:mcslock:mcs_lock}. 
 In this sense, we always have to give the exact values for all memory 
 chunks and prove the correspondence between the memory and the abstract 
