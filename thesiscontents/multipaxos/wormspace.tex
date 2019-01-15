@@ -86,7 +86,8 @@ the number of cases to consider is large and proving it even informally is not s
 %%%%%% 
 In general, implementation and verification of distributed systems
 (including $\paxos$, $\wormspace$, \etc) must handle the following:
-\begin{enumerate}
+\begin{itemize}
+
 \item \textbf{Network model}:
 Most distributed systems and consensus protocols are based on certain assumptions about the network,
 such as packet duplication, loss, and reordering. In order to verify such a system, one must make a model of the network that matches
@@ -104,7 +105,7 @@ Since distributed systems consist of multiple nodes, which may have different fu
 functional correctness of one node does not imply the correctness or safety of the whole system.
 Instead, verification of such global properties requires modeling the entire system and
 proving that the behaviors of individual nodes ensures that the system runs correctly.
-\end{enumerate}
+\end{itemize}
 
 \section{Write Once Register}
 \label{chapter:wormspace:sec:write-once-register}
@@ -144,6 +145,8 @@ In this sense, $\WOR$ can work as a first-class system-building abstraction.
 \section{Wormspace}
 \label{chapter:wormspace:sec:wormspace}
 
+\jieung{This chapter has some redundant parts, but I think it's ok} 
+
 \begin{figure}
 \centering
 \includegraphics[width=0.7\textwidth, page=1]{figs/multipaxos/pics-small.pdf}
@@ -158,74 +161,16 @@ Applications built over $\wormspace$ consist entirely of prepare/write/read comm
 Verification of applications can also hugely benefit from $\wormspace$. We show that contextual refinement, which is the key to the layered verification approach discussed in Chapter~\ref{chapter:ccal}, encapsulates the complexity of distributed coordination within $\wormspace$ and allows the application to be easily verified as non-distributed code; still, verified distributed properties in $\wormspace$ are guaranteed to hold in the application. Applications verified on top of $\wormspace$ are guaranteed to use both the client and server code of $\wormspace$ correctly such that they use the system interface only in a defined way and shares the same semantics about the interface with $\wormspace$. Verifying the application on $\wormspace$ requires only linking a modular top-most layer proof of $\wormspace$ with the application. Similarly, we can easily link the proofs of $\wormspace$ to $\certikos$ in Chapter~\ref{chapter:certikos} and present a verified end-to-end stack from the OS to distributed application.
 
 Our verification model assumes non-Byzantine network: packets can be arbitrarily delayed, lost, and/or duplicated, but never corrupted. Applications built on top of WormSpace are easy to verify: the applications can directly use the verified proof from the $\wormspace$ layer and do not have to verify the distributed protocols. our $\ccalname$ also enables extension and migration of our proofs. Similarly, we show that our system can be linked to $\certikos$ easily leading an end-to-end verified software from OS to distributed system.
-%
-%In this paper, we make three contributions.
-%First, we identify the $\WOR$ abstraction inherent in many distributed systems and present a simple, 
-%data-centric $\WOR$ API as a first-class programming abstraction. Second, we implement three distributed applications over this API; 
-%for each one, our modular design easily allows new configurations with different performance and availability properties, 
-%while matching or surpassing the performance of an existing monolithic implementation in a similar configuration. 
-%Finally, we show that the modular design of the resulting systems, when combined with the layered verification approach, 
-%facilitates the reuse of software correctness proofs, and enables verification that crosses distributed system/application boundaries.
 
 
 \subsection{The WormSpace System}
 \label{chapter:wormspace:subsec:wormspace-system}
 
-%
-%\lstdefinelanguage{rock}
-%{morekeywords={WS_alloc, WS_prefixtrim, WOS_capture, WOS_write, WOS_listen, WS_trim, WOR_capture, WOR_write, WOR_read, WOAS_write},
-%sensitive=false,
-%
-%morestring=[b]",
-%}
-%
-%\lstset{
-%  basicstyle={\footnotesize\linespread{0.5}\normalfont}, %\ttfamily %\small, %\ttfamily
-%  showstringspaces=false,
-%  columns=flexible,
-%  breakatwhitespace=false, 
-%  breaklines=true, 
-%  commentstyle=\color[HTML]{444444},%\textit,
-%  keywordstyle=\color{black}\textbf
-%}
-
 \begin{figure}
-
-\begin{lstlisting}[language=C]
-//allocates a WOS
-int WS_alloc(char *metadata, int size, segno_t *newsegno);
-
-//trims a segment
-int WS_trim(segno_t seg); 
-
-//batch captures a sub-range within the WOS
-int WOS_capture(segno_t seg, int *retcodes, off_t start,
-    off_t end);
-
-//batch writes a sub-range within the WOS
-int WOS_write(segno_t seg, char *buf, int size,
-    int *retcodes, off_t start, off_t stop);
-
-//registers a listener for write notifications
-int WOS_listen(segno_t seg, callback_t listener);
-
-//captures a WOR
-int WOR_capture(segno_t seg, off_t addr, int *captureID);
-
-//writes a single WOR
-int WOR_write(segno_t seg, off_t addr, char *buf, int size,
-    int captureID);
-
-//reads a single WOR
-int WOR_read(segno_t seg, off_t addr, char *buf, int size);
-\end{lstlisting}
+\lstinputlisting[language = C]{source_code/multipaxos/wormspace_api.c}
 \caption{The $\wormspace$ API.}
 \label{fig:chapter:multipaxos:api}
 \end{figure}
-
-
-%; returns E_SUCCESS / 
-%// E_ALREADY_WRITTE; returns E_SUCCESS / E_UNWRITTEN //// N / E_TRIMMED%// E_TRIMMED
 
 The $\wormspace$ API (Figure \ref{fig:chapter:multipaxos:api}) provides applications running on client machines with a shared, 
 random-access address space of $\WOR$s. 
@@ -249,12 +194,12 @@ A successful prepare call returns a unique, non-zero prepareID; a subsequent wri
 Unsafe writes are fast because preparing is unnecessary, but not safe for concurrent access; applications must ensure that at most one client issues an unsafe write to a particular $\WOR$.
 
 The WOS provides a \textit{prepare} and \textit{write} API, which act as batched or vectorized operations, preparing all the $\WOR$s in the segment or writing a single value to all of them.
-%A client can also request to be notified when $\WOR$s in a particular WOS are written to, via the \textit{listen} call. 
 A client can also receive notifications when $\WOR$s in a particular WOS are written to, via the \textit{listen} call.
 Garbage collection can be triggered by the application via the \textit{trim} call, which trims individual WOSes. 
 $\wormspace$ returns an error code when a trimmed address is subsequently accessed.
-%Importantly, allocation and de-allocation must happen sequentially: the \textit{alloc} call fails unless all segments prior to the passed-in segment number are allocated and all segments after it are unallocated. Garbage collection can be triggered by the application via the \textit{prefixtrim} call, which takes a segment number as a parameter and trims all prior segment numbers.
 
+% I may not need the following parts
+%Importantly, allocation and de-allocation must happen sequentially: the \textit{alloc} call fails unless all segments prior to the passed-in segment number are allocated and all segments after it are unallocated. Garbage collection can be triggered by the application via the \textit{prefixtrim} call, which takes a segment number as a parameter and trims all prior segment numbers.
 
 %The \textit{trim} call can create holes in the address space and $\wormspace$ returns a special error code when the hole is accessed; we leave it to the application to maintain and access valid addresses.}
 
@@ -267,6 +212,7 @@ $\wormspace$ returns an error code when a trimmed address is subsequently access
 \subsection{Design and Implementation}
 \label{chapter:wormspace:subsec:design-and-implementation}
 
+\jieung{Let's revise this part later}
 
 $\wormspace$ is implemented via a combination of a client-side library exposing the API shown in Figure \ref{fig:chapter:multipaxos:api} and a collection of servers (which we call wormservers). In a sense, the $\wormspace$ design is similar to a distributed key-value store: $\WOR$s are associated with 32-bit IDs for our verified version (and 64bit IDs for non-verified version, consists of segment IDs concatenated with offsets within the segment) and mapped to partitions, which in turn consist of replica sets of wormservers. Partitioning occurs at WOS granularity; to perform an operation on a $\WOR$ within a WOS, the client determines the partition storing the segment (via a modulo function) and issues the operation to the replica set.
 
@@ -276,6 +222,9 @@ Each $\WOR$ is implemented via a single-shot $\paxos$ consensus protocol, with t
 Above this basic $\WOR$ interface, the client-side library layers the logic for enforcing write-once segments. Each WOS segment is implemented via a set of data $\WOR$s (one per each address in that segment), a single metadata $\WOR$, and a single trim $\WOR$. Allocating the WOS requires writing to the metadata $\WOR$. If two clients race to allocate a WOS, the first one to capture and write the $\WOR$ wins.
 The \textit{trim} call for garbage collection is implemented via a special message where the client instructs the wormserver to return errors on requests for affected $\WOR$s, and delete all states of the $\WOR$s. The trim $\WOR$ in each WOS enables consensus on a trim command. On subsequent reads or writes to a trimmed $\WOR$, if a subset of the accessed quorum replies that the ID is trimmed, the client-side library completes the trim by issuing it to the remainder of the quorum, and then returns an $\codeinmath{E\_TRIMMED}$ error to the application.
 
+
+
+% I may not need the following parts
 %
 %
 %\textbf{Reconfiguration} Replacing a minority of wormservers from a partition requires a reconfiguration protocol along the lines of Vertical Paxos~\cite{vertpaxos}. In essence, a reconfiguring client `seals' the existing configuration by contacting a majority of the servers. The servers promise to respond with errors to messages sent by clients with the existing configuration to prevent progress using this configuration. A new configuration is installed at an auxiliary location; this could be an external membership service, a different partition of the $\wormspace$ deployment, or a different instance of $\wormspace$ altogether. Clients that receive error messages from servers due to a sealed configuration must go check this location for the new configuration, and reissue the command to the new set of servers in the partition.
