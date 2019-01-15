@@ -642,12 +642,14 @@ Note that
 we partition the waiting queue into two parts $\codeinmath{q}$ 
 and $i\codeinmath{::q}_0$, where $\codeinmath{q}$
 represents the waiting CPUs that were ahead of $i$ in the queue.
-The function $\mcsmeasure$ has two cases that depend on the head status.\newline
+The function $\mcsmeasure$ has two cases that depend on the head status.
+\begin{center}
 \begin{tabular}{p{0.95\linewidth}}
 $\mcsmeasure_i\codeinmath{(c1,c2,}\LEMPTY\codeinmath{,q,s,l)=}\CalBound_{\mathsf{hd}(q)}\codeinmath{(l)+(}K_1\codeinmath{(}\Sigma\codeinmath{t)+}|\codeinmath{q}\cup\codeinmath{s}|\codeinmath{)}\times K_2\codeinmath{)}$\\
 $\mcsmeasure_i\codeinmath{(c1,c2,}\LHOLD\codeinmath{,q,s,l)=}\CalBound_{\mathsf{hd}(q)}\codeinmath{(l)+}\BoundValAux\times K_2$ \\
 \hfill	 where $\BoundValAux\codeinmath{=(c1+c2+(}\Sigma\codeinmath{(}\mathsf{tl}\codeinmath{(t))}\times K_1\codeinmath{+}|\mathsf{tl}\codeinmath{(q)}\cup\codeinmath{s}|\codeinmath{)}$\\
 \end{tabular}
+\end{center}
 
 In short, if the lock is not taken, the bound $\mcsmeasure$ is the sum of the
 maximum time until the first thread in the queue gets scheduled again

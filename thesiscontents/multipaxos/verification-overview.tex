@@ -7,26 +7,14 @@ sensitive=false,
 morecomment=[s]{(*}{*)},
 morestring=[b]",
 }
-%
-%\lstset{
-%  basicstyle={\footnotesize\linespread{0.5}\normalfont}, %\ttfamily %\small, %\ttfamily
-%  showstringspaces=false,
-%  columns=flexible,
-%  breakatwhitespace=false, 
-%  breaklines=true, 
-%  commentstyle=\color[HTML]{444444},%\textit,
-%  keywordstyle=\color{black}\textbf,
-%  mathescape,
-%}
 
-	$\wormspace$ acts as a foundation for verifying distributed systems. 
-		We verify $\wormspace$ once and reuse its proof for verifying three applications (\ie, WormPaxos, WormLog, and WormTX)
-		built on top while  hiding the complexity of distributed protocol verification. 	
-%	We verify $\wormspace$ once and reuse its proof for verifying systems built on top while hiding the complexity of distributed protocol verification. 	
-	To do so, we extend the Certified Concurrent Abstraction Layer ($\ccalname$)  in Chapter~\ref{chapter:ccal}, 
-	modeling an asynchronous network of distributed nodes in order to verify $\wormspace$. 
-	We apply $\ccalname$ beyond a single system verification for the first time and link the proof of $\wormspace$, 
-	$\wormspace$ applications and a verified OS. 
+$\wormspace$ acts as a foundation for verifying distributed systems. 
+We verify $\wormspace$ once and reuse its proof for verifying three applications (\ie, WormPaxos, WormLog, and WormTX)
+built on top while  hiding the complexity of distributed protocol verification. 	
+To do so, we extend the Certified Concurrent Abstraction Layer ($\ccalname$)  in Chapter~\ref{chapter:ccal}, 
+modeling an asynchronous network of distributed nodes in order to verify $\wormspace$. 
+We apply $\ccalname$ beyond a single system verification for the first time and link the proof of $\wormspace$, 
+$\wormspace$ applications and a verified OS. 
 
 \subsection{Layer Structure for Verification}
 
@@ -35,170 +23,124 @@ $\wormspace$ consists of two separate stacks of verification layers, the client 
 \begin{figure}
 \centering
 \includegraphics{figs/multipaxos/layer_diagram.pdf}
-\caption{Layer Diagram: client and server stacks are combined as a distributed system in the ghost layer and the distributed nature is invisible from the $\WOR$ layer.
-%\small{
-%A set of base layers offer common functionalities to the client library and the wormserver stacks: the bottom layer provides an interface to the TCB, including network communication functions and a small number of system calls, while the data layer implements various data structures over the trusted primitives.
-%Above, the server stack includes layers for the Paxos acceptor logic and the wormserver code. The client stack includes layers for the Paxos proposer logic, a wormclient layer that issues individual Paxos proposals, the WOR abstraction, the WOS abstraction, and the WormSpace API.
+\caption{Layer Diagram: client and server stacks are combined as a distributed system in the ghost layer and the distributed nature is invisible from the $\WOR$ layer.}
+%\footnote{
+%A set of base layers offer common functionalities to the client library and the wormserver stacks: 
+%the bottom layer provides an interface to the TCB, including network communication functions and a small number of system calls, 
+%while the data layer implements various data structures over the trusted primitives.
+%Above, the server stack includes layers for the $\paxos$ acceptor logic and the WormServer code. 
+%The client stack includes layers for the $\paxos$ proposer logic, a wormclient layer that issues individual $\paxos$ proposals, 
+%the WOR abstraction, the WOS abstraction, and the $\wormspace$ API.
 %Applications such as WormPaxos and WormLog are built on top of the client library.}
-}
 \label{fig:layerdiagram}
 \end{figure}
 
 
-Both stacks share a common set of base layers: the bottom layer provides an interface to the trusted computing base (TCB), including network communication functions and a small number of system calls. Above this bottom layer, we introduce a data layer which implements various data structures over the trusted primitives. Above the data layer, the client and server stacks diverge. The server stack includes Paxos acceptor layers and the wormserver code above it. The client stack includes layers for Paxos proposer logic and a wormclient layer that issues individual Paxos proposals.
+Both stacks share a common set of base layers: 
+the bottom layer provides an interface to the trusted computing base (TCB), 
+including network communication functions and a small number of system calls. Above this bottom layer, 
+we introduce a data layer which implements various data structures over the trusted primitives. 
+Above the data layer, the client and server stacks diverge. 
+The server stack includes $\paxos$ acceptor layers and the wormserver code above it.
+The client stack includes layers for $\paxos$ proposer logic and a wormclient layer that issues individual $\paxos$ proposals.
 
-	The ghost layer horizontally composes the two stacks and proves properties across multiple wormservers and clients. The ghost layer
-	includes a global state transition system
-	that can reason all concurrent client and server interactions based on a network model. Safety properties of Paxos are proved in this layer.
-The contextual refinement proof between the ghost layer and the composition of wormserver and wormclient provides a powerful guarantee for the layers built on top of the ghost layer. Any layer that the ghost layer contextually refines is guaranteed to be correct with respect to both client and server layers. It is guaranteed that any concurrent behaviors of distributed nodes using the client and server layers are correct. Verified distributed protocol properties hold in higher layers while complex proofs are encapsulated in the ghost layer.
+The ghost layer horizontally composes the two stacks and proves properties across multiple wormservers and clients.
+The ghost layer includes a global state transition system that can reason all concurrent client and server interactions based on a network model. 
+Safety properties of $\paxos$ are proved in this layer.
+The contextual refinement proof between the ghost layer and the composition of wormserver and wormclient provides a powerful guarantee 
+for  the layers built on top of the ghost layer. 
+Any layer that the ghost layer contextually refines is guaranteed to be correct with respect to both client and server layers. 
+It is guaranteed that any concurrent behaviors of distributed nodes using the client and server layers are correct. 
+Verified distributed protocol properties hold in higher layers while complex proofs are encapsulated in the ghost layer.
 
-
-
-%\cuttext{To prove that the wormclient and wormserver layers contextually refine the ghost layer, the distributed system model in the ghost layer is passed as a context and all possible state changes of the model are evaluated against both the client and the server layers.}
-%Verified distributed protocol properties are guaranteed to hold in higher layers while the complex proofs are encapsulated in the ghost layer.
-
-%On top of the ghost layer we build the WOR abstraction, the WOS abstraction, and the WormSpace API.
-
-Verification above the ghost layer is as easy as verifying a sequential program.
-For example, the top-level specification for a write in $\wormspace$ is simply translating the global address to a segment address and offset and passing the captureID (cid) to call the lower-level write which is already proved safe under concurrent distributed accesses:
-
-\begin{lstlisting}[language=mycoq, basicstyle=\small]%, basicstyle=\linespread{0.5}]
-
-  Function WormSpace_write (addr: Z) (val: Payload)
-   (cid: Z) (adt: EnvVars) : option (EnvVars * Z) :=
+Providing functional correctness for the high-level API of $\wormspace$ as well as its applications
+above the ghost layer is as easy as verifying a sequential program.
+For example, the top-level specification for a write in $\wormspace$ is simply translating the global address to a segment address and offset and 
+passing the captureID (cid) to call the lower-level write which is already proved safe under concurrent distributed accesses:
+\begin{lstlisting}
+Function WormSpace_write (addr: Z) (val: Payload) (node_id: Z) (adt: EnvVars) : option (EnvVars * Z) :=
     let segment:= addr / WOS_SIZE in 
     let offset := addr mod WOS_SIZE in
     WOR_write segment offset val cid adt.
 \end{lstlisting}
-\noindent We verify the WOR abstraction, the WOS abstraction, and the WormSpace API. The client stack can be extended to applications such as WormPaxos, WormLog, and WormTX. 
+ We verify the $\WOR$ abstraction, the WOS abstraction, and the WormSpace API.
+ The client stack can be extended to applications such as WormPaxos, WormLog, and WormTX. 
 %In the rest of this section we detail our verification effort.
 
-%network model and the global transition system that are essential for proving distributed system properties. 
-%\bulletpoint{Intro to network model}
+\subsection{Network Model}
+\label{subsec:network_modeling}
 
+It is possible that treating distributed systems as concurrent programs with one shared resource, network, which is
+a logically linearized sequence of network operations (\ie, we call it the global network log);
+thus we employ $/ccalname$ (in Section~\ref{chapter:ccal:subsec:concurrent-layer-with-environment})
+to model a real-world network and to prove distributed properties about the system
+by providing non-block network read and write primitives in our TCB. 
+Among them, two basic primitives, $\codeinmath{send\_msg}$ and $\codeinmath{recv\_msg}$, 
+manipulate the modeled network state. 
+Using those two primitives enables each distributed node  extracts its local interaction with the network from the log, 
+and then the log is used to reason about the interaction between nodes.
 
-%Our network model includes all possible interleavings of wormserver and client operations, and interleaving reduction techniques in the ghost layer simplify the reasoning about interleavings to facilitate the proof of global properties.
-%Once the global properties are proved, the complex interleaving and even the reduction techniques can be all hidden from the higher layers by contextual refinement. 
+In our model, we depart from single-node concurrency verification by modeling the network as unreliable (but non-Byzantine). 
+In our model, $\codeinmath{send\_msg}$ simply creates a $\codeinmath{send}$ event in the log, 
+while $\codeinmath{recv\_msg}$ creates either $\codeinmath{timeout}$ (this models dropped packet) or $\codeinmath{recv}$ 
+events in an arbitrary future location (this models packet delays) than the$\codeinmath{send}$ event in the log. 
+In between a pair of $\codeinmath{send}$ and $\codeinmath{timeout/recv}$, 
+any other nodes can freely record their operations (this models packet reordering). 
+A \textsc{recv} after a \textsc{send} does not necessarily mean that the $\codeinmath{recv}$ event received the value sent by this $\codeinmath{send}$. 
+The actual value can be a duplicate message from a previous send (this models duplicate packets).
 
-%\cmt{We are the first to present a centralized machine checkable network model that allows all possible interleavings of communication and operations of a distributed system. Others have hand written proofs about the interleavings or require complicated merging of partial views of the network to achieve the same level of a precise global network view.}
-
-%Our approach to verify distributed protocols is to build
-%We have built a ghost layer on top of the WormClient and WormServer layers that models a global state transition system: all possible interleavings of client and server operations are modeled in the ghost layer, thus simplifying concurrency reasoning and facilitating the proof of global properties through interleaving reduction techniques (described in \S\ref{subsec:network_modeling}). Combined with the network semantics, we obtain a complete model to verify distributed systems.
-%While proving functional correctness, we create ghost layers where we can prove properties for wormservers and clients.
-% Our network model includes all possible interleavings of wormserver and client operations and interleaving reduction techniques in a ghost layer (further described in \S\ref{subsec:network_modeling}), which simplifies the reasoning about interleavings and facilitates the proof of global properties in the higher layers through interleaving reduction techniques.
-%We discuss the interleaving reduction technique in Section~\ref{subsec:network_reduction}.
-%>>>>>>> b5d710d4940308a845a5cf5251204226185451f7
-
-%\bulletpoint{How and where we proved the paxos properties}
-%The Paxos protocol is verified by placing the ghost layer above
-%The WormClient (the Paxos proposer) and WormServer (the Paxos acceptor) layers include all the functions that manipulate the local data states of the Paxos protocol.
-% \cmt{Global properties are verified in the ghost layer immediately above the WorHelper layer.}
-%To prove the main theorems about safety over the state transition system, we found disjoint inductive invariants for the proposer and the acceptor, which depend only on the local data states and the global message log~(\S\ref{subsec:safety_verification}).
-% Based on these layers and our network model, we can construct a global state transition system in the ghost layer that models all interactions of servers and clients in the distributed system and where we can prove the safety properties of Paxos (\S\ref{subsec:safety_verification}).
-
-%\bulletpoint{Global properties are preserved in the higher layers and can be used for free}
-%Once we have proved the global properties at the ghost layer, the distributed nature of the system is hidden
-%, including the complex interleaving and the reduction techniques,
-%to the higher layers by contextual refinement.
-%One does not have to further reason about failures and asynchrony, thus significantly reducing the proof effort~(\S\ref{subsec:proof_effort}).
-% The same is true for applications (e.g., WormLog and WormPaxos) unless they include their own out-of-band communication between machines (i.e., not through WORs), in which case they need extra ghost layers to prove these protocols.
-
-%\bulletpoint{Unverified parts}
-%A small part of our end-to-end system remains unverified: the \textit{listen} function of the WOS; the reconfiguration protocol in WormSpace; the Chain Replication $\WOR$; and the WormTX application. We did not verify application-level concurrency within a single  process: the application issues operations against WormSpace from a single thread (though there can be many concurrent processes operating correctly against WormSpace).
-%Few non-critical parts of the verification remain as future work: the \textit{listen} function of the WOS, membership/view change of wormservers, chain-replication based $\WOR$, two-phase commit protocols in WormTX were not verified.
-%When running over a commodity OS like Linux, we include the entire OS, hardware, and network in the TCB. However, when we link our verification to $\certikos$ and run over it, our TCB consists of only the network and the hardware.
-
-\subsection{Network Model}\label{subsec:network_modeling}
-To model a real-world network and to prove distributed properties about the system, we employ techniques from concurrency verification. Our network model includes two basic primitives, \textit{send\_msg} and \textit{recv\_msg}, which manipulate the modeled network state. The model includes a logically linearized sequence of network operations, which we call the global network log. Each distributed node can extract its local interaction with the network from the log, and the log is used to reason about the interaction between nodes.
-
-However, we depart from single-node concurrency verification by modeling the network as unreliable (but non-Byzantine). In our model, \textit{send\_msg} simply creates a \textsc{send} event in the log, while \textit{recv\_msg} creates either \textsc{timeout} (this models dropped packet) or \textsc{recv} events in an arbitrary future location (this models packet delays) than the \textsc{send} event in the log. In between a pair of \textsc{send} and \textsc{timeout/recv}, any other nodes can freely record their operations (this models packet reordering). A \textsc{recv} after a \textsc{send} does not necessarily mean that the \textsc{recv} event received the value sent by this \textsc{send}. The actual value can be a duplicate message from a previous send (this models duplicate packets).
-%, so the system implementation should be able to handle all corner cases generated by the network model. 
-%On top of these arbitrary message interleavings, we define invariants that govern the $\wormspace$ communication patterns among nodes. These invariants are derived from the specification in the wormclient and wormserver layers, which together define the Paxos protocol.
-
-%In that purpose, we make three logical packets, \texttt{SEND}, \texttt{TIME$\_$OUT}, and \texttt{RECV}, and two primitives in the bottom level (Boot in Fig~\ref{fig:layerdiagram}) updates the node's network log by adding the corresponding packet on the log.
-
-
-
-
-%\begin{figure}
-%\centering
-%\includegraphics{pics/network_reduction.pdf}
-%\caption{Network Reduction for a client \label{fig:networkreduction}}
-%\end{figure}
-
-
-Network communication patterns can be complex when a client interacts with multiple wormservers in a one-to-many request pattern.
+However, network communication patterns can be complex when a client interacts with multiple wormservers in a one-to-many request pattern.
 Abstraction and contextual refinement can help us manage this complexity without reducing the fidelity of verification.
 Accordingly, we create a network log layer with simpler semantics, and prove that the original log refines the simplified log.
 The simplified log coalesces broadcasts and receptions into singleton events and eliminates duplicates simplifying global property proofs.
+\begin{figure}
+\begin{center}
+\includegraphics[width=0.98\textwidth]{figs/multipaxos/wormspace_network_refine}
+\end{center}
+\caption{Network Refinement in $\wormspace$}
+\label{fig:chapter:multipaxos:network-refinement}
+\end{figure}
+Figure~\ref{fig:chapter:multipaxos:network-refinement} illustrates the reduction process.
 
 
-%Figure~\ref{fig:networkreduction} illustrates the reduction process.
+$\wormspace$ code is designed to tolerate an unreliable (but non-Byzantine) network. For example, the code always receives packets in a loop to filter out duplicate packets and waits for timeout for lost packets. Such communication patterns become more complex when a client interacts with multiple wormservers in a one-to-many request pattern.
 
-%$\wormspace$ code is designed to tolerate an unreliable (but non-Byzantine) network. For example, the code always receives packets in a loop to filter out duplicate packets and waits for timeout for lost packets. Such communication patterns become more complex when a client interacts with multiple wormservers in a one-to-many request pattern.
+Preserving such complexity is necessary to model the real network and to verify what the C code actually does, but when it comes to proving the global property of the system, some of the details can be abstracted out.
+Therefore, we apply the layered approach on the network model
 
-%Preserving such complexity is necessary to model the real network and to verify what the C code actually does, but when it comes to proving the global property of the system, some of the details can be abstracted out.
-%Therefore, we apply the layered approach on the network model
-
-%is created after proving the functional correctness of the original log layer that exposes \textit{SEND/TIMEOUT/RECV} primitives.
+is created after proving the functional correctness of the original log layer that exposes \textit{SEND/TIMEOUT/RECV} primitives.
 
 
-%The simplified log coalesces these primitives used for broadcast and broadcast responses into singleton send and recv events.
+The simplified log coalesces these primitives used for broadcast and broadcast responses into singleton send and recv events.
 
-\begin{figure} 
-%\begin{lstlisting}[language=mycoq, basicstyle=\small]%, basicstyle=\linespread{0.5}]
-%
-%Function WOR_ghost_write (addr: Z) (val: Payload)
-% (cid: Z) (adt: EnvVars) : option (EnvVars * Z) :=
-%  let nid := get_node_id () in
-%  (* get node's view of net log from env vars *)
-%  let net_l := get_net_log nid adt.net_log in
-%  (* replay log; check if node is in a writable status *)
-%  match (can_write ((replay_log(net_l))[nid]) addr val cid)
-%   with    | false => None    | true =>
-%    (* log write intention using ghost msg to net log*)
-%    let net_l := (ghost_msg val addr cid) :: net_l in
-%    (* broadcast N msgs and collect acks: query network 
-%       to add send/recv msg to local net log in a loop *)
-%    let net_l := bcast_n_recv nid N net_l adt.net in
-%    (* replay the net log to compute global state,
-%       get node's local state and check quorum status *)
-%    let result := is_qrm ((replay_log(net_l))[nid]) addr in
-%    (* log result using ghost msg to net log *)
-%    let net_l := (ghost_msg result addr cid) :: net_l in
-%    (* return env vars with updated net log and result *)
-%    (adt{net_log := (put_net_log nid net_l)}, result)
-%  end.
-%\end{lstlisting}
+\begin{figure}
 
-
-\begin{lstlisting}[language=mycoq, basicstyle=\small]%, basicstyle=\linespread{0.5}]
-
+\begin{lstlisting}[language=C]
 Function WOR_ghost_write (addr: Z) (val: Payload) (cid: Z)
  (adt: EnvVars) : option (EnvVars * Z) :=
-  let net_l := adt.net_l (* get net log from Env context *)
-  let nid := get_node_id adt in (* get current node id *)
-  (* replay the net log; get the local node state; and
-     check if the node is in a writable status *)
+  // get net log from Env context
+  let net_l := adt.net_l
+  // get current node id 
+  let nid := get_node_id adt in 
+  // replay the net log; get the local node state; and check if the node is in a writable status 
   if (can_write ((replay_log(net_l))[nid]) addr val cid)
   then
-    (* log write intent with a ghost msg to the net log *)
-    let net_l$_1$ := (ghost_write nid addr val cid) :: net_l in
-    (* broadcast msgs and collect acks: reflect behaviors 
-       of other nodes to add send/recv events by this and
-       other nodes to the net log *)
-    let net_l$_2$ := bcast_n_recv nid addr val cid net_l$_1$ adt in
-    (* replay the net log to compute global state; get 
-       node's local state; and check the quorum status *)
-    let result := is_qrm ((replay_log(net_l$_2$))[nid]) addr in
-    (* log the result using a ghost msg to the net log *)
-    let net_l$_3$ := (ghost_result nid result) :: net_l$_2$ in
-    (* return the updated net log and the result *)
-    (adt{net_l := net_1$_3$}, result)
+    // log write intent with a ghost msg to the net log 
+    let net_l<@$_1$@> := (ghost_write nid addr val cid) :: net_l in
+    // broadcast msgs and collect acks: 
+    // reflect behaviors of other nodes to add send/recv events by this and other nodes to the net log 
+    let net_l<@$_2$@> := bcast_n_recv nid addr val cid net_l<@$_1$@> adt in
+    // replay the net log to compute global state; 
+    // get node's local state; and check the quorum status 
+    let result := is_qrm ((replay_log(net_l<@$_2$@>))[nid]) addr in
+    // log the result using a ghost msg to the net log
+    let net_l<@$_3$@> := (ghost_result nid result) :: net_l<@$_2$@> in
+    // return the updated net log and the result 
+    (adt{net_l := net_1<@$_3$@>}, result)
   else None.
 \end{lstlisting}
 
-\caption{A simplified log construction function example. It logs local and network events of a node to the network log and calls the log replay function to check state changes.}
+\caption{A Simplified Log Construction Function Example: It logs local and network events of a node to the network log and calls the log replay function to check state changes.}
 \label{fig:spec}
 \end{figure}
 
@@ -206,14 +148,14 @@ Function WOR_ghost_write (addr: Z) (val: Payload) (cid: Z)
 \label{subsec:safety_verification}
 
 %Verifying a distributed system requires more than a functional correctness proof: a collection of individually verified nodes should be verified as a whole to prove that a global property holds. We design and verify a global state transition system and verify the global properties of $\wormspace$ based on the transition system.
-	The global state transition system in the ghost layer models a distributed system with multiple concurrent Paxos clients and acceptors from the viewpoint of the global network to enable the distributed protocol verification. It includes (network) log construction functions, a (network) log replay function, and a global state. The log construction function models how each client/server operation affects the network; it governs the communication pattern of each node in the network log to define the Paxos protocol. The log replay function constructs the global state, which is a snapshot of the entire distributed system state or a combination of Paxos-related states in all nodes, by interpreting network events in the network log. Log construction and replay functions are derived from wormclient and wormserver specifications and their refinement relations for the derivation are verified. 
-%The global state transition system consists of the global network log, global states, (network) log construction functions, and a (network) log replay function. The global state is a combination of Paxos-related states in all nodes. The log construction and the log replay functions are derived from wormclient/wormserver specifications to reason about the system from a global network's point of view. The former models how each client/server operation affects the network; it governs the communication pattern of clients and servers in the network log to define the Paxos protocol. The latter, by interpreting the network log, constructs the global state. 
-%The global state transition system consists of the global network log, global states, (network) log construction functions, and a (network) log replay function. The global state is a combination of Paxos-related states in all nodes. The log construction and the log replay functions are derived from wormclient/wormserver specifications to reason about the system from a global network's point of view. The former models how each client/server operation affects the network; it governs the communication pattern of clients and servers in the network log to define the Paxos protocol. The latter, by interpreting the network log, constructs the global state. 
+	The global state transition system in the ghost layer models a distributed system with multiple concurrent $\paxos$ clients and acceptors from the viewpoint of the global network to enable the distributed protocol verification. It includes (network) log construction functions, a (network) log replay function, and a global state. The log construction function models how each client/server operation affects the network; it governs the communication pattern of each node in the network log to define the $\paxos$ protocol. The log replay function constructs the global state, which is a snapshot of the entire distributed system state or a combination of $\paxos$-related states in all nodes, by interpreting network events in the network log. Log construction and replay functions are derived from wormclient and wormserver specifications and their refinement relations for the derivation are verified. 
+%The global state transition system consists of the global network log, global states, (network) log construction functions, and a (network) log replay function. The global state is a combination of $\paxos$-related states in all nodes. The log construction and the log replay functions are derived from wormclient/wormserver specifications to reason about the system from a global network's point of view. The former models how each client/server operation affects the network; it governs the communication pattern of clients and servers in the network log to define the $\paxos$ protocol. The latter, by interpreting the network log, constructs the global state. 
+%The global state transition system consists of the global network log, global states, (network) log construction functions, and a (network) log replay function. The global state is a combination of $\paxos$-related states in all nodes. The log construction and the log replay functions are derived from wormclient/wormserver specifications to reason about the system from a global network's point of view. The former models how each client/server operation affects the network; it governs the communication pattern of clients and servers in the network log to define the $\paxos$ protocol. The latter, by interpreting the network log, constructs the global state. 
 
 Log construction functions interact with the network log and the global state to introduce new network events in the network log. To record local state changes of a node which do not involve network operations, ghost messages are written to the network log. Log construction functions use the log replay function to learn and use state changes incurred by other concurrent nodes and itself (Figure~\ref{fig:spec}).
 
 
-%Our global state transition system is modeled using global states, which are Paxos related local states of all nodes in $\wormspace$, and state transition functions, which wormclient/wormserver functions refine. By combining the global state and the state transition function with the network model, we have a complete model of a distributed system containing multiple Paxos clients and acceptors.
+%Our global state transition system is modeled using global states, which are $\paxos$ related local states of all nodes in $\wormspace$, and state transition functions, which wormclient/wormserver functions refine. By combining the global state and the state transition function with the network model, we have a complete model of a distributed system containing multiple $\paxos$ clients and acceptors.
 
 %Global state transition system includes a \textit{network log replay function} which governs the state transition rules. Based on the network log, the log replay function uses a state transition function that is relevant to a network event and changes affected node states in the global state. The log replay function and the global state gives enough information about the entire system to verify the properties of $\wormspace$.
 
@@ -223,7 +165,7 @@ The global state transition system includes a \textit{network log replay functio
 
 %Based on the network log, the log replay function uses a state transition function that is relevant to a network event and changes affected node states in the global state. Based on such global behavior of the system we verify the properties of $\wormspace$.
 
-The log replay function by itself can replay all behaviors and state changes of a distributed system step by step from the global network log. Based on this capability we prove the Paxos-based safety/immutability property of $\wormspace$:
+The log replay function by itself can replay all behaviors and state changes of a distributed system step by step from the global network log. Based on this capability we prove the $\paxos$-based safety/immutability property of $\wormspace$:
 
 \begin{theorem}
  Once a value is written to a $\WOR$, the value in the $\WOR$ never changes.
@@ -232,12 +174,12 @@ The log replay function by itself can replay all behaviors and state changes of 
 
 \noindent To prove Theorem 1, we prove the following key lemma: 
 \\
-\textit{\textbf{Lemma 1.} Given a valid network log $\ell$, if there exists a Paxos round $n$ where a value $v$ is successfully written to a $\WOR$ $r$, any following write to $r$ in Paxos rounds $n' > n$ in the log $\ell$
+\textit{\textbf{Lemma 1.} Given a valid network log $\ell$, if there exists a $\paxos$ round $n$ where a value $v$ is successfully written to a $\WOR$ $r$, any following write to $r$ in $\paxos$ rounds $n' > n$ in the log $\ell$
 can only attempt to write $v' = v$.}
 
 \noindent\\
 	The valid network log is the log that preserves verified invariants such as communication patterns derived from log construction functions.
-Lemma 1 is proved by induction on writes in the log using other supporting lemmas: e.g., $n'$ is unique and is monotonically increasing, the Paxos-phase-1a/capture at round $n'$ on $r$ returns the written value $v$, etc.
+Lemma 1 is proved by induction on writes in the log using other supporting lemmas: e.g., $n'$ is unique and is monotonically increasing, the $\paxos$-phase-1a/capture at round $n'$ on $r$ returns the written value $v$, etc.
 Based on Theorem 1, the immutability and uniqueness of WOS allocation (including leader/sequencer election for WormPaxos/WormLog) and WOS trim are easily verified. 
 
 
@@ -255,12 +197,12 @@ Based on Theorem 1, the immutability and uniqueness of WOS allocation (including
 %	$\forall t, L_{WormSpace} (I_{WormLog} \oplus t) \sqsubseteq L_{WormLog} (t)$,
 %\end{theorem}
 \textit{\textbf{Theorem 2.} $\forall t, L_{TCB} (i_{AllWormSpace} \oplus t) \sqsubseteq L_{WormSpace} (t)$}, \\
-%where $t$ is the context and $i_{AllWormSpace}$ is the implementation of all $\wormspace$ layers combined. The contextual refinement proof between all adjacent layers are used as lemmas. Theorem 2 guarantees the correctness of the code and verified Paxos properties in the ghost layer hold in $\wormspace$. 
-where $t$ is the context and $i_{AllWormSpace}$ is the implementation of all $\wormspace$ layers combined. The contextual refinement proof between all adjacent layers are used as lemmas to guarantee the correctness of the entire code. Theorem 2 also guarantees that the verified Paxos properties in the ghost layer hold for the $\wormspace$ implementation.
+%where $t$ is the context and $i_{AllWormSpace}$ is the implementation of all $\wormspace$ layers combined. The contextual refinement proof between all adjacent layers are used as lemmas. Theorem 2 guarantees the correctness of the code and verified $\paxos$ properties in the ghost layer hold in $\wormspace$. 
+where $t$ is the context and $i_{AllWormSpace}$ is the implementation of all $\wormspace$ layers combined. The contextual refinement proof between all adjacent layers are used as lemmas to guarantee the correctness of the entire code. Theorem 2 also guarantees that the verified $\paxos$ properties in the ghost layer hold for the $\wormspace$ implementation.
 
 
 
-%We proved the essential safety properties of the Paxos-based $\wormspace$: as long as the majority of wormservers are responsive (i.e., the failure assumption for the Paxos protocol holds), a value can be written only once to a $\WOR$, the written value never changes, and a $\WOR$ is always accessible (available). Based on the $\WOR$ proof, the immutability of WOS allocation and trim are easily verified.
+%We proved the essential safety properties of the $\paxos$-based $\wormspace$: as long as the majority of wormservers are responsive (i.e., the failure assumption for the $\paxos$ protocol holds), a value can be written only once to a $\WOR$, the written value never changes, and a $\WOR$ is always accessible (available). Based on the $\WOR$ proof, the immutability of WOS allocation and trim are easily verified.
 %As explained earlier, proved global properties are preserved in any layer above the WorHelper layer for free.
 %>>>>>>> b5d710d4940308a845a5cf5251204226185451f7
 
@@ -268,7 +210,7 @@ where $t$ is the context and $i_{AllWormSpace}$ is the implementation of all $\w
 \subsection{Reusability and Linking}
 \label{subsec:proof_effort}
 
-Because the ghost layer encapsulates the distributed nature of $\wormspace$, the verification of WormPaxos, WormLog, and WormTX does not have to reason about complex Paxos proofs. % is as easy as proving non-distributed code.
+Because the ghost layer encapsulates the distributed nature of $\wormspace$, the verification of WormPaxos, WormLog, and WormTX does not have to reason about complex $\paxos$ proofs. % is as easy as proving non-distributed code.
 The verification of any additional distributed protocols above $\wormspace$ reuses the same network model, but requires a new ghost layer. Protocols at different levels of the stack are independently verified within separate ghost layers; invariants of interfaces to the protocol and contextual refinement proofs guarantee non-interference among protocols. 
 
 The top-level theorems that we prove for WormPaxos, WormLog, and WormTX are in the same format:\\
@@ -276,7 +218,7 @@ The top-level theorems that we prove for WormPaxos, WormLog, and WormTX are in t
 where WormApp can be one of WormPaxos, WormLog, and WormTX.
 %\textit{\textbf{Theorem 4.} $\forall t, L_{WormSpace} (i_{WormLog} \oplus t) \sqsubseteq L_{WormLog} (t)$}, \\
 %\textit{\textbf{Theorem 5.} $\forall t, L_{WormSpace} (i_{WormTX} \oplus t) \sqsubseteq L_{WormTX} (t)$}. \\
-By reusing Theorem 2 and transitively combining it with Theorems 3, applications are guaranteed to be correct with respect to all layers of $\wormspace$ and to encapsulate verified Paxos properties. Similarly, Theorem 2 can be reused to verify any system in Section(background) to guarantee $\WOR$ semantics, if we use $\wormspace$ as a building block. 
+By reusing Theorem 2 and transitively combining it with Theorems 3, applications are guaranteed to be correct with respect to all layers of $\wormspace$ and to encapsulate verified $\paxos$ properties. Similarly, Theorem 2 can be reused to verify any system in Section(background) to guarantee $\WOR$ semantics, if we use $\wormspace$ as a building block. 
 
 
 To enable end-to-end verification of $\wormspace$, WormPaxos, WormLog, and WormTX, we link $\wormspace$ to $\certikos$. The linking requires contextual refinement proof between two interfacing layers.

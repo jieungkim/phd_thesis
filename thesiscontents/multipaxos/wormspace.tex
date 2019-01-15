@@ -7,7 +7,7 @@
 \lstinputlisting[numbers = left, language=TeX]{source_code/multipaxos/paxos_spec.c}
 \end{multicols}
 \end{minipage}
-\caption{Paxos: Informal Description}
+\caption{$\paxos$: information description.}
 \label{fig:chapter:multipaxos:paxos-pseudocode}
 \end{figure}
 
@@ -32,7 +32,7 @@ The result is a system that guarantees global properties through local behaviors
 \begin{center}
 \includegraphics[width=0.7\textwidth]{figs/multipaxos/paxos_example_nowitness}
 \end{center}
-\caption{Paxos: Execution Example.}
+\caption{$\paxos$: execution example.}
 \label{fig:chapter:multipaxos:paxos-example}
 \end{figure}
 
@@ -171,14 +171,13 @@ Our verification model assumes non-Byzantine network: packets can be arbitrarily
 \subsection{The WormSpace System}
 \label{chapter:wormspace:subsec:wormspace-system}
 
-
-\lstdefinelanguage{rock}
-{morekeywords={WS_alloc, WS_prefixtrim, WOS_capture, WOS_write, WOS_listen, WS_trim, WOR_capture, WOR_write, WOR_read, WOAS_write},
-sensitive=false,
-morecomment=[l]{//},
-morecomment=[s]{/*}{*/},
-morestring=[b]",
-}
+%
+%\lstdefinelanguage{rock}
+%{morekeywords={WS_alloc, WS_prefixtrim, WOS_capture, WOS_write, WOS_listen, WS_trim, WOR_capture, WOR_write, WOR_read, WOAS_write},
+%sensitive=false,
+%
+%morestring=[b]",
+%}
 %
 %\lstset{
 %  basicstyle={\footnotesize\linespread{0.5}\normalfont}, %\ttfamily %\small, %\ttfamily
@@ -192,8 +191,7 @@ morestring=[b]",
 
 \begin{figure}
 
-\begin{lstlisting}[language=rock]%, basicstyle=\linespread{0.5}]
-
+\begin{lstlisting}[language=C]
 //allocates a WOS
 int WS_alloc(char *metadata, int size, segno_t *newsegno);
 
@@ -276,7 +274,7 @@ Each $\WOR$ is implemented via a single-shot $\paxos$ consensus protocol, with t
 
 
 Above this basic $\WOR$ interface, the client-side library layers the logic for enforcing write-once segments. Each WOS segment is implemented via a set of data $\WOR$s (one per each address in that segment), a single metadata $\WOR$, and a single trim $\WOR$. Allocating the WOS requires writing to the metadata $\WOR$. If two clients race to allocate a WOS, the first one to capture and write the $\WOR$ wins.
-The \textit{trim} call for garbage collection is implemented via a special message where the client instructs the wormserver to return errors on requests for affected $\WOR$s, and delete all states of the $\WOR$s. The trim $\WOR$ in each WOS enables consensus on a trim command. On subsequent reads or writes to a trimmed $\WOR$, if a subset of the accessed quorum replies that the ID is trimmed, the client-side library completes the trim by issuing it to the remainder of the quorum, and then returns an \textit{E$\_$TRIMMED} error to the application.
+The \textit{trim} call for garbage collection is implemented via a special message where the client instructs the wormserver to return errors on requests for affected $\WOR$s, and delete all states of the $\WOR$s. The trim $\WOR$ in each WOS enables consensus on a trim command. On subsequent reads or writes to a trimmed $\WOR$, if a subset of the accessed quorum replies that the ID is trimmed, the client-side library completes the trim by issuing it to the remainder of the quorum, and then returns an $\codeinmath{E\_TRIMMED}$ error to the application.
 
 %
 %

@@ -83,8 +83,10 @@ this can result in concurrent commands being ordered arbitrarily, which does not
 \centering
 \includegraphics[width=0.7\textwidth, page=3]{figs/multipaxos/pics.pdf}
 \caption{WormLog: clients can append by obtaining a token from the sequencer and writing to $\wormspace$}
-.\label{fig:wormlogarch}
+.\label{fig:chapter:multipaxos:wormlogarch}
 \end{figure}
+
+
 
 A shared log is a shared address space that provides an \textit{append} / \textit{read} API to clients. 
 CORFU~\cite{corfu} is a system that implements a shared log API over a set of write-once addresses. 
@@ -97,7 +99,7 @@ The write-once semantics are derived by using the head replica of the chain to a
 
 Achieving a CORFU-like design over $\wormspace$ is straightforward: 
 we simply have each client contact a sequencer node when it wants to append an entry, obtain a slot in the $\wormspace$ address space, 
-and then write to that position (Figure~\ref{fig:wormlogarch}). 
+and then write to that position (Figure~\ref{fig:chapter:multipaxos:wormlogarch}). 
 With this design (which we call WormLog), 
 we obtain the two properties that differentiate a shared log from a $\multipaxos$ system~\cite{corfupaxos}: the decoupling of sequencing 
 from I/O, since the sequencer does not see the append payload; and the time-slicing of individual commands over different replica sets, 
@@ -149,21 +151,17 @@ if a single RM fails -- after it has locally stored its vote in stable storage, 
 TM -- then the protocol has to block until the RM comes back online. In the case where the TM fails --
  after storing its final decision in stable storage but before sending commit messages -- 
  the protocol has to block until the TM comes back online. In both cases, the remaining RMs cannot determine the decision. 
-
 %If a RM fails in 2PC, the TM can simply time-out and abort the transaction. However, if the TM fails after collecting all the votes but before sending out its decision, the protocol blocks; RMs have no way to determine what the decision was.
-
-
 \begin{figure}
 \centering
-\includegraphics[width=0.7\textwidth]{figs/multipaxos/pics-2pc}
-\caption{WormTX: $\WOR$-based non-blocking atomic commit protocols. Dashed arrows are notifications. \label{fig:commit}}
+\includegraphics[width=0.8\textwidth, page=5]{figs/multipaxos/pics-longer}
+\caption{WormTX: $\WOR$-based non-blocking atomic commit protocols. Dashed arrows are notifications.}
+\label{fig:chapter:multipaxos:commit}
 \end{figure}
+We consider making the deterministic (\ie, the TM does not have a separate vote) version of 2PC non-blocking. 
+We come up with a number of variants that use $\WOR$s. We describe them below and in Figure \ref{fig:chapter:multipaxos:commit}.
 
-
-We consider making the deterministic (\ie., the TM does not have a separate vote) version of 2PC non-blocking. 
-We come up with a number of variants that use $\WOR$s. We describe them below and in Figure \ref{fig:commit}.
-
-\textbf{[Variant A8: 8 message delays]} An obvious solution is to simply store the votes in a set of per-RM $\WOR$s. 
+\paragraph{[Variant A8: 8 message delays]} An obvious solution is to simply store the votes in a set of per-RM $\WOR$s. 
 If the TM decision is non-deterministic, a $\WOR$ is used to store the decision as well. In the $\WOR$-based 2PC protocol, 
 an RM initiates the protocol by contacting the TM (message delay \#1); the TM contacts the RMs (\#2); 
 they prepare the $\WOR$ (\#3 and \#4), and then write to it (\#5 and \#6); send back their decision to the TM (\#7), 
@@ -172,37 +170,34 @@ which sends back a commit message to all the RMs (\#8). This corresponds exactly
 
 %The number of messages is 1 + N + 4(F + 1) + N + N = 3N + 1 + 4(F+1)
 
-\textbf{[Variant B6: 6 message delays]} A simple optimization involves eliminating the prepare messages from the critical path. 
+\paragraph{[Variant B6: 6 message delays]} A simple optimization involves eliminating the prepare messages from the critical path. 
 Each RM can allocate a dedicated WOS for its decisions and batch prepare the WOS in advance. 
 This eliminates delays \#3 and \#4 from variant A8.%, bringing us down to 6 message delays.
 
 %The number of messages is 3N + 1 + 2(F+1) (+ delta for batched prepare)
 
-\textbf{[Variant C5: 5 message delays]} Further, rather than have the RM wait for an ACK on the write (message delay \#6 in variant A8) and 
+\paragraph{[Variant C5: 5 message delays]} Further, rather than have the RM wait for an ACK on the write (message delay \#6 in variant A8) and 
 relay it to the TM (\#7 in A8), the TM can directly observe the decision by listening for write notifications on the WOS. 
 This compresses \#6 and \#7 of variant A8 into a single step.
 %, bringing us down to 5 message delays. 
 
 %The number of messages is 3N + 1 + 2(F+1) + (F+1)N. If we have batched notifications, the final term is just F+1.
 
-\textbf{[Variant D4: 4 message delays]} Finally, rather than have the TM wait to be notified of all the $\WOR$ 
+\paragraph{[Variant D4: 4 message delays]} Finally, rather than have the TM wait to be notified of all the $\WOR$ 
 writes and then send out a commit message to all the participants (\#8 of variant A8), 
 individual RMs can directly listen to each other's WOSes; this brings us down to 4 message delays.
-
 %The number of messages is 2N + 1 + 2(F+1) + (F+1)*N*N. If we have batched notifications, the final term is just (F+1)N.
-
 %2N + 1 + 2F + 2 + (F+1)N
 %= 2N + 3 + 2F + NF + N
 %= 3N + 3 + 2F + NF
 %= 3(N+1) + F(N+1) + F
-
 This progression of increasingly fast protocols exactly matches the description by Gray and Lamport~\cite{gray:2006}; 
 they too proceed from an unoptimized 8-step protocol to an optimized 4-step one in identical fashion, via 6-step and 5-step protocols. 
 In their case, this is achieved by opening up the $\paxos$ protocol and rewiring the flow of requests and ACKs between the various 
 $\paxos$ roles of acceptors, leaders, proposers, and learners. In our case, the optimizations are achieved via the $\wormspace$ API, 
 without requiring any knowledge of the $\paxos$ protocol.
 
-\textbf{[Variant E3: 3 message delays]} We now observe that we do not need a TM, 
+\paragraph{[Variant E3: 3 message delays]} We now observe that we do not need a TM, 
 since the final decision is a deterministic function of the $\WOR$s, 
 and any RM can time-out on the commit protocol and write a no vote to a blocking RM's $\WOR$ to abort the transaction. 
 The initiating RM can simply contact the other RMs on its own to start the protocol (combining \#1 and \#2 of variant A8), 
@@ -210,13 +205,11 @@ bringing down the number of delays to 3. Interestingly, this variant is not desc
 
 %The number of messages is 3N + 2(F+1) + (F+1)*N*N
 
-\textbf{[Variant F2: 2 message delays]} Finally, if RMs can `spontaneously' start the protocol and vote, 
+\paragraph{[Variant F2: 2 message delays]} Finally, if RMs can `spontaneously' start the protocol and vote, 
 we eliminate delays \#1 and \#2 of variant A8, bringing the protocol down to two delays, 
 the theoretical minimum for atomic commit. Since this is not a realistic assumption for many systems, we choose variant E3 as our final solution.
 
-Our protocol is in contrast to other non-blocking commit protocols, 
-which require complex message passing logic~\cite{distsys}. Instead, we assemble a non-blocking protocol via simple, 
-intuitive, and data-centric commands on $\WOR$s.
+
 
 
 
@@ -241,5 +234,9 @@ If the lock is currently held, the server follows the Immediate-Restart policy a
 
 If each server receives an ACK for its own yes write, and a notification that yes has been written to the other $\WOR$, 
 it proceeds with the update and then releases the lock. If a server votes yes but is notified that the other server voted no, 
-then it releases its local lock without performing the update. This simple protocol provides strict serializability as well as failure atomicity.}
+then it releases its local lock without performing the update. This simple protocol provides strict serializability as well as failure atomicity.
+
+Our protocol is in contrast to other non-blocking commit protocols, 
+which require complex message passing logic~\cite{distsys}. Instead, we assemble a non-blocking protocol via simple, 
+intuitive, and data-centric commands on $\WOR$s.}
 
