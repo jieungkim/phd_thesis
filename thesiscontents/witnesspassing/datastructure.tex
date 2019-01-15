@@ -1,0 +1,267 @@
+
+\section{Specifications for Leader Based Systems}
+\label{chapter:witnesspassing:sec:specs-for-leader-based-system}
+
+\sysname{} specifies leader-based distributed systems with a generic
+specification and a system-specific specification. 
+The generic specification defines the high-level behavior of the leader-based 
+distributed system and the system-specific specification, which is encapsulated 
+within the generic specification describes the low-level behaviors. 
+
+The generic specification obviates the need for the user to write specifications
+of essential safety properties of the leader-based system and instead enables them to
+focus on writing the system-specific parts. The
+generic and system-specific specifications are designed in a modular fashion and
+can be composed to form a full specification of a leader-based distributed system.
+
+Modeling the leader-based system requires two kinds of actors in the system:
+\textit{requesters} and \textit{approvers}. 
+Requesters seek permission to perform actions, which approvers either authorize or deny.
+This separation need not be physical as in some protocols, such as Raft, one node can act
+both as a requester and approver simultaneously.
+The generic specification for both requesters and approvers 
+works as a template for writing system-specific
+specifications and for common safety property proofs.
+Safety properties can be verified over the generic specification once,
+and the system-specific specification, which meets the pre-defined template in
+the generic specification, is automatically guaranteed to be safe. The safety
+properties that \sysname{} guarantees are linearizability of state update and
+soundness of leader selection.
+
+\begin{figure}
+\includegraphics[width=0.95\textwidth]{figs/witnesspassing/overviewfig}
+\caption{Leader-based Distributed System Process Flow: the process flow can be
+	expressed using template functions and system-specific functions can
+	be plugged into the template. Examples show multi-Paxos, 
+	Raft~\cite{raft}, two-phase commit with external membership service, 
+	and Lamport's distributed lock~\cite{lamportclock}.}
+\label{fig:chapter:witnesspassing:process-flow}
+\end{figure}
+
+The generic specification includes two template functions for both actors that describe the
+abstract behavior of a leader-based distributed system:
+\begin{itemize}
+	\item $\ldrfunction$ (the requester's spec) and  $\ldrhfunction$ (the approver's spec) specify how a leader is elected, and
+	\item $\opfunction$  (the requester's spec) and $\ophfunction$ (the approver's spec)  specify how distributed states in the system are
+		updated.
+\end{itemize}
+
+The operations of a leader based system can be described using these functions
+as illustrated in Figure~\ref{fig:chapter:witnesspassing:process-flow}.
+We first define the definitions that are necessary to understand the
+functions and then explain both functions in detail.
+
+\subsection{State Definition}
+\label{subsec:state-definition}
+
+\begin{figure}
+\begin{small}
+\raggedright
+
+\textbf{Local State}\\
+$$
+\begin{array}{lllllllll}
+\nodeid &:& Type & \mbox{(Node ID)} & & \termnum &:& Type & \mbox{(Term num)}^* \\
+\seqnum &:& Type & \mbox{(Version num)}^* & &\dsvalue &:& Type & \mbox{(Local object)}\\
+\dstate &:=& (\termnum  \times \seqnum \times \dsvalue) & \mbox{(Local state)} & & & & & \\
+\end{array}
+$$
+\\
+\raggedleft
+
+* : Total order required
+
+\raggedright
+\textbf{Global State}\\
+$$
+\begin{array}{lllllllll}
+\fullset &:=& \set{\nodeid} & \mbox{(Full node ID set)} & & \gstate &:=& \set{ \nodeid \mapsto \dstate ~\vert~ \forall \nodeid \in \fullset} & \mbox{(Global state)}\\
+\end{array}
+$$
+\\
+\textbf{Network} \\
+$$
+\begin{array}{llll}
+\packet &: & Type & \mbox{(Network event)}\\
+\networklog &:=& \mbox{list}\ \packet & \mbox{(Network log)}\\
+\replay &:& \networklog \rightarrow  \gstate& \mbox{(Log replay function)}\\
+\end{array}
+$$
+\\
+\textbf{Protocol-specific Functions}  \\
+$$
+\begin{array}{llll}
+	\updatefunc & := & \dstate \rightarrow (\seqnum \times \dsvalue) &
+	\mbox{(Obj update function)} \\
+\gldrfunction & := & \nodeid \rightarrow \networklog \rightarrow \networklog  & \mbox{(Protocol functions)} \\
+\gopfunction & := & \nodeid \rightarrow \updatefunc \rightarrow \networklog \rightarrow \networklog  & \mbox{(Protocol functions)} \\
+
+\sendfunction & := & \nodeid \rightarrow \dstate \rightarrow \networklog & \mbox{(Send function)}\\
+\recvfunction & := & \nodeid \rightarrow \dstate \rightarrow \networklog & \mbox{(Recv function)}\\
+\end{array}
+$$
+\end{small}
+\vspace{-1em}
+\caption{Basic Definitions}
+\label{fig:chapter:witnesspassing:basic-state}
+\vspace{-1.5em}
+\end{figure}
+
+Figure~\ref{fig:chapter:witnesspassing:basic-state} presents the necessary definitions for the
+generic specification.
+Nodes must have unique identifiers of type $\nodeid$, which can be any type with decidable equality.
+A term number of type $\termnum$ acts as a logical temporal indicator in the system.
+Term numbers do not need to correspond to any physical clock,
+but they are used to resolve ordering conflicts between operations within the system,
+so they must be totally ordered.
+Nodes also contain a version number of type $\seqnum$, which is associated with the sequence of updates
+of the local object $\dsvalue$.
+A local object is one node's partial view of the global distributed object.
+Since each node's local state may not be exactly in sync globally due to network or
+node failures, the version number indicates how up-to-date a node's state is.
+\jieung{remove the next sentence?}
+Nodes may also contain additional system-specific state inside their distributed object.
+
+The global state $\gstate$ is the collection of all the local states hosted by the
+entire system, which is composed of the set of distributed nodes $\fullset$.
+There is a partial map from each node in the distributed system ($\fullset$)
+to its local state ($\dstate$), which is a tuple consisting of a term number,
+a version number, and a local object.
+
+As mentioned in the previous chapter, 
+distributed systems usually have one shared resource, the network. 
+Nodes in a distributed system communicate via the network. 
+Inspired by our concurrent verification framework in Chapter~\ref{chapter:ccal},
+the global state $\gstate$ can be reconstructed by
+applying the log replay function $\replay$ to the
+network log $l : \networklog$, which is a list of network events ($\packet$).
+The effect of a call to either $\tplldrfunction$ or $\tplopfunction$ by a node is atomic 
+and it cannot be interfered by other operations, 
+but function calls by other nodes can be interleaved.
+The interleaving is expressed by our network model, described in Section~\ref{chapter:witnesspassing:sec:low-level-implementation} in detail.
+Our framework keeps track of each function call
+within the network log and the replay function $\replay$ computes the
+global state based on the network log.
+Finally, \sysname{}'s generic specification is parameterized by some protocol-specific
+functions that we explain later in this section.
+
+
+\subsection{Leader Election}
+\label{chapter:witnesspassing:subsec:leader-election}
+
+\subsubsection{Requester}
+The goal of leader election is to set a new term, give one node exclusive access to the
+entire system, and synchronize every node's local state such that the
+global state is prepared to be updated.
+
+Using function definitions in Figure~{fig:chapter:witnesspassing:basic-state}, we define the template function for leader election as follows:
+$$
+\begin{array}{l}
+	\ldrfunction (nid: \nodeid) (g_{pre}\ g_{post}:  \gldrfunction)
+	(tx: \sendfunction)(rx: \recvfunction)(l_1  :\networklog ) := \\
+\ \ \ \ \ \ \ \mbox{\textbf{let}} \ l_2 := g_{pre}\ nid \ l  \ \mbox{\textbf{in}}\ \mbox{\textbf{let}}\ l_3 := tx(nid, \replay(l_2 \mdoubleplus l_1)[nid]) \ \mbox{\textbf{in}}  \\
+\ \ \ \ \ \ \ \mbox{\textbf{let}} \ l_4 := rx(nid, \replay(l_3 \mdoubleplus l_2 \mdoubleplus l_1)[nid]) \
+  \mbox{\textbf{in}}\\ 
+\ \ \ \ \ \ \ \mbox{\textbf{let}} \ l_5 := g_{post}\ nid \ (l_4 \mdoubleplus l_3 \mdoubleplus l_2 \mdoubleplus l_1) \ \mbox{\textbf{in}} \ l_5. \\
+\end{array}
+$$
+where $\replay(l)[nid]$ is a projection from the global state generated by the log replay function to 
+the local stated of $nid$.
+
+This function captures the common form of a leader election scheme, which sends requests to
+and gets approval from a set of authoritative nodes.
+First, $g_{pre}$ changes the local state of a candidate node to prepare
+for a leader election and generates corresponding request messages.
+Network messages are sent and received using $tx$ and $rx$, which define system-specific
+communication patterns between the requester and the approvers.
+Finally, $g_{post}$ determines the final outcome of the
+leader election and executes any actions that are necessary before becoming the leader.
+
+The table on the left side of Figure~\ref{fig:chapter:witnesspassing:process-flow} lists concrete examples of the parameters of
+$\ldrfunction$. For example, multi-Paxos requires a majority vote from the acceptors to
+become the leader, a two-phase commit protocol that uses a membership service may delegate
+a transaction coordinator selection to this service, and Lamport's lock requires all node's
+approval to acquire the lock. Note that the transaction coordinator and the lock holder are
+regarded as leaders. The typical post-election operations are checking whether the
+previous leader left the system in a consistent state and making the state consistent
+if necessary. 
+
+\subsubsection{Approver}
+The other part of leader election is how the approvers handle requests.
+This typically involves some protocol-specific check of the request's
+term number, followed by a local state update, and then an acknowledgement
+containing the new state. We express this pattern as follows:
+$$
+\begin{array}{l}
+	\ldrhfunction (nid: \nodeid) (g:  \gldrfunction)
+	(tx: \sendfunction)(rx: \recvfunction)(l_1  :\networklog ) := \\
+\ \ \ \ \ \ \ \mbox{\textbf{let}} \ l_2 := rx(nid, \replay(l_1)[nid]) \
+  \mbox{\textbf{in}} \\
+\ \ \ \ \ \ \ \mbox{\textbf{let}}\ l_3  := g\ nid \ (l_2 \mdoubleplus l_1) \ \mbox{\textbf{in}} \\
+\ \ \ \ \ \ \ \mbox{\textbf{let}} \ l_4 :=  tx(nid, \replay(l_3 \mdoubleplus l_2 \mdoubleplus l_1)[nid]) \ \mbox{\textbf{in}} \ l_4.
+   \\
+\end{array}
+$$
+Clearly, to prove any interesting properties of $\ldrfunction$ or $\ldrhfunction$
+the system-specific state update functions must be restricted in some way.
+For example, the term number modified by protocol-specific functions in $\ldrfunction$
+need to increase monotonically in most leader-based distributed systems.
+Additionally, $g$ in $\ldrhfunction$ should not touch the value inside
+the distributed object in order to separate the leader election and the commit operation.
+We discuss more about those requirements that the parameters must satisfy and what properties we
+are able to prove in Section~\ref{chapter:witnesspassing:sec:prove-safety-with-witness}.
+
+\subsection{Commit}
+\label{chapter:witnesspassing:subsec:commit}
+
+\subsubsection{Requester}
+The commit function has a similar format to the leader election function, but
+includes an object update function $u : \updatefunc$:
+
+$$
+\begin{array}{l}
+\opfunction (nid: \nodeid) (u : \updatefunc) (g_{pre}\ g_{post}:  \gopfunction)
+	(tx: \sendfunction)
+	(rx: \recvfunction)
+	(l_1  :\networklog ) := \\
+\ \ \ \ \ \ \ \mbox{\textbf{let}} \ l_2 := g_{pre}\ u \ l_1  \ \mbox{\textbf{in}}\   l_3 := tx(nid, \replay(l_2 \mdoubleplus l_1)[nid]) \ \mbox{\textbf{in}}  \\
+\ \ \ \ \ \ \ \mbox{\textbf{let}} \ l_4 := rx(nid, \replay(l_3 \mdoubleplus l_2 \mdoubleplus l_1)[nid]) \
+	\mbox{\textbf{in}} \\
+\ \ \ \ \ \ \ \mbox{\textbf{let}} \ l_5 := 	 g_{post}\  u \ (l_4 \mdoubleplus l_3 \mdoubleplus l_2 \mdoubleplus l_1) \ \mbox{\textbf{in}}\ l_5.
+\end{array}
+$$
+The object update function defines how the system updates the local object and
+the version number depending on the local state of each node.
+The update function is encapsulated in the message that is sent to the target node
+via the send function ($tx : \sendfunction$).
+
+Examples of how $\opfunction$ function is used are found on the right side
+of Figure~\ref{fig:chapter:witnesspassing:process-flow}. The number of recipients of the commit request differs depending
+on the system; it could be all nodes in the system or just a few targeted nodes.
+For the protocols that require more than 2 rounds in their commit phases, such as 
+two-phase commit, $\opfunction$ should be called multiple times and $g_{pre}$ and
+$g_{post}$ should have a flag to handle different functions that correspond to
+each round. 
+
+\subsubsection{Approver}
+When a requester triggers a commit operation, the approvers need to
+handle the operation and update the local view of the distributed object if
+necessary. Unlike $\opfunction$, $\ophfunction$ does not take an update function as an argument
+because it is already in the message from the requester.
+To retrieve the update function from the received message $\ophfunction$ requires
+an auxiliary function, $\mathrm{proj}_{f}$, which extracts the update function from the network log.
+$$
+\begin{array}{l}
+	\ophfunction (nid: \nodeid) (g:  \gopfunction)
+	(tx: \sendfunction)(rx: \recvfunction)(l_1  :\networklog ) := \\
+\ \ \ \ \ \ \ \mbox{\textbf{let}} \ l_2 := rx(nid, \replay(l_1)[nid]) \
+  \mbox{\textbf{in}} \\
+\ \ \ \ \ \ \ \mbox{\textbf{let}} \ u := \mathrm{proj}_{f} \ (l_2 \mdoubleplus l_1, nid) \
+  \mbox{\textbf{in}} \\
+\ \ \ \ \ \ \ \mbox{\textbf{let}}\ l_3  := g\ u\ nid \ (l_2 \mdoubleplus l_1) \ \mbox{\textbf{in}} \\
+\ \ \ \ \ \ \ \mbox{\textbf{let}} \ l_4 := tx(nid, \replay(l_3 \mdoubleplus l_2 \mdoubleplus l_1)[nid]) \ \mbox{\textbf{in}}  \ l_4.
+   \\
+\end{array}
+$$
+
+

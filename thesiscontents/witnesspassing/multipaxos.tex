@@ -1,0 +1,77 @@
+
+\section{Multi-Paxos with Witness}
+\label{chapter:witnesspassing:sec:multipaxos-with-witness}
+
+This section describes how we modeled and verified multi-Paxos using 
+\sysname{}. We present the systems specific specifications and how the
+specification connects to the template to verify linearizability and soundness
+of the leader. 
+
+\subsubsection{Data type}
+
+Concrete data types in Figure~\ref{fig:chapter:witnesspassing:basic-state} are instantiated:
+\begin{itemize}
+\item $\nodeid$ and $\termnum$ are $\mathbb{Z}$ type values.
+\item $\seqnum$ is a pair of two values in $\mathbb{Z}$ type. The first value represents 
+the \textit{index} in the multi-Paxos log that is being written, and the 
+second represents the last \textit{committed index} where all log entires upto this
+index contain immuatable states chosen by the acceptors.
+\item $\dsvalue$ is an array of $\mathbb{Z}$ type values.
+\end{itemize}
+
+\subsubsection{Leader election}
+To model the multi-Paxos leader election function based on $\ldrfunction$,
+two protocol specific functions in the requester side are instantiated.
+\begin{itemize}
+\item $g_{pre} (l)$ adds a ghost packet that adds 1 to the term number.
+\begin{center}
+$g_{pre} (l) := nid.[\mbox{\textbf{inc}} \ \replay(l)[nid].rn]::l$
+\end{center}
+\item $g_{post} (l)$ collects acknowledgement messages and checks for the
+	quorum.
+	\begin{center}
+$g_{post} (l) := \mbox{\textbf{let}}\ pkts := filter_{pkt}(\replay(l)[nid].rn, nid)\ \mbox{\textbf{in}} \ cal\_qrm(pkts)$
+\end{center}
+\end{itemize}
+
+\subsubsection{Commit}
+Similar to the leader election function, the protocol specific functions in the requester side are instantiated. 
+\begin{itemize}[leftmargin=*]
+\item $g_{pre} (l, u)$ is an empty function, which does nothing.
+\item $g_{post} (l, u)$ collects acknowledgement messages, checks for the
+	quorum, and updates the local status by applying the update function
+		$u$.
+\begin{center}
+$
+\begin{array}{lll}
+ g_{post} (l, u) &:=&  \mbox{\textbf{let}}\ pkts := filter_{pkt}(\replay(l)[nid].rn, nid) \ \mbox{\textbf{in}}\\
+& & \mbox{\textbf{if}} \ OK(cal\_qrm(pkts)) \ \mbox{\textbf{then}} \ nid.[u]::l\ \mbox{\textbf{else}}\ l \\
+\end{array}
+$
+\end{center}
+\end{itemize}
+
+\subsubsection{Update function}
+The object update function is relatively simple, 
+which adds index and committed index numbers by 1 and applying changes to the
+state:
+\begin{center}
+$
+\begin{array}{lll}
+u (st : \dsvalue)&:=&\mbox{\textbf{match}} \ st \ \mbox{\textbf{with}}\\
+& & \vert~(\_, (idx, cidx), dsval)  \Rightarrow ((idx + 1, cidx + 1), dsval[idx + 1] := uf_{\dsvalue}\ dsval[idx])\\
+& &  \mbox{\textbf{end}}.\\
+\end{array}
+$
+\end{center}
+Here, $u_{\dsvalue}$ is a function that is specific to the system hosted 
+by multi-Paxos.
+
+\begin{theorem}[Linearizabilty of MultiPaxos]
+Multipaxos is  linearizable.
+\end{theorem}
+
+\begin{proof}
+Our implementation satisfies all the requirements in Section~\ref{chapter:witnesspassing:sec:prove-safety-with-witness}. 
+Therefore, proving the linearizability of MultiPaxos is straightforward with Theorem~\ref{theorem:chapter:witnesspassing:linear-spec}.
+\end{proof}

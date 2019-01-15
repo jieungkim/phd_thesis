@@ -1,0 +1,16 @@
+
+\section{Evaluation}
+\label{chapter:witnesspassing:sec:evaluation}
+
+Our verification contains two parts, a high-level representation and the low-level implementation of the protocol. 
+The shared library that contains basic network template and model, 
+data type template, and per-protocol data type template is approximately 2,300 lines of code. 
+Specifying the distributed systems using the shared library takes about 800 to 1,000 lines of code
+and the verification of individual system takes minimum 10,000 lines of code. 
+Still we believe there are opportunities to reduce the lines of code by
+introducing user-defined tactics and careful reconstruction of lemmas. 
+The explosion of the lines of code is mainly due to
+the duplicated codes and low-level code handling in multiple layers. 
+
+
+ 

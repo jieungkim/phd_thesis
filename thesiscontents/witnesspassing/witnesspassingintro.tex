@@ -1,7 +1,9 @@
-In this chapter, we present our ongoing work on building a verification toolkit for complex leader-based distributed systems. 
-The distributed system verification in chapter~\ref{chapter:wormspace} shows 
-that CCAL can be applied not only to the concurrency by local machines
+The previous chapter (Chapter~\ref{chapter:wormspace}) illustrates that our verification work on distributed systems, 
+a different kind of concurrent programs with multicore/multithreaded concurrent programs. 
+It shows 
+that $/ccalname$ can be applied not only to the concurrency by local machines
 but also to the concurrency in the cluster of multiple machines in distributed protocols. 
+By using the approach, we also verified  the safety property of $\WOR$, immutability. 
 However, verifying a single distributed protocol is insufficient to build large-scaled distributed applications 
 because they are commonly built on top of multiple distributed systems.
 
@@ -23,53 +25,6 @@ We demonstrate that once systems are specified to satisfy the proof template's r
 information to the proof template and common properties to leader-based systems are proved for free. 
 
 
-%Distributed systems are common these days and real deployments nearly always
-%comprise multiple protocols.  These systems are notoriously complex due to
-%the many possible interleavings of their coarsely-connected instances as well as
-%the possibility of errors in both their local behavior and the network
-%environment. For these reasons and more, verification is desirable to remove the
-%possibility of bugs and guarantee the safety and correctness of distributed
-%protocols and the systems built from them. However, much current verification
-%work still requires a great deal of effort and sometimes has limitations.
-%
-%This paper focuses on providing a compositional and generic way to  build and
-%verify some of the essential components of practical distributed systems,
-%leader-based distributed systems.
-%%We provides  both horizontal and vertical compositions in building and
-%%verifying multiple leader-based distributed systems.
-%First, our network model provides a uniform way to combine multiple distributed systems together.
-%Second, we provide a modular and common verification approach,
-%\textit{witness-based specification and verification} by focusing on the shared common
-%routines for their operations --
-%a leader election and a commit routine.
-%% We observe that those common routines can
-%%be handled in a uniform manner, permitting a generic way to specify and verify
-%%multiple distributed systems with significantly reduced effort.
-%%Leader-based distributed systems share common routines for their operations -- a
-%%leader election and a commit routine. We observe that those common routines can
-%%be handled in a uniform manner, permitting a generic way to specify and verify
-%%multiple distributed systems with significantly reduced effort.
-%
-%%Overall, we present a verification approach that uses \textit{witness-based
-%%specification},
-%%Our approach is simple but novel in distributed system verification.
-%Our approach is simple but novel.
-%It is scalable, reusable, and extensible, and it can be directly linked
-%with low-level implementations of distributed protocols through contextual
-%refinement.
-%We demonstrate the power of our approach via multiple examples.
 
-%It also can capture common behaviors of many distributed protocols,
-%and provides both a simple way of understanding the protocols as well as an easy
-%methodology for verifying them.
-
-
-
-%\jieung{incomplete yet. Please revise it if anyone wants to do}
-%\lucas{I took a crack at it. Seems better to me. Anyone else?}
-%\jieung{need to add more about 2-d compositionality????}
-
-%To demonstrate how our generic specifications work, we verify the functional correctness and safety
-%of MultiPaxos, one of the most famous consensus protocols.
-%We also verify other
-%We implement the key routines of Paxos in C, and use Coq to verify both the functional correctness of the implementation as well as the safety properties of the protocol within less than 4 person-months. We also describe how we can apply our approach to other distributed protocols to illustrate its generality.
+\jieung{I first copied and pasted and slightly revised our PLDI submisison. 
+But, I will update this part continuously}
