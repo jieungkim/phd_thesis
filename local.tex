@@ -125,7 +125,9 @@
 \newcommand{\optionnone}{{\None}}
 \newcommand{\nulllist}{{\nil}}
 \newcommand{\listcons}[2]{{{#1}\cons{#2}}}
+\newcommand{\listconsoppo}[2]{{{#2}\cons{#1}}}
 \newcommand{\listapp}[2]{{{#1}\doubleplus{#2}}}
+\newcommand{\listappoppo}[2]{{{#2}\doubleplus{#1}}}
 \newcommand\zmapfunc{\codeinmath{ZMap}}
 
 \newcommand\None{\codeinmath{None}}
@@ -567,11 +569,13 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
 
 
+\newcommand\Compose[3]{\codeinmath{compat}(#1, #2, #3)}
 
 % syntax 
 
 \newcommand{\privatestate}{{\rho_{mc}}}
-\newcommand{\privatestatepool}[1]{{\mathrm{psp}_{[#1]}}}
+\newcommand{\privatestatepoolkwd}{{\mathrm{psp}}}
+\newcommand{\privatestatepool}[1]{{{\privatestatepoolkwd}_{[#1]}}}
 \newcommand{\sharedpiece}{{\Theta{mc}}}
 \newcommand{\atomicevent}{{\mathrm{\textbf{\textit{e}}}_{\mathrm{atom}}}}
 \newcommand{\primitiveid}{{\mathrm{ID}_{pr}}}
@@ -584,7 +588,8 @@
 \newcommand{\command}{{\mathrm{\textbf{\textit{cmd}}_{mc}}}}
 \newcommand{\mcevent}{{\mathrm{\textbf{\textit{ev}}}_{mc}}}
 \newcommand{\mclog}{{\mathrm{\textbf{\textit{log}}}_{\mathrm{mc}}}}
-\newcommand{\mcoracle}[3]{{\varepsilon_{mc[{#1}, {#2}, {#3}]}}}
+\newcommand{\mcoraclekwd}{{\varepsilon_{mc}}}
+\newcommand{\mcoracle}[3]{{{\mcoraclekwd}_{[{#1}, {#2}, {#3}]}}}
 \newcommand{\ogetkwd}{{\mathrm{\textbf{oget}}}}
 \newcommand{\ogetnoeq}[5]{{\ogetkwd_{[{#1}, {#2}, {#3}]}({#4}, {#5})}}
 \newcommand{\oget}[6]{{\ogetnoeq{#1}{#2}{#3}{#4}{#5} = \optionsome \ {#6}}}
@@ -905,6 +910,9 @@
 % for linking
 
 
+\newcommand{\primid}{id}
+\newcommand{\primspec}[1]{\sigma_{#1}}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
@@ -940,12 +948,8 @@
 %%%%%%% WITNESSPASSING 
 
 %%%% Witness passing related definitions
-%\newcommand{\envcontext}{\varepsilon}%
-%\newcommand{\layerdef}{\mathcal{L}}
-%\newcommand{\relyrule}{\mathcal{R}}
-%\newcommand{\guaranteerule}{\mathcal{G}}
-%\newcommand{\primid}{id}
-%\newcommand{\primspec}[1]{\sigma_{#1}}
+
+
 %\newcommand{\igchar}{\_}
 %\newcommand{\sendpkt}[3]{{#1}.\mathrm{SEND}{[#2]}.{#3}}
 %\newcommand{\recvpkt}[3]{{#1}.\mathrm{RECV}{[#2]}.{#3}}

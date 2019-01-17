@@ -109,7 +109,7 @@ the approvers' state is updated.
 \begin{figure}
 \raggedright
 \textbf{State definition with witness}\\
-$
+$$
 \begin{array}{ll}
 \dstate_\witness:= (\dstate \times \ldrwitness \times \opwitness)  & \mbox{(Local state)} \\
 \gstate_\witness := \set{\nodeid \mapsto \dstate_\witness} & \mbox{(Global state)}\\
@@ -117,9 +117,9 @@ $
 {\networklog}_{\witness}:= \mbox{list}\ \packet_\witness & \mbox{(Network log)}\\
 \replay_\witness : {\networklog}_{\witness} \rightarrow  \gstate_\witness& \mbox{(Log replay function)}\\
 \end{array}
-$
+$$
 \textbf{Witness building routine in} ${\replay}_{\witness}$  \\
-$
+$$
 \begin{array}{ll}
 
 find\_ca_{op} : \termnum \rightarrow \networklog \rightarrow \networklog \rightarrow  \set{\nodeid}\\
@@ -159,7 +159,7 @@ find\_vtr_{ldr} : \termnum \rightarrow \networklog \rightarrow \networklog \righ
 \ \ \ \ \ \  w/\langle w[rn] := ((\replay(l_{rcv}~\verb!++!~l_{pre})[nid]),f, vtr, ca, f_{q}) ::w[rn])  \rangle\\
 \ \ \ \ \mbox{\textbf{else}}  \ w. \\
 \end{array}
-$
+$$
 \caption{Witness Construction}
 \label{fig:chapter:witnesspassing:witness-construction}
 \end{figure}

@@ -7,13 +7,20 @@ others' dissertations. But, can I add more texts for  them?}
 \jieung{I did not include performance evaluations in here, cause my dissertation is not related to anything about them, as well as those parts 
 are already in others' dissertations.} 
 
-In this chapter, we briefly present our work published in OSDI 2016~\cite{certikos:osdi16}, especially 
-how CCAL in Chapter~\ref{chapter:ccal} and concurrent linking libraries in Chapter~\ref{chapter:linking} are applied 
-to verify a large-scaled and practical concurrent operation system, CertiKOS.
+In this chapter, we briefly present our work on concurrent operating system verification, especially 
+how $/ccalname$ in Chapter~\ref{chapter:ccal} and concurrent linking libraries in Chapter~\ref{chapter:linking} are applied 
+to verify a large-scaled and practical concurrent operation system, $\certikos$.
 Our certified kernel is written in 6500 lines of C and x86 assembly
 and runs on stock x86 multicore machines. This is
 the first proof of functional correctness of a complete,
-general-purpose concurrent OS kernel with fine-grained locking.
+general-purpose concurrent OS kernel with fine-grained locking,
+which supports a single top-level correctness theorem. 
+%
+%We have successfully developed a fully certified concurrent OS kernel n $\coq$~\cite{coq}. Using $\certikos$ as the base, 
+%we also provide variance of certified kernels, including hypervisor.
+%Our kernel cointain fine-grained locking 
+%as well as sleep-and-wakeup primitives, and can run on 
+%
+%Our kernels support both fine-grained locking and sleep- wakeup primitives and can run on stock x86 multicore hardware. Our certified hypervisor kernel consists of 6000 lines of C and x86 assembly, and can boot a version of Linux as a guest. To our knowledge, this is the first proof of functional correctness of a complete, general-purpose concurrent OS kernel with fine-grained locking.
 
-
-We have successfully developed a fully certified concurrent OS kernel n $\coq$~\cite{coq}. Using $\certikos$ as the base, we have also built a few additional certified kernels with hypervisor or ring-0 process supports. Our kernels support both fine-grained locking and sleep- wakeup primitives and can run on stock x86 multicore hardware. Our certified hypervisor kernel consists of 6000 lines of C and x86 assembly, and can boot a version of Linux as a guest. To our knowledge, this is the first proof of functional correctness of a complete, general-purpose concurrent OS kernel with fine-grained locking.
+The overall structure of our top-level theorem for $\certikos$ is described in...
