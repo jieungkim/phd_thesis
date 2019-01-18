@@ -714,22 +714,18 @@ which contains all concrete definitions for the rules of ``abstract hardware sem
 We collect all those things in the \lstinline$HardSemantics$ class that is parameterized by the hardware setting that we defined above. 
 \begin{figure}
 \begin{lstlisting}[language=Caml]
-      
-      Variables (ge: genv) (sten: stencil) (M: module).
-      Context {Hmakege: make_globalenv (module_ops:= LAsm.module_ops) (mkp_ops:= make_program_ops) 
-                                       sten M (mboot <@$\oplus$@> L64) = ret ge}.
-      
-      Local Obligation Tactic := intros.
-      
-      Global Program Instance hdsem : HardSemantics (hdset:= hdseting)
-        :=
-          {
-            PC := command_predicate ge;
-            private_step := private_exec ge;
-            get_shared := get_shared_sem ge;
-            set_shared := set_shared_sem ge;
-            atomic_step := atomic_exec ge
-          }.
+Variables (ge: genv) (sten: stencil) (M: module).
+Context {Hmakege: make_globalenv (module_ops:= LAsm.module_ops) 
+                                 (mkp_ops:= make_program_ops) 
+                                 sten M (mboot <@$\oplus$@> L64) = ret ge}.
+Local Obligation Tactic := intros.
+
+Global Program Instance hdsem : HardSemantics (hdset:= hdseting) := {
+  PC := command_predicate ge;
+  private_step := private_exec ge;
+  get_shared := get_shared_sem ge;
+  set_shared := set_shared_sem ge;
+  atomic_step := atomic_exec ge }.
 \end{lstlisting}
 \caption{Instance for the Hardware Local Transition Rules.}
 \label{fig:chapter:certikos:hardware-local-step-transition-rules}
@@ -760,267 +756,469 @@ They are related to
 providing instances 
 for the abstract definitions that intermediate languages relies on. 
 We provide those instances in this section. 
+We show how we instantiate each intermediate language 
+in this section. All of them follows the exactly same form, 
+and need to provide the evidence about the receptiveness and the single event property (each step will generate at most a single event of $\compcert$ trace). 
+To use the forward simulation implies the backward simulation technique \jieung{cite back end paper},
+providing the deterministic behavior of those languages 
+are necessary. 
+In this sense, 
+we have also proven those properties 
+for all languages, except the multicore machine mode, which is non-deterministic. 
+The remaining parts of this section 
+show those instances.
+\jieung{I can remove some of the definitions below (or remove most of them...}
+\jieung{Mention about the False final state}
+
+\begin{itemize}[leftmargin=*]
+\item Generic context definitions and hardware semantics instance with contexts for all languages we defined.
+\end{itemize}
+\begin{lstlisting}[language=Caml]
+Variables (ge: genv) (sten: stencil) (M: module).
+Context {Hmakege: make_globalenv (module_ops:= LAsm.module_ops)
+               (mkp_ops:= make_program_ops) 
+               sten M (mboot <@$\oplus$@> L64) = ret ge}.        
+    
+Local Obligation Tactic := intros.
+    
+Definition hdsem_instance := @hdsem mem memory_model_ops Hmem 
+  Hmwd real_params_ops oracle_ops0 oracle_ops big_ops 
+  builtin_idents_norepet_prf ge sten M Hmakege.    
+\end{lstlisting}
 
 \subsubsection{Multicore Machine Model}
 
+\begin{itemize}[leftmargin=*]
+\item Hardware step transition rule instance
+\end{itemize}
 \begin{lstlisting}[language=Caml]
-    Variables (ge: genv) (sten: stencil) (M: module).
-    Context {Hmakege: make_globalenv (module_ops:= LAsm.module_ops)
-                  (mkp_ops:= make_program_ops) 
-                  sten M (mboot <@$\oplus$@> L64) = ret ge}.        
-    
-    Local Obligation Tactic := intros.
-    
-    Definition hdsem_instance := @hdsem mem memory_model_ops Hmem 
-      Hmwd real_params_ops oracle_ops0 oracle_ops big_ops 
-      builtin_idents_norepet_prf ge sten M Hmakege.
-    
-    // now, define a concrete semantics for single core machine
-    Definition hw_step_aux :=
-      @hardware_step hdseting hdsem_instance pmap current_CPU_ID.
-      
-    Inductive hw_step_aux_ge : genv -> hstate -> trace -> hstate -> Prop :=
-    | hw_step_aux_ge_intro : 
-        forall s t s',
-            hw_step_aux s t s' -> hw_step_aux_ge ge s t s'.
-    
-    Inductive hwstep_initial_state (p: AST.program fundef unit): 
-      (hstate (hdset := hdseting)) -> Prop := 
-    | initial_hwstep_state_intro: 
-        forall (m0: mwd LDATAOps),
-          Genv.init_mem p = Some m0 ->
-          let ge := Genv.globalenv p in
-          let rs0 :=
-              (Pregmap.init Vundef)
-                # Asm.PC <- (symbol_offset ge p.(prog_main) Int.zero)
-                # ESP <- Vzero in
-          hwstep_initial_state p (HState current_CPU_ID (pinit (B := core_set)
-            (Asm.State rs0 m0)) nil).
+Definition hw_step_aux :=
+  @hardware_step hdseting hdsem_instance pmap current_CPU_ID.
 
-    Definition hwstep_final_state (s : hstate (hdset := hdseting)) (i : int) : Prop :=
-      False.
+Inductive hw_step_aux_ge : genv -> hstate -> trace -> hstate -> Prop :=
+  | hw_step_aux_ge_intro : 
+    forall s t s', hw_step_aux s t s' -> hw_step_aux_ge ge s t s'.
+\end{lstlisting}
+
+\begin{itemize}[leftmargin=*]
+\item Hardware step semantics definitions (including initial state and final state definitions)
+\end{itemize}
+\begin{lstlisting}[language=Caml]    
+Inductive hwstep_initial_state (p: AST.program fundef unit): 
+  (hstate (hdset := hdseting)) -> Prop := 
+  | initial_hwstep_state_intro: 
+    forall (m0: mwd LDATAOps),
+      Genv.init_mem p = Some m0 ->
+      let ge := Genv.globalenv p in
+      let rs0 :=
+        (Pregmap.init Vundef)
+        # Asm.PC <- (symbol_offset ge p.(prog_main) Int.zero)
+        # ESP <- Vzero in
+      hwstep_initial_state p (HState current_CPU_ID (pinit (B := core_set)
+        (Asm.State rs0 m0)) nil).
+
+Definition hwstep_final_state (s : hstate (hdset := hdseting)) (i : int) 
+  : Prop := False.
       
-         
-    Definition hwstep_semantics (p: program) :=
-      Smallstep.Semantics hw_step_aux_ge (hwstep_initial_state p) 
-                          hwstep_final_state (Genv.globalenv p).
+Definition hwstep_semantics (p: program) :=
+  Smallstep.Semantics hw_step_aux_ge (hwstep_initial_state p) 
+    hwstep_final_state (Genv.globalenv p).
+\end{lstlisting}
     
+\begin{itemize}[leftmargin=*]
+\item Properties of hardware step semantics (proofs are omitted)
+\end{itemize}
+\begin{lstlisting}[language=Caml]    
+Lemma hwstep_semantics_single_events: forall p, single_events (hwstep_semantics p).
+Lemma hwstep_semantics_receptive (pl: program):  receptive (hwstep_semantics pl).
 \end{lstlisting}
 
 \subsubsection{Multicore Machine Model with Hardware Oracle}
 
+Final state definitions for all languages from here is same with the final state definition for Multicore Machine Model. In this sense, 
+we have omitted them in our definitions. 
+
+\begin{itemize}[leftmargin=*]
+\item Hardware step with hardware oracle transition rule instance
+\end{itemize}
 \begin{lstlisting}[language=Caml]
-   
-    Variables (ge: genv) (sten: stencil) (M: module).
-    Context {Hmakege: make_globalenv (module_ops:= LAsm.module_ops) (mkp_ops:= make_program_ops) 
-                                     sten M (mboot <@$\oplus$@> L64) = ret ge}.
-    
-    Local Obligation Tactic := intros.
-    
-    Definition hdsem_instance := @hdsem mem memory_model_ops Hmem Hmwd real_params_ops oracle_ops0
-                                        oracle_ops big_ops builtin_idents_norepet_prf ge sten M Hmakege.
+Definition oracle_step_aux :=
+  @oracle_step zset_op hdseting op_general hdsem_instance pmap hw_oracle.
 
-    // now, define a concrete semantics for single core machine
-    Definition oracle_step_aux :=
-      @oracle_step zset_op hdseting op_general hdsem_instance pmap hw_oracle.
+Inductive oracle_step_aux_ge : genv -> state -> trace -> state -> Prop :=
+  | oracle_step_aux_ge_intro : 
+    forall s t s', oracle_step_aux s t s' -> oracle_step_aux_ge ge s t s'.
+\end{lstlisting}
 
-    Inductive oracle_step_aux_ge : genv -> state -> trace -> state -> Prop :=
-    | oracle_step_aux_ge_intro : 
-        forall s t s',
-          oracle_step_aux s t s' -> oracle_step_aux_ge ge s t s'.
+\begin{itemize}[leftmargin=*]
+\item Hardware step with hardware oracle semantics definitions (including initial state definition)
+\end{itemize}
+\begin{lstlisting}[language=Caml]
+Inductive oracle_initial_state (p: AST.program fundef unit): 
+  (state (hdset := hdseting)) -> Prop := 
+  | initial_oracle_state_intro: 
+    forall (m0: mwd LDATAOps),
+      Genv.init_mem p = Some m0 ->
+      let ge := Genv.globalenv p in
+      let rs0 :=
+        (Pregmap.init Vundef)
+        # Asm.PC <- (symbol_offset ge p.(prog_main) Int.zero)
+        # ESP <- Vzero in
+      oracle_initial_state p (State current_CPU_ID 
+        (pset current_CPU_ID (LState (Asm.State rs0 m0) true)
+        (pinit (B := core_set) (LState (Asm.State rs0 m0) false))) nil).
 
-    Inductive oracle_initial_state (p: AST.program fundef unit): 
-      (state (hdset := hdseting)) -> Prop := 
-    | initial_oracle_state_intro: 
-        forall (m0: mwd LDATAOps),
-          Genv.init_mem p = Some m0 ->
-          let ge := Genv.globalenv p in
-          let rs0 :=
-              (Pregmap.init Vundef)
-                # Asm.PC <- (symbol_offset ge p.(prog_main) Int.zero)
-                # ESP <- Vzero in
-          oracle_initial_state p (State current_CPU_ID 
-                                        (pset current_CPU_ID (LState (Asm.State rs0 m0) true)
-                                              (pinit (B := core_set) (LState (Asm.State rs0 m0) false)))
-                                        nil).
-
-    Definition oracle_final_state (s : state (hdset := hdseting)) (i : int) : Prop :=
-      False.
+Definition oracle_final_state (s : state (hdset := hdseting)) (i : int)
+  : Prop := False.
       
-    Definition oracle_semantics (p: program) :=
-      Smallstep.Semantics oracle_step_aux_ge (oracle_initial_state p) 
-                          oracle_final_state (Genv.globalenv p). 
+Definition oracle_semantics (p: program) :=
+  Smallstep.Semantics oracle_step_aux_ge (oracle_initial_state p) 
+    oracle_final_state (Genv.globalenv p). 
+\end{lstlisting}
+
+\begin{itemize}[leftmargin=*]
+\item Properties of hardware step with hardware oracle semantics (proofs are omitted)
+\end{itemize}
+\begin{lstlisting}[language=Caml]
+Lemma oracle_semantics_single_events: forall p, single_events (oracle_semantics p).
+Lemma oracle_semantics_receptive (pl: program): receptive (oracle_semantics pl).
+Lemma oracle_semantics_determinate (pl: program): determinate (oracle_semantics pl).
+\end{lstlisting}
+
+\subsubsection{Environmental Step Machine}
+
+Properties that we have proven from here for all machines are same with the properties for  hardware step with hardware oracle semantics,
+\textit{single$\_$events}, \textit{receptive}, \textit{determinate}. 
+In this sense, we omitted them from this environmental step machine.
+
+\begin{itemize}[leftmargin=*]
+\item Environmental step transition rule instance. Since they can run an arbitrary number of cores with it, 
+the instance of this machine still has two parameters, $\codeinmath{core}$ (a focused set) and $\codeinmath{o}$ (an environmental context for 
+the focused set)
+\end{itemize}
+\begin{lstlisting}[language=Caml]
+Variable cores : ZSet.
+Variable o : GeneralOracleType.
+Definition env_step_aux:=
+  @env_step zset_op hdseting op_general hdsem_instance pmap cores o.
+
+Inductive env_step_aux_ge : genv -> (estate (A:= cores))  -> trace -> (estate (A:= cores)) -> Prop :=
+  | env_step_aux_ge_intro : 
+    forall s t s', env_step_aux s t s' -> env_step_aux_ge ge s t s'.
+\end{lstlisting}
+
+\begin{itemize}[leftmargin=*]
+\item Environmental step  semantics definitions (including initial state definition)
+\end{itemize}
+\begin{lstlisting}[language=Caml]
+Inductive env_initial_state (p: AST.program fundef unit): 
+  (estate (A := cores) (hdset := hdseting)) -> Prop :=
+  | initial_env_state_intro: 
+    forall (m0: mwd LDATAOps),
+       Genv.init_mem p = Some m0 ->
+       let ge := Genv.globalenv p in
+       let rs0 :=
+         (Pregmap.init Vundef)
+         # Asm.PC <- (symbol_offset ge p.(prog_main) Int.zero)
+         # ESP <- Vzero in
+       env_initial_state p (EState current_CPU_ID 
+         (pset current_CPU_ID (LState (Asm.State rs0 m0) true)
+         (pinit (B := cores) (LState (Asm.State rs0 m0) false))) nil).
+
+Definition env_semantics (p: program) :=
+  Smallstep.Semantics env_step_aux_ge (env_initial_state p) 
+    env_final_state (Genv.globalenv p).    
+\end{lstlisting}
+
+\subsubsection{Single Step Machine}    
+\begin{itemize}[leftmargin=*]
+\item Environmental step transition rule instance.
+\end{itemize}
+\begin{lstlisting}[language=Caml]
+Definition single_step_aux :=
+  @single_step zset_op hdseting op_general hdsem_instance 
+  current_CPU_ID single_oracle.
+
+Inductive single_step_aux_ge : genv -> single_state -> trace -> 
+  single_state -> Prop :=
+  | single_step_aux_ge_intro : 
+    forall s t s', single_step_aux s t s' -> single_step_aux_ge ge s t s'.
 \end{lstlisting}
 
 
-
+\begin{itemize}[leftmargin=*]
+\item Single step semantics definitions (including initial state definition)
+\end{itemize}
 \begin{lstlisting}[language=Caml]
-    Variable cores : ZSet.
-    Variable o : GeneralOracleType.
-    Variables (ge: genv) (sten: stencil) (M: module).
-    Context {Hmakege: make_globalenv (module_ops:= LAsm.module_ops) (mkp_ops:= make_program_ops) 
-                                     sten M (mboot <@$\oplus$@> L64) = ret ge}.
-    
-    Local Obligation Tactic := intros.
-    
-    Definition hdsem_instance := @hdsem mem memory_model_ops Hmem Hmwd real_params_ops oracle_ops0
-                                        oracle_ops big_ops builtin_idents_norepet_prf ge sten M Hmakege.
-    
-    // now, define a concrete semantics for single core machine 
-    Definition env_step_aux:=
-      @env_step zset_op hdseting op_general hdsem_instance pmap cores o.
-    
-    Inductive env_step_aux_ge : genv -> (estate (A:= cores))  -> trace -> (estate (A:= cores)) -> Prop :=
-    | env_step_aux_ge_intro : 
-        forall s t s',
-          env_step_aux s t s' -> env_step_aux_ge ge s t s'.
-    
-    Inductive env_initial_state (p: AST.program fundef unit): 
-      (estate (A := cores) (hdset := hdseting)) -> Prop :=
-    | initial_env_state_intro: 
-        forall (m0: mwd LDATAOps),
-          Genv.init_mem p = Some m0 ->
-          let ge := Genv.globalenv p in
-          let rs0 :=
-              (Pregmap.init Vundef)
-                # Asm.PC <- (symbol_offset ge p.(prog_main) Int.zero)
-                # ESP <- Vzero in
-          env_initial_state p (EState current_CPU_ID 
-                                      (pset current_CPU_ID (LState (Asm.State rs0 m0) true)
-                                            (pinit (B := cores) (LState (Asm.State rs0 m0) false)))
-                                      nil).
-    
+Inductive single_initial_state (p: AST.program fundef unit): 
+  (single_state (hdset := hdseting)) -> Prop :=
+  | initial_single_state_intro: 
+    forall (m0: mwd LDATAOps),
+      Genv.init_mem p = Some m0 ->
+      let ge := Genv.globalenv p in
+      let rs0 :=
+        (Pregmap.init Vundef)
+        # Asm.PC <- (symbol_offset ge p.(prog_main) Int.zero)
+        # ESP <- Vzero in
+      single_initial_state p (SState current_CPU_ID 
+        (LState (Asm.State rs0 m0) true) nil).
 
-    Definition env_final_state (s : estate (A:=cores) (hdset := hdseting)) (i : int) : Prop :=
-      False.
+Definition single_semantics (p: program) :=
+  Smallstep.Semantics single_step_aux_ge (single_initial_state p) 
+    single_final_state (Genv.globalenv p).
+\end{lstlisting}
+
+\subsubsection{Big Step Machine}
+From here to Big 2 step semantics,
+our model requires fairness assumptions about hardware scheduler, which is notated as $\codeinmath{fair}$ in the semantics definitions.
+\begin{itemize}[leftmargin=*]
+\item Big step transition rule instance.
+\end{itemize}
+\begin{lstlisting}[language=Caml]
+Definition single_big_step_aux :=
+  @single_big_step zset_op hdseting op_general hdsem_instance 
+  fair current_CPU_ID single_oracle.
+
+Inductive single_big_step_aux_ge : genv -> single_state -> trace -> 
+  single_state -> Prop :=
+  | single_big_step_aux_ge_intro : 
+    forall s t s', single_big_step_aux s t s' -> single_big_step_aux_ge ge s t s'.
+\end{lstlisting}
+
+
+\begin{itemize}[leftmargin=*]
+\item Big step semantics definitions (including initial state definition)
+\end{itemize}
+\begin{lstlisting}[language=Caml]
+Inductive single_big_initial_state (p: AST.program fundef unit): 
+  (single_state (hdset := hdseting)) -> Prop :=
+  | initial_big_state_intro: 
+    forall (m0: mwd LDATAOps),
+      Genv.init_mem p = Some m0 ->
+      let ge := Genv.globalenv p in
+      let rs0 :=
+        (Pregmap.init Vundef)
+         # Asm.PC <- (symbol_offset ge p.(prog_main) Int.zero)
+         # ESP <- Vzero in
+      single_big_initial_state p (SState current_CPU_ID 
+        (LState (Asm.State rs0 m0) true) nil).
       
+Definition single_big_semantics (p: program) :=
+  Smallstep.Semantics single_big_step_aux_ge (single_big_initial_state p) 
+    single_big_final_state (Genv.globalenv p).
+\end{lstlisting}
 
-    Definition env_semantics (p: program) :=
-      Smallstep.Semantics env_step_aux_ge (env_initial_state p) 
-                          env_final_state (Genv.globalenv p).
+\subsubsection{Big 2 Step Machine}
+\begin{itemize}[leftmargin=*]
+\item Big two step transition rule instance.
+\end{itemize}
+\begin{lstlisting}[language=Caml]
+Definition single_big2_step_aux :=
+  @single_big2_step zset_op hdseting op_general hdsem_instance 
+   fair current_CPU_ID single_oracle.
+
+Inductive single_big2_step_aux_ge : genv -> rstate -> trace -> rstate -> Prop :=
+ | single_big2_step_aux_ge_intro : 
+   forall s t s', single_big2_step_aux s t s' -> single_big2_step_aux_ge ge s t s'.
+\end{lstlisting}
+
+
+\begin{itemize}[leftmargin=*]
+\item Big two step semantics definitions (including initial state definition)
+\end{itemize}
+\begin{lstlisting}[language=Caml]
+Inductive single_big2_initial_state (p: AST.program fundef unit): 
+  (rstate (hdset := hdseting)) -> Prop :=
+  | initial_big2_state_intro: 
+    forall (m0: mwd LDATAOps),
+      Genv.init_mem p = Some m0 ->
+      let ge := Genv.globalenv p in
+      let rs0 :=
+        (Pregmap.init Vundef)
+        # Asm.PC <- (symbol_offset ge p.(prog_main) Int.zero)
+        # ESP <- Vzero in
+      single_big2_initial_state p (RState (Asm.State rs0 m0) nil).
+
+Definition single_big2_semantics (p: program) :=
+  Smallstep.Semantics single_big2_step_aux_ge (single_big2_initial_state p) 
+    single_big2_final_state (Genv.globalenv p).
+\end{lstlisting}
+
+\subsubsection{Split Step Machine}
+\begin{itemize}[leftmargin=*]
+\item Split step transition rule instance.
+\end{itemize}
+\begin{lstlisting}[language=Caml]
+Definition single_split_step_aux :=
+  @single_split_step zset_op hdseting op_general hdsem_instance 
+    fair current_CPU_ID single_oracle.
+
+Inductive single_split_step_aux_ge : genv -> srstate -> trace -> srstate -> Prop :=
+  | single_split_step_aux_ge_intro : 
+  forall s t s', single_split_step_aux s t s' -> single_split_step_aux_ge ge s t s'.
+\end{lstlisting}
+
+
+\begin{itemize}[leftmargin=*]
+\item Split step semantics definitions (including initial state definition)
+\end{itemize}
+\begin{lstlisting}[language=Caml]
+Inductive single_split_initial_state (p: AST.program fundef unit): 
+  (srstate (hdset := hdseting)) -> Prop :=
+  | initial_split_state_intro: 
+    forall (m0: mwd LDATAOps),
+      Genv.init_mem p = Some m0 ->
+      let ge := Genv.globalenv p in
+      let rs0 :=
+        (Pregmap.init Vundef)
+        # Asm.PC <- (symbol_offset ge p.(prog_main) Int.zero)
+        # ESP <- Vzero in
+     single_split_initial_state p (SRState (Asm.State rs0 m0) nil nil).
+          
+Definition single_split_semantics (p: program) :=
+  Smallstep.Semantics single_split_step_aux_ge (single_split_initial_state p) 
+    single_split_final_state (Genv.globalenv p).
+\end{lstlisting}
+
+\subsubsection{Reorder Step Machine}
+\begin{itemize}[leftmargin=*]
+\item Reorder step transition rule instance. Reorder step relies on different kinds of environmental context. In this sense, 
+it is parameterized by environmental contexts.
+\end{itemize}
+\begin{lstlisting}[language=Caml]
+Variable reorder_o : ReorderOracleType.
+
+Definition single_reorder_step_aux :=
+  @single_reorder_step zset_op hdseting op_reorder hdsem_instance 
+  current_CPU_ID reorder_o.
+  
+Inductive single_reorder_step_aux_ge : genv -> rstate -> trace -> rstate -> Prop :=
+  | single_reorder_step_aux_ge_intro : 
+    forall s t s', single_reorder_step_aux s t s' -> 
+      single_reorder_step_aux_ge ge s t s'.  
+\end{lstlisting}
+
+
+\begin{itemize}[leftmargin=*]
+\item Reorder step semantics definitions (including initial state definition)
+\end{itemize}
+\begin{lstlisting}[language=Caml]
+Inductive single_reorder_initial_state (p: AST.program fundef unit): 
+  (rstate (hdset := hdseting)) -> Prop :=
+  | initial_reorder_state_intro: 
+    forall (m0: mwd LDATAOps),
+      Genv.init_mem p = Some m0 ->
+      let ge := Genv.globalenv p in
+      let rs0 :=
+        (Pregmap.init Vundef)
+        # Asm.PC <- (symbol_offset ge p.(prog_main) Int.zero)
+        # ESP <- Vzero in
+      single_reorder_initial_state p (RState (Asm.State rs0 m0) nil).
+
+Definition single_reorder_semantics (p: program) :=
+  Smallstep.Semantics single_reorder_step_aux_ge (single_reorder_initial_state p) 
+    single_reorder_final_state (Genv.globalenv p).
+\end{lstlisting}
+
+\subsubsection{Separate Step Machine}
+\begin{itemize}[leftmargin=*]
+\item Separate step transition rule instance.
+\end{itemize}
+\begin{lstlisting}[language=Caml]
+Definition single_separate_step_aux :=
+  @single_separate_step
+  hdseting separate_log_len zset_op op_sep hdsem_instance
+  current_CPU_ID sep_oracle.
     
+Inductive single_separate_step_aux_ge : genv -> sp_state -> trace -> 
+  sp_state -> Prop :=
+   | single_separate_step_aux_ge_intro : 
+     forall s t s', single_separate_step_aux s t s' -> 
+       single_separate_step_aux_ge ge s t s'.
 \end{lstlisting}
 
-
-
+\begin{itemize}[leftmargin=*]
+\item Separate step semantics definitions (including initial state definition)
+\end{itemize}
 \begin{lstlisting}[language=Caml]
+Inductive single_separate_initial_state (p: AST.program fundef unit): 
+  (sp_state (hdset := hdseting)) -> Prop :=
+  | initial_separate_state_intro: 
+    forall (m0: mwd LDATAOps),
+      Genv.init_mem p = Some m0 ->
+      let ge := Genv.globalenv p in
+      let rs0 :=
+        (Pregmap.init Vundef)
+         # Asm.PC <- (symbol_offset ge p.(prog_main) Int.zero)
+         # ESP <- Vzero in
+      single_separate_initial_state p (SPState (Asm.State rs0 m0) (ZMap.init nil)).
 
-    Variables (ge: genv) (sten: stencil) (M: module).
-    Context {Hmakege: make_globalenv (module_ops:= LAsm.module_ops) (mkp_ops:= make_program_ops) 
-                                     sten M (mboot <@$\oplus$@> L64) = ret ge}.
-
-    Local Obligation Tactic := intros.
-    
-    Definition hdsem_instance := @hdsem mem memory_model_ops Hmem Hmwd real_params_ops oracle_ops0
-                                        oracle_ops big_ops builtin_idents_norepet_prf ge sten M Hmakege.
-
-    // now, define a concrete semantics for reorder  machine 
-    Definition single_step_aux :=
-      @single_step zset_op hdseting op_general hdsem_instance 
-                   current_CPU_ID single_oracle.
-
-    Inductive single_step_aux_ge : genv -> single_state -> trace -> single_state -> Prop :=
-    | single_step_aux_ge_intro : 
-        forall s t s',
-          single_step_aux s t s' -> single_step_aux_ge ge s t s'.
-
-    Inductive single_initial_state (p: AST.program fundef unit): 
-      (single_state (hdset := hdseting)) -> Prop :=
-    | initial_single_state_intro: 
-        forall (m0: mwd LDATAOps),
-          Genv.init_mem p = Some m0 ->
-          let ge := Genv.globalenv p in
-          let rs0 :=
-              (Pregmap.init Vundef)
-                # Asm.PC <- (symbol_offset ge p.(prog_main) Int.zero)
-                # ESP <- Vzero in
-          single_initial_state p (SState current_CPU_ID (LState (Asm.State rs0 m0) true) nil).
-
-    Definition single_final_state (s : single_state (hdset := hdseting)) (i : int) : Prop :=
-      False.
-      
-    Definition single_semantics (p: program) :=
-      Smallstep.Semantics single_step_aux_ge (single_initial_state p) 
-                          single_final_state (Genv.globalenv p).
-
+Definition single_separate_semantics (p: program) :=
+  Smallstep.Semantics single_separate_step_aux_ge (single_separate_initial_state p) 
+    single_separate_final_state (Genv.globalenv p).
 \end{lstlisting}
 
-
-\begin{lstlisting}[language=Caml]
-\end{lstlisting}
-
-\begin{lstlisting}[language=Caml]
-\end{lstlisting}
-
-\begin{lstlisting}[language=Caml]
-\end{lstlisting}
-
-\begin{lstlisting}[language=Caml]
-\end{lstlisting}
-
-\begin{lstlisting}[language=Caml]
-\end{lstlisting}
-
-
-\begin{lstlisting}[language=Caml]
-\end{lstlisting}
-
-
-\clearpage
 \subsection{Connect Layers on Multicore Machine and CPU-Local Machine}
 \label{chapter:certikos:subsec:connect-multicore}
 
+All refinement proofs in Section~\ref{chapter:linking:sec:multicore-linking} are also applicable 
+to those instances. 
+All those proofs requires the additional refinement proofs for between adjacent step relations, but they can 
+use the corresponding theorems in Section~\ref{chapter:linking:sec:multicore-linking}. 
+For example, the refinement proof between an environmental step machine with a single core and the environmental step machine with full core set is 
+as follows:
 \begin{lstlisting}[language=Caml]
-    Variables (ge: genv) (sten: stencil) (M: module).
-    Context {Hmakege: make_globalenv (module_ops:= LAsm.module_ops) (mkp_ops:= make_program_ops) 
-                                       sten M (mboot <@$\oplus$@>  L64) = ret ge}.
-
-    Definition hdsem_instance := @hdsem mem memory_model_ops Hmem Hmwd real_params_ops oracle_ops0
-                                        oracle_ops big_ops builtin_idents_norepet_prf ge sten M Hmakege.
-
-    Definition oracle_step_aux_ge' :=
-      @oracle_step_aux_ge mem memory_model_ops Hmem Hmwd
-                          real_params_ops oracle_ops0 oracle_ops big_ops
-                          builtin_idents_norepet_prf pmap zset_op mc_oracle
-                          ge sten M Hmakege.
-
-    Definition hw_step_aux_ge' :=
-      @hw_step_aux_ge mem memory_model_ops Hmem Hmwd
-                      real_params_ops oracle_ops0 oracle_ops big_ops
-                      builtin_idents_norepet_prf pmap
-                      ge sten M Hmakege.
-                      
-    Definition match_state_link := match_state (hdset := hdseting) (pmap := pmap) current_CPU_ID.
-    
-    Hint Unfold match_state_link.
-    Existing Instance op_general.                      
-                      
+Lemma one_step_env_refines_env_concrete:
+  forall st t st' st0
+    (Hone: env_step_single_aux_ge' ge st t st')
+    (Hmatch: match_eestate_link st st0),
+    (exists st0',
+      (plus env_step_full_aux_ge') ge st0 t st0' /\
+        match_eestate_link st' st0') \/
+      ((state_measure (s_set current_CPU_ID) st' < state_measure (s_set current_CPU_ID) st)%nat /\ t = E0 /\
+        match_eestate_link st' st0).
+Proof.
+  <@$\cdots$@>
+   eapply single_env_step_refines_full_env_step in Hone; eauto.
+   <@$\cdots$@>
+Qed.
+\end{lstlisting}
+, which uses the proof in Section~\ref{chapter:linking:subsec:concurrent-machine-model}.
+Using those theorems, 
+we prove the backward simulation proofs (in $\compcert$ style) 
+\begin{lstlisting}[language=Caml]
+Theorem cl_backward_simulation:
+  forall (s: stencil) (CTXT: LAsm.module) (ph: AST.program fundef unit)
+           (Hmakep: make_program (module_ops:= LAsm.module_ops) s CTXT 
+           (mboot <@$\oplus$@> L64) = OK ph),
+  backward_simulation
+   (env_semantics (s_set current_CPU_ID) single_oracle
+   (Hmakege := make_program_globalenv (make_program_ops := make_program_ops)
+      _ _ _ _ Hmakep) (Genv.globalenv ph) s CTXT ph)
+   (env_semantics core_set hw_oracle
+   (Hmakege := make_program_globalenv (make_program_ops := make_program_ops) 
+     _ _ _ _ Hmakep) (Genv.globalenv ph) s CTXT ph).
 \end{lstlisting}
 
+The top level theorem for multicore linking uses the backward simulation proofs 
+for each steps that we have described in Section~\ref{chapter:linking:sec:multicore-linking}.
+The top level theorem is in Figure~\ref{fig:chapter:certikos:top-level-multicore-theorem}.
+
+\begin{figure}
 \begin{lstlisting}[language=Caml]
-
-
-    // backward refinement
-    Lemma one_step_hw_refines_oracle_concrete:
-      forall s s0 s' t
-             (Hone: hw_step_aux_ge' ge s t s')
-             (Hmatch: match_state_link s0 s),
-      exists s0',
-        plus oracle_step_aux_ge' ge s0 t s0'
-        /\ match_state_link s0' s'.
-    Proof.
-
-  Theorem cl_backward_simulation:
-    forall (s: stencil) (CTXT: LAsm.module) (ph: AST.program fundef unit)
-           (Hmakep: make_program (module_ops:= LAsm.module_ops) s CTXT (mboot <@$\oplus$@> L64) = OK ph),
-      backward_simulation
-        (oracle_semantics 
-           (Hmakege := make_program_globalenv (make_program_ops := make_program_ops) _ _ _ _ Hmakep)
-           (Genv.globalenv ph) s CTXT ph)
-        (hwstep_semantics 
-           (Hmakege := make_program_globalenv (make_program_ops := make_program_ops) _ _ _ _ Hmakep)
-           (Genv.globalenv ph) s CTXT ph).
-  Proof.
+Theorem concurrent_backward_simulation:
+  forall (s: stencil) (CTXT: LAsm.module) (ph: AST.program fundef unit)
+    (Hmakep: make_program (module_ops:= LAsm.module_ops) s CTXT (mboot <@$\oplus$@> L64) = OK ph),
+    backward_simulation
+    (LAsm.semantics (lcfg_ops := LC (mboot <@$\oplus$@> L64)) ph)          
+    (hwstep_semantics 
+      (Hmakege := make_program_globalenv (make_program_ops := make_program_ops) 
+      _ _ _ _ Hmakep) (Genv.globalenv ph) s CTXT ph).
 \end{lstlisting}
+\caption{Top Level Multicore Linking Theorem}
+\label{fig:chapter:certikos:top-level-multicore-theorem}
+\end{figure}
 
-Connecting all proofs for mluticore linking is then possible by using the result of previous sections.
+The proof, of course has several assumptions. 
+\jieung{need to mention assumptions}
+
