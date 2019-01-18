@@ -8,7 +8,7 @@ Chapter~\ref{chapter:ccal} also informally mention that providing a  parallel co
 concurrent layers associated with a partially focused set of participants in the system. 
 It, however, overlooked and missed multiple challenges in the composition of real programs,
 which need to deal with details of programs, 
-such as an interaction between private state and shared state in the actual system and linking with the useful existing tool, a $\compcert$ compiler. 
+such as an interaction between private state and shared state in the actual system and linking with the appropriate existing tool, a $\compcert$ compiler. 
 Thus, this chapter focuses on realistic issues when providing compositions in concurrent program verification,
 both for multicore and multithreaded cases.
 
@@ -22,7 +22,7 @@ building the sequential like programs (and providing local layer interface) disc
 is possible with those machine models,
 but they are not for parallel compositions. 
 In this sense, at each time when providing linking, 
-we should provide the machine model that runs multiple instances of programs
+we should give the machine model that runs multiple instances of programs
 (such as multicore machine model and multithreaded machine model). 
 Therefore, we  formally define (sequential consistency) multicore machine model that is reusable for multiple 
 machines (such as ARM and x86), 
@@ -36,7 +36,7 @@ but those dependencies should be minimized to apply the complex proofs to other 
 Third, 
 concurrent linking proofs are not only needed to handle the interaction between shared resources but also need to manage the private resources in sometimes. 
 For example, process creation in operating systems usually allocate the maximum resources 
-for the crated process (which are typically determined by their parent process).
+for the created process (which are typically determined by their parent process).
 In some cases, those resources include a private state that does not share with other threads at all. 
 
 %First, providing the refinement between the whole program (with multicore/multithreaded machine models) means 
@@ -53,11 +53,12 @@ In some cases, those resources include a private state that does not share with 
 %prove refinement between those languages, 
 %and connect those languages with the assembly machine model that can be used with CompCert. 
 
+
 We overcome those issues by introducing multiple environment configurations, intermediate languages, 
 as well as applying those definitions to the linking techniques to the existing verified concurrent operating systems. 
 None of the previous works expose those challenges or empirical studies in linking for concurrent program verification,
 that we discuss in this paper.
-This chapter is not aiming to introduce new theory, 
+This chapter is not aiming to introduce a new theory, 
 but provide a valuable empirical study that 
 about the composition of large-scale concurrent program verification that many readers are interested in it.
 
@@ -89,7 +90,7 @@ about the composition of large-scale concurrent program verification that many r
 % concurrent layer  - the proof
 Certified Concurrent Abstraction Layer  ($\ccalname$)
 has proven that it is a useful tool 
-for building and verifying concurrent programs with layered structure 
+for building and verifying concurrent programs with the layered structure 
 as we have shown in Chapter~\ref{chapter:ccal} and Chapter~\ref{chapter:mcs-lock}.
 In MCS Lock verification, for example, provide 
 the theorem:
@@ -99,12 +100,9 @@ $\ltyp{\PLayer{\mmcsbootfull}{cid}{\oracle_{mcs}}}{R_{mcs}}{\codeinmath{M}_{\cod
 which means that ``any context program plus the implementation of MCS Lock ($\codeinmath{M}_{\codeinmath{mcslock}}$) runs on top of 
   layer $\mmcsbootfull$ with CPU ID $cid$ and the environmental context $\oracle_{mcs}$ \textit{contextually refines}
  the same context program runs on the of  layer $\mhmcslockopfull$ with CPU ID $cid$ and the environmental context $\oracle_{lk}$''. 
-The proof, however, does not 
-consider the program that runs with 
-the whole CPUs in the system, thus a partial correctness statement. 
+The proof, however, does not consider the program that runs with the whole CPUs in the system, thus a partial correctness statement. 
 To guarantee the full correctness of the program,
-providing the judgement that handles 
-the program with the whole CPU set ($D$) in it. 
+providing the judgment that handles the program with the whole CPU set ($D$) in it. 
 In this purpose, 
 We add the parallel composition rules in the layer calculus of $\ccalname$ in Section~\ref{chapter:ccal:subsec:local-layer-interface}, which is 
 \begin{mathpar}
@@ -128,42 +126,34 @@ To solve those issues,
 we introduce multiple configurations, auxiliary functions, as well as intermediate languages for linking (Figure~\ref{fig:chapter:conlink:concurrent-linking-structure}). 
 In the case of multicore linking, 
 our purpose is using the framework not only for one single concurrent programs run on a specific machine model, 
-but also use it for other programs with other hardware models that satisfies the generic hardware setting properties. 
+but also use it for other programs with other hardware models that satisfy the generic hardware setting properties. 
 Based on the abstract hardware setting, 
 we built multiple layers of languages to refine non-deterministic multicore machine model 
-into the local layer interface that is able to use $\compcertx$ compiler as well as 
+into the local layer interface that can use $\compcertx$ compiler as well as 
 hide the behavior of other instances in other CPUs.
 For example, 
 it requires us to introduce partial machines with environmental context which can run a program with focused CPU set, 
-and introduce per-CPU machine that only runs one CPU on it (but differs from $\compcertx$'s machine). 
+and introduce a per-CPU machine that only runs one CPU on it (but differs from $\compcertx$'s machine). 
 We also need to prove the refinement proofs between all those intermediate machine models
-that are able to be injected to the $\compcert$'s backward simulation theorem to guarantee the connection between 
-this concurrent linking framework with $\ccalname$'s local layer's contextual refinement proofs. 
-Then, those multicore linking template should be able to be used for any kind of layers alongside with sequential machine model in $\compcertx$ when they satisfy a certain properties related to abstract HW setting)
+that can be injected to the $\compcert$'s backward simulation theorem to guarantee the connection between this concurrent linking framework with $\ccalname$'s local layer's contextual refinement proofs. 
+Then, that multicore linking template should be able to be used for any layers alongside with sequential machine model in $\compcertx$ when they satisfy certain properties related to abstract HW setting)
 
 \jieung{need to revise the following part. It's quite ambiguous now}
-For multithreaded linking case, most claims in multicore linking remains almost same. 
-It, however, usually located in the middle of the system software stack, which already contains multiple 
-primitives in the layer. 
-It requires us to handle that the multithreaded linking also need a generic form of 
-those proofs for providing the linking framework to the layer with satisfying a certain property. 
+For multithreaded linking case, most claims in multicore linking remain almost the same. 
+It, however, usually located in the middle of the system software stack, which already contains multiple primitives in the layer. 
+It requires us to handle that the multithreaded linking also need a generic form of those proofs for providing the linking framework to the layer by satisfying a particular property. 
 It also requires us to handle mutual exclusiveness of 
 private states, including memories, register values, and private fields in abstract data (such as containers and so on).
-In addition to that it also requires us to assign proper initial states for all threads in the system 
-if we want to prove that the composition of multithreaded linking has a same behavior of 
-the multithreaded program runs on the CPU-local layer. 
-To handle them, we also introduce an
-multiple intermediate machine models that can parameterize 
-abstract layer as well as thread configurations, and use multiple auxiliary functions and auxiliary properties related to 
-the abstract layer (and the top-most layer in the CPU-local machine as well as the bottom-most layer in the thread-local machine). 
+In addition to that, it also requires us to assign proper initial states for all threads in the system if we want to prove that the composition of multithreaded linking has the same behavior of the multithreaded program runs on the CPU-local layer. 
+To handle them, we also introduce multiple intermediate machine models that can parameterize abstract layer as well as thread configurations, and use various auxiliary functions and auxiliary properties related to the abstract layer (and the top-most layer in the CPU-local machine as well as the bottom-most layer in the thread-local machine). 
 After we provide that linking framework, users need to 
 fill out the layer definition, configurations, and the generic properties to link the layer for each thread and the layer for each CPU.
-Obviously, our framework still has multiple limitations. 
+Our framework still has multiple limitations. 
 It, however, can be adapted to the large-scaled concurrent program verification, such as operating systems. 
 
 \jieung{need to strengthen the claim by adding more sentences}
-
-
+\jieung{need to compare it with CompCertTSO paper}
+\jieung{need to cite A formally verified compiler back-end paper}
 
 
 

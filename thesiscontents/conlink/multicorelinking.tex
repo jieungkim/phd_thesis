@@ -2,19 +2,17 @@
 \label{chapter:linking:sec:multicore-linking}
 
 Multicore Linking is to provide the evidence that the program execution on
-our local layer (CPU local layer) is actually connected to the execution of the same program 
-on our multicore machine model. 
-To do that, concurrent linking (composition) usually requires assumptions about environment. 
+our local layer (CPU local layer) is connected to the execution of the same program on our multicore machine model. 
+To do that, concurrent linking (composition) usually requires assumptions about the environment. 
 We assume that the environment with the following constraint:
-fixed number of CPUs, fixed initial state for all CPUs,
+fixed number of CPUs, the fixed initial state for all CPUs,
 as well as the fairness among CPUs.
 With those assumptions, 
-concurrent linking for multicore 
-need to solve multiple challenges;
-1) hide non-determinism of multicore machine model (by using strategy of hardware scheduler);
+concurrent linking for multicore need to solve multiple challenges;
+1) hide non-determinism of multicore machine model (by using the strategy of hardware scheduler);
 2) build environmental context for each CPU;
 3) prove compositionality of multiple per-PCU machines;
-and 4) provide simple environmental context for per-CPU machines. 
+and 4) provide a simple environmental context for per-CPU machines. 
 %Section~\ref{chapter:ccal:sec:ccal-overview} provides the way to handle 
 \begin{figure}
 \begin{center}
@@ -31,25 +29,27 @@ resolving one challenge requires multiple intermediate languages
 for simple proofs.) 
 Figure~\ref{fig:chapter:conlink:intermediate-languages-and-their-relationsihps-for-multicore-linking} shows
 all the intermediate languages as well as the proof structure that we have built for concurrent linking. 
+The number in the figure are exactly matched with the number for the challenges. 
 
 \subsection{Hardware Configurations and Auxiliary Functions}
 \label{chapter:linking:subsec:hardware-configuration}
 
 \subsubsection{For Language Definitions}
 
-Abstraction is key to handle complex problems, and it is also same for this multicore linking framework.
+Abstraction is vital to handle complex problems, and it is also the same for this multicore linking framework.
 We are aiming to build a realistic machine model that provides 
-concurrent linking as well as a base modle that supports 
-layered framework described in Chapter~\ref{chapter:ccal}.
+concurrent linking as well as a base model that supports 
+the layered framework described in Chapter~\ref{chapter:ccal}.
 It, however, requires complex details in the intermediate languages, 
-such as including bunch of assembly instructions, memory models, 
-restrictions in the semantics definition in $\compcert$ (because we follows 
+such as including a bunch of assembly instructions, memory models, 
+restrictions in the semantics definition in $\compcert$ (because we follow 
 the simulation proofs for the framework).
 To avoid those complexities, 
 our framework define multiple abstract definitions (hardware configurations, auxiliary functions, 
 abstract states, and abstract transition rules)
 that most intermediate languages can commonly use, 
 and then be instantiated later. 
+
 
 %To hide the machine-dependent and subtle definitions in detail while providing multicore lining framework, 
 %we define our semantics with hardware configuration, 
@@ -114,29 +114,27 @@ $$
 \end{figure}
 
 The abstract hardware setting contains two kinds of states, private state ($\privatestate$) and shared state ($\sharedpiece$). 
-Also, all atomic operations are associated with their shared state and then they generate event ($\atomicevent$) that 
-are associated with the operations (\eg, CAS, SWAP, \etc).
+Also, all atomic operations are associated with their shared state, and then they generate an event ($\atomicevent$) that 
+are associated with the actions (\eg, CAS, SWAP, \etc).
 The abstract hardware setting, however, 
 does not know how many atomic operations and what kinds of atomic operations 
 will be connected to this multicore linking framework at this moment.
 In this sense, their details are hidden and can be instantiated later. 
 There are four kinds of commands in this abstract level, 
 which are private, atomic, acquire shared, and release shared operations. 
-Two operations, acquire shared and release shared, are logical and work as an unsafe 
-ownership transfer operations for shared resources. 
+Two operations, acquire shared and release shared, are logical and work as an unsafe ownership transfer operations for shared resources. 
 The global log contains multiple kinds of even in $\mcevent$. 
 Three of them correspond to three commands, atomic, acquire shared and release shared. 
-On the other hand, private operation does not generate any event, because it does not effects others' behavior at all. 
+On the other hand, the private operation does not generate any event, because it does not affect others' behavior at all. 
 By using acquire shared and release shared events,
 calculating the ownership that is related to the shared resource with the identifier ($id$) is possible. 
 To notate the ownership status, we define the ``own state'', $\ownstatekwd$.
-When it has been freed, then we memorize the 
-status of that moment. 
+When it has been freed, then we memorize the status of that moment. 
 When it has been owned, we marked that point with the ID for the owner. 
 Based on the definition of the log, 
 we then provide the environmental context ($\mcoraclekwd$)
 as well as the function that gets the result based on the current log and the environmental context ($\ogetkwd$). 
-They are parameterized by three arguments. \jieung{add more descriptions for them}
+Three arguments parameterize them. \jieung{add more descriptions for them}
 The abstract semantics contain 
 four program rules and one special rules ($\programcounterkwd$). 
 $\programcounterkwd$ tells us the next command that we have to evaluate, 
@@ -188,12 +186,11 @@ $ \\
 
 Figure~\ref{fig:chapter:conlinkg:auxliary-funcitons-for-abstract-harware-semantics} provides two auxiliary functions
 that are closely related to the abstract hardware semantics and configurations.
-$\loggetatomkwd$ function is a projection function from a global log to the log that are only associated with 
-the atomic operation ID. The ID will later be mapped with the primitive ID later. 
+$\loggetatomkwd$ function is a projection function from a global log to the log that is only associated with the atomic operation ID. The ID will later be mapped with the primitive ID later. 
 $\calownerkwd$ function gets the current owner of the shared resource associated with the primitive ID ($eid$). 
 Note that $\calownerkwd$ does not have any safety guarantee on the ownership control.
-The responsibility of those safety control does not rely on the hardware configuration, but depends on 
-the actual software implementation, such as spinlocks. 
+The responsibility of those safety control does not rely on the hardware configuration but depends on the actual software implementation, such as spinlocks. 
+
 
 \begin{figure}
 \begin{mathpar}
@@ -229,16 +226,12 @@ the actual software implementation, such as spinlocks.
 \end{figure}
 
 They, of course requires few restrictions presented in Figure~\ref{fig:chapter:conlink:properties-of-abstract-hardware-semantics-for-multicore-linking}. 
-Most restrictions are 
-for the deterministic behavior of each hardware semantics. 
-They are necessary for us to prove multiple refinement theorems, 
-and essential for us to use forward-to-backward simulation technique in $\compcert$, because 
-all languages has to be deterministic as well as receptive to use that technique. 
+Most restrictions are for the deterministic behavior of each hardware semantics. 
+They are necessary for us to prove various refinement theorems, 
+and essential for us to use forward-to-backward simulation technique in $\compcert$, because all languages have to be deterministic as well as receptive to use that technique. 
 In addition to that, the atomic operation, which only exists 
 in the extended version of $\compcert$ 
 requires the validity check (\textsf{Atomic Valid}).
-
-
 
 \subsubsection{For Refinement Proofs}
 
@@ -307,13 +300,10 @@ $
 \end{figure}
 \jieung{Do we need to move this part next to the multicore machine model?}
 
-
 In addition to those definitions and auxiliary functions for language definitions, 
-we have also introduced multiple definitions that are necessary for 
-the refinement proofs between our intermediate machine models. 
+we have also introduced multiple definitions that are necessary for the refinement proofs between our intermediate machine models. 
 $\eventsourcefunckwd$ and $\eventdesfunckwd$ defines who is the source and destination of the event, respectively. 
-By using that, defining the function that gets the global log and 
-returns the current running CPU ID ($\getcuridfromlogkwd$) is possible. 
+By using that, defining the function that gets the global log and returns the current running CPU ID ($\getcuridfromlogkwd$) is possible. 
 The function tells that it returns start CPU ID when the log is empty, and the destination of the last event in the log 
 as the current running CPU ID.
 We will show how it is related to our evaluation rules from the next section.
@@ -409,19 +399,18 @@ $
 \label{fig:chapter:valid-global-log-and-valid-oracle-definitions-for-multicore-linking}
 \end{figure}
 
-Other key relations for the refinement proofs are the valid log relation and the valid oracle definition by using that.
+Other fundamental relations for the refinement proofs are the valid log relation and the valid oracle definition by using that.
 The valid log definition checks whether the log is valid according to the log update of our semantics and
 is defined in Figure~\ref{fig:chapter:valid-global-log-and-valid-oracle-definitions-for-multicore-linking}.
-Since many details of our definitions are abstract, the log relation does not contain many information 
+Since many details of our definitions are abstract, the log relation does not contain any information 
 about each event in the log.
 Instead of that, it contains the restrictions about the pattern of different types of events, especially about the pattern for yield and  yield back events.
 They are closely related to the log update pattern in our intermediate languages. 
 Based on the valid log relation, 
 we assume that the result generated by the environmental context always return the event that 
 will not be in the focused set of the semantics as well as satisfies the valid log relation.
-It is a key concept of our rely-guarantee style reasoning in our refinement proofs, which tells that 
-the context's behavior always valid when we prove the behavior of focused set (closed set) in the system 
-is valid. 
+It is a crucial concept of our rely-guarantee style reasoning in our refinement proofs, which tells that the context's behavior always valid when we prove the behavior of focused set (closed set) in the system is valid. 
+
 
 
 
@@ -472,13 +461,13 @@ $$
 
 
 Based on the hardware configurations, semantics, and auxiliary functions in Section~\ref{chapter:linking:subsec:hardware-configuration},
-we define non-deterministic multicore machine model in this section.
-We first define the local view, which is the view from each core that consists of a private state and a view for the global log. 
+we define the non-deterministic multicore machine model in this section.
+We first define the local view, which is the view from each core that consists of a private state and a view of the global log. 
 Based on the local view, 
 step relation rules for four commands 
 are defined in Figure~\ref{fig:chapter:conlink:hardware-local-step-transition-rules}, which 
 check the program counter first, then perform each steps. 
-Note that rules for acquire shared and release shared first check the owner that is associated with the shared resource,
+Note that rules for acquiring shared and release shared first check the owner that is associated with the shared resource,
 but they do not have any safety condition to guarantee that the owner of that shared resource is in a valid status when they are invoked. 
 
 \begin{figure}
@@ -527,7 +516,7 @@ curid \in \coreset \\
 
 Using all those information, defining fully non-deterministic machine model (which is restricted to the sequential consistency memory model) 
 is available in Figure~\ref{fig:chapter:conlink:multicore-machine-syntax-and-semantics}.
-The state definition in machine model is almost same with the state definition for multicore machine model  in Section~\ref{chapter:ccal:subsec:multicore-machine-model}. 
+The state definition in machine model is almost the same with the state definition for multicore machine model in Section~\ref{chapter:ccal:subsec:multicore-machine-model}. 
 The state ($\hstatekwd$) is defined as a tuple with three elements, and it consists of a current CPU ID that owns the evaluation control,
 a partial map from a CPU ID to the private state ($\privatestatepoolkwd$ - which contains the whole private states for all CPUs in the system),
 and the shared state represented by the global log. 
@@ -591,26 +580,22 @@ l' = \listconsoppo{\yieldev{curid'}}{l_0} \\
 
 As discussed in Section~\ref{chapter:ccal:subsec:concurrent-layer-with-environment}, 
 one hidden component in multicore machine model is a logical participant, hardware scheduler. 
-The hardware scheduler builds a specific scheduling strategy for the single game that the 
-verification wants to consider at that time.  
-It extends the private state definition by adding a boolean value, which tells us 
-whether the CPU needs to perform its local hardware step or call hardware scheduler to give out the control. 
-First, the \textsf{Progress} rule is for local evaluation of each CPU. It uses 
-the same evaluation rule (hardware local step) with the previous multicore machine model, 
+The hardware scheduler builds a specific scheduling strategy for the single game that the verification wants to consider at that time.  
+It extends the private state definition by adding a boolean value, which tells us whether the CPU needs to perform its local hardware step or call hardware scheduler to give out the control. 
+First, the \textsf{Progress} rule is for local evaluation of each CPU. It uses the same evaluation rule (hardware local step) with the previous multicore machine model, 
 but change the boolean value from false to true to indicated that the CPU served its evaluation at this turn. 
 Second, the \text{Yield} rule is for the hardware scheduler.
-Similarly, it add two hardware scheduler events into the log, but the difference in here with the previous multicore machine is 
-it queries the environmental context with the full CPU Set and the current global log. 
+Similarly, it adds two hardware scheduler events into the log, but the difference in here with the previous multicore machine is it queries the environmental context with the full CPU Set and the current global log. 
 Then, the oracle will return a single event, which tells the next event that will perform its evaluation. 
 
 
-We also prove the simulation of each machines via using backward simulation (upward-forward simulation -- if the target language
+We also prove the simulation of each machine via using backward simulation (upward-forward simulation -- if the target language
 has a single step evaluation, then the source language has corresponding multiple steps.) 
 in $\compcert$. 
 directly proving backward simulation, however, requires us to prove multiple properties of the source language. 
 In this sense, $\compcert$ provide the way to show the equivalence of forward simulation and the backward simulation. 
-It, however, requires a certain condition, such as both languages has to be deterministic;
-thus using this method for the simulation proof that contains multicore machine model (which is non-deterministic) 
+It, however, requires a certain condition, such as both languages have to be deterministic;
+thus using this method for the simulation proof that contains a multicore machine model (which is non-deterministic) 
 is impossible. 
 Therefore, we directly need to prove the backward refinement proof in here to inject the proof in the backward simulation form of $\compcert$ later. 
 
@@ -650,12 +635,12 @@ $$
 \label{fig:chapter:conlink:match-relation-multicore-oracle-steps}
 \end{figure}
 
-The most challenging part in the refinement proofs between two languages 
-are defining the refinement relation between two states of those languages. 
+
+The most challenging part in the refinement proofs between two languages are defining the refinement relation between two states of those languages. 
 Figure~\ref{fig:chapter:conlink:match-relation-multicore-oracle-steps} shows the 
 refinement relation for those two states. 
-It basically tells that 
-their local states should have the same value as well as the global log need to be equal. 
+It tells that their local states should have the same value as well as the global log need to be equal. 
+
 
 \begin{figure}
 \noindent\fbox{hypothesis} 
@@ -704,27 +689,21 @@ $
 \end{figure}
 
 Based on the relation we prove two key theorems in Figure~\ref{fig:chapter:conlink:refinement-multicore-oracle-steps}, 
-we prove that one step in the multicore machine model always have the corresponding 
-multiple steps of multicore mahicne with hardware scheduler oracle (in lemma 1). 
-When proving the backward simulation in $\compcert$, providing the evidence about the progress property 
-of the oracle machine, which is stated in the lemma 2. 
-Proving that lemmas requires that there will be always a corresponding 
-environmental context that is matched with the same scheduling sequence of 
-the possible execution of the program in multicore machine model (among all non-deterministic interleaved 
-cases of execution). 
-This is stated in the hypothesis 3. 
+we prove that one step in the multicore machine model always has the corresponding multiple steps of multicore machine with hardware scheduler oracle (in lemma 1). 
+When proving the backward simulation in $\compcert$, providing the evidence about the progress property of the oracle machine, which is stated in the lemma 2. 
+Proving that lemmas require that there will always be a matched environmental context that is matched with the same scheduling sequence of the possible execution of the program in multicore machine model (among all non-deterministic interleaved cases of execution). 
+This is stated in hypothesis 3. 
 
 
 
 \subsection{Concurrent Machine Model}
 \label{chapter:linking:subsec:concurrent-machine-model}
 
-Concurrent machine model is a language that is able to run programs with partially focused set on it,
+
+Concurrent machine model is a language that can run programs with partially focused set on it,
 and it is associated with the concurrent layer interface in Section~\ref{chapter:ccal:subsec:concurrent-layer-interface}. 
-This machine model does not provide the interface for us to build 
-layers on top of it, but provide the 
-key connection between oracle machine model (thus multicore machine model) and 
-the single CPU machine model.  
+This machine model does not provide the interface for us to build layers on top of it, but give the key connection between oracle machine model (thus multicore machine model) and the single CPU machine model.  
+
 
 
 \begin{figure}
@@ -782,21 +761,19 @@ Figure~\ref{fig:chapter:conlink:multicore-env-step-machine} contains the state d
 auxiliary functions and step relations of the partial machine. 
 The state definition is almost same with the state definition in Figure~\ref{fig:chapter:conlink:multicore-machine-with-hardware-oracle},
 which is the state for the state for all cores.
-Differently with the previous state definition, however, the state definition is parameterized by 
-a set of CPUs, which is a focused set for the machine. 
-Other CPUs outside of the focused set ($D - A$) and the hardware scheduler are treated as environment of the machine. 
-To handle the the steps by environment of the machine, the step relation has \textsf{SKIP} rule, 
+Differently with the previous state definition, however, the state definition is parameterized by a set of CPUs, which is a focused set for the machine. 
+Other CPUs outside of the focused set ($D - A$) and the hardware scheduler are treated as the environment of the machine. 
+To handle the steps by the environment of the machine, the step relation has \textsf{SKIP} rule, 
 when query the oracle to update the log when the currently running CPU is not in the set $A$. 
 This rule is a key for connecting the full machine semantics with the local machine semantics. 
 
 \subsubsection{Concurrent Machine Model with the Full CPU Set}
 
-Since the set for this concurrent machine model can be a set exactly same with the full CPU set, 
+
+Since the set for this concurrent machine model can be a set precisely same with the full CPU set, 
 we first show that the program runs with the oracle machine refines the concurrent machine model with full CPU set. 
 Formally speaking, 
-this is the parallel composition rule for all threads; thus we treat this proof is 
-a linking proof (for parallel composition), which provide the collection of multiple instances in the concurrent program
-can be refined by the full machine semantics. 
+It is the parallel composition rule for all threads; thus we treat this proof is a linking proof (for parallel composition), which provide the full machine semantics can refine the collection of multiple instances in the concurrent program. 
 
 \begin{figure}
 
@@ -853,21 +830,19 @@ The proof is relatively easy after defining the proper refinement relation.
 
 Now, we focus on a single CPU. 
 In this step, 
-the key part that we have to prove is that the multiple shared steps in full CPU sets can
+the critical part that we have to prove is that the multiple shared steps in full CPU sets can
  refine environmental steps in a single CPU machine.
 This step is also a crucial part for our concurrent layer verification because
 it provides the local layer interface that is connected with the program with the full context (full CPUs).
-The proof, however, is complex due to the mismatch of those two different states (even though they are 
+The proof, however, is complicated due to the mismatch of those two different states (even though they are 
 using the same concurrent machine model).
 To prove this theorem, 
 we first introduce auxiliary function defined in Figure~\ref{fig:chapter:conlink:auxiliary-function-for-full-cpus-and-a-single-cpu}. 
 \jieung{Add a figure why we need measure}
 When looking at the \textsf{SKIP} rule in the environmental step machine, 
 it only queries one event per one time even it returns $\yieldevkwd$ as its result;
-thus the machine with a single core sometimes require two steps to match its transition with the 
-machine that contains the full CPU set as its context. 
-In this sense, we define $\mcmeasurekwd$ and $\mcstatemeasurekwd$ to 
-postpone the step transition in the lower machine (the machine with the full CPU set). 
+thus the machine with a single core sometimes require two steps to match its transition with the machine that contains the full CPU set as its context. 
+In this sense, we define $\mcmeasurekwd$ and $\mcstatemeasurekwd$ to postpone the step transition in the lower machine (the machine with the full CPU set). 
 
 \begin{figure}
 \noindent\fbox{auxiliary function - decreasing index:}
@@ -912,6 +887,7 @@ $ \localstepevkwd (ev : \mcevent) : \optiondef\ \mclog :=
 \caption{Auxiliary Functions for the  Refinement Proof between the Machine with Full CPUs and a Single CPU}
 \label{fig:chapter:conlink:auxiliary-function-for-full-cpus-and-a-single-cpu}
 \end{figure}
+
 
 By using those auxiliary functions, defining the refinement relation for those two machines are possible 
 by distinguishing the case when $\mcmeasurekwd$ returns 1 and 0, which are
@@ -1019,6 +995,7 @@ $
 \end{figure}
 
 
+
 Figure~\ref{fig:chapter:conlink:cpu-env-to-env-theorem} provide the 
 refinement proof between two machines, 
 which is a key theorem that informally says, the single core machine evaluation based on the environmental context $si\_o$ (that contains 
@@ -1027,10 +1004,10 @@ is refined
 by the multicore machine evaluation based on the environmental context $hw\_o$ (that only contains the strategy for a hardware scheduler).
 It also requires an assumption about the oracles relations, which tells their $\yieldevkwd$ events
 are always matched together, 
-and the hardware local step relation, which tells that the high-level strategy for each CPU always guarantees
-the valid evaluation in the concrete steps. 
-They are definitely weak points of our proof, and we are working on 
-removing those hypothesis in the future.
+and the hardware local step relation, which shows that the high-level strategy for each CPU always guarantees
+the accurate evaluation in the concrete steps. 
+They are weak points of our proof, and we are working on 
+removing those hypotheses in the future.
 
 
 \subsection{Single Core Machine Model}
@@ -1104,40 +1081,37 @@ $
 \label{fig:chapter:conlink:cpu-single-to-env-theorem}
 \end{figure}
 
-
 Now, we are ready to build a local layer interface described in Section~\ref{chapter:ccal:subsec:local-layer-interface}. 
 The machine state for the single core machine contains 
 a CPU ID, the current running CPU, 
-a local state, which contains the private state of the current focused CPU,
-and a log, that represents the shared state with other CPUs. 
+a local state, which includes the private state of the current focused CPU,
+and a log that represents the shared state with other CPUs. 
 The step relation in this single core machine is same with the environmental step machine defined in Section~\ref{chapter:linking:subsec:concurrent-machine-model}. Figure~\ref{fig:chapter:conlink:single-core-machine-model} contains those definitions. 
 The refinement proof between the single core on the environmental step and the single core machine is straightforward since the similarity between
-those two states  as well as the step relations.
+those two states as well as the step relations.
 All those definitions are in Figure~\ref{fig:chapter:conlink:cpu-single-to-env-theorem}.
+
 
 \subsection{Global Log Optimization for Better Interface}
 \label{chapter:linking:subsec:global-log-optimization}
 
-We have defined the single core machine model from the multicore machine model 
-with providing refinements between those machines. 
+We have defined the single core machine model from the multicore machine model with providing refinements between those machines. 
 The single core machine in Section~\ref{chapter:linking:subsec:single-core-machine-model} , however, 
 is not sufficient to work as a 
 basis of local layer interfaces in Section~\ref{chapter:ccal:subsec:local-layer-interface}.
-First, the state definition in machine model 
-slightly differs from the machine that we used for 
-building layers with the support for the compositional compilation, $\compcertx$. 
-In this sense, the optimization requires us to match the machine state for single core machine with the state of $\compcertx$. 
+First, the state definition in machine model slightly differs from the machine that we used for building layers with the support for the compositional compilation, $\compcertx$. 
+In this sense, the optimization requires us to match the machine state for a single core machine with a state of $\compcertx$. 
 Second, the oracle query in the machine is operational step style, 
 which always query the oracle at each step of the evaluation.
-Adding this oracle query in between all steps in the $\compcertx$ machine model 
-is not feasible because it needs to modify the compilation path too. 
+Adding this oracle query in between all steps in the $\compcertx$ machine model is not feasible because it needs to modify the compilation path too. 
 Therefore, 
 optimization for the point of oracle query has to be adjusted. 
 Third, the global oracle contains multiple scheduling events in it, 
-so that they has to be removed 
-Finally, 
+so that it has to be removed.
+\jieung{Finally, Connect?}
 
 \subsubsection{Big Step Oracle Query}
+
 
 
 Querying the environmental context at each step is subtle in defining local layer interface. 
@@ -1226,11 +1200,8 @@ Similar to the previous steps,
 we show the refinement between those machine models,
 which are in 
 Figure~\ref{fig:chapter:conlink:big-refines-single} and Figure~\ref{fig:chapter:conlink:bigtwo-refines-big}. 
-Those steps are straightforward 
-because of the similarity of step relations as well as their state definitions. 
-One non-trivial lemma in those are the lemma about the multiple environmental steps. 
-the  ``start$\_$step$\_$get$\_$env$\_$log'' lemma shows 
-that the multiple environmental steps via $\yieldbackfunckwd$ always have the corresponding 
+Those steps are straightforward because of the similarity of step-relations as well as their state definitions. 
+One non-trivial lemma in those is the lemma about the multiple environmental steps. The ``start$\_$step$\_$get$\_$env$\_$log'' lemma shows that the numerous environmental steps via $\yieldbackfunckwd$ always have the corresponding 
 \textsf{SKIP} steps in the single core machine model. 
 
 \begin{figure}
@@ -1355,22 +1326,19 @@ $
 
 
 The next optimization is about reordering the point for the oracle query 
-and zipping the multiple adjacent scheduling event into the single scheduling event (and finally remove them).
+and zipping the multiple adjacent scheduling events into the single scheduling event (and finally remove them).
 To do that,
-we first separate hardware local step rules as two kinds of step rules, which is for the local silent steps and 
-for the shared steps that triggers the step relation to add the event in the log. 
+we first separate hardware local step rules as two kinds of step rules, which is for the local silent steps and for the shared steps that trigger the step relation to add the event in the log. 
 They are defined in Figure~\ref{fig:chapter:conlink:single-local-and-log-step-rules}. 
 With this separation, 
 the newly defined machine in Figure~\ref{fig:chapter:conlink:single-split-step-rules} 
 slightly changes the log update. 
 The state of this machine contains three elements. 
 The first one is for the private data of the CPU,
-the second one is for the cached event that postpone the update of the log to the global log until 
+the second one is for the cached event that postpones the update of the log to the global log until 
 the current focused CPU perform the step that generates the event for the shared state.
-This delayed update for the global log does not change any behavior of the machine 
-since the private state update via private step rule (single local step in Figure~\ref{fig:chapter:conlink:single-local-and-log-step-rules}). 
-by doing that, we are able to define 
-the machine that can update the log only when the focused CPU perform its shared operation,
+This delayed update for the global log does not change any behavior of the machine since the private state update via private step rule (single local step in Figure~\ref{fig:chapter:conlink:single-local-and-log-step-rules}). 
+by doing that, we are able to define the machine that can update the log only when the focused CPU perform its shared operation,
 which you can see in Figure~\ref{fig:chapter:conlink:single-split-step-rules}. 
 %%%%%%%%%%%%%%%%
 \begin{figure}
@@ -1438,8 +1406,7 @@ $
 \label{fig:chapter:conlink:split-refines-bigtwo}
 \end{figure}
 %%%%%%%%%%%%%%%%
-The refinement between this model and the big step style single core machine requires 
-the refinement between local step rules as shown in lemma 1 and lemma 2 in Figure~\ref{fig:chapter:conlink:split-refines-bigtwo}. 
+The refinement between this model and the big step style single core machine requires the refinement between local step rules as shown in lemma 1 and lemma 2 in Figure~\ref{fig:chapter:conlink:split-refines-bigtwo}. 
 With those lemmas 
 the top-level proof, the lemma 3 in  Figure~\ref{fig:chapter:conlink:split-refines-bigtwo} is straightforward.
 
@@ -1460,8 +1427,7 @@ the top-level proof, the lemma 3 in  Figure~\ref{fig:chapter:conlink:split-refin
 \label{fig:chapter:conlink:reorder-step-machine}
 \end{figure}
 %%%%%%%%%%%%%%%%
-The next optimization is defining different 
-oracle that can replace the oracle query function $\yieldbackfunckwd$. 
+The next optimization is defining different oracle that can replace the oracle query function $\yieldbackfunckwd$. 
 The machine model that merge those multiple events generated by $\yieldbackfunckwd$ 
 into the one single oracle query is defined in Figure~\ref{fig:chapter:conlink:reorder-step-machine}.
 %%%%%%%%%%%%%%%%
@@ -1531,11 +1497,11 @@ $
 \label{fig:chapter:conlink:reorder-refines-split}
 \end{figure}
 %%%%%%%%%%%%%%%%
-The refinement proof between those different kinds of 
-oracle queries need an assumption about the relation between those two queries. 
+The refinement proof between those different kinds of oracle queries needs an assumption about the relation between those two queries. 
 The hypothesis 2 in Figure~\ref{fig:chapter:conlink:reorder-refines-split} 
 states the hypothesis that is 
 required to prove the top level lemma (lemma 1) in Figure~\ref{fig:chapter:conlink:reorder-refines-split}.
+
 
 \begin{figure}
 %  Fixpoint reduce_log (l: Log) :=
@@ -1606,14 +1572,15 @@ After that,
 the machine does not need to keep the 
 all scheduling event at all because it does not necessary 
 for the oracle query 
-and it increase the complexity of the global oracle. 
+and it increases the complexity of the global oracle. 
 In this sense, 
-we also refines the machine 
-that contains multiple scheduling event with the global log without any scheduling event,
+we also refine the machine 
+that contains multiple scheduling events with the global log without any scheduling event,
 which will be related with $\mcreducelogfunckwd$ in Figure~\ref{fig:chapter:conlink:reorder-refines-reorder}.
 It also shows that those two machines
 that are same but use different logs
 can be connected via the lemma 1 in  Figure~\ref{fig:chapter:conlink:reorder-refines-reorder}.
+
 
 
 \subsubsection{Divide the Global Log}
@@ -1827,38 +1794,34 @@ $
 \caption{Separate Refines Reorder}
 \label{fig:chapter:conlink:separate-refines-reorder}
 \end{figure}
-The last piece of optimization is 
-dividing the global log into the multiple logs to simplify the oracle query for 
-each shared resources. 
-This in only for the easy and scalable layer building in the local layer interface, 
+The last piece of optimization is dividing the global log into the multiple logs to simplify the oracle query for each shared resources. 
+That is only for the easy and scalable layer building in the local layer interface, 
 but it requires multiple works to do. 
 First, 
 the modification on the event type is necessary. 
 the separate event type defined in Figure~\ref{fig:chapter:conlink:separate-state-definition}
-shows the definition for them. 
-the separate event definition is quite similar to the previous definition, 
+shows the definition for them. The separate event definition is quite similar to the previous definition, 
 but the separate log ($separatelogkwd$) has the different type,
  which is the map from its log identifier to the log only for the identifier. 
-All identifiers also has the corresponding primitive ID ($\primitiveid$), which is defined as $\separateoraclelogtypekwd$.
+All identifiers also have the corresponding primitive ID ($\primitiveid$), which is defined as $\separateoraclelogtypekwd$.
 There are also several auxiliary functions, 
 that are mostly for translating the single-stream global log into the separate log type defined in Figure~\ref{fig:chapter:conlink:separate-state-definition}.
 Figure~\ref{fig:chapter:conlink:auxiliary-funcitons-for-single-separate-machine} contains those auxiliary functions.
 
 By using them, we finally prove the separate step rules in Figure~\ref{fig:chapter:conlink:separate-step-rules}. 
-It is basically same with the reorder step rules in terms of 
+It is same with the reorder step rules concerning
 having two rules, local rules for private steps and log rules for the operations on shared states. 
 
 Similar to the previous steps, 
-we also provide the refinement proof that can be further used for 
-the $\compcert$ style simulation proof. 
+we also provide the refinement proof that can be further used for the $\compcert$ style simulation proof. 
 Figure~\ref{fig:chapter:conlink:auxiliary-functions-separate-refines-reorder} and 
 Figure~\ref{fig:chapter:conlink:separate-refines-reorder} shows 
 the related auxiliary functions, match relations, hypothesis, and proofs for them.
 
+
 \subsection{Linking with The Layer on Local Layer Interface}
 \label{chapter:linking:subsec:linking-with-the-layer-on-local-layer-interface}
 
+
 We define multiple intermediate languages for multicore linking during this section.
-We have also provided the refinement proofs between those intermediate languages which can be further used 
-to link those languages and proofs with the layer on $\compcertx$, the machine model for 
-certified concurrent abstraction layers. 
+We have also provided the refinement proofs between those intermediate languages which can be further used to link those languages and proofs with the layer on $\compcertx$, the machine model for certified concurrent abstraction layers. 

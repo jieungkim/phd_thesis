@@ -3,350 +3,715 @@
 
 Multicore linking in CertiKOS facilitates all the intermediate languages
 and proofs in Section~\ref{chapter:linking:sec:multicore-linking}.
+Figure~\ref{fig:chapter:conlink:intermediate-languages-and-their-relationsihps-for-multicore-linking} and 
+Section~\ref{chapter:linking:sec:multicore-linking} show all definitions and 
+proofs that connect all those things. 
+However, to build the local layer interface, 
+Instantiating the hardware configuration, 
+use the concrete definition $L$, which will be the 
+bottom layer of our local layer interface, 
+and combine those intermediate languages and proofs with $\compcert$ semantic and backward simulation 
+forms to connect them rigorously. 
 
 \subsection{Hardware Configuration Instance}
 \label{chapter:certikos:subsec:hardware-configuration-instance}
 
 The hardware configuration in Section~\ref{chapter:linking:subsec:hardware-configuration} works as a 
 template for users to instantiate all intermediate machine models in multicore linking. 
+To show the instance for that configuration,
+we first briefly show the state definition of $\compcertx$
+as well as the lowest layer in $\certikos$, which includes TCB functions such as the functions in Section~\ref{chapter:mcslock:sec:verification}.
+Those TCB functions are 
+necessary for supporting extended features that $\compcert$ cannot support. 
+For example, 
+Fetch-and-Increase or Compare-and-Swap functions are atomic operations that are crucial to build a 
+concurrent object by providing the lowest-level atomicity. 
+They, however, are not supported by $\compcert$'s instructions.
+Our bottom (TCB) layer, the parameter of the machine model for $\compcertx$ 
+provides the primitive (which gives the extra transition rules for the state of $\compcertx$) . 
+%
+%\begin{figure}
+%\begin{lstlisting}[language=Caml]
+%Inductive val: Type :=
+%  | Vundef: val
+%  | Vint: int -> val
+%  | Vlong: int64 -> val
+%  | Vfloat: float -> val
+%  | Vptr: block -> int -> val.
+%
+%Definition regset := Pregmap.t val.
 
-To show the instantiation,
-we briefly show the state definition of $\compcertx$. 
-The $\compcertx$ state is defined as
 
-\begin{figure}
-\begin{lstlisting}[language=Caml]
-Function get_last_event (l: MultiLogType) :=
-  match l with
-  | MultiUndef => None
-  | MultiDef nil => Some OINIT
-  | MultiDef (e:: l) =>
-    match e with
-    | TEVENT _ e0 =>
-      match e0 with
-      | TTICKET e1 =>
-        match e1 with
-        | INC_TICKET n => Some (OINC_TICKET n)
-        | INC_NOW => Some OINC_NOW       
-        | GET_NOW => Some OGET_NOW
-        | HOLD_LOCK => Some OHOLD_LOCK
-        | _ => None
-        end
-      | TSHARED (OBUFFERE b) => Some (OPAGE_COPY b)
-      | _ => None
-      end
-    end
-  end.
-\end{lstlisting} 
-\end{figure}
+%\end{lstlisting}
+%\caption{$\compcertx$ State Definition.}
+%\label{fig:chapter:certikos:compcertx-state-definition}
+%\end{figure}
 
-\begin{figure}
-\begin{lstlisting}[language=Caml]
- Inductive state `{memory_model_ops: Mem.MemoryModelOps mem}: Type :=
+The $\compcertx$ state definition is
+\begin{lstlisting}
+Inductive state <@$\cdots$@> : Type :=
   | State: regset -> mem -> state.
 \end{lstlisting}
-\end{figure}
-
+The $\compcertx$ state is defined as a pair, 
+a register and a memory. 
+The memory in the $\compcertx$ is also a pair of two elements, 
+a memory (a map from a identifier to a value) and an abstract data. 
+The abstract data can contain 
+multiple fields in it. 
+To use the existing tools as much as possible, 
+we also include our global log in the abstract data (as we have seen in Chapter~\ref{chapter:mcs-lock}.
+\jieung{Need to add more descriptions about our state definition}
 
 \begin{figure}
-
 \begin{lstlisting}[language=Caml]
-  Local Open Scope Z_scope.
-
-  Definition genv := Genv.t fundef unit.
-    
-  // to determine PC from the state 
-  Inductive command_predicate (ge: genv): mstate -> command -> Prop :=
-  | acq_prim_call:
-      forall b ef rs m lid index ofs sig,
-        rs Asm.PC = Vptr b Int.zero ->
-        Genv.find_funct_ptr ge b = Some (External ef) ->
-        sig = mksignature (AST.Tint::AST.Tint::nil) None cc_default ->
-        extcall_arguments rs m sig (Vint index :: Vint ofs :: nil) ->
-        index2Z (Int.unsigned index) (Int.unsigned ofs) = Some lid ->
-        match ef with
-          | EF_external eid _ => 
-            if peq eid acquire_shared then True
-            else False
-          | _ => False
-        end ->
-        command_predicate ge (Asm.State rs m) (ACQ_SHARED lid)
-
-  | rel_prim_call:
-      forall b ef rs m lid index ofs sig,
-        rs Asm.PC = Vptr b Int.zero ->
-        Genv.find_funct_ptr ge b = Some (External ef) ->
-        sig = mksignature (AST.Tint::AST.Tint::nil) None cc_default ->
-        extcall_arguments rs m sig (Vint index :: Vint ofs :: nil) ->
-        index2Z (Int.unsigned index) (Int.unsigned ofs) = Some lid ->
-        match ef with
-          | EF_external eid _ => 
-            if peq eid release_shared then True
-            else False
-          | _ => False
-        end ->
-        command_predicate ge (Asm.State rs m) (REL_SHARED lid)
+Definition mboot_passthrough : compatlayer (cdata RData) :=
+  <@$\cdots$@>
+  <@$\oplus$@> get_CPU_ID <@$\mapsto$@> gensem get_CPU_ID_spec
+  <@$\oplus$@>  acquire_shared <@$\mapsto$@> primcall_acquire_shared_compatsem acquire_shared0_spec0
+  <@$\oplus$@>  atomic_FAI <@$\mapsto$@> primcall_atomic_FAI_compatsem atomic_FAI_spec
+  <@$\cdots$@>
 \end{lstlisting}
+\caption{Bottom Layer Interface}
+\label{fig:chapter:certikos:bottom-layer-interface}
 \end{figure}
 
 \begin{figure}
 \begin{lstlisting}[language=Caml]
-  | command_prim_atomic:
-      forall b ef rs m lid index ofs sig eid,
-        rs Asm.PC = Vptr b Int.zero ->
-        Genv.find_funct_ptr ge b = Some (External ef) ->
-        atomic_id eid ->
-        eid <> page_copy ->
-        match ef with
-          | EF_external eid' _ =>
-            if peq eid eid' then True
-            else False
-          | _ => False
-        end ->
-        sig = mksignature (AST.Tint::AST.Tint::nil) None cc_default ->
-        extcall_arguments rs m sig (Vint index :: Vint ofs :: nil) ->
-        index2Z (Int.unsigned index) (Int.unsigned ofs) = Some lid ->
-        command_predicate ge (Asm.State rs m) (ATOMIC lid eid)
-
-  | command_prim_page_copy:
-      forall b ef rs m lid cv count from sig,
-        rs Asm.PC = Vptr b Int.zero ->
-        Genv.find_funct_ptr ge b = Some (External ef) ->
-        match ef with
-          | EF_external eid _ => 
-            if peq eid page_copy then True
-            else False
-          | _ => False
-        end ->
-        sig = mksignature (AST.Tint::AST.Tint::AST.Tint::nil) None cc_default ->
-        extcall_arguments rs m sig (Vint cv :: Vint count :: Vint from :: nil) ->
-        index2Z ID_SC (slp_q_id (Int.unsigned cv) 0) = Some lid ->
-        command_predicate ge (Asm.State rs m) (ATOMIC lid page_copy)
+Record RData :=
+  mkRData {
+     // current CPU_ID
+      CPU_ID: Z;
+     // we model the memory from 1G to 3G as heap            
+      HP: flatmem;     
+      // abstract of CR3, stores the pointer to page table
+      CR3: globalpointer;
+      // set of logs for shared resources - we divide the global log to multiple
+      // logs for each shared objects for simplicity   
+      multi_log: MultiLogPool;     
+     <@$\cdots$@>
+     }.
 \end{lstlisting}
+\caption{Abstract Data for TCB Layer}
+\label{fig:chapter:certikos:abstract-data-for-bottom-layer}
 \end{figure}
 
-\begin{figure}
+The layer definition for the bottom layer is in Figure~\ref{chapter:certikos:subsec:hardware-configuration-instance},
+which is basically a partial map from a primitive ID ($\primitiveid$) to the specifications ($\spec$).
+and the abstract data for the bottom layer is in Figure~\ref{fig:chapter:certikos:abstract-data-for-bottom-layer}.
+As mentioned, 
+we have provided atomic fetch and increase as an atomic operation in the layer 
+and it will update the log in the abstract data ($\codeinmath{multi\_log}$), which is 
+a part of our state definition. 
 
+Our hardware configuration instance is closely related to those definitions. 
+Atomic operations in the configuration (Figure~\ref{fig:chapter:conlinkg:abstract-hardware-configuration-and-semantics}), for example,
+need to include $\codeinmath{atomic\_FAI}$  
+in it and the local evaluation rule in the atomic statement in Figure~\ref{fig:chapter:conlink:hardware-local-step-transition-rules}  has to 
+consistent with the specification of the primitive.
+%
+%\begin{lstlisting}
+%  Inductive OtherEvent :=
+%  (* Events used for the ticket-lock primitives: *)
+%  | OINC_TICKET (n: nat)
+%  | OINC_NOW
+%  | OGET_NOW
+%  | OINIT
+%  | OHOLD_LOCK
+%  | OPAGE_COPY (b: PageBuffer)
+%  .
+%
+%  Function OtherEvent_2_ident (e: OtherEvent) :=
+%    match e with
+%      | OINC_TICKET _ => atomic_FAI
+%      | OINC_NOW => log_incr
+%      | OGET_NOW => log_get
+%      | OINIT => log_init
+%      | OHOLD_LOCK => log_hold
+%      | OPAGE_COPY _ => page_copy
+%    end.
+%
+%  Global Instance hdseting: HardWaredSetting :=
+%    {
+%      private_state := mstate;
+%      shared_piece := list Integers.Byte.int;
+%      atomic_event := OtherEvent;
+%      atomic_event_ident := OtherEvent_2_ident;
+%      core_set := cpu_set;
+%      sched_id := 9
+%    }.
+%\end{lstlisting}
+
+With those things, 
+we have to instance all the definitions in Figure~\ref{chapter:certikos:subsec:hardware-configuration-instance}.
+
+The private state can be instantiated with 
+the state definition in the machine model of $\compcertx$,
+and the shared piece is a list of byte, which represents 
+the snapshot of the shared memory via $\push$/$\pull$ operations. 
+Atomic events are defined above, 
+which is mapped with the atomic operation that the bottom layer of our interface provide.
+For example, \lstinline$OINC_TICKET (n: nat)$ corresponds to the fetch and increase primitive,
+and it instantiates the definition $\mcevent$ in Figure~\ref{chapter:certikos:subsec:hardware-configuration-instance}.
 \begin{lstlisting}[language=Caml]
-  | command_prim_FAI:
-      forall b ef rs m lid index ofs sig bound,
-        rs Asm.PC = Vptr b Int.zero ->
-        Genv.find_funct_ptr ge b = Some (External ef) ->
-        match ef with
-          | EF_external eid _ => 
-            if peq eid atomic_FAI then True
-            else False
-          | _ => False
-        end ->
-        sig = mksignature (AST.Tint::AST.Tint::AST.Tint::nil) None cc_default ->
-        extcall_arguments rs m sig (Vint bound :: Vint index :: Vint ofs :: nil) ->
-        index2Z (Int.unsigned index) (Int.unsigned ofs) = Some lid ->
-        command_predicate ge (Asm.State rs m) (ATOMIC lid atomic_FAI)
-
-  | command_internal:
-      forall b ofs f rs m,
-        rs Asm.PC = Vptr b ofs ->
-        Genv.find_funct_ptr ge b = Some (Internal f) ->
-        command_predicate ge (Asm.State rs m) PRIVATE
-
-  | command_prim_private:
-      forall b ef rs m,
-        rs Asm.PC = Vptr b Int.zero ->
-        Genv.find_funct_ptr ge b = Some (External ef) ->
-        match ef with
-          | EF_external eid _ => 
-            private_id eid
-          | _ => True
-        end ->
-        command_predicate ge (Asm.State rs m) PRIVATE.
+  Inductive OtherEvent :=
+  (* Events used for the ticket-lock primitives: *)
+  | OINC_TICKET (n: nat)
+  <@$\cdots$@>
 \end{lstlisting}
-\end{figure}
-
-
-\begin{figure}
+In addition, \lstinline$OtherEvent_2_ident$ is an instance for $\atomiceventidentkwd$ function, which is the function
+that gets the event and returns the corresponding identifier (the primitive identifier) that is related to the event.
 \begin{lstlisting}[language=Caml]
-  Global Instance hdseting: HardWaredSetting :=
-    {
-      private_state := mstate;
-      shared_piece := list Integers.Byte.int;
-      atomic_event := OtherEvent;
-      atomic_event_ident := OtherEvent_2_ident;
-      core_set := cpu_set;
-      sched_id := 9
-    }.
-  Proof.
-    - intros.
-      eapply list_eq_dec. intros.
-      eapply Byte.eq_dec.
-    - repeat decide equality.
-      eapply Int.eq_dec.
-    - trivial.
-  Defined.
+  Function OtherEvent_2_ident (e: OtherEvent) :=
+    match e with
+      | OINC_TICKET _ => atomic_FAI
+      <@$\cdots$@>
+    end.
 \end{lstlisting}
-\end{figure}
-
-\begin{figure}
-
+And, the \lstinline$core_set$ is defined as a full CPU set ($\coreset$), and 
+the set contains the 8 CPUs in it from 0 to 7.
+The last element is the identifier for 
+the scheduler, which should not in the \lstinline$cpu_set$. 
+we designated 8 for the scheduler ID.
+Those configurations are all included in the 
+\lstinline$hdsetting$ class, and the instance of the type class
+is as follows:
 \begin{lstlisting}[language=Caml]
-  // private execution - similar to Asm
-  Inductive private_exec (ge: genv): Z -> mstate -> mstate -> Prop :=
-    | private_step_internal:
-        forall b ofs f i rs (m m': mwd LDATAOps) rs' cid,
-        rs Asm.PC = Vptr b ofs ->
-        Genv.find_funct_ptr ge b = Some (Internal f) ->
-        find_instr (Int.unsigned ofs) f.(fn_code) = Some i ->
-        exec_instr ge f i rs m = Next rs' m' ->
-        CPU_ID (snd m) = cid ->
-        private_exec ge cid (Asm.State rs m) (Asm.State rs' m')
-
-  | private_step_builtin:
-      forall b ofs f ef args res rs (m m': mwd LDATAOps) t vl rs' cid,
-      rs Asm.PC = Vptr b ofs ->
-      Genv.find_funct_ptr ge b = Some (Internal f) ->
-      find_instr (Int.unsigned ofs) f.(fn_code) = Some (asm_instruction (Pbuiltin ef args res)) ->
-      external_call' (fun _ => True) ef ge (map rs args) m t vl m' ->
-      rs' = nextinstr_nf 
-             (set_regs res vl
-               (undef_regs (map preg_of (destroyed_by_builtin ef)) rs)) ->
-      CPU_ID (snd m) = cid ->
-     //  [CertiKOS:test-compcert-disable-extcall-as-builtin] We need
-     // to disallow the use of external function calls (EF_external) as
-     //  builtins. 
-      forall BUILTIN_ENABLED: match ef with
-                                | EF_external _ _ => False
-                                | _ => True
-                              end,
-    // [CompCertX:test-compcert-wt-builtin] We need to prove that registers updated by builtins are
-    // of the same type as the return type of the builtin. 
-      forall BUILTIN_WT: 
-               subtype_list (proj_sig_res' (ef_sig ef)) (map typ_of_preg res) = true,
-        private_exec ge cid (Asm.State rs m) (Asm.State rs' m')
+Global Instance hdseting: HardWaredSetting := {
+  private_state := mstate;
+  shared_piece := list Integers.Byte.int;
+  atomic_event := OtherEvent;
+  atomic_event_ident := OtherEvent_2_ident;
+  core_set := cpu_set;
+  sched_id := 8 }.
 \end{lstlisting}
-\end{figure}
+, which is mapped with 
+the proper atomic operations, number of CPUs (allows 8 CPUs), 
+as well as the state definition. 
 
-\begin{figure}
 
+%\begin{lstlisting}[language=Caml]
+%  Inductive step (ge: genv): state -> trace -> state -> Prop :=
+%    | exec_step_internal:
+%        forall b ofs f i rs m rs' m',
+%        rs PC = Vptr b ofs ->
+%        Genv.find_funct_ptr ge b = Some (Internal f) ->
+%        find_instr (Int.unsigned ofs) f.(fn_code) = Some i ->
+%        exec_instr ge f i rs m = Next rs' m' ->
+%        step ge (State rs m) E0 (State rs' m')
+%  | exec_step_builtin:
+%      forall b ofs f ef args res rs m t vl rs' m',
+%      rs PC = Vptr b ofs ->
+%      Genv.find_funct_ptr ge b = Some (Internal f) ->
+%      find_instr (Int.unsigned ofs) f.(fn_code) = Some (asm_instruction (Pbuiltin ef args res)) ->
+%      external_call' (fun _ => True) ef ge (map rs args) m t vl m' ->
+%      rs' = nextinstr_nf 
+%             (set_regs res vl
+%               (undef_regs (map preg_of (destroyed_by_builtin ef)) rs)) ->
+%(** [CertiKOS:test-compcert-disable-extcall-as-builtin] We need
+%to disallow the use of external function calls (EF_external) as
+%builtins. *)
+%      forall BUILTIN_ENABLED: match ef with
+%                                | EF_external _ _ => False
+%                                | _ => True
+%                              end,
+%(** [CompCertX:test-compcert-wt-builtin] We need to prove that registers updated by builtins are
+%    of the same type as the return type of the builtin. *)
+%      forall BUILTIN_WT: 
+%               subtype_list (proj_sig_res' (ef_sig ef)) (map typ_of_preg res) = true,
+%      step ge (State rs m) t (State rs' m')
+%  | exec_step_annot:
+%      forall b ofs f ef args rs m vargs t v m',
+%      rs PC = Vptr b ofs ->
+%      Genv.find_funct_ptr ge b = Some (Internal f) ->
+%      find_instr (Int.unsigned ofs) f.(fn_code) = Some (asm_instruction (Pannot ef args)) ->
+%      annot_arguments rs m args vargs ->
+%      external_call' (fun _ => True) ef ge vargs m t v m' ->
+%      forall BUILTIN_ENABLED: match ef with
+%                                | EF_external _ _ => False
+%                                | _ => True
+%                              end,
+%      step ge (State rs m) t
+%           (State (nextinstr rs) m')
+%    | exec_step_external:
+%        forall b ef args res rs m t rs' m',
+%        rs PC = Vptr b Int.zero ->
+%        Genv.find_funct_ptr ge b = Some (External ef) ->
+%        (* XXX maybe flip those two to keep the same order as before *)
+%        extcall_arguments rs m (ef_sig ef) args ->
+%        external_call' (fun _ => True) ef ge args m t res m' ->
+%        (** [CompCertX:test-compcert-undef-destroyed-by-call] We erase non-callee-save registers. *)
+%      (** [CompCertX:test-compcert-ra-vundef] We need to erase the value of RA,
+%      which is actually popped away from the stack in reality. *)
+%      rs' = (set_regs (loc_external_result (ef_sig ef)) res (undef_regs (CR ZF :: CR CF :: CR PF :: CR SF :: CR OF :: nil) (undef_regs (map preg_of destroyed_at_call) rs))) #PC <- (rs RA) #RA <- Vundef ->
+%        forall STACK:
+%        forall b o, rs ESP = Vptr b o ->
+%                    (Ple (Genv.genv_next ge) b /\ Plt b (Mem.nextblock m)),
+%  (** [CompCertX:test-compcert-protect-stack-arg] The following
+%      NOT_VUNDEF conditions will allow to later parameterize the
+%      per-function/module semantics of back-end languages over the stack
+%      pointer and the return address. *)
+%        forall SP_NOT_VUNDEF: rs ESP <> Vundef,
+%        forall RA_NOT_VUNDEF: rs RA <> Vundef,
+%        step ge (State rs m) t (State rs' m')
+%    | exec_step_prim_call:
+%        forall b ef rs m t rs' m',
+%          rs PC = Vptr b Int.zero ->
+%          Genv.find_funct_ptr ge b = Some (External ef) ->
+%          primitive_call ef ge rs m t rs' m' ->
+%          step ge (State rs m) t (State rs' m').
+%
+%  (** The low-level LAsm machine use the same initial states as the
+%    regular Compcert Asm, however high-level, non-main thread machines
+%    use a different entry point. We use the following class as a
+%    parameter so that we can account for this. *)
+%
+%  Class AsmInitialState :=
+%    {
+%      asm_init_state {F V}: AST.program F V -> state -> Prop;
+%
+%      asm_init_state_determ {F V} (p : AST.program F V):
+%        forall s1 s2, asm_init_state p s1 -> asm_init_state p s2 -> s1 = s2
+%    }.
+%
+%  (** Compared to the original CompCert [Asm.initial_state], this
+%    version leaves RA to be [Vundef] rather than set it to [Vzero].
+%    This makes it easier to treat the initial state of the main thread
+%    and that of other threads uniformly, since threads which start as
+%    a "return from yield" have their RA undefined. *)
+%
+%  Inductive initial_state {F V} (p: AST.program F V): state -> Prop :=
+%    | initial_state_intro m0:
+%        Genv.init_mem p = Some m0 ->
+%        let rs0 :=
+%          (Pregmap.init Vundef)
+%          # PC <- (symbol_offset (Genv.globalenv p) (prog_main p) Int.zero)
+%          # ESP <- Vzero in
+%        initial_state p (State rs0 m0).
+%
+%  Global Program Instance asm_init_default : AsmInitialState | 10 :=
+%    {
+%      asm_init_state F V := initial_state
+%    }.
+%  Next Obligation.
+%    destruct H; subst rs0.
+%    destruct H0; subst rs0.
+%    congruence.
+%  Qed.
+%
+%  Context `{asm_init : AsmInitialState}.
+%
+%  Definition final_state (s : state) (i : int) : Prop :=
+%    False.
+%
+%  Definition semantics (p: program) :=
+%    Smallstep.Semantics step (asm_init_state p) final_state (Genv.globalenv p).
+%\end{lstlisting}
+%
+%\begin{figure}
+%\begin{lstlisting}[language=Caml]
+%Function get_last_event (l: MultiLogType) :=
+%  match l with
+%  | MultiUndef => None
+%  | MultiDef nil => Some OINIT
+%  | MultiDef (e:: l) =>
+%    match e with
+%    | TEVENT _ e0 =>
+%      match e0 with
+%      | TTICKET e1 =>
+%        match e1 with
+%        | INC_TICKET n => Some (OINC_TICKET n)
+%        | INC_NOW => Some OINC_NOW       
+%        | GET_NOW => Some OGET_NOW
+%        | HOLD_LOCK => Some OHOLD_LOCK
+%        | _ => None
+%        end
+%      | TSHARED (OBUFFERE b) => Some (OPAGE_COPY b)
+%      | _ => None
+%      end
+%    end
+%  end.
+%\end{lstlisting} 
+%\end{figure}
+
+
+
+%\begin{figure}
+%
+%\begin{lstlisting}[language=Caml]
+%  Local Open Scope Z_scope.
+%
+%  Definition genv := Genv.t fundef unit.
+%    
+%  // to determine PC from the state 
+%  Inductive command_predicate (ge: genv): mstate -> command -> Prop :=
+%  | acq_prim_call:
+%      forall b ef rs m lid index ofs sig,
+%        rs Asm.PC = Vptr b Int.zero ->
+%        Genv.find_funct_ptr ge b = Some (External ef) ->
+%        sig = mksignature (AST.Tint::AST.Tint::nil) None cc_default ->
+%        extcall_arguments rs m sig (Vint index :: Vint ofs :: nil) ->
+%        index2Z (Int.unsigned index) (Int.unsigned ofs) = Some lid ->
+%        match ef with
+%          | EF_external eid _ => 
+%            if peq eid acquire_shared then True
+%            else False
+%          | _ => False
+%        end ->
+%        command_predicate ge (Asm.State rs m) (ACQ_SHARED lid)
+%
+%  | rel_prim_call:
+%      forall b ef rs m lid index ofs sig,
+%        rs Asm.PC = Vptr b Int.zero ->
+%        Genv.find_funct_ptr ge b = Some (External ef) ->
+%        sig = mksignature (AST.Tint::AST.Tint::nil) None cc_default ->
+%        extcall_arguments rs m sig (Vint index :: Vint ofs :: nil) ->
+%        index2Z (Int.unsigned index) (Int.unsigned ofs) = Some lid ->
+%        match ef with
+%          | EF_external eid _ => 
+%            if peq eid release_shared then True
+%            else False
+%          | _ => False
+%        end ->
+%        command_predicate ge (Asm.State rs m) (REL_SHARED lid)
+%\end{lstlisting}
+%\end{figure}
+
+%\begin{figure}
+%\begin{lstlisting}[language=Caml]
+%  | command_prim_atomic:
+%      forall b ef rs m lid index ofs sig eid,
+%        rs Asm.PC = Vptr b Int.zero ->
+%        Genv.find_funct_ptr ge b = Some (External ef) ->
+%        atomic_id eid ->
+%        eid <> page_copy ->
+%        match ef with
+%          | EF_external eid' _ =>
+%            if peq eid eid' then True
+%            else False
+%          | _ => False
+%        end ->
+%        sig = mksignature (AST.Tint::AST.Tint::nil) None cc_default ->
+%        extcall_arguments rs m sig (Vint index :: Vint ofs :: nil) ->
+%        index2Z (Int.unsigned index) (Int.unsigned ofs) = Some lid ->
+%        command_predicate ge (Asm.State rs m) (ATOMIC lid eid)
+%
+%  | command_prim_page_copy:
+%      forall b ef rs m lid cv count from sig,
+%        rs Asm.PC = Vptr b Int.zero ->
+%        Genv.find_funct_ptr ge b = Some (External ef) ->
+%        match ef with
+%          | EF_external eid _ => 
+%            if peq eid page_copy then True
+%            else False
+%          | _ => False
+%        end ->
+%        sig = mksignature (AST.Tint::AST.Tint::AST.Tint::nil) None cc_default ->
+%        extcall_arguments rs m sig (Vint cv :: Vint count :: Vint from :: nil) ->
+%        index2Z ID_SC (slp_q_id (Int.unsigned cv) 0) = Some lid ->
+%        command_predicate ge (Asm.State rs m) (ATOMIC lid page_copy)
+%\end{lstlisting}
+%\end{figure}
+%
+%\begin{figure}
+
+%\begin{lstlisting}[language=Caml]
+%  | command_prim_FAI:
+%      forall b ef rs m lid index ofs sig bound,
+%        rs Asm.PC = Vptr b Int.zero ->
+%        Genv.find_funct_ptr ge b = Some (External ef) ->
+%        match ef with
+%          | EF_external eid _ => 
+%            if peq eid atomic_FAI then True
+%            else False
+%          | _ => False
+%        end ->
+%        sig = mksignature (AST.Tint::AST.Tint::AST.Tint::nil) None cc_default ->
+%        extcall_arguments rs m sig (Vint bound :: Vint index :: Vint ofs :: nil) ->
+%        index2Z (Int.unsigned index) (Int.unsigned ofs) = Some lid ->
+%        command_predicate ge (Asm.State rs m) (ATOMIC lid atomic_FAI)
+%
+%  | command_internal:
+%      forall b ofs f rs m,
+%        rs Asm.PC = Vptr b ofs ->
+%        Genv.find_funct_ptr ge b = Some (Internal f) ->
+%        command_predicate ge (Asm.State rs m) PRIVATE
+%
+%  | command_prim_private:
+%      forall b ef rs m,
+%        rs Asm.PC = Vptr b Int.zero ->
+%        Genv.find_funct_ptr ge b = Some (External ef) ->
+%        match ef with
+%          | EF_external eid _ => 
+%            private_id eid
+%          | _ => True
+%        end ->
+%        command_predicate ge (Asm.State rs m) PRIVATE.
+%\end{lstlisting}
+%\end{figure}
+
+%
+%\begin{figure}
+%\begin{lstlisting}[language=Caml]
+%  Global Instance hdseting: HardWaredSetting :=
+%    {
+%      private_state := mstate;
+%      shared_piece := list Integers.Byte.int;
+%      atomic_event := OtherEvent;
+%      atomic_event_ident := OtherEvent_2_ident;
+%      core_set := cpu_set;
+%      sched_id := 9
+%    }.
+%  Proof.
+%    - intros.
+%      eapply list_eq_dec. intros.
+%      eapply Byte.eq_dec.
+%    - repeat decide equality.
+%      eapply Int.eq_dec.
+%    - trivial.
+%  Defined.
+%\end{lstlisting}
+%\end{figure}
+%
+%\begin{figure}
+%
+%\begin{lstlisting}[language=Caml]
+%  // private execution - similar to Asm
+%  Inductive private_exec (ge: genv): Z -> mstate -> mstate -> Prop :=
+%    | private_step_internal:
+%        forall b ofs f i rs (m m': mwd LDATAOps) rs' cid,
+%        rs Asm.PC = Vptr b ofs ->
+%        Genv.find_funct_ptr ge b = Some (Internal f) ->
+%        find_instr (Int.unsigned ofs) f.(fn_code) = Some i ->
+%        exec_instr ge f i rs m = Next rs' m' ->
+%        CPU_ID (snd m) = cid ->
+%        private_exec ge cid (Asm.State rs m) (Asm.State rs' m')
+%
+%  | private_step_builtin:
+%      forall b ofs f ef args res rs (m m': mwd LDATAOps) t vl rs' cid,
+%      rs Asm.PC = Vptr b ofs ->
+%      Genv.find_funct_ptr ge b = Some (Internal f) ->
+%      find_instr (Int.unsigned ofs) f.(fn_code) = Some (asm_instruction (Pbuiltin ef args res)) ->
+%      external_call' (fun _ => True) ef ge (map rs args) m t vl m' ->
+%      rs' = nextinstr_nf 
+%             (set_regs res vl
+%               (undef_regs (map preg_of (destroyed_by_builtin ef)) rs)) ->
+%      CPU_ID (snd m) = cid ->
+%     //  [CertiKOS:test-compcert-disable-extcall-as-builtin] We need
+%     // to disallow the use of external function calls (EF_external) as
+%     //  builtins. 
+%      forall BUILTIN_ENABLED: match ef with
+%                                | EF_external _ _ => False
+%                                | _ => True
+%                              end,
+%    // [CompCertX:test-compcert-wt-builtin] We need to prove that registers updated by builtins are
+%    // of the same type as the return type of the builtin. 
+%      forall BUILTIN_WT: 
+%               subtype_list (proj_sig_res' (ef_sig ef)) (map typ_of_preg res) = true,
+%        private_exec ge cid (Asm.State rs m) (Asm.State rs' m')
+%\end{lstlisting}
+%\end{figure}
+%
+%\begin{figure}
+%
+%\begin{lstlisting}[language=Caml]
+%  | private_step_annot:
+%      forall b ofs f ef args rs (m m': mwd LDATAOps) vargs t v cid,
+%      rs Asm.PC = Vptr b ofs ->
+%      Genv.find_funct_ptr ge b = Some (Internal f) ->
+%      find_instr (Int.unsigned ofs) f.(fn_code) = Some (asm_instruction (Pannot ef args)) ->
+%      annot_arguments rs m args vargs ->
+%      external_call' (fun _ => True) ef ge vargs m t v m' ->
+%      CPU_ID (snd m) = cid ->
+%      forall BUILTIN_ENABLED: match ef with
+%                                | EF_external _ _ => False
+%                                | _ => True
+%                              end,
+%      private_exec ge cid (Asm.State rs m)
+%           (Asm.State (nextinstr rs) m')
+%
+%    | private_step_external:
+%        forall b ef args res rs (m m': mwd LDATAOps) t rs' cid,
+%        rs Asm.PC = Vptr b Int.zero ->
+%        Genv.find_funct_ptr ge b = Some (External ef) ->
+%        extcall_arguments rs m (ef_sig ef) args ->
+%        external_call' (fun _ => True) ef ge args m t res m' ->
+%        rs' = (set_regs (loc_external_result (ef_sig ef)) res 
+%                        (undef_regs (CR ZF :: CR CF :: CR PF :: CR SF :: CR OF :: nil) 
+%                                    (undef_regs (map preg_of destroyed_at_call) rs))) 
+%                #Asm.PC <- (rs RA) #RA <- Vundef ->
+%        CPU_ID (snd m) = cid ->
+%        forall STACK:
+%        forall b o, rs ESP = Vptr b o ->
+%                    (Ple (Genv.genv_next ge) b /\ Plt b (Mem.nextblock m)),
+%        forall SP_NOT_VUNDEF: rs ESP <> Vundef,
+%        forall RA_NOT_VUNDEF: rs RA <> Vundef,
+%        private_exec ge cid (Asm.State rs m) (Asm.State rs' m')
+%
+%    | private_step_prim_call:
+%        forall b ef rs (m m': mwd LDATAOps) t rs' cid,
+%          rs Asm.PC = Vptr b Int.zero ->
+%          Genv.find_funct_ptr ge b = Some (External ef) ->
+%          primitive_call ef ge rs m t rs' m' ->
+%          CPU_ID (snd m) = cid ->
+%          private_exec ge cid (Asm.State rs m) (Asm.State rs' m').
+%\end{lstlisting}
+%\end{figure}
+%
+%\begin{figure}
+%\begin{lstlisting}[language=Caml]
+%    // shared executions - get and set    
+%    Inductive get_shared_sem (ge: genv) : mstate -> list Integers.Byte.int -> mstate -> Prop:=
+%    | get_shared_intro: 
+%        forall rs sig m a index ofs id l b size ml0 z,
+%          Genv.find_symbol ge id = Some b
+%          -> id2size (Int.unsigned index) = Some (size, id)
+%          -> Mem.loadbytes m b 0 size = Some (ByteList l)
+%          -> sig = mksignature (AST.Tint::AST.Tint::nil) None cc_default
+%          -> extcall_arguments rs m sig (Vint index :: Vint ofs ::nil) ->
+%          forall (Hindex: index2Z (Int.unsigned index) (Int.unsigned ofs) = Some z)
+%            (Hlog: ZMap.get z (multi_log a) = MultiDef ml0),
+%            let rs' := (undef_regs (CR ZF :: CR CF :: CR PF :: CR SF :: CR OF
+%                                       :: IR EAX :: RA :: nil)
+%                                   (undef_regs (List.map preg_of destroyed_at_call) rs)) in
+%            let a' := a {multi_log: ZMap.set z (MultiDef (TEVENT (CPU_ID a) (TSHARED (OMEME l)) :: ml0))
+%                                             (multi_log a)} in
+%            get_shared_sem ge (Asm.State (mem:= mwd LDATAOps) rs (m, a)) l 
+%                           (Asm.State (rs'#RA <- Vundef#Asm.PC <- (rs RA)) (m, a')).
+%\end{lstlisting}
+%\end{figure}
+%
+%\begin{figure}
+%\begin{lstlisting}[language=Caml]
+%    Inductive set_shared_sem (ge: genv) : mstate -> option (list Integers.Byte.int) -> mstate -> Prop:=
+%    | set_shared_sem_intro: 
+%        forall rs sig m m' a index ofs id l b size ml0 z,
+%          Genv.find_symbol ge id = Some b
+%          -> id2size (Int.unsigned index) = Some (size, id)
+%          -> match l with
+%               | Some l' => Mem.storebytes m b 0 (ByteList l') = Some m'
+%               | _ => m' = m
+%             end
+%          -> sig = mksignature (AST.Tint::AST.Tint::nil) None cc_default
+%          -> extcall_arguments rs m sig (Vint index :: Vint ofs :: nil) ->
+%          forall (Hindex: index2Z (Int.unsigned index) (Int.unsigned ofs) = Some z)
+%                 (Hlog: ZMap.get z (multi_log a) = MultiDef ml0),
+%            let rs' := (undef_regs (CR ZF :: CR CF :: CR PF :: CR SF :: CR OF
+%                                       :: IR EAX :: RA :: nil)
+%                                   (undef_regs (List.map preg_of destroyed_at_call) rs)) in
+%            let a' := a {multi_log: ZMap.set z (MultiDef (TEVENT (CPU_ID a) (TSHARED OPULL) :: ml0))
+%                                             (multi_log a)} in
+%            set_shared_sem ge (Asm.State (mem:= mwd LDATAOps) rs (m, a)) l 
+%                           (Asm.State (rs'#RA <- Vundef#Asm.PC <- (rs RA)) (m', a')).
+%\end{lstlisting}
+%\end{figure}
+
+%\begin{figure}
+%\begin{lstlisting}[language=Caml]
+%    // atomic executions 
+%    Inductive atomic_exec (ge: genv): Z -> Z -> mstate -> Log -> mstate -> OtherEvent -> Prop :=
+%    | atomic_step_external:
+%        forall b ef args res rs (m m': mwd LDATAOps) t rs' cid e id sl,
+%        rs Asm.PC = Vptr b Int.zero ->
+%        Genv.find_funct_ptr ge b = Some (External ef) ->
+%        extcall_arguments rs m (ef_sig ef) args ->
+%        external_call' (fun _ => True) ef ge args m t res m' ->
+%        rs' = (set_regs (loc_external_result (ef_sig ef)) res (undef_regs (CR ZF :: CR CF :: CR PF :: CR SF :: CR OF :: nil) (undef_regs (map preg_of destroyed_at_call) rs))) #Asm.PC <- (rs RA) #RA <- Vundef ->
+%        get_last_event (ZMap.get id (multi_log (snd m'))) = Some e ->
+%        forall STACK:
+%        forall b o, rs ESP = Vptr b o ->
+%                    (Ple (Genv.genv_next ge) b /\ Plt b (Mem.nextblock m)),
+%        forall SP_NOT_VUNDEF: rs ESP <> Vundef,
+%        forall RA_NOT_VUNDEF: rs RA <> Vundef,
+%          atomic_exec ge cid id (Asm.State rs m) sl (Asm.State rs' m') e
+%
+%    | atomic_step_prim_call:
+%        forall b ef rs (m m': mwd LDATAOps) t rs' cid  e id sl,
+%          rs Asm.PC = Vptr b Int.zero ->
+%          Genv.find_funct_ptr ge b = Some (External ef) ->
+%          primitive_call ef ge rs m t rs' m' ->
+%          get_last_event (ZMap.get id (multi_log (snd m'))) = Some e ->
+%          atomic_exec ge cid id (Asm.State rs m) sl (Asm.State rs' m') e.
+%\end{lstlisting}
+%\end{figure}
+
+All our intermediate languages 
+also relies on the abstract transition rules for 
+private, shared, release, and atomic steps, and the special auxiliary function, $\programcounterkwd$.
+Similar to the previous definitions, 
+it also facilitate the layer definition (the $\codeinmath{mboot}$ layer), 
+and the $\compcertx$ definition.
+
+For example, the program counter command
+for fetch-and-increase function call is
 \begin{lstlisting}[language=Caml]
-  | private_step_annot:
-      forall b ofs f ef args rs (m m': mwd LDATAOps) vargs t v cid,
-      rs Asm.PC = Vptr b ofs ->
-      Genv.find_funct_ptr ge b = Some (Internal f) ->
-      find_instr (Int.unsigned ofs) f.(fn_code) = Some (asm_instruction (Pannot ef args)) ->
-      annot_arguments rs m args vargs ->
-      external_call' (fun _ => True) ef ge vargs m t v m' ->
-      CPU_ID (snd m) = cid ->
-      forall BUILTIN_ENABLED: match ef with
-                                | EF_external _ _ => False
-                                | _ => True
-                              end,
-      private_exec ge cid (Asm.State rs m)
-           (Asm.State (nextinstr rs) m')
-
-    | private_step_external:
-        forall b ef args res rs (m m': mwd LDATAOps) t rs' cid,
-        rs Asm.PC = Vptr b Int.zero ->
-        Genv.find_funct_ptr ge b = Some (External ef) ->
-        extcall_arguments rs m (ef_sig ef) args ->
-        external_call' (fun _ => True) ef ge args m t res m' ->
-        rs' = (set_regs (loc_external_result (ef_sig ef)) res 
-                        (undef_regs (CR ZF :: CR CF :: CR PF :: CR SF :: CR OF :: nil) 
-                                    (undef_regs (map preg_of destroyed_at_call) rs))) 
-                #Asm.PC <- (rs RA) #RA <- Vundef ->
-        CPU_ID (snd m) = cid ->
-        forall STACK:
-        forall b o, rs ESP = Vptr b o ->
-                    (Ple (Genv.genv_next ge) b /\ Plt b (Mem.nextblock m)),
-        forall SP_NOT_VUNDEF: rs ESP <> Vundef,
-        forall RA_NOT_VUNDEF: rs RA <> Vundef,
-        private_exec ge cid (Asm.State rs m) (Asm.State rs' m')
-
-    | private_step_prim_call:
-        forall b ef rs (m m': mwd LDATAOps) t rs' cid,
-          rs Asm.PC = Vptr b Int.zero ->
-          Genv.find_funct_ptr ge b = Some (External ef) ->
-          primitive_call ef ge rs m t rs' m' ->
-          CPU_ID (snd m) = cid ->
-          private_exec ge cid (Asm.State rs m) (Asm.State rs' m').
+Inductive command_predicate (ge: genv): mstate -> command -> Prop :=
+<@$\cdots$@>
+| command_prim_FAI:
+  <@$\cdots$@>
+  rs Asm.PC = Vptr b Int.zero -> Genv.find_funct_ptr ge b = Some (External ef) ->
+  match ef with  | EF_external eid _ => if peq eid atomic_FAI then True else False
+  <@$\cdots$@>
+  command_predicate ge (Asm.State rs m) (ATOMIC lid atomic_FAI)
+<@$\cdots$@>
 \end{lstlisting}
-\end{figure}
+which shows the case when the current function pointer is pointing out the \lstinline$atomic_FAI$
+In the rule, \lstinline$(ge :genv)$ stands for the global environment that contains the 
+global information such as the function names, global variables of the whole programs.
+\jieung{Need additional explanation}
 
-\begin{figure}
+Similarly, all abstract hardware semantics in  Figure~\ref{fig:chapter:conlinkg:abstract-hardware-configuration-and-semantics}.
+are defined 
+by slightly modifying the step relation in $\compcertx$ 
+and by the case analysis for the primitive identifiers. 
+For instance, the evaluation relation for get shared is
 \begin{lstlisting}[language=Caml]
-    // shared executions - get and set    
-    Inductive get_shared_sem (ge: genv) : mstate -> list Integers.Byte.int -> mstate -> Prop:=
-    | get_shared_intro: 
-        forall rs sig m a index ofs id l b size ml0 z,
-          Genv.find_symbol ge id = Some b
-          -> id2size (Int.unsigned index) = Some (size, id)
-          -> Mem.loadbytes m b 0 size = Some (ByteList l)
-          -> sig = mksignature (AST.Tint::AST.Tint::nil) None cc_default
-          -> extcall_arguments rs m sig (Vint index :: Vint ofs ::nil) ->
-          forall (Hindex: index2Z (Int.unsigned index) (Int.unsigned ofs) = Some z)
-            (Hlog: ZMap.get z (multi_log a) = MultiDef ml0),
-            let rs' := (undef_regs (CR ZF :: CR CF :: CR PF :: CR SF :: CR OF
-                                       :: IR EAX :: RA :: nil)
-                                   (undef_regs (List.map preg_of destroyed_at_call) rs)) in
-            let a' := a {multi_log: ZMap.set z (MultiDef (TEVENT (CPU_ID a) (TSHARED (OMEME l)) :: ml0))
-                                             (multi_log a)} in
-            get_shared_sem ge (Asm.State (mem:= mwd LDATAOps) rs (m, a)) l 
-                           (Asm.State (rs'#RA <- Vundef#Asm.PC <- (rs RA)) (m, a')).
+ Inductive get_shared_sem (ge: genv) 
+   : mstate -> list Integers.Byte.int -> mstate -> Prop:=
+   | get_shared_intro: 
+    <@$\cdots$@>
+    Genv.find_symbol ge id = Some b -> id2size (Int.unsigned index) = Some (size, id)
+    -> Mem.loadbytes m b 0 size = Some (ByteList l)
+    <@$\cdots$@>
+     let a' := a {multi_log: ZMap.set z (MultiDef (TEVENT (CPU_ID a)
+       (TSHARED (OMEME l)) :: ml0)) (multi_log a)} in
+    get_shared_sem ge (Asm.State (mem:= mwd LDATAOps) rs (m, a)) l 
+       (Asm.State (rs'#RA <- Vundef#Asm.PC <- (rs RA)) (m, a')).
 \end{lstlisting}
-\end{figure}
-
-\begin{figure}
+%\begin{lstlisting}[language=Caml]
+%    Inductive get_shared_sem (ge: genv) : 
+%        mstate -> list Integers.Byte.int -> mstate -> Prop:=
+%    | get_shared_intro: 
+%        forall rs sig m a index ofs id l b size ml0 z,
+%          Genv.find_symbol ge id = Some b
+%          -> id2size (Int.unsigned index) = Some (size, id)
+%          -> Mem.loadbytes m b 0 size = Some (ByteList l)
+%          -> sig = mksignature (AST.Tint::AST.Tint::nil) None cc_default
+%          -> extcall_arguments rs m sig (Vint index :: Vint ofs ::nil) ->
+%          forall (Hindex: index2Z (Int.unsigned index) (Int.unsigned ofs) = Some z)
+%            (Hlog: ZMap.get z (multi_log a) = MultiDef ml0),
+%            let rs' := (undef_regs (CR ZF :: CR CF :: CR PF :: CR SF :: CR OF
+%                                       :: IR EAX :: RA :: nil)
+%                                   (undef_regs (List.map preg_of destroyed_at_call) rs)) in
+%            let a' := a {multi_log: ZMap.set z (MultiDef (TEVENT (CPU_ID a) (TSHARED (OMEME l)) :: ml0))
+%                                             (multi_log a)} in
+%            get_shared_sem ge (Asm.State (mem:= mwd LDATAOps) rs (m, a)) l 
+%                           (Asm.State (rs'#RA <- Vundef#Asm.PC <- (rs RA)) (m, a')).
+%\end{lstlisting}
+which will only update the PC for the private state,
+and update the global log in the abstract data.
+Similarly, the atomic execution rule is defined as follows:
 \begin{lstlisting}[language=Caml]
-    Inductive set_shared_sem (ge: genv) : mstate -> option (list Integers.Byte.int) -> mstate -> Prop:=
-    | set_shared_sem_intro: 
-        forall rs sig m m' a index ofs id l b size ml0 z,
-          Genv.find_symbol ge id = Some b
-          -> id2size (Int.unsigned index) = Some (size, id)
-          -> match l with
-               | Some l' => Mem.storebytes m b 0 (ByteList l') = Some m'
-               | _ => m' = m
-             end
-          -> sig = mksignature (AST.Tint::AST.Tint::nil) None cc_default
-          -> extcall_arguments rs m sig (Vint index :: Vint ofs :: nil) ->
-          forall (Hindex: index2Z (Int.unsigned index) (Int.unsigned ofs) = Some z)
-                 (Hlog: ZMap.get z (multi_log a) = MultiDef ml0),
-            let rs' := (undef_regs (CR ZF :: CR CF :: CR PF :: CR SF :: CR OF
-                                       :: IR EAX :: RA :: nil)
-                                   (undef_regs (List.map preg_of destroyed_at_call) rs)) in
-            let a' := a {multi_log: ZMap.set z (MultiDef (TEVENT (CPU_ID a) (TSHARED OPULL) :: ml0))
-                                             (multi_log a)} in
-            set_shared_sem ge (Asm.State (mem:= mwd LDATAOps) rs (m, a)) l 
-                           (Asm.State (rs'#RA <- Vundef#Asm.PC <- (rs RA)) (m', a')).
+Inductive atomic_exec (ge: genv):
+  Z -> Z -> mstate -> Log -> mstate -> OtherEvent -> Prop :=
+  | atomic_step_external:
+  <@$\cdots$@>
+  atomic_exec ge cid id (Asm.State rs m) sl (Asm.State rs' m') e
+  <@$\cdots$@>
 \end{lstlisting}
-\end{figure}
 
-\begin{figure}
-\begin{lstlisting}[language=Caml]
-    // atomic executions 
-    Inductive atomic_exec (ge: genv): Z -> Z -> mstate -> Log -> mstate -> OtherEvent -> Prop :=
-    | atomic_step_external:
-        forall b ef args res rs (m m': mwd LDATAOps) t rs' cid e id sl,
-        rs Asm.PC = Vptr b Int.zero ->
-        Genv.find_funct_ptr ge b = Some (External ef) ->
-        extcall_arguments rs m (ef_sig ef) args ->
-        external_call' (fun _ => True) ef ge args m t res m' ->
-        rs' = (set_regs (loc_external_result (ef_sig ef)) res (undef_regs (CR ZF :: CR CF :: CR PF :: CR SF :: CR OF :: nil) (undef_regs (map preg_of destroyed_at_call) rs))) #Asm.PC <- (rs RA) #RA <- Vundef ->
-        get_last_event (ZMap.get id (multi_log (snd m'))) = Some e ->
-        forall STACK:
-        forall b o, rs ESP = Vptr b o ->
-                    (Ple (Genv.genv_next ge) b /\ Plt b (Mem.nextblock m)),
-        forall SP_NOT_VUNDEF: rs ESP <> Vundef,
-        forall RA_NOT_VUNDEF: rs RA <> Vundef,
-          atomic_exec ge cid id (Asm.State rs m) sl (Asm.State rs' m') e
-
-    | atomic_step_prim_call:
-        forall b ef rs (m m': mwd LDATAOps) t rs' cid  e id sl,
-          rs Asm.PC = Vptr b Int.zero ->
-          Genv.find_funct_ptr ge b = Some (External ef) ->
-          primitive_call ef ge rs m t rs' m' ->
-          get_last_event (ZMap.get id (multi_log (snd m'))) = Some e ->
-          atomic_exec ge cid id (Asm.State rs m) sl (Asm.State rs' m') e.
-\end{lstlisting}
-\end{figure}
-
+The last piece of the hardware configuration then can be instantiated as in Figure~\ref{fig:chapter:certikos:hardware-local-step-transition-rules},
+which contains all concrete definitions for the rules of ``abstract hardware semantics'' in  Figure~\ref{fig:chapter:conlinkg:abstract-hardware-configuration-and-semantics}.
+We collect all those things in the \lstinline$HardSemantics$ class that is parameterized by the hardware setting that we defined above. 
 \begin{figure}
 \begin{lstlisting}[language=Caml]
       
@@ -366,29 +731,49 @@ Function get_last_event (l: MultiLogType) :=
             atomic_step := atomic_exec ge
           }.
 \end{lstlisting}
+\caption{Instance for the Hardware Local Transition Rules.}
+\label{fig:chapter:certikos:hardware-local-step-transition-rules}
 \end{figure}
+We also need the proofs for the property of hardware semantics, which is defined in Figure~\ref{fig:chapter:conlink:properties-of-abstract-hardware-semantics-for-multicore-linking}. 
+Most of them are straightforward, because our instances are using the definitions in $\compcertx$,
+which already contains the deterministic properties. 
 
+Note that we are using the assembly model in $\compcertx$ for $\intelmachine$, which implies that 
+our instance for this hardware configuration is 
+for the $\intelmachine$ multicore machine,
+that has a subset of its instructions (but sufficiently rich for building operating systems) with a small TCB, 
+and follows the sequentially consistent evaluation order for the memory consistency. 
 
-\clearpage
+It, however, does not need to be specified by $\intelmachine$. 
+All  those hardware configurations can be instantiated with other definitions, such as ARM assembly machine for $\compcertx$, 
+or even other machine model that is not entirely related to $\compcertx$ if users can prove the desired property of it. 
+
 \subsection{Intermediate Machine Instantiation}
 \label{chapter:certikos:subsec:intermediate-machine-instantiation}
 
 Our intermediate machine models are abstract languages, but 
-our goal is connecting them with backward simulation proofs in $\compcert$. 
+our goal is connecting them with backward simulation proofs in $\compcert$~\jieung{need to cite back-end paper}
 For that purpose, 
 we need to instantiate those abstract languages to make them fit into 
 the semantics definition in $\compcert$.
+They are related to
+providing instances 
+for the abstract definitions that intermediate languages relies on. 
+We provide those instances in this section. 
 
+\subsubsection{Multicore Machine Model}
 
 \begin{lstlisting}[language=Caml]
     Variables (ge: genv) (sten: stencil) (M: module).
-    Context {Hmakege: make_globalenv (module_ops:= LAsm.module_ops) (mkp_ops:= make_program_ops) 
-                                     sten M (mboot <@$\oplus$@> L64) = ret ge}.
+    Context {Hmakege: make_globalenv (module_ops:= LAsm.module_ops)
+                  (mkp_ops:= make_program_ops) 
+                  sten M (mboot <@$\oplus$@> L64) = ret ge}.        
     
     Local Obligation Tactic := intros.
     
-    Definition hdsem_instance := @hdsem mem memory_model_ops Hmem Hmwd real_params_ops oracle_ops0
-                                        oracle_ops big_ops builtin_idents_norepet_prf ge sten M Hmakege.
+    Definition hdsem_instance := @hdsem mem memory_model_ops Hmem 
+      Hmwd real_params_ops oracle_ops0 oracle_ops big_ops 
+      builtin_idents_norepet_prf ge sten M Hmakege.
     
     // now, define a concrete semantics for single core machine
     Definition hw_step_aux :=
@@ -409,7 +794,8 @@ the semantics definition in $\compcert$.
               (Pregmap.init Vundef)
                 # Asm.PC <- (symbol_offset ge p.(prog_main) Int.zero)
                 # ESP <- Vzero in
-          hwstep_initial_state p (HState current_CPU_ID (pinit (B := core_set) (Asm.State rs0 m0)) nil).
+          hwstep_initial_state p (HState current_CPU_ID (pinit (B := core_set)
+            (Asm.State rs0 m0)) nil).
 
     Definition hwstep_final_state (s : hstate (hdset := hdseting)) (i : int) : Prop :=
       False.
@@ -421,6 +807,7 @@ the semantics definition in $\compcert$.
     
 \end{lstlisting}
 
+\subsubsection{Multicore Machine Model with Hardware Oracle}
 
 \begin{lstlisting}[language=Caml]
    
