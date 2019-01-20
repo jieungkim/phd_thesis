@@ -1,6 +1,8 @@
 \section{Leader-Based Distributed Systems}
 \label{chapter:witnesspassing:sec:leader-based-distributed-systems}
 
+\jieung{\sysname{} - let's change the name later}
+
 We define a leader-based distributed system as a system with a set of nodes
 $\fullset$ that are connected over the network and host a distributed shared state/object
 $\dobj$. At each monotonically increasing term $\termnum$, at most one leader
@@ -10,17 +12,13 @@ or the system should include a conflict resolution scheme to only apply
 state changes by at most one $L$ at $\termnum$.
 
 The constraints of state updates, which are specified in $\protocolfunction$ in \sysname{},
-are that
-update operations can fail during execution, but the effect on $\dobj$ should be
-atomic. For example, a $\multipaxos$ system can reach a
-state where a $\paxos$ instance did not reach a consensus, but contains an
+are that update operations can fail during execution, but the effect on $\dobj$ should be atomic. For example, a $\multipaxos$ system can reach a
+state where a $\paxos$ instance did not reach a consensus but contains an
 incomplete state change proposal from $\gstate$ to $\gstate^\prime$.
-Then $\protocolfunction$ should make sure that this
-incomplete state is either safely abandoned (in favor of retaining state $\gstate$)
+Then $\protocolfunction$ should make sure that this incomplete state is either safely abandoned (in favor of retaining state $\gstate$)
 or completed (in favor of adopting $\gstate^\prime$ in its entirety)
-before executing any subsequent
-operations. Any leader-based systems that cannot be modeled in this way cannot
-be hosted by \sysname{}.
+before executing any subsequent operations. 
+\sysname{} only focus on the leader-based systems that can be modeled by this approach.
 We further formally model the elements of a leader-based distributed system.
 
 \section{MultiPaxos}
@@ -53,7 +51,7 @@ leader (dedicated proposer), which can propose new state changes to multiple $\p
 instances for as long as no other proposer attempts to prepare to write. However, the
 original $\paxos$ paper~\cite{paxos, paxosmadesimple} mostly focuses on the operation
 of a single $\paxos$ instance
-and developers are left to choose their own implementation of $\multipaxos$.
+and developers are left to choose their implementation of $\multipaxos$.
 
 Our $\multipaxos$ example employs the scheme that is described as below:
 \begin{itemize}[leftmargin=*]
@@ -81,13 +79,13 @@ One of the challenges of distributed system verification is that it requires rea
 global invariants, \ie, properties that hold for the entire distributed state rather than just
 one node's local state.
 There is often not a straightforward relation between the local and global invariants, so
-to reason globally one must trace the network history back in time and consider multiple
+to reason globally, one must trace the network history back in time and consider multiple
 nodes' states at once.
-This is further complicated if one assumes a network that can have failures such as duplicated
+It is further complicated if one assumes a network that can have failures such as duplicated
 or lost messages.
 In \sysname{} we attempt to reduce the amount of global reasoning by logically gathering sufficient
 information in the local state to prove the desired properties.
-We call this gathered information a \textit{witness}, and while we provide a formal treatment, it is helpful to first see a simple example.
+We call this gathered information a \textit{witness}, and while we provide a formal treatment, it is helpful first to see a simple example.
 
 \begin{figure}
 \begin{minipage}{\linewidth}
@@ -102,7 +100,8 @@ We call this gathered information a \textit{witness}, and while we provide a for
 \end{figure}
 
 Figure~\ref{fig:chapter:witnesspassing:paxos-witness} contains pseudo-code for single-decree $\paxos$,
-which has the same property with the pseudo-code in Figure~\ref{fig:chapter:multipaxos:paxos-pseudocode}.
+which has the same routine with the pseudo-code in Figure~\ref{fig:chapter:multipaxos:paxos-pseudocode},
+but with the witness, the evidence of distributed object manipulations.
 The parts in bold are the necessary additions to augment $\paxos$ with witnesses.
 These additions are purely logical in that they do not show up in the actual implementation.
 It is clear also that the overall behavior of the protocol does not depend on the witnesses;
@@ -136,7 +135,7 @@ Therefore, for any acceptor in phase 2b, the value in the witness is always safe
 it matches the value in the message from the proposer, immutability is preserved.
 \end{proof}
 
-\jieung{Re-draw the following table!!!}
+\jieung{Check the correctness of these tables!!}
 
 \begin{figure}
 \begin{center}

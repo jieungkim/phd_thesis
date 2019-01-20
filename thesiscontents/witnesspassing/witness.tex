@@ -48,7 +48,6 @@ history of the distributed system state changes that are meaningful to the
 latest state. A witness grows by being passed between nodes through the network.
 Information in a witness is never replaced or deleted, but a witness can
 be discarded if the operation it is associated with fails.
-
 While \sysname{}'s template functions mainly use witnesses to verify
 linearizability of state changes and the leader election by composing the 
 witnesses for commit operations and leaders, the underlying systems can
@@ -88,7 +87,7 @@ two-phase commit as described in Figure~\ref{fig:chapter:witnesspassing:process-
 a membership service for leader election, but relies on resource managers to
 commit data.
 
-$\isquorums_{ldr}$ and $\isquorums_{op}$, which determine whether the leader 
+Two quorum functions ($\isquorums_{ldr}$ and $\isquorums_{op}$), which determine whether the leader 
 election and operation are successful, generalize how leader-based distributed 
 systems make atomic state transitions. We make the assumption that the underlying
 protocol allows only one quorum that allows the state change for an operation 
@@ -142,7 +141,7 @@ find\_vtr_{ldr} : \termnum \rightarrow \networklog \rightarrow \networklog \righ
  \ \ \ \ \mbox{\textbf{let}}\ ca := (find\_ca_{ldr} \ rn \ l_{pre} \ l_{rcv})\  \mbox{\textbf{in}} \\ 
  \ \ \ \ \mbox{\textbf{let}}\ vtr := (find\_vtr_{ldr} \ rn \ l_{pre} \ l_{rcv})\  \mbox{\textbf{in}} \\ 
 \ \ \ \ \mbox{\textbf{if}} \ f_{q} \ ca \ vtr \ \mbox{\textbf{then}}  \\
-\ \ \ \ \ \ \mbox{\textbf{let}}\ l := l_{rcv}~\verb!++!~l_{pre} \ \mbox{\textbf{in}} \\
+\ \ \ \ \ \ \mbox{\textbf{let}}\ l := l_{rcv}~\doubleplus~l_{pre} \ \mbox{\textbf{in}} \\
 \ \ \ \ \ \ \mbox{\textbf{let}}\ w_l' := w_l/\langle w_l[rn]  := ((\replay(l)[nid]),f, vtr, ca, f_{q}) ::w_l[rn])  \rangle \ \mbox{\textbf{in}}\\
 \ \ \ \ \ \  \mbox{\textbf{let}}\ w_o' := \conwcons\  nid\ rn\ w_l\ w_o \ l_{pre} \ l_{rcv} \ f_o \ \mbox{\textbf{in}}\  (w_l', w_o')\\
 %\ \ \ \ \ \ \ \ \ \ \mbox{\textbf{match}} \ w_l[rn] \ \mbox{\textbf{with}} \\
@@ -156,7 +155,7 @@ find\_vtr_{ldr} : \termnum \rightarrow \networklog \rightarrow \networklog \righ
 \ \ \ \ \mbox{\textbf{let}}\ ca := (find\_ca_{op} \ rn \ l_{pre} \ l_{rcv})\  \mbox{\textbf{in}} \\ 
 \ \ \ \ \mbox{\textbf{let}}\ vtr := (find\_vtr_{op} \ rn \ l_{pre} \ l_{rcv})\  \mbox{\textbf{in}} \\ 
 \ \ \ \ \mbox{\textbf{if}} \ f_{q} \ ca \ vtr \ \mbox{\textbf{then}}  \\
-\ \ \ \ \ \  w/\langle w[rn] := ((\replay(l_{rcv}~\verb!++!~l_{pre})[nid]),f, vtr, ca, f_{q}) ::w[rn])  \rangle\\
+\ \ \ \ \ \  w/\langle w[rn] := ((\replay(l_{rcv}~\doubleplus~l_{pre})[nid]),f, vtr, ca, f_{q}) ::w[rn])  \rangle\\
 \ \ \ \ \mbox{\textbf{else}}  \ w. \\
 \end{array}
 $$
@@ -190,11 +189,10 @@ the set of nodes can be different, whereas multi-Paxos and Raft use an identical
 set for both purposes.}.
 $\conwcons$ copies the witnesses from the previous term into the current one.
 
-%Up to this point it only
+Up to this point it only
 touches the witness regarding leader election and then as a leader it probes the 
 it extracts the witness, which represents the current state of the system, from 
 the approvers.
-
 The witness building in the leader election does not need to know 
 all details about the distributed object manipulation.
 When the leader has been elected, however, it first needs to build the proper leader witness and 
@@ -205,7 +203,7 @@ also needs to copy the previous witness mapped with the old term number $rn'$ to
  via leader election when the leader election and the commit operation function guarantees a 
  certain property described in the Section~\ref{chapter:witnesspassing:sec:prove-safety-with-witness}. 
 
-$\opwcons$ is the analogous function for $\opfunction$.
+The witness update function, $\opwcons$, is the analogous function for $\opfunction$.
 The leader starts from a witness with the complete history of the system state
 that was collected using $\conwcons$ during leader election.
 Upon a successful call to $\opfunction$, the leader creates a new witness by
@@ -218,7 +216,6 @@ cause certain nodes to fall behind with updating their witnesses.
 However, as long as the system operates without violating the failure 
 assumptions, the system state eventually becomes consistent and reasoning 
 about the protocol is not affected by outdated nodes.
-
 Witnesses impose multiple invariants in them.
 For example, all elements inside both leader election and commit operation witnesses 
 always contain the valid voters and candidates that satisfy the quorum as follows:

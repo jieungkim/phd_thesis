@@ -3,14 +3,12 @@ a different kind of concurrent programs with multicore/multithreaded concurrent 
 It shows 
 that $/ccalname$ can be applied not only to the concurrency by local machines
 but also to the concurrency in the cluster of multiple machines in distributed protocols. 
-By using the approach, we also verified  the safety property of $\WOR$, immutability. 
-However, verifying a single distributed protocol is insufficient to build large-scaled distributed applications 
-because they are commonly built on top of multiple distributed systems.
+By using the approach, we also verified the safety property of $\WOR$, immutability. 
+However, verifying a single distributed protocol is insufficient to build large-scale distributed applications because they use multiple distributed systems as their bases.
 
-To verify the correctness of the application, underlying
-systems should be verified, but even verifying a single distributed system is
+Proving the correctness of the applicaiton requires the verification of the underlying system, but even verifying a single distributed system is
 still very challenging. In this paper, we focus on one of the most commonly
-used families of distributed systems, the leader based distributed system, and study the common properties to build a verification framework.
+used families of distributed systems, the leader based distributed system, and study the standard properties to build a verification framework.
 We build a generic specification to model leader-based distributed systems, and based on
 the specification we create a proof template that can verify the common
 desirable properties of the leader based system: linearizability and soundness of
@@ -18,7 +16,7 @@ the leader election.
 Our framework uses a novel logical data structure called witness which keeps track of the history of state changes in distributed nodes.
 The witness can be used to reason about different distributed functions and can
 be composed to verify the properties of the entire distributed system. We provide
-multi-Paxos as the main example and compare it with
+multi-Paxos as the primary example and compare it with
 how Raft, two-phase commit, and other protocols are modeled and verified under
 our framework. 
 We demonstrate that once systems are specified to satisfy the proof template's requirement, the witness data structure delivers necessary
@@ -26,5 +24,7 @@ information to the proof template and common properties to leader-based systems 
 
 
 
-\jieung{I first copied and pasted and slightly revised our PLDI submisison. 
-But, I will update this part continuously}
+
+
+
+\jieung{In this chapter, I copied and pasted and slightly revised our PLDI submisison.  But, I will update this part continuously}

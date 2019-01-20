@@ -1,8 +1,7 @@
 \section{WormSpace Verification}
 \label{sec:formal_verification}
 
-%\jieung{I do not need to expose all the details (including specifications for send and receive functions / log replay functions, and so on. 
-%But, if I have enough time to do that, I'll add more details in here}
+\jieung{I do not need to expose all the details (including specifications for send and receive functions / log replay functions, and so on.  But, if I have enough time to do that, I'll add more details in here}
 
 $\wormspace$ acts as a foundation for verifying distributed systems. 
 We verify $\wormspace$ once and reuse its proof for verifying three applications (\ie, WormPaxos, WormLog, and WormTX)
@@ -221,7 +220,7 @@ applications are guaranteed to be correct with respect to all layers of $\wormsp
  Similarly, Theorem~\ref{theorem:chapter:multipaxos:wormspace} can be reused to verify any systems to guarantee $\WOR$ semantics, 
 if we use $\wormspace$ as a building block. 
 	
-%\jieung{Do we need to mention about linking with CertiKOS in here?}	
+\jieung{Do we need to mention about linking with CertiKOS in here? - If I have a spare time?}	
 	
 The extensibility of $\wormspace$ verification to applications is difficult for other verified systems~\cite{ironfleet, hyperkernel} to achieve. 
 Especially, it is unnatural and difficult to support contextual refinement, 
@@ -233,6 +232,5 @@ requires other treatments.
 It, however, depends on multiple $\WOR$s as well as the communication between the clients that use the $\wormspace$ interface. 
 We illustrate our new and robust methodology for this purpose in the next Chapter.
 
-%\jieung{adding the full layer diagram?}
-
-%\jieung{Don't we need to add evaluations. My thesis is not focusing on evaluations or performances at all}
+\jieung{adding the full layer diagram and explanations about it?}
+\jieung{Don't we need to add evaluation? I do not want to include them because my thesis is not focusing on evaluations or performances at all}

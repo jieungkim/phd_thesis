@@ -1,10 +1,14 @@
 \section{Examples}
 \label{chapter:witnesspassing:sec:examples}
 
+\jieung{We hope to add more details later.}
+
 We demonstrate the flexibility of \sysname{} by applying it to other leader-based distributed systems, Raft~\cite{raft}, two-phase commit~\cite{distsys}, and Lamport's distributed
 lock~\cite{lamportclock}.
 
-\subsubsection{Raft with Witness}
+\subsection{Raft with Witness}
+\label{chapter:witnesspassing:subsec:raft-with-witness}
+
 Raft implements state machine replication similar to our multi-Paxos example and
 has few commonalities. They use the same leader election scheme that elects
 the leader based on the majority vote at each term and commits a new entry based on
@@ -44,7 +48,9 @@ information as our typical witness structure. This information can be given to
 the template for the linearizability proof. 
 
 
-\subsubsection{Two-phase commit with a membership service}
+\subsection{Two-phase Commit with a Membership Service}
+\label{chapter:witnesspassing:subsec:two-phase-commit-with-a-membership-service}
+
 Two-phase commit protocol itself typically does not include a membership
 change scheme and we assume that there is a membership service which can makes one of the
 node in the system to become the new transaction manager in case a transaction 
@@ -61,7 +67,8 @@ touches.  Two-phase commit requires unanimous commit vote to commit a transactio
 logic in the requester side is simply making sure all requests are approved by
 the resource nodes. 
 
-\subsubsection{Lamport Lock with Witness}
+\subsection{Lamport Lock with Witness}
+\label{chapter:witnesspassing:subsec:lamport-lock-with-witness}
 
 Lamport's lock can be thought of as a leader-based system where the owner of
 the lock is the leader.
