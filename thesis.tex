@@ -1,6 +1,4 @@
 \documentclass[letterpaper,11pt]{yalephd}
-% remove draft option for final printing.
-% font size must be between 10pt-12pt.
 
 \usepackage{geometry} % you need this for yalephd.cls to work.
 \usepackage{dcolumn}
@@ -63,7 +61,6 @@
 \input{abstract}
 \end{abstract}
 
-
 \maketitle
 \makecopyright{2019} % change as needed.
 
@@ -76,17 +73,15 @@
 % Starts proper arabic numbering of pages and chapters.
 \mainmatter
 
-
 %%%%%%%%%%%
 % INTRO
 %%%%%%%%%%%
 \chapter{Introduction}
 \label{chapter:introduction}
 \input{introduction}
- 
- 
+
 %%%%%%%%%%%
-% CCAL - NEED Proof reading
+% CCAL
 %%%%%%%%%%%
 \chapter{Building Abstraction Layers}
 \label{chapter:ccal}
@@ -97,7 +92,7 @@
 \input{thesiscontents/ccal/interface-calculus}
 
 %%%%%%%%%%%
-% MCS LOCK - DONE?
+% MCS LOCK
 %%%%%%%%%%%
 \chapter{Case Study: MCS Lock}
 \label{chapter:mcs-lock}
@@ -109,7 +104,7 @@
 \input{thesiscontents/mcslock/evaluation}
 
 %%%%%%%%%%%
-% CON LINK --- NEED TO WORK ON 
+% CON LINK
 %%%%%%%%%%%
 \chapter{Multicore and Multithreaded Linking}
 \label{chapter:linking}
@@ -120,7 +115,7 @@
 \input{thesiscontents/conlink/evaluation}
 
 %%%%%%%%%%%
-% CERTIKOS - Fill out Intro / Per CPU modules, Per Thread modules and top level theorem / and then work on lining parts with Chapter CON LINK
+% CERTIKOS
 %%%%%%%%%%%
 \chapter{Case Study: Concurrent CertiKOS}
 \label{chapter:certikos}
@@ -133,9 +128,8 @@
 \input{thesiscontents/certikos/perthreadmodules}
 \input{thesiscontents/certikos/topleveltheorem}
 
-
 %%%%%%%%%%%
-% MULTIPAXOS - 
+% MULTIPAXOS
 %%%%%%%%%%%
 \chapter{Case Study: Write-Once Registers}
 \label{chapter:wormspace}
@@ -146,7 +140,7 @@
 \input{thesiscontents/multipaxos/verification-overview}
 
 %%%%%%%%%%%
-% WITNESS PASSING - FILL OUT INTRO AND BACKGROUND first / work on the remaining parts later. 
+% WITNESS PASSING
 %%%%%%%%%%%
 \chapter{Verification Toolkit for Leader-based Distributed Systems }
 \label{chapter:witness-passing}
@@ -174,7 +168,6 @@
 \chapter{Limitations, Future Work, and Conclusions}
 \label{chapter:conclusion}
 \input{conclusion}
-
 
 \backmatter
 
