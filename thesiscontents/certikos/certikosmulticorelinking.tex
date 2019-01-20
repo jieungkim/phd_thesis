@@ -31,7 +31,7 @@ Our bottom (TCB) layer, the parameter of the machine model for $\compcertx$
 provides the primitive (which gives the extra transition rules for the state of $\compcertx$) . 
 %
 %\begin{figure}
-%\begin{lstlisting}[language=Caml]
+%\begin{lstlisting}[language=C]
 %Inductive val: Type :=
 %  | Vundef: val
 %  | Vint: int -> val
@@ -63,7 +63,7 @@ we also include our global log in the abstract data (as we have seen in Chapter~
 \jieung{Need to add more descriptions about our state definition}
 
 \begin{figure}
-\begin{lstlisting}[language=Caml]
+\begin{lstlisting}[language=C]
 Definition mboot_passthrough : compatlayer (cdata RData) :=
   <@$\cdots$@>
   <@$\oplus$@> get_CPU_ID <@$\mapsto$@> gensem get_CPU_ID_spec
@@ -76,7 +76,7 @@ Definition mboot_passthrough : compatlayer (cdata RData) :=
 \end{figure}
 
 \begin{figure}
-\begin{lstlisting}[language=Caml]
+\begin{lstlisting}[language=C]
 Record RData :=
   mkRData {
      // current CPU_ID
@@ -152,7 +152,7 @@ Atomic events are defined above,
 which is mapped with the atomic operation that the bottom layer of our interface provide.
 For example, \lstinline$OINC_TICKET (n: nat)$ corresponds to the fetch and increase primitive,
 and it instantiates the definition $\mcevent$ in Figure~\ref{chapter:certikos:subsec:hardware-configuration-instance}.
-\begin{lstlisting}[language=Caml]
+\begin{lstlisting}[language=C]
   Inductive OtherEvent :=
   (* Events used for the ticket-lock primitives: *)
   | OINC_TICKET (n: nat)
@@ -160,7 +160,7 @@ and it instantiates the definition $\mcevent$ in Figure~\ref{chapter:certikos:su
 \end{lstlisting}
 In addition, \lstinline$OtherEvent_2_ident$ is an instance for $\atomiceventidentkwd$ function, which is the function
 that gets the event and returns the corresponding identifier (the primitive identifier) that is related to the event.
-\begin{lstlisting}[language=Caml]
+\begin{lstlisting}[language=C]
   Function OtherEvent_2_ident (e: OtherEvent) :=
     match e with
       | OINC_TICKET _ => atomic_FAI
@@ -175,7 +175,7 @@ we designated 8 for the scheduler ID.
 Those configurations are all included in the 
 \lstinline$hdsetting$ class, and the instance of the type class
 is as follows:
-\begin{lstlisting}[language=Caml]
+\begin{lstlisting}[language=C]
 Global Instance hdseting: HardWaredSetting := {
   private_state := mstate;
   shared_piece := list Integers.Byte.int;
@@ -189,7 +189,7 @@ the proper atomic operations, number of CPUs (allows 8 CPUs),
 as well as the state definition. 
 
 
-%\begin{lstlisting}[language=Caml]
+%\begin{lstlisting}[language=C]
 %  Inductive step (ge: genv): state -> trace -> state -> Prop :=
 %    | exec_step_internal:
 %        forall b ofs f i rs m rs' m',
@@ -308,7 +308,7 @@ as well as the state definition.
 %\end{lstlisting}
 %
 %\begin{figure}
-%\begin{lstlisting}[language=Caml]
+%\begin{lstlisting}[language=C]
 %Function get_last_event (l: MultiLogType) :=
 %  match l with
 %  | MultiUndef => None
@@ -337,7 +337,7 @@ as well as the state definition.
 
 %\begin{figure}
 %
-%\begin{lstlisting}[language=Caml]
+%\begin{lstlisting}[language=C]
 %  Local Open Scope Z_scope.
 %
 %  Definition genv := Genv.t fundef unit.
@@ -377,7 +377,7 @@ as well as the state definition.
 %\end{figure}
 
 %\begin{figure}
-%\begin{lstlisting}[language=Caml]
+%\begin{lstlisting}[language=C]
 %  | command_prim_atomic:
 %      forall b ef rs m lid index ofs sig eid,
 %        rs Asm.PC = Vptr b Int.zero ->
@@ -414,7 +414,7 @@ as well as the state definition.
 %
 %\begin{figure}
 
-%\begin{lstlisting}[language=Caml]
+%\begin{lstlisting}[language=C]
 %  | command_prim_FAI:
 %      forall b ef rs m lid index ofs sig bound,
 %        rs Asm.PC = Vptr b Int.zero ->
@@ -451,7 +451,7 @@ as well as the state definition.
 
 %
 %\begin{figure}
-%\begin{lstlisting}[language=Caml]
+%\begin{lstlisting}[language=C]
 %  Global Instance hdseting: HardWaredSetting :=
 %    {
 %      private_state := mstate;
@@ -474,7 +474,7 @@ as well as the state definition.
 %
 %\begin{figure}
 %
-%\begin{lstlisting}[language=Caml]
+%\begin{lstlisting}[language=C]
 %  // private execution - similar to Asm
 %  Inductive private_exec (ge: genv): Z -> mstate -> mstate -> Prop :=
 %    | private_step_internal:
@@ -513,7 +513,7 @@ as well as the state definition.
 %
 %\begin{figure}
 %
-%\begin{lstlisting}[language=Caml]
+%\begin{lstlisting}[language=C]
 %  | private_step_annot:
 %      forall b ofs f ef args rs (m m': mwd LDATAOps) vargs t v cid,
 %      rs Asm.PC = Vptr b ofs ->
@@ -558,7 +558,7 @@ as well as the state definition.
 %\end{figure}
 %
 %\begin{figure}
-%\begin{lstlisting}[language=Caml]
+%\begin{lstlisting}[language=C]
 %    // shared executions - get and set    
 %    Inductive get_shared_sem (ge: genv) : mstate -> list Integers.Byte.int -> mstate -> Prop:=
 %    | get_shared_intro: 
@@ -581,7 +581,7 @@ as well as the state definition.
 %\end{figure}
 %
 %\begin{figure}
-%\begin{lstlisting}[language=Caml]
+%\begin{lstlisting}[language=C]
 %    Inductive set_shared_sem (ge: genv) : mstate -> option (list Integers.Byte.int) -> mstate -> Prop:=
 %    | set_shared_sem_intro: 
 %        forall rs sig m m' a index ofs id l b size ml0 z,
@@ -606,7 +606,7 @@ as well as the state definition.
 %\end{figure}
 
 %\begin{figure}
-%\begin{lstlisting}[language=Caml]
+%\begin{lstlisting}[language=C]
 %    // atomic executions 
 %    Inductive atomic_exec (ge: genv): Z -> Z -> mstate -> Log -> mstate -> OtherEvent -> Prop :=
 %    | atomic_step_external:
@@ -643,7 +643,7 @@ and the $\compcertx$ definition.
 
 For example, the program counter command
 for fetch-and-increase function call is
-\begin{lstlisting}[language=Caml]
+\begin{lstlisting}[language=C]
 Inductive command_predicate (ge: genv): mstate -> command -> Prop :=
 <@$\cdots$@>
 | command_prim_FAI:
@@ -664,7 +664,7 @@ are defined
 by slightly modifying the step relation in $\compcertx$ 
 and by the case analysis for the primitive identifiers. 
 For instance, the evaluation relation for get shared is
-\begin{lstlisting}[language=Caml]
+\begin{lstlisting}[language=C]
  Inductive get_shared_sem (ge: genv) 
    : mstate -> list Integers.Byte.int -> mstate -> Prop:=
    | get_shared_intro: 
@@ -677,7 +677,7 @@ For instance, the evaluation relation for get shared is
     get_shared_sem ge (Asm.State (mem:= mwd LDATAOps) rs (m, a)) l 
        (Asm.State (rs'#RA <- Vundef#Asm.PC <- (rs RA)) (m, a')).
 \end{lstlisting}
-%\begin{lstlisting}[language=Caml]
+%\begin{lstlisting}[language=C]
 %    Inductive get_shared_sem (ge: genv) : 
 %        mstate -> list Integers.Byte.int -> mstate -> Prop:=
 %    | get_shared_intro: 
@@ -700,7 +700,7 @@ For instance, the evaluation relation for get shared is
 which will only update the PC for the private state,
 and update the global log in the abstract data.
 Similarly, the atomic execution rule is defined as follows:
-\begin{lstlisting}[language=Caml]
+\begin{lstlisting}[language=C]
 Inductive atomic_exec (ge: genv):
   Z -> Z -> mstate -> Log -> mstate -> OtherEvent -> Prop :=
   | atomic_step_external:
@@ -713,7 +713,7 @@ The last piece of the hardware configuration then can be instantiated as in Figu
 which contains all concrete definitions for the rules of ``abstract hardware semantics'' in  Figure~\ref{fig:chapter:conlinkg:abstract-hardware-configuration-and-semantics}.
 We collect all those things in the \lstinline$HardSemantics$ class that is parameterized by the hardware setting that we defined above. 
 \begin{figure}
-\begin{lstlisting}[language=Caml]
+\begin{lstlisting}[language=C]
 Variables (ge: genv) (sten: stencil) (M: module).
 Context {Hmakege: make_globalenv (module_ops:= LAsm.module_ops) 
                                  (mkp_ops:= make_program_ops) 
@@ -773,7 +773,7 @@ show those instances.
 \begin{itemize}[leftmargin=*]
 \item Generic context definitions and hardware semantics instance with contexts for all languages we defined.
 \end{itemize}
-\begin{lstlisting}[language=Caml]
+\begin{lstlisting}[language=C]
 Variables (ge: genv) (sten: stencil) (M: module).
 Context {Hmakege: make_globalenv (module_ops:= LAsm.module_ops)
                (mkp_ops:= make_program_ops) 
@@ -791,7 +791,7 @@ Definition hdsem_instance := @hdsem mem memory_model_ops Hmem
 \begin{itemize}[leftmargin=*]
 \item Hardware step transition rule instance
 \end{itemize}
-\begin{lstlisting}[language=Caml]
+\begin{lstlisting}[language=C]
 Definition hw_step_aux :=
   @hardware_step hdseting hdsem_instance pmap current_CPU_ID.
 
@@ -803,7 +803,7 @@ Inductive hw_step_aux_ge : genv -> hstate -> trace -> hstate -> Prop :=
 \begin{itemize}[leftmargin=*]
 \item Hardware step semantics definitions (including initial state and final state definitions)
 \end{itemize}
-\begin{lstlisting}[language=Caml]    
+\begin{lstlisting}[language=C]    
 Inductive hwstep_initial_state (p: AST.program fundef unit): 
   (hstate (hdset := hdseting)) -> Prop := 
   | initial_hwstep_state_intro: 
@@ -828,7 +828,7 @@ Definition hwstep_semantics (p: program) :=
 \begin{itemize}[leftmargin=*]
 \item Properties of hardware step semantics (proofs are omitted)
 \end{itemize}
-\begin{lstlisting}[language=Caml]    
+\begin{lstlisting}[language=C]    
 Lemma hwstep_semantics_single_events: forall p, single_events (hwstep_semantics p).
 Lemma hwstep_semantics_receptive (pl: program):  receptive (hwstep_semantics pl).
 \end{lstlisting}
@@ -841,7 +841,7 @@ we have omitted them in our definitions.
 \begin{itemize}[leftmargin=*]
 \item Hardware step with hardware oracle transition rule instance
 \end{itemize}
-\begin{lstlisting}[language=Caml]
+\begin{lstlisting}[language=C]
 Definition oracle_step_aux :=
   @oracle_step zset_op hdseting op_general hdsem_instance pmap hw_oracle.
 
@@ -853,7 +853,7 @@ Inductive oracle_step_aux_ge : genv -> state -> trace -> state -> Prop :=
 \begin{itemize}[leftmargin=*]
 \item Hardware step with hardware oracle semantics definitions (including initial state definition)
 \end{itemize}
-\begin{lstlisting}[language=Caml]
+\begin{lstlisting}[language=C]
 Inductive oracle_initial_state (p: AST.program fundef unit): 
   (state (hdset := hdseting)) -> Prop := 
   | initial_oracle_state_intro: 
@@ -879,7 +879,7 @@ Definition oracle_semantics (p: program) :=
 \begin{itemize}[leftmargin=*]
 \item Properties of hardware step with hardware oracle semantics (proofs are omitted)
 \end{itemize}
-\begin{lstlisting}[language=Caml]
+\begin{lstlisting}[language=C]
 Lemma oracle_semantics_single_events: forall p, single_events (oracle_semantics p).
 Lemma oracle_semantics_receptive (pl: program): receptive (oracle_semantics pl).
 Lemma oracle_semantics_determinate (pl: program): determinate (oracle_semantics pl).
@@ -896,7 +896,7 @@ In this sense, we omitted them from this environmental step machine.
 the instance of this machine still has two parameters, $\codeinmath{core}$ (a focused set) and $\codeinmath{o}$ (an environmental context for 
 the focused set)
 \end{itemize}
-\begin{lstlisting}[language=Caml]
+\begin{lstlisting}[language=C]
 Variable cores : ZSet.
 Variable o : GeneralOracleType.
 Definition env_step_aux:=
@@ -910,7 +910,7 @@ Inductive env_step_aux_ge : genv -> (estate (A:= cores))  -> trace -> (estate (A
 \begin{itemize}[leftmargin=*]
 \item Environmental step  semantics definitions (including initial state definition)
 \end{itemize}
-\begin{lstlisting}[language=Caml]
+\begin{lstlisting}[language=C]
 Inductive env_initial_state (p: AST.program fundef unit): 
   (estate (A := cores) (hdset := hdseting)) -> Prop :=
   | initial_env_state_intro: 
@@ -934,7 +934,7 @@ Definition env_semantics (p: program) :=
 \begin{itemize}[leftmargin=*]
 \item Environmental step transition rule instance.
 \end{itemize}
-\begin{lstlisting}[language=Caml]
+\begin{lstlisting}[language=C]
 Definition single_step_aux :=
   @single_step zset_op hdseting op_general hdsem_instance 
   current_CPU_ID single_oracle.
@@ -949,7 +949,7 @@ Inductive single_step_aux_ge : genv -> single_state -> trace ->
 \begin{itemize}[leftmargin=*]
 \item Single step semantics definitions (including initial state definition)
 \end{itemize}
-\begin{lstlisting}[language=Caml]
+\begin{lstlisting}[language=C]
 Inductive single_initial_state (p: AST.program fundef unit): 
   (single_state (hdset := hdseting)) -> Prop :=
   | initial_single_state_intro: 
@@ -974,7 +974,7 @@ our model requires fairness assumptions about hardware scheduler, which is notat
 \begin{itemize}[leftmargin=*]
 \item Big step transition rule instance.
 \end{itemize}
-\begin{lstlisting}[language=Caml]
+\begin{lstlisting}[language=C]
 Definition single_big_step_aux :=
   @single_big_step zset_op hdseting op_general hdsem_instance 
   fair current_CPU_ID single_oracle.
@@ -989,7 +989,7 @@ Inductive single_big_step_aux_ge : genv -> single_state -> trace ->
 \begin{itemize}[leftmargin=*]
 \item Big step semantics definitions (including initial state definition)
 \end{itemize}
-\begin{lstlisting}[language=Caml]
+\begin{lstlisting}[language=C]
 Inductive single_big_initial_state (p: AST.program fundef unit): 
   (single_state (hdset := hdseting)) -> Prop :=
   | initial_big_state_intro: 
@@ -1012,7 +1012,7 @@ Definition single_big_semantics (p: program) :=
 \begin{itemize}[leftmargin=*]
 \item Big two step transition rule instance.
 \end{itemize}
-\begin{lstlisting}[language=Caml]
+\begin{lstlisting}[language=C]
 Definition single_big2_step_aux :=
   @single_big2_step zset_op hdseting op_general hdsem_instance 
    fair current_CPU_ID single_oracle.
@@ -1026,7 +1026,7 @@ Inductive single_big2_step_aux_ge : genv -> rstate -> trace -> rstate -> Prop :=
 \begin{itemize}[leftmargin=*]
 \item Big two step semantics definitions (including initial state definition)
 \end{itemize}
-\begin{lstlisting}[language=Caml]
+\begin{lstlisting}[language=C]
 Inductive single_big2_initial_state (p: AST.program fundef unit): 
   (rstate (hdset := hdseting)) -> Prop :=
   | initial_big2_state_intro: 
@@ -1048,7 +1048,7 @@ Definition single_big2_semantics (p: program) :=
 \begin{itemize}[leftmargin=*]
 \item Split step transition rule instance.
 \end{itemize}
-\begin{lstlisting}[language=Caml]
+\begin{lstlisting}[language=C]
 Definition single_split_step_aux :=
   @single_split_step zset_op hdseting op_general hdsem_instance 
     fair current_CPU_ID single_oracle.
@@ -1062,7 +1062,7 @@ Inductive single_split_step_aux_ge : genv -> srstate -> trace -> srstate -> Prop
 \begin{itemize}[leftmargin=*]
 \item Split step semantics definitions (including initial state definition)
 \end{itemize}
-\begin{lstlisting}[language=Caml]
+\begin{lstlisting}[language=C]
 Inductive single_split_initial_state (p: AST.program fundef unit): 
   (srstate (hdset := hdseting)) -> Prop :=
   | initial_split_state_intro: 
@@ -1085,7 +1085,7 @@ Definition single_split_semantics (p: program) :=
 \item Reorder step transition rule instance. Reorder step relies on different kinds of environmental context. In this sense, 
 it is parameterized by environmental contexts.
 \end{itemize}
-\begin{lstlisting}[language=Caml]
+\begin{lstlisting}[language=C]
 Variable reorder_o : ReorderOracleType.
 
 Definition single_reorder_step_aux :=
@@ -1102,7 +1102,7 @@ Inductive single_reorder_step_aux_ge : genv -> rstate -> trace -> rstate -> Prop
 \begin{itemize}[leftmargin=*]
 \item Reorder step semantics definitions (including initial state definition)
 \end{itemize}
-\begin{lstlisting}[language=Caml]
+\begin{lstlisting}[language=C]
 Inductive single_reorder_initial_state (p: AST.program fundef unit): 
   (rstate (hdset := hdseting)) -> Prop :=
   | initial_reorder_state_intro: 
@@ -1124,7 +1124,7 @@ Definition single_reorder_semantics (p: program) :=
 \begin{itemize}[leftmargin=*]
 \item Separate step transition rule instance.
 \end{itemize}
-\begin{lstlisting}[language=Caml]
+\begin{lstlisting}[language=C]
 Definition single_separate_step_aux :=
   @single_separate_step
   hdseting separate_log_len zset_op op_sep hdsem_instance
@@ -1140,7 +1140,7 @@ Inductive single_separate_step_aux_ge : genv -> sp_state -> trace ->
 \begin{itemize}[leftmargin=*]
 \item Separate step semantics definitions (including initial state definition)
 \end{itemize}
-\begin{lstlisting}[language=Caml]
+\begin{lstlisting}[language=C]
 Inductive single_separate_initial_state (p: AST.program fundef unit): 
   (sp_state (hdset := hdseting)) -> Prop :=
   | initial_separate_state_intro: 
@@ -1167,7 +1167,7 @@ All those proofs requires the additional refinement proofs for between adjacent 
 use the corresponding theorems in Section~\ref{chapter:linking:sec:multicore-linking}. 
 For example, the refinement proof between an environmental step machine with a single core and the environmental step machine with full core set is 
 as follows:
-\begin{lstlisting}[language=Caml]
+\begin{lstlisting}[language=C]
 Lemma one_step_env_refines_env_concrete:
   forall st t st' st0
     (Hone: env_step_single_aux_ge' ge st t st')
@@ -1186,7 +1186,7 @@ Qed.
 , which uses the proof in Section~\ref{chapter:linking:subsec:concurrent-machine-model}.
 Using those theorems, 
 we prove the backward simulation proofs (in $\compcert$ style) 
-\begin{lstlisting}[language=Caml]
+\begin{lstlisting}[language=C]
 Theorem cl_backward_simulation:
   forall (s: stencil) (CTXT: LAsm.module) (ph: AST.program fundef unit)
            (Hmakep: make_program (module_ops:= LAsm.module_ops) s CTXT 
@@ -1205,7 +1205,7 @@ for each steps that we have described in Section~\ref{chapter:linking:sec:multic
 The top level theorem is in Figure~\ref{fig:chapter:certikos:top-level-multicore-theorem}.
 
 \begin{figure}
-\begin{lstlisting}[language=Caml]
+\begin{lstlisting}[language=C]
 Theorem concurrent_backward_simulation:
   forall (s: stencil) (CTXT: LAsm.module) (ph: AST.program fundef unit)
     (Hmakep: make_program (module_ops:= LAsm.module_ops) s CTXT (mboot <@$\oplus$@> L64) = OK ph),

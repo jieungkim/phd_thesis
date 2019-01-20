@@ -77,3 +77,16 @@ our layer library provides the canonical forms for this process.
 In short, the layer calculus described in Section~\ref{chapter:ccal:subsec:linking} is sufficient for us to 
 connect all layers and provide the theorem that 
 the bottom-most layer in all per-CPU modules contextually refines the top-most layer in all per-CPU modules.
+
+\begin{lstlisting}[language=C]
+  Theorem Per_CPU_CertiKOS_correct:
+    forall (s: stencil) (CTXT: LAsm.module) kernel combined_program user_program
+           (builtin_idents_norepet_prf: CompCertBuiltins.BuiltinIdentsNorepet),
+      CertiKOS.per_cpu_certikos = OK kernel ->
+      make_program s (CTXT <@$\oplus$@> kernel) (MBoot.mboot <@$\oplus$@> L64) = OK combined_program ->
+      make_program s CTXT (PBThread.pbthread <@$\oplus$@> L64) = OK user_program ->
+      inhabited
+        (backward_simulation
+           (LAsm.semantics (lcfg_ops := LC (PBThread.pbthread <@$\oplus$@> L64)) user_program)
+           (LAsm.semantics (lcfg_ops := LC (MBoot.mboot <@$\oplus$@> L64)) combined_program)).
+\end{lstlisting}

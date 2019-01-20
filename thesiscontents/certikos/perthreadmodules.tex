@@ -20,3 +20,17 @@ The Trap handler module is providing the top-level API of our operating systems 
 
 All the ingredients that we have mentioned in here is to provide a single correctness 
 theorem for the all system. 
+
+
+\begin{lstlisting}[language=C]
+  Theorem Per_Thread_CertiKOS_correct:
+    forall (s: stencil) (CTXT: LAsm.module) kernel combined_program user_program
+           (builtin_idents_norepet_prf: CompCertBuiltins.BuiltinIdentsNorepet),
+      CertiKOS.per_thread_certikos = OK kernel ->
+      make_program s (CTXT <@$\oplus$@> kernel) (PHThread.phthread  <@$\oplus$@>  L64) = OK combined_program ->
+      make_program s CTXT (TSysCall.tsyscall  <@$\oplus$@>  L64) = OK user_program ->
+      inhabited
+        (backward_simulation
+           (HAsm.semantics (TSysCall.tsyscall  <@$\oplus$@>  L64) user_program)
+           (HAsm.semantics (PHThread.phthread <@$\oplus$@> L64) combined_program)).
+\end{lstlisting}

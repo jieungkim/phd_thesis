@@ -27,7 +27,7 @@ Two big challenge in here is related initial state of thread local machines;
 of each thread. 
 Both of them are possible by using our global log. 
 
-\begin{lstlisting}[language=Caml]
+\begin{lstlisting}[language=C]
   Record sharedData :=
     mk_sharedData {
         CPU_ID: Z; (**r current CPU_ID *)
@@ -45,7 +45,7 @@ Both of them are possible by using our global log.
       }.
 \end{lstlisting}
 
-\begin{lstlisting}[language=Caml]
+\begin{lstlisting}[language=C]
   Record privData :=
     mk_privData {
         ti: trapinfo; (**r abstract of CR2, stores the address where page fault happens*)
@@ -91,7 +91,7 @@ Both of them are possible by using our global log.
       }.
 \end{lstlisting}
 
-\begin{lstlisting}[language=Caml]
+\begin{lstlisting}[language=C]
     Definition prim_thread_init_pc {F V} (ge : Genv.t F V) (name : ident) (args : list lval): option val :=
       if peq name proc_create
       then match Genv.find_symbol ge START_USER_FUN_LOC with
@@ -164,7 +164,7 @@ Both of them are possible by using our global log.
       end.
 \end{lstlisting}
 
-\begin{lstlisting}[language=Caml]
+\begin{lstlisting}[language=C]
 Definition has_event (name : ident) :=
   if peq name palloc then true else 
     if peq name pt_resv then true else
@@ -176,7 +176,7 @@ Definition has_event (name : ident) :=
                 if peq name ipc_send_body then true else false.
 \end{lstlisting}
 
-\begin{lstlisting}[language=Caml]
+\begin{lstlisting}[language=C]
     Definition choice_check (name : ident) (largs : list lval) (sd: sharedData) (pd: privData) : Z :=
       match prim_id_num name with 
       | palloc_num =>
@@ -201,7 +201,7 @@ Definition has_event (name : ident) :=
       end.
 \end{lstlisting}
 
-\begin{lstlisting}[language=Caml]
+\begin{lstlisting}[language=C]
     Definition apply_event (ev : LogEvent) (adt : dshare) : option dshare := 
       match ev with 
       | LEvent tid ev_unit =>
@@ -239,7 +239,7 @@ Definition has_event (name : ident) :=
     Qed.
 \end{lstlisting}
 
-\begin{lstlisting}[language=Caml]
+\begin{lstlisting}[language=C]
   Definition thread_init_pc {F V} (ge: Genv.t F V) (e : LogEvent) :=
     match e with
       | LEvent _ (LogPrim f args new_id _) => match prim_thread_init_pc ge f args with 
@@ -307,7 +307,7 @@ Definition has_event (name : ident) :=
 
 \end{lstlisting}
 
-\begin{lstlisting}[language=Caml]
+\begin{lstlisting}[language=C]
     Program Instance s_oracle_prf : SingleOracle (single_data := AuxSingleAbstractDataType.single_data) 
                                                  (single_oracle_ops := s_oracle_ops) 
                                                  (threads_conf_ops := s_threads_ops):=
@@ -358,7 +358,7 @@ All assumptions need to be addressed correctly.
 
 This provides the relation bewteen PHBThread layer runs with EAsm and PBThread layer runs with LAsm. 
 
-\begin{lstlisting}[language=Caml]
+\begin{lstlisting}[language=C]
     Definition pperm_inject (ha_ppermtable : PPermT) (la_ppermtable : PPermT) : Prop := 
       forall i, 
         match ZMap.get i ha_ppermtable, ZMap.get i la_ppermtable with 
@@ -610,13 +610,6 @@ This provides the relation bewteen PHBThread layer runs with EAsm and PBThread l
                   else True;
 
           inv_re: E2PBThreadGenPerDInv id kctxt_val sd pd ladt
-
-          (* those things are not necessary *)
-          (*
-          LAT_re: LAT hadt = LAT ladt; 
-          smspool_re: smspool hadt = smspool ladt;
-          multi_oracle_re: multi_oracle hadt = multi_oracle ladt;
-          multi_log_re: multi_log hadt = multi_log ladt; *)
         }.
 
     Record E2PBThreadGenEmptyPerDInv (id : Z) (kctxt_val : KContext) (sd : sharedData) (ladt : AbstractDataType.RData) :=
@@ -649,8 +642,6 @@ This provides the relation bewteen PHBThread layer runs with EAsm and PBThread l
             forall tid, B_GetContainerUsed' tid (CPU_ID sd) (big_log sd) = false ->
                         ZMap.get tid (AbstractDataType.uctxt ladt) = ZMap.init Vundef;
 
-          (* this one is actually not quite correct, because we cannot give the proper n in every cases???? *)
-          (* uctxt_INJECT: forall n, uctxt_inject_neutral (AbstractDataType.uctxt ladt) n; *)
           
           valid_AT_log_inv: valid_AT_log_type_B (big_log sd); 
           valid_TCB_log_inv: valid_TCB_log_type_B (big_log sd);
@@ -675,15 +666,10 @@ This provides the relation bewteen PHBThread layer runs with EAsm and PBThread l
                          ZMap.get j (pperm pd')= PGUndef)
         }.
 
-
-    (* if we didn't divide relate_RData as per-private dates, it's almost impossible to prove some cases
-       (e.g. serial_enable and others... because we have to unfold all iterations in the spec (100 iterations)
-        or prove other proofs *)
     Record relate_RData (kctxt_pool : KContextPool)  (sd : sharedData)  (pdpool: ZMap.t (option privData))
            (ladt : AbstractDataType.RData) :=
       mkrelate_RData {
           
-          (* for shared data parts - duplicated fields, I think we can remove them later *)
           sh_vmxinfo_re: vmxinfo sd  = AbstractDataType.vmxinfo ladt;
           sh_CR3_re: CR3 sd= AbstractDataType.CR3 ladt;
           sh_pg_re:  pg sd =  AbstractDataType.pg ladt;
@@ -720,7 +706,7 @@ This provides the relation bewteen PHBThread layer runs with EAsm and PBThread l
 
 This provides the relation bewteen PHThread layer runs with Hasm and PHBThread layer runs with TAsm. 
 
-\begin{lstlisting}[language=Caml]
+\begin{lstlisting}[language=C]
 
     Definition combine_data (kctxtOpt : option KContext) (sd : sharedData) (pd: privData) : AbstractDataType.RData :=
       {|
@@ -736,9 +722,7 @@ This provides the relation bewteen PHThread layer runs with Hasm and PHBThread l
         AbstractDataType.pg := pg sd;
         AbstractDataType.ikern:= ikern pd;
         AbstractDataType.ihost:= ihost pd;
-        
-        (* Should check this definition - this should be fine in this relation - we may need 
-           fancy handling for HP in the refinement between EAsm and LAsm *)
+
         AbstractDataType.HP:= HP pd;
 
         AbstractDataType.cid := cid sd;
@@ -811,7 +795,7 @@ This provides the relation bewteen PHThread layer runs with Hasm and PHBThread l
       |}.
 \end{lstlisting}
 
-\begin{lstlisting}[language=Caml]
+\begin{lstlisting}[language=C]
 
   Section MATCH.
     Set Printing All.
@@ -867,18 +851,6 @@ This provides the relation bewteen PHThread layer runs with Hasm and PHBThread l
                                (AbstractDataType.uctxt hadt) = uctxt pd;
 
             syncchpool_re: AbstractDataType.syncchpool hadt = syncchpool pd;
-            (*
-            syncchpool_re: forall i, 
-                if AbstractDataType.init hadt
-                then match (AbstractDataType.big_log hadt) with 
-                     | BigDef l => BigLogThreadConfigFunction.B_inLock_w_index_aux (i + lock_TCB_range)
-                                                                                   (AbstractDataType.CPU_ID hadt) l = true ->
-                                   (ZMap.get i (AbstractDataType.syncchpool hadt)) = (ZMap.get i (syncchpool pd))
-                     | _ => False
-                  end 
-                else ZMap.get i (syncchpool pd) = SyncChanUndef /\  
-                     ZMap.get i (AbstractDataType.syncchpool hadt) = SyncChanUndef;
-            *)
 
             big_log_re: AbstractDataType.big_log hadt = big_log (update init_shared_adt l);
             big_oracle_re: AbstractDataType.big_oracle hadt = big_oracle (update init_shared_adt l);
@@ -898,7 +870,7 @@ This provides the relation bewteen PHThread layer runs with Hasm and PHBThread l
 \subsection{Connecting Multithreaded Theorem}
 \label{chapter:certikos:subsec:connecting-multithreaded-theroem}
 
-\begin{lstlisting}[language=Caml]
+\begin{lstlisting}[language=C]
   Theorem SingleCore_backward_simulation:
     forall (s: stencil) (CTXT: LAsm.module) (ph: AST.program fundef unit)
            (Hs: genv_next s = init_nb)
