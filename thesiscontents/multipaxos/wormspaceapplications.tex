@@ -1,8 +1,7 @@
-
 \section{WormSpace Applications}
 \label{chapter:wormspace:sec:applications}
 
-\jieung{I can extend this section by adding more details later (but I think I do not need to do it}
+%\jieung{I can extend this section by adding more details later (but I think I do not need to do it}
 
 To illustrate the applicability of our $\wormspace$ as well as extensibility and reusability of our verification, 
 we present   WormPaxos, WormLog, and WormTX. 
@@ -76,7 +75,8 @@ API allows us to parallelize proposing in a way that we could not do over a conv
 For linearizability, the total order of writes imposed by the address space has to reflect real-time order 
 (\ie, if an update $U_1$ completed before another update $U_2$ started, then the position of $U_1$ has to be earlier in the address space than $U_2$.).
 Note that the sticky leader is allowed to issue multiple outstanding writes to consecutive addresses in the WOS; 
-this can result in concurrent commands being ordered arbitrarily, which does not violate linearizability.
+it can result in concurrent commands being ordered arbitrarily, which does not violate linearizability.
+
 
 \subsection{WormLog: Shared Log over WormSpace}
 \label{chapter:wormspace:subsec:wormlog}
@@ -88,16 +88,12 @@ this can result in concurrent commands being ordered arbitrarily, which does not
 .\label{fig:chapter:multipaxos:wormlogarch}
 \end{figure}
 
-
-
 A shared log is a shared address space that provides an \textit{append} / \textit{read} API to clients. 
 CORFU~\cite{corfu} is a system that implements a shared log API over a set of write-once addresses. 
-To append a new entry to the shared log, a client first contacts a centralized sequencer machine to reserve and increment 
-a tail position on the address space. It then issues a write to a write-once address. In CORFU, 
-each write-once address is implemented via a client-driven variant of Chain Replication, 
-where the client writes to each replica in sequence. 
+To append a new entry to the shared log, a client first contacts a centralized sequencer machine to reserve and increment a tail position on the address space. It then issues a write to a write-once address. In CORFU, 
+each write-once address is implemented via a client-driven variant of Chain Replication, that the client writes to each replica in sequence. 
 The write-once semantics are derived by using the head replica of the chain to arbitrate between competing writes to the same address.
- A key aspect of this design is that the sequencer is merely a soft-state hint about the tail of the log, and does not have to be durable or available. 
+ A vital aspect of this design is that the sequencer is merely a soft-state hint about the tail of the log, and does not have to be durable or available. 
 
 Achieving a CORFU-like design over $\wormspace$ is straightforward: 
 we simply have each client contact a sequencer node when it wants to append an entry, obtain a slot in the $\wormspace$ address space, 
@@ -140,7 +136,7 @@ Our implementation uses the first option: the sequencer allocates and pre-captur
 \label{chapter:wormspace:subsec:wormtx}
 
 Two-Phase Commit (2PC)~\cite{distsys} solves the transaction commit problem via a transaction manager (TM). 
-Any participant (RMs, or resource managers) that wishes to initiate a commit contacts the TM (message delay \#1). 
+Any participant (RMs, or resource managers) that wishes to initiate commit contact the TM (message delay \#1). 
 The TM contacts all participants to elicit a yes/no vote (\#2). Each RM votes, records its vote in local stable storage and responds to the TM (\#3). 
 The TM makes a decision based on the votes it receives, and sends back a commit or abort command to the RMs (\#4). 
 The TM's decision can be a deterministic function of the RM votes -- i.e., the decision is yes if all the votes are yes. 
@@ -151,7 +147,7 @@ The failure model for 2PC is that nodes -- TMs or RMs -- can crash, but will sub
 if a single RM fails -- after it has locally stored its vote in stable storage, but before it has responded to the 
 TM -- then the protocol has to block until the RM comes back online. In the case where the TM fails --
  after storing its final decision in stable storage but before sending commit messages -- 
- the protocol has to block until the TM comes back online. In both cases, the remaining RMs cannot determine the decision. 
+ the protocol has to block until the TM comes back online. In both cases, the remaining RMs cannot determine the decision.    
  
 \begin{figure}
 \centering
@@ -161,6 +157,7 @@ TM -- then the protocol has to block until the RM comes back online. In the case
 \end{figure}
 We consider making the deterministic (\ie, the TM does not have a separate vote) version of 2PC non-blocking. 
 We come up with a number of variants that use $\WOR$s. We describe them below and in Figure \ref{fig:chapter:multipaxos:commit}.
+
 
 \paragraph{[Variant A8: 8 message delays]} An obvious solution is to simply store the votes in a set of per-RM $\WOR$s. 
 If the TM decision is non-deterministic, a $\WOR$ is used to store the decision as well. In the $\WOR$-based 2PC protocol, 
@@ -173,9 +170,8 @@ Each RM can allocate a dedicated WOS for its decisions and batch prepare the WOS
 This eliminates delays \#3 and \#4 from variant A8.%, bringing us down to 6 message delays.
 
 
-\paragraph{[Variant C5: 5 message delays]} Further, rather than have the RM wait for an ACK on the write (message delay \#6 in variant A8) and 
-relay it to the TM (\#7 in A8), the TM can directly observe the decision by listening for write notifications on the WOS. 
-This compresses \#6 and \#7 of variant A8 into a single step.
+\paragraph{[Variant C5: 5 message delays]} Further, rather than have the RM wait for an ACK on the write (message delay \#6 in variant A8) and relay it to the TM (\#7 in A8), the TM can directly observe the decision by listening for write notifications on the WOS. 
+It compresses \#6 and \#7 of variant A8 into a single step.
 
 
 \paragraph{[Variant D4: 4 message delays]} Finally, rather than have the TM wait to be notified of all the $\WOR$ 
@@ -190,12 +186,13 @@ without requiring any knowledge of the $\paxos$ protocol.
 \paragraph{[Variant E3: 3 message delays]} We now observe that we do not need a TM, 
 since the final decision is a deterministic function of the $\WOR$s, 
 and any RM can time-out on the commit protocol and write a no vote to a blocking RM's $\WOR$ to abort the transaction. 
-The initiating RM can simply contact the other RMs on its own to start the protocol (combining \#1 and \#2 of variant A8), 
+The initiating RM can contact the other RMs on its own to start the protocol (combining \#1 and \#2 of variant A8), 
 bringing down the number of delays to 3. Interestingly, this variant is not described by Gray and Lamport.
 
 \paragraph{[Variant F2: 2 message delays]} Finally, if RMs can `spontaneously' start the protocol and vote, 
 we eliminate delays \#1 and \#2 of variant A8, bringing the protocol down to two delays, 
 the theoretical minimum for atomic commit. Since this is not a realistic assumption for many systems, we choose variant E3 as our final solution.
+
 
 % I may not need the following parts
 \ignore{

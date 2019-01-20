@@ -9,7 +9,6 @@
 \usepackage{makecell}
 \usepackage{scalerel}
 \usepackage{relsize}
-
 \usepackage[numbers,square]{natbib}
 \usepackage{times}
 \usepackage{courier}
@@ -42,15 +41,9 @@
 \usepackage{amsthm}
 \usepackage[normalem]{ulem} % for strike out
 \usepackage{tcolorbox}
-%\usepackage{tikz}
 \usepackage{flushend}
 \usepackage{relsize}
-
-%\usetikzlibrary{arrows.meta, decorations.pathmorphing}
-
 \usepackage{prettyref}
-%----------------------------------------------------
-
 \usepackage{mathpartir}
 \usepackage[scaled=0.85]{DejaVuSansMono}
 
@@ -59,7 +52,6 @@
 \bibliographystyle{abbrvunsrt}
 
 \begin{document}
-% Need to define title before the abstract.
 \title{Modular and Compositional Development of Certified Concurrent Software Systems}
 \author{Jieung Kim}
 \advisor{Zhong Shao}
@@ -81,7 +73,6 @@
 \listoffigures % remove this if you have no figures.
 % \listoftables % remove this if you have no tables.
 
-
 % Starts proper arabic numbering of pages and chapters.
 \mainmatter
 
@@ -91,7 +82,7 @@
 %%%%%%%%%%%
 \chapter{Introduction}
 \label{chapter:introduction}
- \input{introduction}
+\input{introduction}
  
  
 %%%%%%%%%%%
@@ -127,18 +118,6 @@
 \input{thesiscontents/conlink/multicorelinking}
 \input{thesiscontents/conlink/multithreadedlinking}
 \input{thesiscontents/conlink/evaluation}
-
-% ADD CONTENTS
-%\input{oldcontents/conlink/ccaldefinitions}
-%\input{oldcontents/conlink/multicore}
-%\input{oldcontents/conlink/multicorelink}
-%\input{oldcontents/conlink/multicorerefinement}
-%\input{oldcontents/ccal/prog-multithread-pldi18}   
-%\input{oldcontents/ccal/comp}   
-%\input{oldcontents/ccal/mach-multithread-impl}    
-% END CONTENTS
-
-
 
 %%%%%%%%%%%
 % CERTIKOS - Fill out Intro / Per CPU modules, Per Thread modules and top level theorem / and then work on lining parts with Chapter CON LINK
@@ -181,18 +160,6 @@
 \input{thesiscontents/witnesspassing/multipaxos}
 \input{thesiscontents/witnesspassing/examples}
 \input{thesiscontents/witnesspassing/evaluation}
-
-% ADD CONTENTS
-%\input{oldcontents/witnesspassing/witness}
-%\input{oldcontents/witnesspassing/witness-property}
-%\input{oldcontents/witnesspassing/lowimplementation}
-%\input{oldcontents/witnesspassing/multipaxos}
-%\input{oldcontents/witnesspassing/examples}
-%\input{oldcontents/witnesspassing/evaluation}
-% END CONTENTS
-
-%\input{oldcontents/witnesspassing/related}
-%\input{oldcontents/witnesspassing/conclusion}
 
 %%%%%%%%%%%
 % RELATED

@@ -1,21 +1,21 @@
 \section{WormSpace Verification}
 \label{sec:formal_verification}
 
-\jieung{I do not need to expose all the details (including specifications for send and receive functions / log replay functions, and so on. 
-But, if I have enough time to do that, I'll add more details in here}
+%\jieung{I do not need to expose all the details (including specifications for send and receive functions / log replay functions, and so on. 
+%But, if I have enough time to do that, I'll add more details in here}
 
 $\wormspace$ acts as a foundation for verifying distributed systems. 
 We verify $\wormspace$ once and reuse its proof for verifying three applications (\ie, WormPaxos, WormLog, and WormTX)
-built on top while  hiding the complexity of distributed protocol verification. 	
+built on top while hiding the complexity of distributed protocol verification.     
 To do so, we extend the Certified Concurrent Abstraction Layer ($\ccalname$)  in Chapter~\ref{chapter:ccal}, 
-modeling an asynchronous network of distributed nodes in order to verify $\wormspace$. 
+modeling an asynchronous network of distributed nodes to verify $\wormspace$. 
 We apply $\ccalname$ beyond a single system verification for the first time and link the proof of $\wormspace$, 
 $\wormspace$ applications and a verified OS. 
 
 \subsection{Layer Structure for Verification}
 
-$\wormspace$ consists of two separate stacks of verification layers, the client library (17 layers) and the wormserver (2 layers), over a common set of base functionalities (5 layers). While the number of layers may seem excessive, it matches a conventional software stack designed for modularity: each layer is a C component implementing some interface. A simplified layer diagram is shown in Figure~\ref{fig:chapter:multipaxos:layerdiagram}.\footnote{
-A set of base layers offer common functionalities to the client library and the wormserver stacks: 
+$\wormspace$ consists of two separate stacks of verification layers, the client library (17 layers) and the wormserver (2 layers), over a common set of base functionalities (5 layers). While the number of layers may seem excessive, it matches a conventional software stack designed for modularity: each layer is a C component implementing some interface. A simplified layer diagram is shown in Figure~\ref{fig:chapter:multipaxos:layerdiagram}.
+\footnote{A set of base layers offer common functionalities to the client library and the wormserver stacks: 
 the bottom layer provides an interface to the TCB, including network communication functions and a small number of system calls, 
 while the data layer implements various data structures over the trusted primitives.
 Above, the server stack includes layers for the $\paxos$ acceptor logic and the WormServer code. 
@@ -55,8 +55,8 @@ Function WormSpace_write (addr: Z) (val: Payload) (node_id: Z) (adt: EnvVars) : 
     let offset := addr mod WOS_SIZE in
     WOR_write segment offset val cid adt.
 \end{lstlisting}
- We verify the $\WOR$ abstraction, the WOS abstraction, and the WormSpace API.
- The client stack can be extended to applications such as WormPaxos, WormLog, and WormTX. 
+We verify the $\WOR$ abstraction, the WOS abstraction, and the WormSpace API.
+The client stack can be extended to applications such as WormPaxos, WormLog, and WormTX. 
 %In the rest of this section we detail our verification effort.
 
 \subsection{Network Model}
@@ -81,11 +81,11 @@ any other nodes can freely record their operations (this models packet reorderin
 A \textsc{recv} after a \textsc{send} does not necessarily mean that the $\codeinmath{recv}$ event received the value sent by this $\codeinmath{send}$. 
 The actual value can be a duplicate message from a previous send (this models duplicate packets).
 
-However, network communication patterns can be complex when a client interacts with multiple wormservers in a one-to-many request pattern.
+However, network communication patterns can be complicated when a client interacts with multiple wormservers in a one-to-many request pattern.
 $\wormspace$ code is designed to tolerate an unreliable (but non-Byzantine) network. 
-For example, the code always receives packets in a loop to filter out duplicate packets and waits for timeout for lost packets.
-Such communication patterns become more complex when a client interacts with multiple wormservers in a one-to-many request pattern.
-Preserving such complexity is necessary to model the real network and to verify what the C code actually does,
+For example, the code always receives packets in a loop to filter out duplicate packets and waits for timeout for lost packets. 
+Such communication patterns become more complicated when a client interacts with multiple wormservers in a one-to-many request pattern.
+Preserving such complexity is necessary to model the real network and to verify what the C code precisely does,
 but when it comes to proving the global property of the system, some of the details can be abstracted out.
 Therefore, we facilitate the  \textit{log-lift} pattern in $\ccalname$~(Section~\ref{chapter:ccal:subsec:local-layer-interface}) 
 to simplify network patterns in our software stack. 
@@ -221,7 +221,7 @@ applications are guaranteed to be correct with respect to all layers of $\wormsp
  Similarly, Theorem~\ref{theorem:chapter:multipaxos:wormspace} can be reused to verify any systems to guarantee $\WOR$ semantics, 
 if we use $\wormspace$ as a building block. 
 	
-\jieung{Do we need to mention about linking with CertiKOS in here?}	
+%\jieung{Do we need to mention about linking with CertiKOS in here?}	
 	
 The extensibility of $\wormspace$ verification to applications is difficult for other verified systems~\cite{ironfleet, hyperkernel} to achieve. 
 Especially, it is unnatural and difficult to support contextual refinement, 
@@ -233,6 +233,6 @@ requires other treatments.
 It, however, depends on multiple $\WOR$s as well as the communication between the clients that use the $\wormspace$ interface. 
 We illustrate our new and robust methodology for this purpose in the next Chapter.
 
-\jieung{adding the full layer diagram?}
+%\jieung{adding the full layer diagram?}
 
-\jieung{Don't we need to add evaluations. My thesis is not focusing on evaluations or performances at all}
+%\jieung{Don't we need to add evaluations. My thesis is not focusing on evaluations or performances at all}
