@@ -1,0 +1,124 @@
+\subsection{Multicore Machine Model}
+\label{chapter:linking:subsec:multicore-machine-model}
+
+
+\begin{figure}
+\noindent\fbox{own state and local view:}
+
+$$
+\begin{array}{llll}
+\localviewkwd & := & \localviewconkwd :~\privatestate \rightarrow \mclog \rightarrow \localviewkwd \\
+\end{array}
+$$
+
+\noindent\fbox{hardware local step: $\ztype \rightarrow \localviewkwd \rightarrow \localview \rightarrow \mcprop$}
+
+\begin{mathpar}
+\inferrule[acqrule]
+{ \programcounter{ps}{\acqsharedcmd{id}}\\
+\calowner{l}{id}{\ofreestate{d}}\\
+\setsharedstep{ps}{d}{ps'}}
+{ \hardwarelocalstep{curid}{(\localview{ps}{l})}{(\localview{ps'}{(\listconsoppo{\acqev{curid}{id}}{\nulllist})})}}
+
+
+\inferrule[relrule]
+{  \programcounter{ps}{\relsharedcmd{id}}\\
+\calowner{l}{id}{\ownstate{curid}}\\
+\getsharedstep{ps}{d}{ps'}}
+{ \hardwarelocalstep{curid}{(\localview{ps}{l})}{(\localview{ps'}{(\listconsoppo{\relev{curid}{id}{d}}{\nulllist})})}}
+
+
+\inferrule[private]
+{  \programcounter{ps}{\privatecmdkwd}\\
+\privatestep{curid}{ps}{ps'}}
+{ \hardwarelocalstep{curid}{(\localview{ps}{l})}{(\localview{ps'}{l})} }
+
+\inferrule[atomic]
+{  \programcounter{ps}{\atomiccmd{id}{\atomiceventident{e}}}\\
+\atomicstep{curid}{id}{ps}{l}{ps'}{e}}
+{ \hardwarelocalstep{curid}{(\localview{ps}{l})}{(\localview{ps'}{(\listconsoppo{\atomicev{curid}{id}{e}}{\nulllist}}))} }
+
+\end{mathpar}
+\caption{Hardware Local Step Transition Rules.}
+\label{fig:chapter:conlink:hardware-local-step-transition-rules}
+\end{figure}
+
+
+Based on the hardware configurations, semantics, and auxiliary functions in Section~\ref{chapter:linking:subsec:hardware-configuration},
+we define the non-deterministic multicore machine model in this section.
+We first define the local view, which is the view from each core that consists of a private state and a view of the global log. 
+Based on the local view, 
+step relation rules for four commands 
+are defined in Figure~\ref{fig:chapter:conlink:hardware-local-step-transition-rules}, which 
+check the program counter first, then perform each steps. 
+Note that rules for acquiring shared and release shared first check the owner that is associated with the shared resource,
+but they do not have any safety condition to guarantee that the owner of that shared resource is in a valid status when they are invoked. 
+
+\begin{figure}
+\noindent\fbox{hstate:} 
+
+$$
+\begin{array}{lll}
+%\hstatekwd& := & \hstateconkwd :~ \ztype \rightarrow \set{i \rightarrow \privatestate~\vert~ i \in \coreset} \rightarrow \mclog \rightarrow \hstatekwd\\
+\privatestatepool{S : \set{\ztype}} & := &  \ztype \rightharpoonup \privatestate \\
+& & \hfill  (\forall i . i \in S \rightarrow \exists . (ps : \privatestate) (i, ps) \in \privatestatepool{S}) \wedge   (\forall j . j \notin S  \rightarrow (j, \_) \in \privatestatepool{S}) \\
+
+\hstatekwd& := & \hstateconkwd :~ \ztype \rightarrow \privatestatepool{\coreset} \rightarrow \mclog \rightarrow \hstatekwd\\
+\end{array}
+$$
+
+\noindent\fbox{getter and setter function:} 
+
+\begin{center}
+\begin{tabular}{l}
+$
+   \getpstkwd_{[ltyp: \toptype]} (lsp : \ztype \rightharpoonup ltyp) (curid :\ztype) := \left\{\begin{array}{lr}
+      \optionsome\ ps & \text{for } (curid, ps) \in lsp \\
+      \optionnone & \text{for } (curid, \_) \notin lsp \\
+        \end{array} \right.
+$\\
+$
+   \setpstkwd_{[ltyp: \toptype]} (curid :\ztype) (ps : ltyp) (lsp : \ztype \rightharpoonup \privatestate) := (lsp - \set{(curid, \_)})  \cup \set{(curid, ps)}
+$\\
+\end{tabular}
+\end{center}
+
+\noindent\fbox{hardware step: $(start: \ztype) : \hstatekwd \rightarrow \cctracekwd \rightarrow \hstatekwd \rightarrow \mcprop$}
+
+\begin{mathpar}
+\inferrule
+{ l_0 = \listconsoppo{\yieldbackev{curid'}}{\listconsoppo{\yieldev{curid}}{l}} \\
+\getpstsome{\privatestate}{lsp}{curid'}{ps}\\
+curid \in \coreset \\
+\hardwarelocalstep{curid'}{(\localview{ps}{l0})}{(\localview{ps'}{l'})}\\
+\setpst{\privatestate}{curid'}{ps'}{lsp}{lsp'} }
+{ \hardwarestep{start}{(\hstate{curid}{lsp}{l})}{\ccemptytrace}{(\hstate{curid'}{lsp'}{(\listappoppo{l'}{ l_0})}))}}
+\end{mathpar}
+\caption{Multicore Machine Syntax and Semantics}
+\label{fig:chapter:conlink:multicore-machine-syntax-and-semantics}
+\end{figure}
+
+Using all those information, defining fully non-deterministic machine model (which is restricted to the sequential consistency memory model) 
+is available in Figure~\ref{fig:chapter:conlink:multicore-machine-syntax-and-semantics}.
+The state definition in machine model is almost the same with the state definition for multicore machine model in Section~\ref{chapter:ccal:subsec:multicore-machine-model}. 
+The state ($\hstatekwd$) is defined as a tuple with three elements, and it consists of a current CPU ID that owns the evaluation control,
+a partial map from a CPU ID to the private state ($\privatestatepoolkwd$ - which contains the whole private states for all CPUs in the system),
+and the shared state represented by the global log. 
+It, however, differs from the state definition in Section~\ref{chapter:ccal:subsec:multicore-machine-model} 
+in regards of not having shared memory and abstract state. 
+Those shared resources can be calculated by the global log, so we can safely assume that 
+there exist shared memory as well as abstract data in this state definition. 
+$\getpstkwd$ and $\setpstkwd$ are getter and setter operations for the partial map of private datum. 
+With that, 
+the step relation for non-deterministic multicore machine is defined in $\setpstkwd$. 
+The machine parameterized with a single CPU ID, which is a start CPU (that will be first evaluated in the system),
+but does not have any environmental context at all because it is a full machine model without any missing components. 
+The rule always start the evaluation 
+with a hardware scheduling step, which will update the shared log via memorizing 
+the scheduling result ($l_0 = \listconsoppo{\yieldbackev{curid'}}{\listconsoppo{\yieldev{curid}}{l}}$). 
+Then, 
+it updates the local view of the newly scheduled CPU via hardware local step relation. 
+The result will eventually update the shared log, the private state as well as the current CPU ID. 
+Note that choosing the next CPU ID that will be evaluated in this step relation is totally non-deterministic.
+
+

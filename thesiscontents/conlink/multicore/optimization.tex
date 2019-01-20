@@ -1,0 +1,726 @@
+
+\subsection{Global Log Optimization for Better Interface}
+\label{chapter:linking:subsec:global-log-optimization}
+
+We have defined the single core machine model from the multicore machine model with providing refinements between those machines. 
+The single core machine in Section~\ref{chapter:linking:subsec:single-core-machine-model} , however, 
+is not sufficient to work as a 
+basis of local layer interfaces in Section~\ref{chapter:ccal:subsec:local-layer-interface}.
+First, the state definition in machine model slightly differs from the machine that we used for building layers with the support for the compositional compilation, $\compcertx$. 
+In this sense, the optimization requires us to match the machine state for a single core machine with a state of $\compcertx$. 
+Second, the oracle query in the machine is operational step style, 
+which always query the oracle at each step of the evaluation.
+Adding this oracle query in between all steps in the $\compcertx$ machine model is not feasible because it needs to modify the compilation path too. 
+Therefore, 
+optimization for the point of oracle query has to be adjusted. 
+Third, the global oracle contains multiple scheduling events in it, 
+so that it has to be removed.
+\jieung{Finally, Connect?}
+
+\subsubsection{Big Step Oracle Query}
+
+
+
+Querying the environmental context at each step is subtle in defining local layer interface. 
+In this sense, simplification is desirable. 
+We define two intermediate machine model for this optimization,
+which are presented in Figure~\ref{fig:chapter:conlink:single-core-big-step} and Figure~\ref{fig:chapter:conlink:single-core-big-two-step}.
+One important assumption in here is the fairness assumption ($\timebound$),
+which assumes that each core will always evaluate at least one step evaluation within $\timebound$, which is the maximum number
+of events in between the evaluation of the focused CPU. 
+Figure~\ref{fig:chapter:conlink:single-core-big-step} includes the function 
+that uses the bound number for the consecutive environmental context query 
+to merge it. 
+Using the function, we first remove the \textsf{SKIP} rule from the single core machine (Figure~\ref{fig:chapter:conlink:single-core-big-step}
+and merge two rules to simplify the machine (Figure~\ref{fig:chapter:conlink:single-core-big-two-step}).
+
+\begin{figure}
+\noindent\fbox{fairness:}
+$$
+\begin{array}{llll}
+\timebound & : & \nattype &\mbox{(time bound for wating scheduling)} \\
+\end{array}
+$$
+
+\noindent\fbox{Yield Back Function:}
+\begin{center}
+\begin{tabular}{l}
+$ \yieldbackfunckwd_{(n : \nattype)} (curid : \ztype) (l \ res : \mclog) (oracle : \mcoracle{\set{curid}}{\mclog}{\mcevent}) : \mclog := $\\
+\ \ \ $ \left\{\begin{array}{lr}
+       \optionnone & \text{for } n  = O \\
+       
+       \optionsome\ res' & \text{for } n = S\ n' \wedge \oget{\set{curid}}{\mclog}{\mcevent}{\listappoppo{res}{l}}{oracle}{e}\\ 
+                  & \wedge res' := \listconsoppo{e}{res} \wedge \yieldbackfunc{n'}{curid}{l}{res'}{oracle}{r} \\
+                  & \wedge e = \yieldbackev{curid'} \wedge curid = curid' \\
+        r & \text{for }n = S\ n' \wedge \oget{\set{curid}}{\mclog}{\mcevent}{\listappoppo{res}{l}}{oracle}{e}\\ 
+                  & \wedge res' := \listconsoppo{e}{res} \wedge \yieldbackfunc{n'}{curid}{l}{res'}{oracle}{r} \\
+                  & (\wedge e \neq \yieldbackev{curid'} \vee (\wedge e = \yieldbackev{curid'} \wedge curid \neq curid')) \\
+          \optionnone  & \text{for }n = S\ n' \wedge \ogetnoeq{\set{curid}}{\mclog}{\mcevent}{\listappoppo{res}{l}}{oracle} = r \wedge r \neq \optionsome \ e \\
+        \end{array}\right .
+$\\
+\end{tabular}
+\end{center}
+
+\noindent\fbox{single big step: ${}_{[curid : \ztype]} (oracle : \mcoracle{\set{curid}}{\mclog}{\mcevent}) :  \singlestatekwd \rightarrow \cctracekwd \rightarrow \singlestatekwd \rightarrow \mcprop$}
+\begin{mathpar}
+\inferrule[progress]
+{ ls = \localstate{ps}{\bfalse} \\
+ls' = \localstate{ps'}{\btrue} \\\\
+\hardwarelocalstep{curid}{(\localview{ps}{l})}{(\localview{ps'}{l'})}}
+{\singlebigstep{curid}{oracle}{(\singlestate{curid}{ls}{l})}{\ccemptytrace}{(\singlestate{curid}{ls'}{(\listappoppo{l'}{l})})}}
+
+\inferrule[yield]
+{ l_0 = \listconsoppo{\yieldbackev{curid}}{l} \\
+ ls = \localstate{ps}{\btrue} \\
+ls' = \localstate{ps}{\bfalse} \\
+\yieldbackfunc{\timebound}{curid}{l_0}{\nulllist}{oracle}{l'}}
+{\singlebigstep{curid}{oracle}{(\singlestate{curid}{ls}{l})}{\ccemptytrace}{(\singlestate{curid'}{ls'}{l'})}}
+\end{mathpar}
+\caption{Single Core Big Step.}
+\label{fig:chapter:conlink:single-core-big-step}
+\end{figure}
+
+\begin{figure}
+\noindent\fbox{rstate:}
+$$
+\begin{array}{lll}
+\rstatekwd & := & \rstateconkwd : \privatestate \rightarrow \mclog \rightarrow \rstatekwd\\
+\end{array}
+$$
+
+\fbox{single big2 step:
+$
+{}_{[curid : \ztype]} (oracle : \mcoracle{\set{curid}}{\mclog}{\mcevent}) :  \rstatekwd \rightarrow \cctracekwd \rightarrow \rstatekwd \rightarrow \mcprop
+$}
+\begin{mathpar}
+\inferrule[progress]
+{  l_0 = \listconsoppo{\yieldbackev{curid}}{l} \\
+\yieldbackfunc{\timebound}{curid}{l_0}{\nulllist}{oracle}{l_1} \\
+\hardwarelocalstep{curid}{(\localview{ps}{(\listappoppo{l_1}{l_0})})}{(\localview{ps'}{l'})}}
+{\singlebigtwostep{curid}{oracle}{(\rstate{ps}{l})}{\ccemptytrace}{(\rstate{ps'}{(\listappoppo{l'}{\listappoppo{l_1}{l_0}})})}}
+\end{mathpar}
+\caption{Single Core Big Two Steps.}
+\label{fig:chapter:conlink:single-core-big-two-step}
+\end{figure}
+
+Similar to the previous steps, 
+we show the refinement between those machine models,
+which are in 
+Figure~\ref{fig:chapter:conlink:big-refines-single} and Figure~\ref{fig:chapter:conlink:bigtwo-refines-big}. 
+Those steps are straightforward because of the similarity of step-relations as well as their state definitions. 
+One non-trivial lemma in those is the lemma about the multiple environmental steps. The ``start$\_$step$\_$get$\_$env$\_$log'' lemma shows that the numerous environmental steps via $\yieldbackfunckwd$ always have the corresponding 
+\textsf{SKIP} steps in the single core machine model. 
+
+\begin{figure}
+\noindent\fbox{variables for match relation}
+$$
+\begin{array}{lllr}
+cpuid & : & \ztype & \mbox{(starting CPU of the system)}\\
+si\_o & : & \mcoracle{\set{cpuid}}{\mclog}{\mcevent} &  \mbox{(oracle for a single cpu)}\\
+\end{array}
+$$
+
+\noindent\fbox{match state : $\envstatekwd_{[\coreset]} \rightarrow \mcstatekwd \rightarrow \mcprop$}
+\begin{mathpar}
+\inferrule[match state]
+{ s_h = s_l \\
+s_h = \singlestate{tid}{(\localstate{ps}{b})}{l} \\
+\validlog{cpuid}{l} \\
+l \neq \listconsoppo{\yieldev{\_}}{\_}\\
+\getcuridfromlog{cpuid}{l}{cpuid}\\
+(b = \bfalse \rightarrow \exists \ e \ l' . \ l = \listconsoppo{e}{l'} \wedge e = \yieldbackev{cpuid})}
+{\matchbsstatesstate{s_h}{s_l}}
+\end{mathpar}
+
+\noindent\fbox{hypothesis}
+\begin{enumerate}
+\item valid$\_$cpuid: $cpuid \in \coreset$
+\item valid$\_$oracle$\_$def: $\validoraclenoeq{cpuid}{\set{cpuid}}{si\_o }$
+\end{enumerate}
+
+\noindent\fbox{top lemmas}
+
+\begin{enumerate}
+\item start$\_$step$\_$get$\_$env$\_$log: \\
+$\begin{array}{l}
+\forall \ n \ l \ res \ l' \ ps \ curid . \ cpuid \neq curid \rightarrow \yieldbackfunc{n}{cpuid}{l}{res}{si\_o}{l'} \rightarrow\\
+\ccstarstep{\singlestep{cpuid}{si\_o}{(\singlestate{curid}{ps}{(\listappoppo{res}{l})})}{\ccemptytrace}{(\singlestate{cpuid}{ps}{(\listappoppo{l'}{l})})}}\\ 
+\end{array}
+$
+\item one$\_$step$\_$big$\_$refines$\_$single : \\
+$
+\begin{array}{l}
+\forall \ s_h \ s_h' \ t \ s_l . \ \singlebigstep{cpuid}{si\_o}{s_h}{t}{s_h'} \rightarrow  \matchbsstatesstate{s_h}{s_l} \rightarrow \\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \exists\ s\_l' . \  \ccplusstep{\singlestep{cpuid}{si\_o}{s_l}{t}{s_l'}} \wedge  \matchbsstatesstate{s_h'}{s_l'}\\
+\end{array}
+$
+\end{enumerate}
+\caption{Big Refines Single}
+\label{fig:chapter:conlink:big-refines-single}
+\end{figure}
+
+\begin{figure}
+\noindent\fbox{match state : $\rstatekwd \rightarrow \singlestatekwd \rightarrow \mcprop$}
+\begin{mathpar}
+\inferrule[match state]
+{\ }
+{\matchrstatesinglestate{cpuid}{(\rstate{ps}{l})}{(\singlestate{cpuid}{(\localstate{ps}{true})}{l}}}
+\end{mathpar}
+
+\noindent\fbox{hypothesis}
+\begin{enumerate}
+\item valid$\_$oracle$\_$def: $\validoraclenoeq{cpuid}{\coreset}{hw\_o }$
+\end{enumerate}
+
+\noindent\fbox{top lemmas}
+\begin{enumerate}
+\item one$\_$step$\_$big2$\_$refines$\_$big : \\
+$
+\begin{array}{l}
+\forall \ s_h \ s_h' \ t \ s_l . \ \singlebigtwostep{cpuid}{si\_o}{s_h}{t}{s_h'} \rightarrow  \matchrstatesinglestate{cpuid}{s_h}{s_l} \rightarrow \\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \exists\ s\_l' . \  \ccplusstep{\singlebigstep{cpuid}{si\_o}{s_l}{t}{s_l'}} \wedge  \matchrstatesinglestate{cpuid}{s_h'}{s_l'}\\
+\end{array}
+$
+\end{enumerate}
+\caption{Big2 Refines Big} 
+\label{fig:chapter:conlink:bigtwo-refines-big}
+\end{figure}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{figure}
+\noindent\fbox{single local view:}
+$
+\begin{array}{lll}
+\singlelocalviewkwd & := & \singlelocalviewconskwd : \privatestate \rightarrow \singlelocalviewkwd\\
+\end{array}
+$
+
+\noindent\fbox{single local step: $\ztype \rightarrow \singlelocalviewkwd \rightarrow \singlelocalviewkwd \rightarrow \mcprop$}
+
+\begin{mathpar}[private]
+\inferrule
+{\programcounter{ps}{\privatecmdkwd}\\
+\privatestep{curid}{ps}{ps'}}
+{ \singlelocalstep{curid}{(\singlelocalview{ps})}{(\singlelocalview{ps'})}}
+\end{mathpar}
+
+\fbox{single log step: $\ztype \rightarrow \localviewkwd \rightarrow \localviewkwd \rightarrow \mcprop$}
+\begin{mathpar}
+\inferrule[acquire shared]
+{\programcounter{ps}{\acqsharedcmd{id}}\\
+\calowner{l}{id}{\ofreestate{d}}\\
+\setsharedstep{ps}{d}{ps'}}
+{ \singlelogstep{curid}{(\localview{ps}{l})}{(\localview{ps'}{(\listconsoppo{\acqev{curid}{id}}{\nulllist})})}}
+
+\inferrule[release shared]
+{\programcounter{ps}{\relsharedcmd{id}}\\
+\calowner{l}{id}{\ownstate{curid}}\\
+\getsharedstep{ps}{d}{ps'}}
+{ \singlelogstep{curid}{(\localview{ps}{l})}{(\localview{ps'}{(\listconsoppo{\relev{curid}{id}{d}}{\nulllist})})}}
+
+\inferrule[atomic]
+{  \programcounter{ps}{\atomiccmd{id}{\atomiceventident{e}}}\\
+\atomicstep{curid}{id}{ps}{l}{ps'}{e}}
+{ \singlelogstep{curid}{(\localview{ps}{l})}{(\localview{ps'}{(\listconsoppo{\atomicev{curid}{id}{e}}{\nulllist})})}}
+\end{mathpar}
+\caption{Single Local and Log Step Rules.}
+\label{fig:chapter:conlink:single-local-and-log-step-rules}
+\end{figure}
+
+\subsubsection{Reordering and  zipping}
+
+
+The next optimization is about reordering the point for the oracle query 
+and zipping the multiple adjacent scheduling events into the single scheduling event (and finally remove them).
+To do that,
+we first separate hardware local step rules as two kinds of step rules, which is for the local silent steps and for the shared steps that trigger the step relation to add the event in the log. 
+They are defined in Figure~\ref{fig:chapter:conlink:single-local-and-log-step-rules}. 
+With this separation, 
+the newly defined machine in Figure~\ref{fig:chapter:conlink:single-split-step-rules} 
+slightly changes the log update. 
+The state of this machine contains three elements. 
+The first one is for the private data of the CPU,
+the second one is for the cached event that postpones the update of the log to the global log until 
+the current focused CPU perform the step that generates the event for the shared state.
+This delayed update for the global log does not change any behavior of the machine since the private state update via private step rule (single local step in Figure~\ref{fig:chapter:conlink:single-local-and-log-step-rules}). 
+by doing that, we are able to define the machine that can update the log only when the focused CPU perform its shared operation,
+which you can see in Figure~\ref{fig:chapter:conlink:single-split-step-rules}. 
+%%%%%%%%%%%%%%%%
+\begin{figure}
+\noindent\fbox{srstate:}
+$$
+\begin{array}{lll}
+\srstatekwd & := & \srstateconkwd : \privatestate \rightarrow \mclog \rightarrow \mclog \rightarrow \srstatekwd \\
+\end{array}
+$$
+
+\noindent\fbox{single split step: ${}_{[curid : \ztype]} (oracle : \mcoracle{\set{curid}}{\mclog}{\mcevent}) :  \srstatekwd \rightarrow \cctracekwd \rightarrow \srstatekwd \rightarrow \mcprop$}
+\begin{mathpar}
+\inferrule
+{al_0 = \listconsoppo{\yieldev{curid}}{al}\\
+l_0 = \listappoppo{al_0}{l}\\
+\yieldbackfunc{\timebound}{curid}{l_0}{\nulllist}{oracle}{l_1}\\
+\singlelocalstep{curid}{(\singlelocalview{ps})}{(\singlelocalview{ps'})}}
+{\singlesplitstep{curid}{oracle}{(\srstate{ps}{l}{al})}{\ccemptytrace}{(\srstate{ps'}{l}{(\listappoppo{l_1}{al_0})})}}
+
+\inferrule
+{l_0 = \listappoppo{\listconsoppo{\yieldev{curid}}{al}}{l}\\
+\yieldbackfunc{\timebound}{curid}{l_0}{\nulllist}{oracle}{l_1}\\
+\singlelogstep{curid}{(\localview{ps}{(\listappoppo{l_1}{l_0})})}{(\localview{ps'}{l'})}}
+{\singlesplitstep{curid}{oracle}{(\srstate{ps}{l}{al})}{\ccemptytrace}{(\srstate{ps'}{(\listappoppo{l'}{\listappoppo{l_1}{l_0}})}{\nulllist})}}
+\end{mathpar}
+\caption{Split Step.}
+\label{fig:chapter:conlink:single-split-step-rules}
+\end{figure}
+%%%%%%%%%%%%%%%%
+\begin{figure}
+\noindent\fbox{match state : $\srstatekwd \rightarrow \rstatekwd \rightarrow \mcprop$}
+
+\begin{mathpar}
+\inferrule[match state]
+{l' = \listappoppo{al}{l}}
+{\matchsrstaterstate{(\srstate{ps}{l}{al})}{(\rstate{ps}{l'})}}
+\end{mathpar}
+
+\noindent\fbox{top lemmas}
+
+\begin{enumerate}
+\item single$\_$local$\_$imply$\_$env:\\
+$
+\begin{array}{l}
+\forall \ cpuid \ l \ ps \ ps' .\ \singlelocalstep{cpuid}{(\singlelocalview{ps})}{(\singlelocalview{ps'})} \rightarrow \\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \hardwarelocalstep{cpuid}{(\localview{ps}{l})}{(\localview{ps'}{\nulllist})}\\
+\end{array}
+$
+\item single$\_$log$\_$imply$\_$env:\\
+$
+\begin{array}{l}
+\forall \ cpuid \ l \ l' \ ps \ ps' .\ \singlelogstep{cpuid}{(\localview{ps}{l})}{(\localview{ps'}{l'})} \rightarrow \\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \hardwarelocalstep{cpuid}{(\localview{ps}{l})}{(\localview{ps'}{l'})}\\
+\end{array}
+$
+\item one$\_$step$\_$split$\_$refines$\_$big2 : \\
+$
+\begin{array}{l}
+\forall \ cpuid \ si\_o \ s_h \ s_h' \ t \ s_l . \ \singlesplitstep{cpuid}{si\_o}{s_h}{t}{s_h'} \rightarrow  \matchsrstaterstate{s_h}{s_l} \rightarrow \\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \exists\ s_l' . \  \ccplusstep{\singlebigtwostep{cpuid}{si\_o}{s_l}{t}{s_l'}} \wedge  \matchsrstaterstate{s_h'}{s_l'}\\
+\end{array}
+$
+\end{enumerate}
+\caption{Split Refines Big2}
+\label{fig:chapter:conlink:split-refines-bigtwo}
+\end{figure}
+%%%%%%%%%%%%%%%%
+The refinement between this model and the big step style single core machine requires the refinement between local step rules as shown in lemma 1 and lemma 2 in Figure~\ref{fig:chapter:conlink:split-refines-bigtwo}. 
+With those lemmas 
+the top-level proof, the lemma 3 in  Figure~\ref{fig:chapter:conlink:split-refines-bigtwo} is straightforward.
+
+\begin{figure}
+\noindent\fbox{single reorder step: ${}_{[curid : \ztype]} (oracle : \mcoracle{\set{curid}}{\mclog}{\mclog}) :  \srstatekwd \rightarrow \cctracekwd \rightarrow \srstatekwd \rightarrow \mcprop$}
+
+\begin{mathpar}
+\inferrule
+{\singlelocalstep{curid}{(\singlelocalview{ps})}{(\singlelocalview{ps'})}}
+{\singlereorderstep{curid}{oracle}{(\rstate{ps}{l})}{\ccemptytrace}{(\rstate{ps'}{l})}}
+
+\inferrule
+{\oget{\set{curid}}{\mclog}{\mclog}{l}{oracle}{l_0}\\
+\singlelogstep{curid}{(\localview{ps}{(\listappoppo{l_0}{l})})}{(\localview{ps'}{l'})}}
+{\singlereorderstep{curid}{oracle}{(\rstate{ps}{l})}{\ccemptytrace}{(\rstate{ps'}{(\listappoppo{l'}{\listappoppo{l_0}{l}})})}}
+\end{mathpar}
+\caption{Reorder Step Machine.}
+\label{fig:chapter:conlink:reorder-step-machine}
+\end{figure}
+%%%%%%%%%%%%%%%%
+The next optimization is defining different oracle that can replace the oracle query function $\yieldbackfunckwd$. 
+The machine model that merge those multiple events generated by $\yieldbackfunckwd$ 
+into the one single oracle query is defined in Figure~\ref{fig:chapter:conlink:reorder-step-machine}.
+%%%%%%%%%%%%%%%%
+\begin{figure}
+\noindent\fbox{auxiliary function}
+%  Definition valid_cache_log_members (tid : Z) (l : Log) :=
+%    forall ev, In ev l -> event_source ev <> tid \/ GetEvTy ev = YIELDTY.
+\begin{mathpar}
+\inferrule[nil]
+{ \ }
+{\validcachelogmembers{cpuid}{\nulllist}}
+
+\inferrule[nonil]
+{ev \in l\\
+(\eventsourcefuncnoeq{ev} \neq cpuid \vee ev = \yieldev{\_})}
+{\validcachelogmembers{cpuid}{l}}
+\end{mathpar}
+
+\noindent\fbox{variables for match relation}
+$$
+\begin{array}{lllr}
+cpuid & : & \ztype & \mbox{(starting CPU of the system)}\\
+si\_o & : & \mcoracle{\set{cpuid}}{\mclog}{\mcevent} &  \mbox{(oracle for a single cpu)}\\
+re\_o & : & \mcoracle{\set{cpuid}}{\mclog}{\mclog} &  \mbox{(oracle for a single cpu - reordered)}\\
+\end{array}
+$$
+
+\noindent\fbox{match state : $\rstatekwd \rightarrow \srstatekwd \rightarrow \mcprop$}
+\begin{mathpar}
+\inferrule[match state]
+{ ps_h = ps_l \\
+l_h = l_l \\
+\validlog{cpuid}{(\listappoppo{al}{l_l})}\\
+\getcuridfromlog{cpuid}{\listappoppo{al}{l_l}}{cpuid}\\
+l_h \neq \listconsoppo{\yieldev{\_}}{\_} \\
+(al = \nulllist \vee (\exists \ ev \ al' . \ al = \listconsoppo{ev}{al'} \wedge ev = \yieldbackev{cpuid}))\\
+\validcachelogmembers{cpuid}{al}}
+{\matchrstatesrstate{(\rstate{ps_h}{l_h})}{(\srstate{ps_l}{l_l}{al})}}
+\end{mathpar}
+
+\noindent\fbox{hypothesis}
+\begin{enumerate}
+\item valid$\_$oracle$\_$def: $\validoraclenoeq{cpuid}{\set{cpuid}}{si\_o }$
+\item YieldBack$\_$consistence$\_$with$\_$reorder$\_$o :\\
+$
+\begin{array}{l}
+\forall \ ps_h \ l_h \ ps_l \ l_l \ al.\ \matchrstatesrstate{(\rstate{ps_h}{l_h})}{(\srstate{ps_l}{l_l}{al})} \rightarrow \\
+\ \ \ \ \ \ \ \ \ \ \validlog{cpuid}{(\listconsoppo{\yieldev{cpuid}}{\listappoppo{al}{l_l}})} \rightarrow \\
+\ \ \ \ \ \ \ \ \ \ \exists\ l_1. \ \yieldbackfunc{\timebound}{cpuid}{\listconsoppo{\yieldev{cpuid}}{\listappoppo{al}{l_l}}}{\nulllist}{si\_o}{l_1} \wedge \\ 
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \forall \ l_1' .\  \oget{\set{cpuid}}{\mclog}{\mclog}{l_h}{re\_o}{l_1'} \rightarrow \\ 
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \  \ \ \ \ \ \ l_1' = \listappoppo{l_1}{\listconsoppo{\yieldev{cpuid}}{al}} \\
+\end{array}
+$
+\end{enumerate}
+
+\noindent\fbox{top lemmas}
+\begin{enumerate}
+\item one$\_$step$\_$reorder$\_$refines$\_$split : \\
+$
+\begin{array}{l}
+\forall \ s_h \ s_h' \ t \ s_l . \ \singlereorderstep{cpuid}{re\_o}{s_h}{t}{s_h'} \rightarrow  \matchrstatesrstate{s_h}{s_l} \rightarrow \\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \exists\ s_l' .\ \singlesplitstep{cpuid}{si\_o}{s_l}{t}{s_l'} \wedge  \matchrstatesrstate{s_h'}{s_l'}\\
+\end{array}
+$
+\end{enumerate}
+\caption{Reorder Refines Split}
+\label{fig:chapter:conlink:reorder-refines-split}
+\end{figure}
+%%%%%%%%%%%%%%%%
+The refinement proof between those different kinds of oracle queries needs an assumption about the relation between those two queries. 
+The hypothesis 2 in Figure~\ref{fig:chapter:conlink:reorder-refines-split} 
+states the hypothesis that is 
+required to prove the top level lemma (lemma 1) in Figure~\ref{fig:chapter:conlink:reorder-refines-split}.
+
+
+\begin{figure}
+%  Fixpoint reduce_log (l: Log) :=
+%    match l with
+%      | nil => nil
+%      | e :: l' =>
+%        match log_event_source e with
+%          | None => (reduce_log l')
+%          | _ => e :: (reduce_log l')
+%        end
+%    end.
+\noindent\fbox{auxiliary function}
+$$
+\mcreducelogfunckwd (l : \mclog) : \mclog := 
+ \left\{\begin{array}{lr}
+\nulllist & \text{for } l = \nulllist \\
+\listconsoppo{ev}{l_r'} & \text{for } l = \listconsoppo{ev}{l'} \wedge \mcreducelogfunc{l'}{l_r'}\\
+&\wedge(ev \neq \yieldev{\_} \wedge ev \neq \yieldbackev{\_})\\
+%& (ev = \acqev{\_} \vee ev = \relev{\_}{\_}{\_} \vee ev = \atomicev{\_}{\_}{\_})\\
+l_r' & \text{for } l = \listconsoppo{ev}{l'} \wedge \mcreducelogfunc{l'}{l_r'}\\
+&\wedge (ev = \yieldev{\_} \vee ev = \yieldbackev{\_})\\
+\end{array} \right.
+$$
+
+\noindent\fbox{variables for match relation}
+$$
+\begin{array}{lllr}
+cpuid & : & \ztype & \mbox{(starting CPU of the system)}\\
+hi\_re\_o & : & \mcoracle{\set{cpuid}}{\mclog}{\mclog} &  \mbox{(oracle for a single cpu - simplified)}\\
+lo\_re\_o & : & \mcoracle{\set{cpuid}}{\mclog}{\mclog} &  \mbox{(oracle for a single cpu - reordered)}\\
+\end{array}
+$$
+
+%\fbox{match state : $\rstatekwd \rightarrow \rstatekwd \rightarrow \mcprop$}
+\begin{mathpar}
+\inferrule[match state]
+{\mcreducelogfunc{l}{l'}}
+{\matchrrstaterrstae{(\rstate{ps}{l'})}{(\rstate{ps}{l})}}
+\end{mathpar}
+
+\noindent\fbox{hypothesis}
+\begin{enumerate}
+\item relate$\_$reorder$\_$oracle$\_$def: \\
+$
+\begin{array}{l}
+\forall \ ps \ l.\ \matchrrstaterrstae{(\rstate{ps}{(\mcreducelogfuncnoeq{l})}}{(\rstate{ps}{l})} \rightarrow \\
+\ \ \ \ \ \ \ \ \ \ \ \ \forall \ l_h. \ \oget{\set{cpuid}}{\mclog}{\mclog}{(\mcreducelogfuncnoeq{l})}{hi\_re\_o}{l\_h} \rightarrow \\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \exists \ l. \ \oget{\set{cpuid}}{\mclog}{\mclog}{l}{lo\_re\_o}{l\_l} \wedge \mcreducelogfunc{l\_l}{l\_h} \\
+\end{array}
+$
+\end{enumerate}
+
+\noindent\fbox{top lemmas}
+\begin{enumerate}
+\item one$\_$step$\_$reorder$\_$refines$\_$reorder : \\
+$
+\begin{array}{l}
+\forall \ s_h \ s_h' \ t \ s_l . \ \singlereorderstep{cpuid}{hi\_re\_o}{s_h}{t}{s\_h'} \rightarrow \matchrrstaterrstae{s_h}{s_l} \rightarrow \\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \exists\ s_l' . \  \singlereorderstep{cpuid}{lo\_re\_o}{s_l}{t}{s\_l'} \wedge  \matchrrstaterrstae{s_h'}{s_l'}\\
+\end{array}
+$
+\end{enumerate}
+\caption{Reorder Refines Reorder}
+\label{fig:chapter:conlink:reorder-refines-reorder}
+\end{figure}
+%%%%%%%%%%%%%%%%
+After that, 
+the machine does not need to keep the 
+all scheduling event at all because it does not necessary 
+for the oracle query 
+and it increases the complexity of the global oracle. 
+In this sense, 
+we also refine the machine 
+that contains multiple scheduling events with the global log without any scheduling event,
+which will be related with $\mcreducelogfunckwd$ in Figure~\ref{fig:chapter:conlink:reorder-refines-reorder}.
+It also shows that those two machines
+that are same but use different logs
+can be connected via the lemma 1 in  Figure~\ref{fig:chapter:conlink:reorder-refines-reorder}.
+
+
+
+\subsubsection{Divide the Global Log}
+
+\begin{figure}
+\noindent\fbox{separate log and sp state:}
+$$
+\begin{array}{lll}
+\separateeventkwd & := &\separateacqevkwd\langle from : \ztype\rangle~\vert~\separaterelevkwd\langle from : \ztype, d: \sharedpiece\rangle\\
+   & & \vert~\separateatomicevkwd\langle from:\ztype, e:\atomicevent\rangle\\
+\separatelogtypekwd & := & \listconstructorkwd\ \separateeventkwd\\
+\separatelogkwd & := &   \ztype \rightarrow \separatelogtypekwd \\
+\separateoraclelogtypekwd & := & \ztype \times \separatelogtypekwd \times \primitiveid \\
+\spstatekwd & := & \spstateconkwd : \privatestate \rightarrow \separatelogkwd \rightarrow \spstatekwd \\
+\end{array}
+$$
+
+\noindent\fbox{separate log step: $ \ztype \rightarrow \ztype \rightarrow \localviewkwd \rightarrow \privatestate \rightarrow \separateeventkwd \rightarrow \mcprop$}
+
+\begin{mathpar}
+\inferrule[acquire]
+{\programcounter{ps}{\acqsharedcmd{id}}\\
+\calowner{l}{id}{\ofreestate{d}}\\
+\setsharedstep{ps}{d}{ps'}}
+{\separatelogstep{curid}{id}{(\localview{ps}{l})}{ps'}{({\separateacqev{curid}})}}
+
+\inferrule[release]
+{\programcounter{ps}{\relsharedcmd{id}}\\
+\calowner{l}{id}{\ownstate{curid}}\\
+\setsharedstep{ps}{d}{ps'}}
+{\separatelogstep{curid}{id}{(\localview{ps}{l})}{ps'}{({\separaterelev{curid}{d}})}}
+
+\inferrule[atomic]
+{  \programcounter{ps}{\atomiccmd{id}{\atomiceventident{e}}}\\
+\atomicstep{curid}{id}{ps}{l}{ps'}{e}}
+{\separatelogstep{curid}{id}{(\localview{ps}{l})}{ps'}{({\separateatomicev{curid}{e}})}}
+\end{mathpar}
+\caption{State for Separate Step Rules and Local Step Rules}
+\label{fig:chapter:conlink:separate-state-definition}
+\end{figure}
+
+\begin{figure}
+\noindent\fbox{auxiliary functions for the differences of the logs:}
+\begin{center}
+\begin{tabular}{l}
+$
+   \separateeventtwoeventkwd(ev : \separateeventkwd) (id : \ztype) 
+      :=  \left\{\begin{array}{lr}
+        \acqev{from}{id} & \text{for } \separateacqev{from}\\
+        \relev{from}{id}{d} & \text{for } \separaterelev{from}{d}\\
+        \atomicev{from}{id}{e} & \text{for } \separateatomicev{from}{e} \\
+        \end{array} \right.
+$\\
+$
+   \separatelogtwologkwd(log : \separatelogtypekwd) (id : \ztype) 
+      :=  \left\{\begin{array}{lr}
+        \nulllist & \text{for } log = \nulllist \\
+        \listconsoppo{e_{sp}}{l_{sp}} & \text{for }  log = \listconsoppo{e}{l} \\
+        & \wedge \separateeventtwoevent{e}{id}{e_{sp}}\\
+        & \wedge \separatelogtwolog{l}{id}{l_{sp}}\\
+        \end{array} \right.
+$\\
+$
+\separateeventtwoidkwd (ev : \separateeventkwd) : \primitiveid :=
+ \left\{\begin{array}{lr}
+         \acqsharedid& \text{for } \separateacqev{\_}\\
+        \relsharedid & \text{for } \separaterelev{\_}{\_}\\
+        \atomiceventident{e} & \text{for } \separateatomicev{\_}{e} \\
+ \end{array} \right.
+$\\
+\end{tabular}
+\end{center}
+$$
+\begin{array}{lll}
+  \getseplogkwd (id :\ztype)(spp : \separatelogkwd)  &:= & slog \hfill{\text{for } (id, slog) \in spp}\\
+   \setseplogkwd (id :\ztype) (slog : \separatelogtypekwd) (spp: \separatelogkwd) &:= &(spp - \set{(id, \_)})  \cup \set{(id, slog)}\\
+\end{array}
+$$
+\caption{Auxiliary Functions for Single Separate Machine.}
+\label{fig:chapter:conlink:auxiliary-funcitons-for-single-separate-machine}
+\end{figure}
+
+\begin{figure}
+\noindent\fbox{separate step:
+${}_{[curid : \ztype]} (oracle : \mcoracle{\set{curid}}{\separateoraclelogtypekwd}{\separatelogtypekwd}) :  \spstatekwd \rightarrow \cctracekwd \rightarrow \spstatekwd \rightarrow \mcprop$
+}
+\begin{mathpar}
+\inferrule[local]
+{\singlelocalstep{curid}{(\singlelocalview{ps})}{(\singlelocalview{ps'})}}
+{\singleseparatestep{curid}{oracle}{(\spstate{ps}{gl})}{\ccemptytrace}{(\spstate{ps'}{gl})}}
+
+\inferrule[log]
+{
+\getseparatelog{id}{gl}{l}\\
+\oget{\set{curid}}{\separateoraclelogtypekwd}{\separatelogtypekwd}{(id, l, \separateeventtwoidnoeq{e}}{oracle}{l_0} \\
+\separatelogtwolog{(\listappoppo{l_0}{l}}{id}{sl}\\
+\separatelogstep{curid}{id}{(\localview{ps}{sl})}{ps'}{e}
+\setseplogkwd{id}{(\listappoppo{\listconsoppo{e}{l_0}}{l})}{gl}{gl'}
+}
+{\singleseparatestep{curid}{oracle}{(\spstate{ps}{gl})}{\ccemptytrace}{(\spstate{ps'}{gl'})}}
+\end{mathpar}
+\caption{Separate Step Rules.}
+\label{fig:chapter:conlink:separate-step-rules}
+\end{figure}
+%%%%%%%%%%5
+\begin{figure}
+\noindent\fbox{auxiliary function}
+%
+%  Fixpoint remove_cache_event (l: Log) (tid: Z) :=
+%    match l with
+%      | nil => nil
+%      | e :: l' =>
+%        if zeq tid (event_source e) then l
+%        else remove_cache_event l' tid
+%    end
+%
+
+$
+\removecacheeventkwd (l : \mclog) (cpuid : \ztype): \mclog := 
+ \left\{\begin{array}{lr}
+\nulllist & \text{for } l = \nulllist \\
+\listcons{ev}{l_r'} & \text{for } l = \listcons{ev}{l'}  \wedge \eventsourcefunc{e}{cpuid}\\
+    &  \wedge \removecacheevent{l'}{cpuid}{l_r'}\\
+l_r' & \text{for } l = \listcons{ev}{l'}  \wedge \eventsourcefuncnoeq{e}\neq {cpuid}\\
+    &  \wedge \removecacheevent{l'}{cpuid}{l_r'}\\
+\end{array} \right.
+$
+
+\begin{mathpar}
+\inferrule[valid log']
+{\mcreducelogfunc{l}{l}}
+{\validlogprim{l}}
+\end{mathpar}
+%
+%  Definition valid_log' (l : Log) : Prop :=
+%    l = reduce_log l.
+%
+%  Definition valid_oracle' (tid: Z) (o : Oracle (OracleProp := re_op)) :=
+%    forall l l', 
+%      valid_log' l ->
+%      oget (s_set tid) l o = Some l' ->
+%      (forall e, In e l' -> event_source e <> tid) /\
+%      valid_log' l'.
+%  
+%
+
+$
+\begin{array}{l}
+\validoracleprimkwd (cpuid: \ztype) (o : \mcoracle{\set{cpuid}}{\mclog}{\mclog}) := \\
+\ \ \ \ \forall \ l \ l' . \ \validlogprim{l} \rightarrow \oget{\set{cpuid}}{\mclog}{\mclog}{l}{o}{l'} \rightarrow\\
+\ \ \ \ \ \ \ \ (\forall \ e . e \in l' \rightarrow \eventsourcefuncnoeq{e} \neq cpuid) \wedge \validlogprim{l'}\\
+\end{array}
+$
+\caption{Auxiliary Functions for Separate Refines Reorder.}
+\label{fig:chapter:conlink:auxiliary-functions-separate-refines-reorder}
+\end{figure}
+%%%%%%%%%%%%
+\begin{figure}
+\noindent\fbox{variables for match relation}
+
+$
+\begin{array}{lllr}
+cpuid & : & \ztype & \mbox{(starting CPU of the system)}\\
+sep\_o & : & \mcoracle{\set{cpuid}}{\separateoraclelogtypekwd}{\separatelogtypekwd} &  \mbox{(separate log type oracle)}\\
+re\_o & : & \mcoracle{\set{cpuid}}{\mclog}{\mclog} &  \mbox{(reordered log oracle)}\\
+\end{array}
+$
+
+\noindent\fbox{match logs : $\ztype \rightarrow \separatelogkwd \rightarrow \mclog \rightarrow \mcprop$}
+\begin{mathpar}
+\inferrule[match log]
+{\getseparatelog{id_{prim}}{l_{sep}}{l_{h}}\\
+\loggetatom{l_{glob}}{id_{prim}}{l_l}\\
+\separatelogtwolog{l_h}{id_{prim}}{\removecacheeventnoeq{l_l}{curid}}}
+{\mcmatchlogs{curid}{l_{sep}}{l_{glob}}}
+\end{mathpar}
+
+\noindent\fbox{match state : $\ztype \rightarrow \spstatekwd \rightarrow \rstatekwd \rightarrow \mcprop$}
+\begin{mathpar}
+\inferrule[match state]
+{\validlogprim{l_{glob}}\\
+\mcmatchlogs{curid}{l_{sep}}{l_{glob}}}
+{\matchspstaterstate{curid}{(\spstate{ps}{l_{sep}})}{(\rstate{ps}{l_{glob}})}}
+\end{mathpar}
+
+\noindent\fbox{hypothesis}
+\begin{enumerate}
+\item valid$\_$oracle$'\_$def: $\validoracleprim{cpuid}{re\_o }$
+\item relate$\_$separate$\_$oracle$\_$reorder$\_$oracle$\_$def:\\
+$
+\begin{array}{l}
+\forall \ ps \ l_{sep} \ l_{glob} \ id  \ l_{id} \ l_{id}' \ e .\ \matchspstaterstate{curid}{(\spstate{ps}{l_{sep}})}{(\rstate{ps}{l_{glob}})} \rightarrow \\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \getseparatelog{id}{l_{sep}}{l_{id}} \rightarrow \\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \  \oget{\set{cpuid}}{\separateoraclelogtypekwd}{\separatelogtypekwd}{(id, l_{id}, e)}{sep\_o}{l_{id}'} \\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \   \exists \ l_{glob}' .\ \oget{\set{cpuid}}{\mclog}{\mclog}{l_{glob}}{re\_o}{l_{glob}'} \wedge \\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \  \ \ \ \ \ \ \loggetatom{\listapp{l_{glob}'}{l_{glob}}}{id}{\separatelogtwolognoeq{\listapp{l_{id}'}{l_{id}}}{id}} \\
+\end{array}
+$
+\end{enumerate}
+
+\noindent\fbox{top lemmas}
+\begin{enumerate}
+\item one$\_$step$\_$separate$\_$refines$\_$reorder : \\
+$
+\begin{array}{l}
+\forall \ s_h \ s_h' \ t \ s_l . \ \singleseparatestep{cpuid}{sep\_o}{s_h}{t}{s_h'} \rightarrow  \matchspstaterstate{cpuid}{s_h}{s_l} \rightarrow \\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \exists\ s_l' . \  \singlereorderstep{cpuid}{re\_o}{s_l}{t}{s_l'} \wedge  \matchspstaterstate{cpuid}{s_h'}{s_l'}\\
+\end{array}
+$
+\end{enumerate}
+\caption{Separate Refines Reorder}
+\label{fig:chapter:conlink:separate-refines-reorder}
+\end{figure}
+The last piece of optimization is dividing the global log into the multiple logs to simplify the oracle query for each shared resources. 
+That is only for the easy and scalable layer building in the local layer interface, 
+but it requires multiple works to do. 
+First, 
+the modification on the event type is necessary. 
+the separate event type defined in Figure~\ref{fig:chapter:conlink:separate-state-definition}
+shows the definition for them. The separate event definition is quite similar to the previous definition, 
+but the separate log ($separatelogkwd$) has the different type,
+ which is the map from its log identifier to the log only for the identifier. 
+All identifiers also have the corresponding primitive ID ($\primitiveid$), which is defined as $\separateoraclelogtypekwd$.
+There are also several auxiliary functions, 
+that are mostly for translating the single-stream global log into the separate log type defined in Figure~\ref{fig:chapter:conlink:separate-state-definition}.
+Figure~\ref{fig:chapter:conlink:auxiliary-funcitons-for-single-separate-machine} contains those auxiliary functions.
+
+By using them, we finally prove the separate step rules in Figure~\ref{fig:chapter:conlink:separate-step-rules}. 
+It is same with the reorder step rules concerning
+having two rules, local rules for private steps and log rules for the operations on shared states. 
+
+Similar to the previous steps, 
+we also provide the refinement proof that can be further used for the $\compcert$ style simulation proof. 
+Figure~\ref{fig:chapter:conlink:auxiliary-functions-separate-refines-reorder} and 
+Figure~\ref{fig:chapter:conlink:separate-refines-reorder} shows 
+the related auxiliary functions, match relations, hypothesis, and proofs for them.

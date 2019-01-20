@@ -1,0 +1,315 @@
+
+
+\subsection{Concurrent Machine Model}
+\label{chapter:linking:subsec:concurrent-machine-model}
+
+
+Concurrent machine model is a language that can run programs with partially focused set on it,
+and it is associated with the concurrent layer interface in Section~\ref{chapter:ccal:subsec:concurrent-layer-interface}. 
+This machine model does not provide the interface for us to build layers on top of it, but give the key connection between oracle machine model (thus multicore machine model) and the single CPU machine model.  
+
+
+
+\begin{figure}
+
+\noindent\fbox{environmental state: }
+
+$
+\begin{array}{lll}
+\envstatekwd_{[A : \set{\ztype}]}& := & \mcstateconkwd :~ \ztype \rightarrow \localstatepool{A} \rightarrow \mclog \rightarrow \localstatekwd\\
+\end{array}
+$
+
+\noindent\fbox{back id function:}
+
+\begin{tabular}{l}
+$
+\backidkwd (curid : \ztype) (e : \mcevent):= \left\{\begin{array}{lr}
+curid' & \text{for } e = \yieldbackev{curid'} \\
+\schedid &   \text{for } e =\yieldev{\_} \\
+curid & \text{Otherwise}
+        \end{array} \right.
+ $\\
+\end{tabular}
+
+
+\noindent\fbox{env step: ${}_{[A : \set{\ztype}]} (oracle:\mcoracle{A}{\mclog}{\mcevent}) :  \mcstatekwd_{[A]} \rightarrow \cctracekwd \rightarrow \mcstatekwd_{[A]} \rightarrow \mcprop$}
+
+\begin{mathpar}
+\inferrule[progress]
+{ \getpstsome{\localstatekwd}{curid}{lsp}{(\localstate{ps}{\bfalse})}\\
+\hardwarelocalstep{curid'}{(\localview{ps}{l})}{(\localview{ps'}{l'})}\\
+\setpst{\localstatekwd}{curid'}{\localstate{ps'}{\btrue}}{lsp}{lsp'}}
+{\envstep{A}{oracle}{(\envstate{A}{curid}{lsp}{l})}{\ccemptytrace}{(\envstate{A}{curid}{lsp'}{(\listappoppo{l'}{l})})}}
+
+\inferrule[yield]
+{  l_0 = \listconsoppo{\yieldbackev{curid}}{l} \\
+l' = \listconsoppo{\yieldev{curid'}}{l_0} \\
+\getpstsome{\localstatekwd}{curid'}{lsp}{(\localstate{ps}{\btrue})}\\
+\setpst{\localstatekwd}{curid'}{\localstate{ps}{\bfalse}}{lsp}{lsp'}\\
+\oget{A}{\mclog}{\mcevent}{l_0}{oracle}{\yieldbackev{curid}}}
+{\envstep{A}{oracle}{(\envstate{A}{curid}{lsp}{l})}{\ccemptytrace}{(\envstate{A}{curid}{lsp'}{l'})}}
+
+\inferrule[skip]
+{  l' = \listconsoppo{e}{l} \\
+\getpstnone{\localstatekwd}{curid'}{lsp}\\
+\oget{A}{\mclog}{\mcevent}{l}{oracle}{e} \\
+\backid{curid}{e}{curid'}}
+{\envstep{A}{oracle}{(\envstate{A}{curid}{lsp}{l})}{\ccemptytrace}{(\envstate{A}{curid'}{lsp}{l'})}}
+\end{mathpar}
+\caption{Environmental Step Machine and Related Definitions for Multicore}
+\label{fig:chapter:conlink:multicore-env-step-machine}
+\end{figure}
+
+Figure~\ref{fig:chapter:conlink:multicore-env-step-machine} contains the state definition, 
+auxiliary functions and step relations of the partial machine. 
+The state definition is almost same with the state definition in Figure~\ref{fig:chapter:conlink:multicore-machine-with-hardware-oracle},
+which is the state for the state for all cores.
+Differently with the previous state definition, however, the state definition is parameterized by a set of CPUs, which is a focused set for the machine. 
+Other CPUs outside of the focused set ($D - A$) and the hardware scheduler are treated as the environment of the machine. 
+To handle the steps by the environment of the machine, the step relation has \textsf{SKIP} rule, 
+when query the oracle to update the log when the currently running CPU is not in the set $A$. 
+This rule is a key for connecting the full machine semantics with the local machine semantics. 
+
+\subsubsection{Concurrent Machine Model with the Full CPU Set}
+
+
+Since the set for this concurrent machine model can be a set precisely same with the full CPU set, 
+we first show that the program runs with the oracle machine refines the concurrent machine model with full CPU set. 
+Formally speaking, 
+It is the parallel composition rule for all threads; thus we treat this proof is a linking proof (for parallel composition), which provide the full machine semantics can refine the collection of multiple instances in the concurrent program. 
+
+\begin{figure}
+
+\noindent\fbox{variables for match relation}
+
+$$
+\begin{array}{lllr}
+cpuid & : & \ztype & \mbox{(starting CPU of the system)}\\
+hw\_o & : & \mcoracle{\coreset}{\mclog}{\mcevent} &  \mbox{(hardware scheduler oracle)}\\
+\end{array}
+$$
+
+\noindent\fbox{match state : $\envstatekwd_{[\coreset]} \rightarrow \mcstatekwd \rightarrow \mcprop$}
+
+\begin{mathpar}
+\inferrule[match state]
+{curid \in \coreset \\ 
+\validlog{cpuid}{l} \\
+l \neq \listconsoppo{\yieldev{\_}}{\_}\\
+\getcuridfromlog{cpuid}{l}{curid}\\
+(\forall \ ps \ b \ tid  . \ tid \neq curid \rightarrow \getpstsome{\localstatekwd}{tid}{lsp}{(\localstate{ps}{b})} \rightarrow b = \bfalse)\\
+(\forall \ ps \ b  . \ \getpstsome{\localstatekwd}{curid}{lsp}{(\localstate{ps}{b})} \rightarrow b = \bfalse \rightarrow \\\\
+\exists \ e \ l' . \ l = \listconsoppo{e}{l'} \wedge e = \yieldbackev{curid})} 
+{\matchestatestate{(\envstate{\coreset}{curid}{lsp}{l})}{(\mcstate{curid}{lsp}{l})}}
+\end{mathpar}
+
+
+\noindent\fbox{hypothesis}
+
+\begin{enumerate}
+\item valid$\_$oracle$\_$def: $\validoraclenoeq{cpuid}{\coreset}{hw\_o }$
+\end{enumerate}
+
+\noindent\fbox{top lemmas}
+
+\begin{enumerate}
+\item one$\_$step$\_$env$\_$refines$\_$oracle : \\
+$
+\begin{array}{l}
+\forall \ s_h \ s_h' \ t \ s_l . \ \envstep{\coreset}{hw\_o }{s_h}{t}{s_h'} \rightarrow  \matchestatestate{s_h}{s_l} \rightarrow \\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \exists\ s_l' . \  \ccplusstep{\oraclestep{hw\_o }{s_l}{t}{s_l'}} \wedge  \matchstatehstate{s_h'}{s_l'}\\
+\end{array}
+$
+\end{enumerate}
+\caption{Parallel Composition Proof for Multicore}
+\label{fig:chapter:conlink:parallel-composition-for-multicore}
+\end{figure}
+
+Figure~\ref{fig:chapter:conlink:parallel-composition-for-multicore} shows the full context of the proof. 
+The proof is relatively easy after defining the proper refinement relation. 
+
+\subsubsection{Concurrent Machine Model with a Single CPU}
+
+
+Now, we focus on a single CPU. 
+In this step, 
+the critical part that we have to prove is that the multiple shared steps in full CPU sets can
+ refine environmental steps in a single CPU machine.
+This step is also a crucial part for our concurrent layer verification because
+it provides the local layer interface that is connected with the program with the full context (full CPUs).
+The proof, however, is complicated due to the mismatch of those two different states (even though they are 
+using the same concurrent machine model).
+To prove this theorem, 
+we first introduce auxiliary function defined in Figure~\ref{fig:chapter:conlink:auxiliary-function-for-full-cpus-and-a-single-cpu}. 
+\jieung{Add a figure why we need measure}
+When looking at the \textsf{SKIP} rule in the environmental step machine, 
+it only queries one event per one time even it returns $\yieldevkwd$ as its result;
+thus the machine with a single core sometimes require two steps to match its transition with the machine that contains the full CPU set as its context. 
+In this sense, we define $\mcmeasurekwd$ and $\mcstatemeasurekwd$ to postpone the step transition in the lower machine (the machine with the full CPU set). 
+
+\begin{figure}
+\noindent\fbox{auxiliary function - decreasing index:}
+\begin{center}
+\begin{tabular}{l}
+$
+   \mcmeasurekwd (l : \mclog)  : \nattype :=
+     \left\{\begin{array}{lr}
+        O & \text{for }  l = \listconsoppo{\yieldev{\_}}{\_} \\
+        S \ O & \text{otherwise}\\
+        \end{array} \right.$ \\
+$ \mcstatemeasurekwd (A : \set{\ztype}) (est : \envstatekwd_{[A]}) : \nattype := \mcmeasurenoeq{l} \ \ \ \ \ \ \ \ \ \ (\text{for } est = \envstate{A}{\_}{\_}{l}) $\\
+$ \localstepevkwd (ev : \mcevent) : \optiondef\ \mclog := 
+     \left\{\begin{array}{lr}
+        \mathrm{Some} \ (\listconsoppo{ev}{\nulllist}) & \text{for }  ev = \acqev{\_}{\_} \\
+                                        & \vee  ev= \relev{\_}{\_}{\_} \\
+                                        & \vee ev= \atomicev{\_}{\_}{\_} \\
+        \mathrm{Some} \ \nulllist & \text{for }  ev = \yieldev{\_} \\
+	   \mathrm{None} & \text{otherwise}\\
+        \end{array} \right. $ \\
+\end{tabular}        
+\end{center}
+%  Definition measure (l : Log) : nat := 
+%    match lastEvTy l with 
+%    | Some YIELDTY => O
+%    | _ => S O 
+%    end.
+%  
+%  Definition state_measure (A : ZSet) (est : estate (A := A)) :=
+%    match est with 
+%    | EState _ _ l => measure l 
+%    end.
+%
+%  Definition local_step_ev (ev : event) : option Log := 
+%    match ev with 
+%    | EACQ _ _ => Some (ev::nil)
+%    | EREL _ _ _ => Some (ev::nil)
+%    | EATOMIC _ _ _ => Some (ev::nil)
+%    | EYIELD _ => Some nil
+%    | _ => None
+%    end.
+\caption{Auxiliary Functions for the  Refinement Proof between the Machine with Full CPUs and a Single CPU}
+\label{fig:chapter:conlink:auxiliary-function-for-full-cpus-and-a-single-cpu}
+\end{figure}
+
+
+By using those auxiliary functions, defining the refinement relation for those two machines are possible 
+by distinguishing the case when $\mcmeasurekwd$ returns 1 and 0, which are
+ defined in Figure~\ref{fig:chapter:conlink:auxiliary-function-for-full-cpus-and-a-single-cpu}.
+Then the $\mcmeasurekwd$  function returns 1 for the current log,
+we match the current state of a single core machine over an environmental machine 
+with the current state of a full core machine over an environmental machine.
+When the result is 0, however, 
+we match the previous state of a single core machine over an environmental machine 
+with the current state of a full core machine over an environmental machine. 
+
+\begin{figure}
+\noindent\fbox{variables for match relation:}
+$$
+\begin{array}{lllr}
+cpuid & : & \ztype & \mbox{(starting and the focused CPU of the system)}\\
+hw\_o & : & \mcoracle{\coreset}{\mclog}{\mcevent} &  \mbox{(hardware scheduler oracle)}\\
+si\_o & : & \mcoracle{\set{cpuid}}{\mclog}{\mcevent} &  \mbox{(oracle for a single cpu)}\\
+\end{array}
+$$
+
+\noindent\fbox{match state : $\envstatekwd_{[\set{cpuid}]} \rightarrow  \envstatekwd_{[\coreset]}  \rightarrow \mcprop$}
+
+\begin{mathpar}
+\inferrule[match state S]
+{\mcmeasure{l}{S\ O} \\
+curid \in \coreset \\
+\validlog{cpuid}{l}\\
+\getcuridfromlog{cpuid}{l}{curid}\\
+\getpstnoeq{\localstatekwd}{cpuid}{lsp'} = \getpstnoeq{\localstatekwd}{cpuid}{lsp}\\
+(curid = cpuid \rightarrow \forall \ ps \ b . \ \getpstsome{\localstatekwd}{cpuid}{lsp}{(\localstate{ps}{b})} \rightarrow\\\\
+b = \bfalse \rightarrow \exists \ e \ l' . \ l = \listconsoppo{e}{l'} \wedge e = \yieldbackev{curid})\\\\
+(\forall \ tid  . \ tid \neq curid \rightarrow \forall \ ps \ b . \ \getpstsome{\localstatekwd}{tid}{lsp}{(\localstate{ps}{b})} \rightarrow b = \bfalse)\\\\
+(curid \neq cpuid \rightarrow l = \listconsoppo{\yieldbackev{\_}}{\_} \rightarrow\\\\
+\forall \ ps \ b . \ \getpstsome{\localstatekwd}{curid}{lsp}{(\localstate{ps}{b})} \rightarrow b = \bfalse)\\\\
+(curid \neq cpuid \rightarrow l \neq \listconsoppo{\yieldbackev{\_}}{\_} \rightarrow\\\\
+\forall \ ps \ b . \ \getpstsome{\localstatekwd}{curid}{lsp}{(\localstate{ps}{b})} \rightarrow b = \btrue)}
+{\matchestateestate{\set{cpuid}}{(\envstate{\set{cpuid}}{curid}{lsp'}{l})}{(\envstate{\coreset}{curid}{lsp}{l})}}
+
+\inferrule[match state O]
+{\mcmeasure{l'}{O} \\
+\getcuridfromlognoeq{cpuid}{l} \in \coreset \\
+\validlog{cpuid}{l'}\\
+l' = \listconsoppo{\yieldev{curid}}{l} \\ 
+curid' = \schedid\\
+\getcuridfromlog{cpuid}{l}{curid} \\
+\getpstnoeq{\localstatekwd}{cpuid}{lsp'} = \getpstnoeq{\localstatekwd}{cpuid}{lsp}\\
+\getpstnone{\localstatekwd}{(\getcuridfromlognoeq{cpuid}{l})}{lsp'}\\
+\oget{\set{cpuid}}{\mclog}{\mcevent}{l}{si\_o}{\yieldev{curid}}\\
+(\forall \ tid  . \ tid \neq curid \rightarrow \forall \ ps \ b . \ \getpstsome{\localstatekwd}{tid}{lsp}{(\localstate{ps}{b})} \rightarrow b = \bfalse)\\\\
+(curid \neq cpuid  \rightarrow \forall \ ps \ b  . \ \getpstsome{\localstatekwd}{curid}{lsp}{(\localstate{ps}{b})} \rightarrow\\\\
+b = \bfalse \rightarrow  l = \listconsoppo{\yieldbackev{\_}}{\_})}
+{\matchestateestate{\set{cpuid}}{(\envstate{\set{cpuid}}{curid'}{lsp'}{l'})}{(\envstate{\coreset}{curid}{lsp}{l})}}
+
+\end{mathpar}
+\caption{Refinement Relation between the Machine with Full CPUs and a Single CPU}
+\label{fig:chapter:conlink:refinement-relation-for-full-cpus-and-a-single-cpu}
+\end{figure}
+
+
+\begin{figure}
+\noindent\fbox{hypothesis}
+
+\begin{enumerate}
+\item valid$\_$cpuid: $cpuid \in \coreset$
+\item valid$\_$oracle$\_$cond: $\validoraclenoeq{cpuid}{\set{cpuid}}{si\_o}$
+\item related$\_$single$\_$oracle$\_$hw$\_$oracle$\_$def : \\
+$
+\begin{array}{l}
+\forall \ l \ ev  . \ \validlog{cpuid}{l} \rightarrow l = \listconsoppo{\yieldev{\_}}{\_} \rightarrow\\
+\ \ \ \ \oget{\set{cpuid}}{\mclog}{\mcevent}{l}{si\_o}{ev} \rightarrow \oget{\coreset}{\mclog}{\mcevent}{l}{hw\_o}{ev} \\
+\end{array}
+$
+\item relate$\_$single$\_$oracle$\_$concrete$\_$step$\_$def: \\ 
+$
+\begin{array}{l}
+\forall \ curid' \ curid \ lsp' \ lsp \ l' \ l \ l\_res \ ps \ ev  . \\
+\ \ \ \matchestateestate{\set{cpuid}}{(\envstate{\set{cpuid}}{curid'}{lsp'}{l'})}{(\envstate{\coreset}{curid}{lsp}{l})} \rightarrow\\
+\ \ \ \getcuridfromlognoeq{cpuid}{l} \neq cpuid \rightarrow \\
+\ \ \ \getpstsome{\localstatekwd}{\getcuridfromlognoeq{cpuid}{l}}{lsp}{(\localstate{ps}{false})} \rightarrow \\
+\ \ \ \oget{\set{cpuid}}{\mclog}{\mcevent}{l}{si\_o}{ev} \rightarrow \\
+\ \ \ \localstepev{ev}{l\_res} \rightarrow l = \listconsoppo{\yieldbackev{\_}}{\_} \rightarrow \\
+\ \ \ \exists\ (ps' : \privatestate) . \ \hardwarelocalstep{(\getcuridfromlognoeq{cpuid}{l})}{(\localview{ps}{l})}{(\localview{ps'}{l\_res})} \\
+\end{array}
+$
+\end{enumerate}
+
+
+\noindent\fbox{top lemmas}
+
+\begin{enumerate}
+\item one$\_$step$\_$env$\_$refines$\_$oracle : \\
+$
+\begin{array}{l}
+\forall \ s_h \ s_h' \ t \ s_l. \ \envstep{\set{cpuid}}{si\_o}{s_h}{t}{s_h'} \rightarrow  \matchestateestate{\set{cpuid}}{s_h}{s_l} \rightarrow \\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ (\exists \ s_l' .\ (\ccplusstep{\envstep{\coreset}{hw\_o}{s_l}{t}{s_l'}} \wedge\\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \  \matchestateestate{\set{cpuid}}{s_h'}{s_l'}) \vee \\ 
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ (\mcstatemeasurenoeq{\set{cpuid}}{s_h'} < \mcstatemeasurenoeq{\set{cpuid}}{s_h} \wedge t = \ccemptytrace \wedge \\ 
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \matchestateestate{\set{cpuid}}{s_h'}{s_l})\\
+\end{array}
+$
+\end{enumerate}
+\caption{Refinement between a single core and a full core set over environmental step machines}
+\label{fig:chapter:conlink:cpu-env-to-env-theorem}
+\end{figure}
+
+
+
+Figure~\ref{fig:chapter:conlink:cpu-env-to-env-theorem} provide the 
+refinement proof between two machines, 
+which is a key theorem that informally says, the single core machine evaluation based on the environmental context $si\_o$ (that contains 
+the strategies for the whole participants of the system except the current CPU ID)
+is refined
+by the multicore machine evaluation based on the environmental context $hw\_o$ (that only contains the strategy for a hardware scheduler).
+It also requires an assumption about the oracles relations, which tells their $\yieldevkwd$ events
+are always matched together, 
+and the hardware local step relation, which shows that the high-level strategy for each CPU always guarantees
+the accurate evaluation in the concrete steps. 
+They are weak points of our proof, and we are working on 
+removing those hypotheses in the future.
+

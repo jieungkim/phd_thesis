@@ -1,0 +1,476 @@
+
+\subsection{Single-threaded Machine Model}
+\label{chapter:linking:subsec:single-threaded-machine-model}
+When the focused thread set in $\easm$ is a single thread, then the machien itself is 
+already a single threaded machine model. 
+It, however, has a huge differences between the model that we want to introduce ($\compcertx$ like model).
+
+\begin{lstlisting}[language=C]
+  Fixpoint get_env_log (n: nat) (curid: Z) (l: Log) :=
+    match n with
+      | O => None
+      | S n =>
+        if zeq (proc_id (uRData l)) curid then
+          Some l
+        else
+          get_env_log n curid (Single_Oracle l:: l)
+    end.
+\end{lstlisting}
+
+\begin{lstlisting}[language=C]
+  Inductive tstate: Type := | TState: Z -> regset -> mem -> dproc -> Log -> tstate.
+\end{lstlisting}
+
+
+\begin{lstlisting}[language=C]
+  Inductive tstep (ge: genv) : tstate -> trace -> tstate -> Prop :=
+\end{lstlisting}
+
+\begin{lstlisting}[language=C]
+    | texec_step_internal:
+        forall b ofs f i (rs: regset) m m' d d' ds' rs' curid l,
+          proc_id (uRData l) = curid ->
+          rs PC = Vptr b ofs ->
+          Genv.find_funct_ptr ge b = Some (Internal f) ->
+          find_instr (Int.unsigned ofs) f.(fn_code) = Some i ->
+          lastEvType l <> Some LogYieldTy ->
+          exec_instr ge f i rs (m, (uRData l,d)) = Next rs' (m', (ds',d')) ->
+          tstep ge (TState curid rs m d l) E0
+                  (TState curid rs' m' d' l)
+\end{lstlisting}
+
+\begin{lstlisting}[language=C]
+  | texec_step_external:
+      forall b ef args res (rs: regset) m m' d d' ds' t rs' curid  l l',
+        proc_id (uRData l) = curid ->
+        rs PC = Vptr b Int.zero ->
+        Genv.find_funct_ptr ge b = Some (External ef) ->
+        extcall_arguments rs m (ef_sig ef) args ->
+        lastEvType l <> Some LogYieldTy ->
+        external_call' (mem:= mwd (cdata PData)) (fun _ => True) ef ge args (m, (uRData l, d)) t res (m', (ds',d')) ->
+        rs' = (set_regs (loc_external_result (ef_sig ef)) res 
+                        (undef_regs (CR ZF :: CR CF :: CR PF :: CR SF :: CR OF :: nil)
+                                    (undef_regs (map preg_of destroyed_at_call) rs))) 
+                #PC <- (rs RA) #RA <- Vundef ->
+        forall NON_YIELD: match ef with
+                            | EF_external id _ => 
+                              if peq id thread_yield then False
+                              else if peq id thread_sleep then False
+                                   else
+                                     if has_event id then
+                                       exists largs choice,
+                                         val2Lval_list args largs  /\
+                                         choice_check id largs (uRData l) d = choice /\ 
+                                         l' = (LEvent curid (LogPrim id largs choice (snap_func d)) :: l) 
+                                     else
+                                       l' = l
+                            | _ => l' = l
+                          end,
+                          forall STACK:
+                          forall b o, rs ESP = Vptr b o ->
+                                      (Ple (Genv.genv_next ge) b /\ Plt b (Mem.nextblock m)),
+                          forall SP_NOT_VUNDEF: rs ESP <> Vundef,
+                          forall RA_NOT_VUNDEF: rs RA <> Vundef,
+                            tstep ge (TState curid rs m d l) t 
+                                  (TState curid rs' m' d' l')
+\end{lstlisting}
+
+\begin{lstlisting}[language=C]
+    | texec_step_prim_call:
+        forall b ef (rs: regset) m m' d d' ds' t rs' curid l l',
+          proc_id (uRData l) = curid ->
+          rs PC = Vptr b Int.zero ->
+          Genv.find_funct_ptr ge b = Some (External ef) ->
+          lastEvType l <> Some LogYieldTy ->
+          primitive_call (mem:= mwd (cdata PData)) ef ge rs (m, (uRData l, d)) t rs' (m', (ds', d')) ->
+          forall NON_YIELD: match ef with
+                              | EF_external id _ => 
+                                if peq id thread_yield then False
+                                else if peq id thread_sleep then False
+                                     else
+                                       if has_event id then
+                                         l' = (LEvent curid (LogPrim id nil 0 (snap_func d)) :: l)
+                                       else
+                                         l' = l
+                              | _ => l' = l
+                            end,
+          tstep ge (TState curid rs m d l) t 
+                (TState curid rs' m' d' l')
+\end{lstlisting}
+
+\begin{lstlisting}[language=C]
+    | texec_step_external_yield:
+        forall b ef (rs0 rs': regset) (m m': mem) curid s l l' l'' l''' nb d e,
+          proc_id (uRData l) = curid ->
+          rs0 PC = Vptr b Int.zero ->
+          Genv.find_funct_ptr ge b = Some (External ef) ->
+          stencil_matches s ge ->
+          l' = LEvent curid (LogYield (Mem.nextblock m))::l ->
+          lastEvType l <> Some LogYieldTy ->
+          get_env_log limit curid l' = Some l'' ->
+          last_op l'' = Some e ->
+          state_check thread_yield nil l d ->
+          l''' = LEvent curid LogYieldBack::l'' ->
+          rs' = (undef_regs (CR ZF :: CR CF :: CR PF :: CR SF :: CR OF :: nil)
+                            (undef_regs (map preg_of destroyed_at_call) rs0)) 
+                  # EAX <- Vundef #PC <- (rs0 RA) #RA <- Vundef ->
+          forall
+            (Hnextblock: getLogEventNB (e) = Some nb)
+            (NON_YIELD: match ef with
+                               | EF_external id _ => 
+                                 if peq id thread_yield then True
+                                else False
+                               | _ => False
+                             end)
+                 (LIFT_NEXTBLOCK: mem_lift_nextblock m (Pos.to_nat (nb) - Pos.to_nat(Mem.nextblock m) % nat) = m'),
+            tstep ge (TState curid rs0 m d l) E0
+                  (TState curid rs' m' d l''')
+\end{lstlisting}
+
+\begin{lstlisting}[language=C]
+    | texec_step_external_sleep:
+        forall b ef (rs0 rs': regset) (m m': mem) curid s l l' l'' l''' nb d e i,
+          proc_id (uRData l) = curid ->
+          rs0 PC = Vptr b Int.zero ->
+          Genv.find_funct_ptr ge b = Some (External ef) ->
+          stencil_matches s ge ->
+          l' = LEvent curid (LogSleep (Int.unsigned i) (Mem.nextblock m)
+                                      (sync_chpool_check thread_sleep ((Lint i)::nil) (uRData l) d))::l ->
+          lastEvType l <> Some LogYieldTy ->
+          get_env_log limit curid l' = Some l'' ->
+          last_op l'' = Some e ->
+          state_check thread_sleep (Lint i::nil) l d ->
+          l''' = LEvent curid LogYieldBack::l'' ->
+          rs' = (undef_regs (CR ZF :: CR CF :: CR PF :: CR SF :: CR OF :: nil)
+                            (undef_regs (map preg_of destroyed_at_call) rs0)) 
+                  # EAX <- Vundef #PC <- (rs0 RA) #RA <- Vundef ->
+          forall
+            (Hnextblock: getLogEventNB (e) = Some nb)
+            (Hargs: extcall_arguments rs0 m (mksignature (Tint:: nil) None cc_default) (Vint i:: nil))
+            (NON_YIELD: match ef with
+                          | EF_external id _ => 
+                            if peq id thread_sleep then True
+                            else False
+                          | _ => False
+                        end)
+            (LIFT_NEXTBLOCK: mem_lift_nextblock m (Pos.to_nat (nb) - Pos.to_nat (Mem.nextblock m) % nat) = m'),
+            tstep ge (TState curid rs0 m d l) E0
+                  (TState curid rs' m' d l''').
+\end{lstlisting}
+
+\begin{lstlisting}[language=C]
+   Definition tfinal_state : tstate -> int -> Prop :=
+     fun _ _ => False.
+   
+   Definition init_dproc  :=
+     if zeq main_thread current_thread then main_init_dproc else nomain_init_dproc.
+
+   Inductive tinitial_state {F V} (p: AST.program F V): tstate -> Prop :=
+   | tinitial_state_intro: 
+       forall m0 m1 rs0,
+         Genv.init_mem p = Some m0 ->
+         init_mem_lift_nextblock m0 = m1 ->
+         initial_thread_state (Genv.globalenv p) current_thread init_log = Some rs0 ->
+         tinitial_state p (TState current_thread rs0 m1 (thread_init_dproc current_thread) init_log).
+\end{lstlisting}
+
+\begin{lstlisting}[language=C]
+  Lemma star_step_get_env_log:
+    forall ge rs d m curid l l',
+      get_env_log limit curid l = Some l' ->
+      star iestep ge
+           (IEState (proc_id (uRData l))
+                    (ZMap.set curid (Running rs) (ZMap.init Environment))
+                    m
+                    (ZMap.set curid (Some d) (ZMap.init None)) l) E0
+           (IEState curid
+                    (ZMap.set curid (Running rs) (ZMap.init Environment))
+                    m
+                    (ZMap.set curid (Some d) (ZMap.init None)) l').
+  Proof.
+\end{lstlisting}
+
+\begin{lstlisting}[language=C]
+  Inductive match_tstate_iestate: (ZMap.t ThreadState) -> (mem * mem) -> (ZMap.t (option dproc)) ->
+                                 regset -> mem -> dproc -> Log -> Z -> Prop :=
+  | MATCH_TSTATE_IESTATE:
+      forall (rs: regset) rsm (m: mem) (mp : mem * mem) (d: dproc) (dp : ZMap.t (option dproc)) curid l
+             (RSM: rsm = ZMap.set curid (Running rs) (ZMap.init Environment))
+             (Hcurid: proc_id (uRData l) = current_thread)
+             (MP: m = fst mp)
+             (DP: dp = ZMap.set curid (Some d) (ZMap.init None)),        
+        match_tstate_iestate rsm mp dp rs m d l curid.
+
+  Theorem one_step_Asm_T2E:
+    forall ge mp m m' curid curid' rsm rs rs' l l' dp d d' t
+           (TStep: TAsm.tstep ge (TState curid rs m d l) t (TState curid' rs' m' d' l'))
+           (Match: match_tstate_iestate rsm mp dp rs m d l curid),
+    exists rsm' mp' dp',
+      plus IIEAsm.iestep ge (IEState curid rsm mp dp l) t
+           (IEState curid' rsm' mp' dp' l')
+      /\ match_tstate_iestate rsm' mp' dp' rs' m' d' l' curid'.
+\end{lstlisting}
+
+%\subsection{Intermediate Thread-Local Machine Model}\label{subsec:tasm}
+%
+%Now, we have already gotten a single threaded machine model, which gives us a full isolation.
+%However, $\EAsmM{}$ itself is quite different with $\AsmLM$ in terms of its state definition and evaluation rules,
+%so it is hard for us to show the refinement relation between this $\EAsmM{}$ and $\AsmLM$ directly. 
+%Especially, yield back and environmental steps in $\EAsmM{}$ does not match well with our $\AsmLM$ rules. 
+%If we keep those operational style strategy query evaluation, it is hard for us to define a single step behavior of 
+%scheduling primitives in our thread-local layer interface.
+%To bridge the gap between $\EAsmM{}$ and $\AsmLM$,
+%we have introduced one more intermediate machine model, $\TAsmM{[c, \curthread]}$. 
+%In here, the machine is always parameterized by a fixed thread id, which we will always notate as $\curthread$. 
+%And using this variable, we define this machine's state as
+%\begin{small}
+%\[
+%st_{TAsm} = (\curthread, \ \regs_{\curthread}, \dproc_{\curthread}, \SLog) 
+%\]
+%\end{small}
+%, which has a shared log and only one private data for the thread.
+%In this machine, all other threads' steps should be replaced by environmental steps
+%as our single-threaded concurrent machine model, $\EAsmM{[c, \{current\_thread\}]}$, does.
+%In addition to that, to define a single step behavior of scheduling primitives in our thread-local machine, a big-step style strategy query function has 
+%been introduced as
+%\begin{small}
+%\[{\small
+%\begin{array}{l}
+%\oracle^{t} \vdash \getenvlog\ (limit :\mathbb{N})\ (l: \SLog ):  \SLog  \\
+%\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ :=
+%\begin{cases}
+%\ \ \mathrm{None}\hfill (\mathrm{when} \ limit = 0) \\
+%\ \ \mathrm{Some} \ l \hfill (\mathrm{when} \ \procid{\updatefun_{init}(l)} = \curthread) \\
+%\ \ \oracle^{t} \vdash \getenvlog((limit - 1), ((\oracle^{t}(\{\curthread\})(l))::l))\ \ \ \ \  \ \ \ \ \ 
+%\hfill (\mathrm{Otherwise})\\
+%\end{cases} 
+%\end{array}
+%}\]
+%\end{small}
+%, which queries the strategy iteratively until the current thread gets the evaluation control again.
+%
+%Using the definition, $\TAsmM{[c, current\_thraed]}$ can merge multiple strategy queries during yield call as a single one, 
+%and the yield evaluation rule for $\TAsmM{[c, current\_thraed]}$ is defined as
+%\begin{small}
+%\begin{mathpar}
+%\inferrule{
+%\updatefun_{init}(l) = ds \\
+%\procid(ds) = \curthread \\ 
+%\statecheck(\yield, [],ds,\snapfun(d)) \\ 
+%f_{\dproc}(curid) = Some\ d \\ 
+%\nextblockfun(m) = nb \\ 
+%l' = (\curthread , ([], nb, \snapfun(d)))::l \\
+%\oracle^{t} \vdash \getenvlog(limit, l') = l'' \\
+%last\_event(l) = ev \\
+%ev = (\_, (nb, \_)) \vee ev = (\_, (\_, nb, \_))  \\
+%\liftnextblock{m}{nb - \nextblock{m}} = m' \\
+%l''' = (\curthread , \yieldbackunit)::l''\\
+%%\oracle, c\vdash \sstepr{\spec_{id}}{[largs]}{\regs, m, ds, d}{\textit{res}\cup \{\}}{\regs',  m', ds', d'}
+%}{
+%\curthread, \oracle^{t}, c, \oracle \vdash_\codeinmath{TAsm} \sstep{\yield}{[]}{\curthread, \regs, m', l, d}
+% {\{ \}, \curthread, \regs', m', l', d}
+%}
+%\end{mathpar}
+%%\vspace{-5px}
+%\end{small}%
+%Intuitively, this rule first updates the current shared log by adding one yield event 
+%and perform the strategy query using the log.
+%If the current strategy returns a log as its result,
+%this yield rule updates the machine state using
+%the information that the machine has gotten from the querying. 
+%Note that the currently-running thread information and a private abstract data do not change at all 
+%during this yield call. 
+%From $\TAsmM{}$, all machines are thread-local, 
+%and scheduling primitives will not perform any context switching at all. 
+%Since the differences between $\TAsmM{}$ and $\EAsmM{}$ are only in the state definition 
+%and the way to handle yield and sleep evaluations, 
+%we can easily prove the following theorem by doing case analysis:
+%
+%\begin{theorem}[$\TAsmM{}$ refines $\EAsmM{}$]
+%\begin{small}
+%$$\ltyp{(\{\curthread\}, \oracle^{t}, c, \oracle  \vdash_{\EAsmM{}} \mathrm{PH})}{}{\varnothing}
+%{(\curthread, \oracle^{t}, c, \oracle \vdash_{\TAsmM{}} \mathrm{PH})}$$
+%\end{small}
+%\label{theorem:tasm-refines-easm}
+%\end{theorem}
+%
+%With the given simulation relation, $\simrel(st_{\TAsmM{}}, st_{\EAsmM{}})$, we also need to show the following two cases.
+%
+%$\proofcase{initial\_state}$ 
+%The proof for this case requires additional lemmas.
+%This is because in $\TAsmM{}$, a shared log of the initial state is already $\SLog_{init}$ of the current thread.
+%In the case of $\EAsmM{}$, however, a shared log of the initial state is always $nil$. 
+%Therefore, we need to prove the statement, which is when we have a $init\_st_\TAsmM{}$ and a $init\_st_\EAsmM{}$, there always exist valid more than zero steps in $\EAsmM{}$ and the state $st_{\EAsmM{}}$ which satisfies
+%$$ \{\curthread\}, \oracle^{t}, c, \oracle\vdash_{\TAsmM{}} init\_st_{\EAsmM{}} \ni^{*} st_{\EAsmM{}} \wedge \simrel(init\_st_{\TAsmM{}}, st_{\EAsmM{}})$$
+%Intuitively, the lemma implies that we need to apply $\EAsmM{}$'s evaluation rules to its initial state for environment threads until we get $\SLog_{init}$ as a shared log of the state.
+%
+%Proofs for this lemma requires us to work with the induction on $\SLog_{init}$ for the current thread.
+%If the initial log is $nil$, the initial state of $\EAsmM{}$ will be directly matched with the initial state of $\TAsmM{}$, which is $\simrel(init\_st_{\TAsmM{}}, init\_st_{\EAsmM{}})$.
+%In the inductive case, we use the well-formedness condition of our $\SLog_{init}$. 
+%This enforces that the initial log should be 
+%either $nil$ or only contain events generated by other threads except the last one $yieldBack$ event as well as 
+%the log should have a valid event that creates the current thread at some point.
+%This well-formedness condition is not a magic in our proof because it can be removed when we link all threads together 
+%(we already show the way to link multiple threads in the previous section).
+%Then, we know that all events except the last $yieldBack$ are
+% generated by other threads in our environment, and cannot contain
+%any events raised by the current thread. 
+%Since the current $\EAsmM{}$ that we are considering is a single threaded machine parameterized by
+%a singleton set, $\{\curthread\}$, we know that all evaluation to generate the exactly same log with the initial log (for $\curthread$) on $\EAsmM{}$ should be on environment step of $\EAsmM{}$ except the last one $yieldBack$ rule after the current 
+%thread get a control for its evaluation. 
+%Therefore, we can provide the $st_{\EAsmM{}}$ which satisfies
+%$$\{\curthread\}, \oracle^{t}, c, \oracle \vdash_{\TAsmM{}} init\_st_{\EAsmM{}} \ni^{*} st_{\EAsmM{}} \wedge \simrel(init\_st_{\TAsmM{}}, st_{\EAsmM{}})$$
+%
+%
+%$\proofcase{one\_step\_refinement}$
+%Next step is showing the fact that when $\simrel(st_{\TAsmM{}}, st_{\EAsmM{}})$ and 
+%when we have one step evaluation on $\TAsmM{}$, 
+%which is $\curthread, \oracle^{t}, c, \oracle \vdash_{\TAsmM{}} st_{\TAsmM{}} \ni st'_{\TAsmM{}} $, 
+%then there exists a $st'_{\EAsmM{}}$ that satisfies 
+%$$\{\curthread\}, \oracle^{t}, c, \oracle \vdash_{\TAsmM{}} st_{\EAsmM{}} \ni^{+} st'_{\EAsmM{}} \wedge \simrel(st'_{\TAsmM{}}, st'_{\EAsmM{}})$$
+%
+%Proving this property requires case analysis on $\TAsmM{}$ evaluation rules.
+%
+%For all cases except scheduling rules in $\TAsmM{}$ (\textit{\ie} $\yield$ and $\sleep$ rules), 
+%we can provide a next state in $\EAsmM{}$ ($st'_{\EAsmM{}}$) directly, which satisfies $\{\curthread\}, \oracle^{t}, c,\oracle \vdash_{\EAsmM{}} st_{\EAsmM{}} \ni st'_{\EAsmM{}} \wedge \simrel(st'_{\TAsmM{}}, st'_{\EAsmM{}})$.
+%
+%In case of the $\yield$ evaluation rule in $\TAsmM{}$, let's assume that 
+%a shared log in $st_{\TAsmM{}}$ is $l$, and $\oracle^{t} \vdash \getenvlog{}$ returns a shared log $l''$ with an arbitrary big number $limit$ and the 
+%given argument $l'$ (\textit{\ie} $l' = (\curthread , ([], nb, \snapfun(d)))::l$) when $d$ is a 
+%private state of $st_{\TAsmM{}}$ and $nb$ is a next available block of the memory in $st_{\TAsmM{}}$). 
+%With this result, a shared log in $st'_{\TAsmM{}}$ will be $(\curthread , \yieldbackunit)::l''$.
+%Then, by its definition, there always exists a valid $l_{added}$ which satisfies $l'' = l_{added} {+\!\!+} l'$.
+%Therefore, we can prove this case by doing an induction on $l_{added}$. 
+%If the log ($l_{added}$) is $nil$, then, we simply match this one $\yield$ evaluation rule 
+%(that updates the log as $l'''$) with one step $yield$ and one step $yieldBack$ rules in $\EAsmM{}$.
+%Therefore, we can provide a valid $st'_{\EAsmM{}}$ 
+%which satisfies $\{\curthread\}, \oracle^{t}, c,\oracle \vdash_{\EAsmM{}} st_{\EAsmM{}} \ni^{+} st'_{\EAsmM{}} \wedge \simrel(st'_{\TAsmM{}}, st'_{\EAsmM{}})$.
+%In the inductive case, $\EAsmM{}$ needs to perform an evaluation with its environment rule which will add one event 
+%into its shared log at every time. 
+%Other rules will not be applied to generate the next $\EAsmM{}$ state because all threads except
+%$\curthread$ are in the state of $\mathrm{Environment}$ now. 
+%Therefore, we also can provide a valid new state, $st'_{\EAsmM{}}$ that satisfies 
+%$\{\curthread\}, \oracle^{t}, c,\oracle \vdash_{\EAsmM{}} st_{\EAsmM{}} \ni^{+} st'_{\EAsmM{}} \wedge \simrel(st'_{\TAsmM{}}, st'_{\EAsmM{}})$ and which is doing its evaluation by applying one $\yield$ rule, multiple environment 
+%rules, and one $yieldBack$ rule of $\EAsmM{}$ on $st_{\EAsmM{}}$.
+%
+%In the case of the $\sleep$ evaluation rule in $\TAsmM{}$, we also can provide a valid $st'_{\EAsmM{}}$ that satisfies 
+%$\{\curthread\}, \oracle^{t}, c, \oracle\vdash_{\EAsmM{}} st_{\EAsmM{}} \ni^{+} st'_{\EAsmM{}} \wedge \simrel(st'_{\TAsmM{}}, st'_{\EAsmM{}})$ by using the similar approach with the $\yield$ case.
+%
+%
+%\subsection{Thread-Local Machine Model}\label{subsec:hasm}
+%By applying the whole process on $\CSched$ that we have mentioned,
+%we finally can define thread-local layer interface  discussed in Sec.~\ref{subsec:phthreadlayer}.
+%The machine model for thread-local layer interface is almost same with the machine model of CPU-local layer interface, which is $\AsmLM$.
+%Therefore, we are able to 
+%utilize the whole power of $\compcertx$\ and build thread-local layers both written in C and in Assembly with the guarantee that those layers preserve the same behavior in our CPU-local machine.
+%This machine model, however, has two differences with  $\AsmLM$.
+%First, as mentioned in Sec.~\ref{subsec:phthreadlayer}, the evaluation semantics
+%for $\yield$ and $\sleep$ is totally changed as no-op like evaluations.
+%This difference is already dealt with multiple steps of refinement with several different machine models. 
+%In this sense, no additional steps are required to handle this issue.
+%Second, the machine allows a dynamic initial state for each thread, and this dynamically assigned 
+%initial state should be satisfied by our system invariant.
+%To resolve this challenge, 
+%Our thread-local layer interface provides one abstract definition that will be
+%instantiated with a concrete layer and a data structure implementation later.
+%
+%The abstract function, $\composedata$, has a type of
+%\begin{small}
+%\[
+%\composedata : \mathbb{Z} \rightarrow \dshare \rightarrow \dproc \rightarrow adt
+%\]
+%\end{small}
+%which gets the current thread id, a shared data, and a private data as its arguments 
+%and returns a \textit{abstract data} for $\AsmHM$ with the current thread id.
+%With this function, an initial state of a thread-local layer interface with the current thread id ($\curthread$) will be 
+%as
+%\begin{small}
+%\[
+%\composedata(\curthread, \ \updatefun_{init}(\SLog_{init}), init\_dproc(\curthread))
+%\]
+%\end{small}
+%This definition also gives consistency between our multithreaded concurrent machine model 
+%and this thread-local machine model.
+%When looking at the initial state definition for $\EAsmM{}$ in Sec.~\ref{subsec:fulleasm},
+%finding the similarity between both definitions is straightforward.
+%For the guarantee about preserving our system invariant in the initial state, we only need to prove that 
+%the calculated initial state satisfies our invariant.
+%
+%With the all stated ingredients during multiple previous sections, we can prove the following refinement theorem:
+%\begin{theorem}[$\AsmHM$ Refines $\TAsmM{}$]
+%\begin{small}
+%Assume that the simulation relation between $\TAsmM{}$ and $\AsmHM$ is $\simrel(st_{\AsmHM}, st_{\TAsmM{}})$.
+%In addition, suppose that there exists a layer definition, $\mathrm{PH}$, that satisfies an abstract relation, 
+%$\absrelt(\simrel(st_{\AsmHM}, st_{\TAsmM{}}), \TSched, \mathrm{PH})$. Then,
+%$$\ltyp{(\curthread, \oracle^{t}, c, \oracle \vdash_{\TAsmM{}} \mathrm{PH})}
+%{\absrelt(\simrel(st_{\AsmHM}, st_{\TAsmM{}}), \TSched, \mathrm{PH})}
+%{\varnothing}{(\curthread, \oracle^{t}, c, \oracle \vdash_{\AsmHM} \TSched)}$$
+%\end{small}
+%\label{theorem:hasm-refines_tasm}
+%\end{theorem}%
+%
+%$\proofcase{initial\_state}$ We show that there exists a valid initial state of $\TAsmM{}$ which satisfies our simulation relation
+%$\simrel$ with an initial machine state of $\AsmHM$, which is stated as follows:
+%$$\simrel(init\_st_{\AsmHM}, init\_st_{\TAsmM{}})$$
+%This proof relies on the abstract relation $\absrelt(\simrel(st_{\AsmHM}, st_{\TAsmM{}}), \TSched, \mathrm{PH})$,
+%but this case is quite trivial in its essence
+%because we construct $init\_st_{\AsmHM}$ using a $init\_st_{\TAsmM{}})$ and 
+%the $\composedata$ function.
+%
+%$\proofcase{one\_step\_refinement}$
+%Next step is showing the fact that when $\simrel(st_{\AsmHM}, st_{\TAsmM{}})$ and when we have one step evaluation on $\AsmHM$, which is $\oracle, \ c, \oracle^{t}, \curthread \vdash_{\AsmHM} st_{\AsmHM} \ni st'_{\AsmHM} $, 
+%then there exists a $st'_{\TAsmM{}}$ that satisfies 
+%$$\curthread, \oracle^{t}, c, \oracle \vdash_{\TAsmM{}} st_{\TAsmM{}} \ni st'_{\TAsmM{}} \wedge \simrel(st'_{\AsmHM}, st'_{\TAsmM{}})$$
+%
+%Proving this property requires case analysis on $\AsmHM$ evaluation rules, and it  
+%also heavily relies on the abstract definition,  $\absrelt(\simrel(st_{\AsmHM}, st_{\TAsmM{}}), \TSched, \mathrm{PH})$.
+%
+%For all cases except the external call evaluation rule in $\AsmHM$, 
+%we can provide a valid $st'_{\TAsmM{}}$ directly, which satisfies $\curthread, \oracle^{t}, c, \oracle \vdash_{\TAsmM{}} st_{\TAsmM{}} \ni st'_{\TAsmM{}} \wedge \simrel(st'_{\AsmHM}, st'_{\TAsmM{}})$.
+%
+%For the external call case, we need additional case analysis.
+%When the primitive is neither $\yield$ nor $\sleep$, then the matched
+%evaluation rule in $\TAsmM{}$ will also be the external evaluation rule. 
+%Then, we can provide a next state, $st'_{\TAsmM{}}$, that satisfies $\curthread, \oracle^{t}, c, \oracle \vdash_{\TAsmM{}} st_{\TAsmM{}} \ni st'_{\TAsmM{}} \wedge \simrel(st'_{\AsmHM}, st'_{\TAsmM{}})$.
+%
+%If the primitive is one of $\yield$ and $\sleep$, we match the evaluation with the $\yield$ evaluation rule in $\TAsmM{}$ or 
+%the $\sleep$ evaluation rule in $\TAsmM{}$, respectively.
+%Then, we can also provide a valid $st'_{\TAsmM{}}$ that satisfies $\curthread, \oracle^{t}, c, \oracle \vdash_{\TAsmM{}} st_{\TAsmM{}} \ni st'_{\TAsmM{}} \wedge \simrel(st'_{\AsmHM}, st'_{\TAsmM{}})$.
+%
+%Now, we can finally prove that our thread-local machine refines our CPU-local machine and our fully linked thread-local machine refines our 
+%CPU-local machine. 
+%The first property gives us a source to build thread-local layers and the second one guarantee our thread-local machine behavior is consistent with 
+%
+%\ignore{
+%\begin{theorem}[$\AsmHM$ refines $\AsmLM$]
+%\begin{small}
+%Assuming two machines, $\AsmHM$ and $\AsmLM$. Then we can show that
+%$$\ltyp{(c, \oracle \vdash_{\AsmLM} \CSched)}
+%{}
+%{\varnothing}{(\curthread, \oracle^{t}, c, \oracle \vdash_{\AsmHM} \TSched)}$$
+%when $\curthread$ is a member of threads on CPU $c$, and when we have valid abstract relations
+%$\absrel$ and $\absrelt$ with the abstract intermediate layer $\mathrm{PH}$ on $\EAsmM{}$ and $\TAsmM{}$.
+%\end{small}
+%\label{theorem:tasm_refines_lasm}
+%\end{theorem}%
+%
+%By using Theorem~\ref{theorem:easm_refine_lasm},~\ref{theorem:full-easm-refines-single-easm},~\ref{theorem:tasm-refines-easm}~\ref{theorem:hasm-refines_tasm}, we can show that the theorem is correct.
+%}
+%The second theorem in here is more detailed version of Theorem~\ref{theorem:thread-full-compose} by exposing several hidden definitions to simplify the theorem. 
+%
+%\begin{theorem}[Merged $\AsmHM$ refines $\AsmLM$]
+%\begin{small}
+%Assuming two machines, $\AsmHM$ and $\AsmLM$ and $\fullthreadset$ contains all available threads on CPU $c$.
+%. Then we can show that
+%$$\ltyp{(c, \oracle \vdash_{\AsmLM} \CSched)}
+%{}
+%{\varnothing}{\join_{tid \in \fullthreadset} (\curthread, \oracle^{t}, c, \oracle \vdash_{\AsmHM} \TSched)}$$
+%when we have valid abstract relations $\absrel$ and $\absrelt$ with the abstract intermediate 
+%layer $\mathrm{PH}$ on $\EAsmM{}$ and $\TAsmM{}$.
+%\end{small}
+%\label{theorem:tasm_refines_lasm}
+%\end{theorem}%
+%
+%By using Theorem~\ref{theorem:easm_refine_lasm},~\ref{theorem:thread-full-compose},~\ref{theorem:tasm-refines-easm}~\ref{theorem:hasm-refines_tasm}, we can show that the theorem is correct.
+%
+%

@@ -1,0 +1,381 @@
+\subsection{Hardware Configurations and Auxiliary Functions}
+\label{chapter:linking:subsec:hardware-configuration}
+
+\subsubsection{For Language Definitions}
+
+Abstraction is vital to handle complex problems, and it is also the same for this multicore linking framework.
+We are aiming to build a realistic machine model that provides 
+concurrent linking as well as a base model that supports 
+the layered framework described in Chapter~\ref{chapter:ccal}.
+It, however, requires complex details in the intermediate languages, 
+such as including a bunch of assembly instructions, memory models, 
+restrictions in the semantics definition in $\compcert$ (because we follow 
+the simulation proofs for the framework).
+To avoid those complexities, 
+our framework define multiple abstract definitions (hardware configurations, auxiliary functions, 
+abstract states, and abstract transition rules)
+that most intermediate languages can commonly use, 
+and then be instantiated later. 
+
+
+%To hide the machine-dependent and subtle definitions in detail while providing multicore lining framework, 
+%we define our semantics with hardware configuration, 
+%which contains the abstract form for us to follow for multicore linking.
+
+Figure~\ref{fig:chapter:conlinkg:abstract-hardware-configuration-and-semantics} provides the 
+abstract hardware configurations and semantics that are
+not stick into any specific hardware (such as $\intelmachine$ or ARM). 
+
+\begin{figure}
+\noindent\fbox{abstract hardware setting, abstract command definitions:}
+$$
+\begin{array}{lllr}
+\privatestate &:& \toptype & \mbox{(private state)}\\
+\sharedpiece &:& \toptype  & \mbox{(shared state: }\forall (s_1 \ s_2: \sharedpiece), \set{s_1 = s_2} + \set{s_1 \neq s_2}\mbox{)} \\
+\atomicevent &:& \toptype & \mbox{(atomic event: }\forall (e_1 \ e_2: \atomicevent), \set{e_1 = e_2} + \set{e_1 \neq e_2}\mbox{)} \\
+\atomiceventidentkwd & : & \atomicevent \rightarrow \primitiveid  & \mbox{(getting identifier of an atomic event)} \\
+\coreset & : & \set{\ztype} & \mbox{(set of cores - full core set for the multicore machine)}\\
+\schedid & : & \ztype & \mbox{(logical hardware scheduler CPU ID: } \schedid \notin \coreset\mbox{)}\\
+\end{array}
+$$
+
+ $$
+\begin{array}{lll}
+\command &:=& \privatecmdkwd ~\vert~ \atomiccmdkwd\langle id : \ztype, e:\primitiveid\rangle\\
+&& \vert~ \acqsharedcmdkwd\langle id : \ztype\rangle~\vert~\relsharedcmdkwd\langle id : \ztype\rangle\\
+\mcevent &:=& \yieldevkwd\langle from : \ztype\rangle~\vert~ \yieldbackevkwd\langle to : \ztype\rangle\\
+&& \vert~ \acqevkwd\langle from : \ztype, id : \ztype\rangle\\
+&& \vert~\relevkwd\langle from :\ztype, id : \ztype, d:\sharedpiece\rangle\\
+&&\vert~\atomicevkwd\langle from : \ztype, id : \ztype, e:\atomicevent\rangle\\
+\mclog & := & \listconstructorkwd\ \mcevent\\
+\mcoracle{S : \set{\ztype}}{log : \toptype}{ret: \toptype} & : &  \ztype \rightarrow log \rightarrow ret \\
+\ogetkwd_{[S: \set{\ztype}, log : \toptype, ret : \toptype]} & : &   log \rightarrow \mcoracle{S}{log}{ret} \rightarrow ret \\
+\end{array}
+$$
+
+\noindent\fbox{own state:}
+
+$$
+\begin{array}{llll}
+\ownstatekwd & := & \ofreekwd\langle s : \optioncmd~\sharedpiece\rangle~\vert~\ownkwd\langle i : \ztype\rangle \\
+\end{array}
+$$
+
+
+\noindent\fbox{abstract hardware semantics:}
+
+$$
+\begin{array}{llll}
+\programcounterkwd & : &  \privatestate \rightarrow \command \rightarrow \mcprop\\
+\privatestepkwd & : & \ztype \rightarrow \privatestate \rightarrow \privatestate \rightarrow \mcprop \\
+\getsharedstepkwd & : & \privatestate \rightarrow \sharedpiece \rightarrow \privatestate \rightarrow  \rightarrow \mcprop \\ 
+\setsharedstepkwd & :  & \privatestate \rightarrow \optioncmd{\privatestate} \rightarrow \mclog \rightarrow \privatestate \rightarrow \atomicevent \rightarrow \mcprop\\
+\atomicstepkwd & : &  \ztype \rightarrow \ztype \rightarrow \privatestate \rightarrow \mclog \rightarrow \privatestate \rightarrow \atomicevent \rightarrow \mcprop  \\
+\end{array}
+$$
+
+
+
+\caption{Abstract Hardware Configuration and Semantics.}
+\label{fig:chapter:conlinkg:abstract-hardware-configuration-and-semantics}
+\end{figure}
+
+The abstract hardware setting contains two kinds of states, private state ($\privatestate$) and shared state ($\sharedpiece$). 
+Also, all atomic operations are associated with their shared state, and then they generate an event ($\atomicevent$) that 
+are associated with the actions (\eg, CAS, SWAP, \etc).
+The abstract hardware setting, however, 
+does not know how many atomic operations and what kinds of atomic operations 
+will be connected to this multicore linking framework at this moment.
+In this sense, their details are hidden and can be instantiated later. 
+There are four kinds of commands in this abstract level, 
+which are private, atomic, acquire shared, and release shared operations. 
+Two operations, acquire shared and release shared, are logical and work as an unsafe ownership transfer operations for shared resources. 
+The global log contains multiple kinds of even in $\mcevent$. 
+Three of them correspond to three commands, atomic, acquire shared and release shared. 
+On the other hand, the private operation does not generate any event, because it does not affect others' behavior at all. 
+By using acquire shared and release shared events,
+calculating the ownership that is related to the shared resource with the identifier ($id$) is possible. 
+To notate the ownership status, we define the ``own state'', $\ownstatekwd$.
+When it has been freed, then we memorize the status of that moment. 
+When it has been owned, we marked that point with the ID for the owner. 
+Based on the definition of the log, 
+we then provide the environmental context ($\mcoraclekwd$)
+as well as the function that gets the result based on the current log and the environmental context ($\ogetkwd$). 
+Three arguments parameterize them. \jieung{add more descriptions for them}
+The abstract semantics contain 
+four program rules and one special rules ($\programcounterkwd$). 
+$\programcounterkwd$ tells us the next command that we have to evaluate, 
+and other four kinds of rules are for the operations that are associated with the corresponding commands.
+
+
+\begin{figure}
+\noindent\fbox{properties of abstract hardware semantics:}
+\begin{center}
+\begin{tabular}{l}
+$
+   \loggetatomkwd(l : \mclog) (eid : \primitiveid) : \mclog :=$\\
+\ \ \ \ \ $    \left\{\begin{array}{lr}
+        \nulllist & \text{for } l = \nulllist \\
+       {\listconsoppo{ev}{l'}} & \text{for } l = \listconsoppo{ev}{l'} \wedge \loggetatom{l'}{id}{o}  \wedge eid = eid'\\
+                    &   \wedge (ev = \atomicev{\_}{eid'}{\_} \vee ev = \acqev{\_}{eid'}   \vee ev = \acqev{\_}{eid'})  \\
+      l' & \text{for } l = \listconsoppo{ev}{l'} \wedge \loggetatom{l'}{id}{o}  \wedge eid = eid'\\
+                   & \wedge ((ev = \atomicev{\_ }{eid'}{\_} \vee ev = \acqev{\_}{eid'} \\
+                   &  \vee ev = \acqev{\_}{eid'} \wedge eid \neq eid') \vee ev = \_) \\     
+        \end{array} \right.
+$\\
+\end{tabular}
+\end{center}
+
+
+
+\noindent\fbox{calculate owner:}
+
+\begin{center}
+\begin{tabular}{l}
+$
+   \calownerkwd(l : \mclog) (i : \primitiveid) : \ownstatekwd :=$\\
+\ \ \ \ \    $ \left\{\begin{array}{lr}
+        \nulllist & \text{for } l = \nulllist \\
+       \ownstate{from} & \text{for } l = \listconsoppo{ev}{l'} \wedge \calowner{l'}{id}{o} \\
+                    &\wedge e = \acqev{from}{id'} \wedge id = id' \wedge o =  \ownstate{i}  \\
+       \ofreestate{\optionsome \ d} & \text{for } l = \listconsoppo{ev}{l'} \wedge \calowner{l'}{id}{o} \\
+                    &\wedge e = \relev{from}{id'}{d}  \wedge id = id' \wedge o = \ownstate{i} \wedge  i = from    \\
+       o  & \text{for }  l = \listconsoppo{ev}{l'} \wedge \calowner{l'}{id}{o} \wedge \text{otherwise} \\
+        \end{array} \right.
+$ \\
+\end{tabular}
+\end{center}
+
+
+\caption{Auxiliary Functions for Abstract Hardware Semantics.}
+\label{fig:chapter:conlinkg:auxliary-funcitons-for-abstract-harware-semantics}
+\end{figure}
+
+Figure~\ref{fig:chapter:conlinkg:auxliary-funcitons-for-abstract-harware-semantics} provides two auxiliary functions
+that are closely related to the abstract hardware semantics and configurations.
+$\loggetatomkwd$ function is a projection function from a global log to the log that is only associated with the atomic operation ID. The ID will later be mapped with the primitive ID later. 
+$\calownerkwd$ function gets the current owner of the shared resource associated with the primitive ID ($eid$). 
+Note that $\calownerkwd$ does not have any safety guarantee on the ownership control.
+The responsibility of those safety control does not rely on the hardware configuration but depends on the actual software implementation, such as spinlocks. 
+
+
+\begin{figure}
+\begin{mathpar}
+\inferrule[PC Determ]
+{\programcounter{ps}{c_1} \\
+\programcounter{ps}{c_2}}{c_1 = c_2}
+
+\inferrule[Private Step Determ]
+{\privatestep{n}{ps}{ps_1} \\ 
+\privatestep{n}{ps}{ps_2}}{ps_1 = ps_2}
+
+\inferrule[Get Shared Determ]
+{\getsharedstep{ps}{sp_1}{ps_1}\\
+\getsharedstep{ps}{sp_2}{ps_2}}{sp_1 = ps_2 \wedge ps_1 = ps_2}
+
+\inferrule[Set Shared Determ]
+{\setsharedstep{ps}{sp}{ps_1} \\ 
+\setsharedstep{ps}{sp}{ps_2}}{ps_1 = ps_2}
+
+\inferrule[Atomic Determ]
+{\atomicstep{curid}{id}{ps}{l}{ps_1}{ev_1}\\
+\atomicstep{curid}{id}{ps}{l}{ps_2}{ev_2}}{ps_1 = ps_2 \wedge ev_1 = ev_2}
+
+\inferrule[Atomic Valid]
+{\atomicstep{i}{eid}{ps}{l}{ps'}{e}\\
+\loggetatom{l}{eid}{l''} \\ 
+\loggetatom{l'}{eid}{l''}}
+{\atomicstep{i}{eid}{ps}{l'}{ps'}{e}}
+
+\end{mathpar}
+\caption{Properties of Abstract Hardware Semantics for Multicore Linking.}
+\label{fig:chapter:conlink:properties-of-abstract-hardware-semantics-for-multicore-linking}
+\end{figure}
+
+They, of course requires few restrictions presented in Figure~\ref{fig:chapter:conlink:properties-of-abstract-hardware-semantics-for-multicore-linking}. 
+Most restrictions are for the deterministic behavior of each hardware semantics. 
+They are necessary for us to prove various refinement theorems, 
+and essential for us to use forward-to-backward simulation technique in $\compcert$, because all languages have to be deterministic as well as receptive to use that technique. 
+In addition to that, the atomic operation, which only exists 
+in the extended version of $\compcert$ 
+requires the validity check (\textsf{Atomic Valid}).
+
+\subsubsection{For Refinement Proofs}
+
+
+\begin{figure}
+
+%
+%  (* eback is always generated by scheduler *) 
+%  Definition event_source (e: event) :=
+%    match e with
+%      | EYIELD i => i
+%      | EBACK _ => sched_id
+%      | EACQ i _ => i
+%      | EREL i _ _ => i
+%      | EATOMIC i _ _ => i
+%    end.
+%
+
+$
+\eventsourcefunckwd (ev : \mcevent) : \ztype := 
+ \left\{\begin{array}{lr}
+\schedid & \text{for } ev = \yieldbackev{\_} \\
+i  & \text{for } ev =\yieldev{i}  \vee ev= \acqev{i}{\_} \\
+   & \vee ev = \relev{i}{\_}{\_} \vee ev =  \atomicev{i}{\_}{\_}\\
+\end{array} \right.
+$
+
+%
+%  Definition event_des (e: event) :=
+%    match e with
+%      | EYIELD _ => sched_id
+%      | EBACK i => i
+%      | EACQ i _ => i
+%      | EREL i _ _ => i
+%      | EATOMIC i _ _ => i
+%    end.
+%
+
+$
+\eventdesfunckwd (ev : \mcevent) : \ztype := 
+ \left\{\begin{array}{lr}
+\schedid & \text{for } ev =\yieldev{\_} \\
+i & \text{for } ev= \yieldbackev{i} \vee ev = \acqev{i}{\_}\\
+   & ev=  \relev{i}{\_}{\_} \vee ev = \atomicev{i}{\_}{\_}\\
+\end{array} \right.
+$
+
+%
+%  Definition get_curid_from_log (start_core : Z) (l : Log) : Z :=
+%    match l with
+%    | nil => start_core
+%    | e::l' => event_des e
+%    end.
+%
+
+$
+\getcuridfromlogkwd (start\_core : \ztype) (l : \mclog): \ztype :=
+ \left\{\begin{array}{lr}
+start\_core & \text{for }  l = \nulllist \\
+\eventdesfuncnoeq{ev} & \text{for } l = \listconsoppo{ev}{\_}\\
+\end{array} \right.
+$
+
+\caption{Auxiliary Functions for Events: they are necessary for refinement proofs.}
+\label{fig:chapter:conlink:auxiliary-functions-for-events-in-refinement}
+\end{figure}
+\jieung{Do we need to move this part next to the multicore machine model?}
+
+In addition to those definitions and auxiliary functions for language definitions, 
+we have also introduced multiple definitions that are necessary for the refinement proofs between our intermediate machine models. 
+$\eventsourcefunckwd$ and $\eventdesfunckwd$ defines who is the source and destination of the event, respectively. 
+By using that, defining the function that gets the global log and returns the current running CPU ID ($\getcuridfromlogkwd$) is possible. 
+The function tells that it returns start CPU ID when the log is empty, and the destination of the last event in the log 
+as the current running CPU ID.
+We will show how it is related to our evaluation rules from the next section.
+
+\begin{figure}
+%   
+%    Definition valid_log_check (start_core : Z) (l : Log) :=
+%      match l with
+%      | nil => True
+%      | e::l' =>
+%        match e with
+%        | EBACK j => lastEvTy l' = Some YIELDTY /\ core_set j = true
+%        | EYIELD from => lastEvTy l' <> Some YIELDTY /\ from = get_curid_from_log start_core l' /\ core_set from = true
+%        | _ => match l' with
+%              | EBACK j'::_ => j' = event_source e /\  core_set j' = true
+%              | _ => False
+%              end
+%        end
+%      end.
+
+\begin{mathpar}
+\inferrule[valid log check - nil]
+{\ }
+{\validlogcheck{start\_core}{\nulllist}}
+
+\inferrule[valid check - yieldback]
+{ l = \listconsoppo{e}{l'} \\
+e = \yieldbackev{j} \\
+l' = \listconsoppo{\yieldev{\_}}{\_}\\
+j \in \coreset}
+{\validlogcheck{start\_core}{l}}
+
+\inferrule[valid check - yield]
+{l = \listconsoppo{e}{l'} \\
+e = \yieldev{from} \\
+l' \neq \listconsoppo{\yieldev{\_}}{\_}\\
+\getcuridfromlog{start\_core}{l'}{from} \\
+from \in \coreset}
+{\validlogcheck{start\_core}{l}}
+
+\inferrule[valid check - other]
+{l = \listconsoppo{e}{l'} \\
+e \neq \yieldev{\_} \\
+e \neq \yieldbackev{\_} \\
+l' = \listconsoppo{\yieldbackev{j'}}{\_}\\
+\eventsourcefunc{e}{j'} \\
+j' \in \coreset}
+{\validlogcheck{start\_core}{l}}
+\end{mathpar}
+
+%
+%    Inductive valid_log : Z -> Log -> Prop :=
+%    | valid_log_nil :
+%        forall tid, core_set tid = true -> valid_log_check tid nil -> valid_log tid nil
+%    | valid_log_cons:
+%        forall tid e l, core_set tid = true -> valid_log tid l -> valid_log_check tid (e::l) -> valid_log tid (e::l).
+%
+
+\begin{mathpar}
+\inferrule[valid log - nil]
+{tid \in \coreset\\
+\validlogcheck{tid}{\nulllist}}
+{\validlog{tid}{\nulllist}}
+
+\inferrule[valid log - cons]
+{tid \in \coreset\\
+\validlog{tid}{l}\\
+\validlogcheck{tid}{\listconsoppo{e}{l}}}
+{\validlog{tid}{\listconsoppo{ev}{l}}}
+\end{mathpar}
+
+
+%    (* valid oracle conditions only for hw oracle and single oracle *)
+%    (* similar to other valid_oracle conditions, 
+%       it is defined as rely-guarantee style *)
+%    Definition valid_oracle (start_core : Z) (A: ZSet) (o: Oracle) :=
+%      forall l e,
+%        valid_log start_core l -> 
+%        oget A l o = Some e ->
+%        (* thanks to this condition, hw_oracle only generate EBACK event, so 
+%           we can use this valid oracle condition both for hw oracle and single oracle *)
+%        A (event_source e) = false /\
+%        valid_log start_core (e::l).
+
+$
+\begin{array}{l}
+\validoraclekwd (start\_core : \ztype) (A : \set{\ztype}) (o : \mcoracle{A}{\mclog}{\mcevent}) := \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \  \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \  \\
+\hfill \forall\ l \ e .\  \validlog{start\_core}{l} \rightarrow \oget{A}{\mclog}{\mcevent}{l}{o}{e} \rightarrow \\
+\hfill \eventsourcefuncnoeq{e} \notin A \wedge \validlog{start\_core}{(\listconsoppo{e}{l})}\\
+\end{array}
+$
+\caption{Valid Global Log and Valid Oracle Definitions for Multicore Linking.}
+\label{fig:chapter:valid-global-log-and-valid-oracle-definitions-for-multicore-linking}
+\end{figure}
+
+Other fundamental relations for the refinement proofs are the valid log relation and the valid oracle definition by using that.
+The valid log definition checks whether the log is valid according to the log update of our semantics and
+is defined in Figure~\ref{fig:chapter:valid-global-log-and-valid-oracle-definitions-for-multicore-linking}.
+Since many details of our definitions are abstract, the log relation does not contain any information 
+about each event in the log.
+Instead of that, it contains the restrictions about the pattern of different types of events, especially about the pattern for yield and  yield back events.
+They are closely related to the log update pattern in our intermediate languages. 
+Based on the valid log relation, 
+we assume that the result generated by the environmental context always return the event that 
+will not be in the focused set of the semantics as well as satisfies the valid log relation.
+It is a crucial concept of our rely-guarantee style reasoning in our refinement proofs, which tells that the context's behavior always valid when we prove the behavior of focused set (closed set) in the system is valid. 
+
+

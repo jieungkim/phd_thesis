@@ -1,0 +1,158 @@
+
+
+
+\subsection{Multicore Machine Model with Hardware Scheduler}
+\label{chapter:linking:subsec:multicore-machine-model-with-hardware-scheduler}
+
+
+\begin{figure}
+\noindent\fbox{state: }
+$$
+\begin{array}{lll}
+\localstatekwd &:=& \localstateconkwd : \privatestate \rightarrow \booltype \rightarrow \localstatekwd\\
+\localstatepool{S : \set{\ztype}} & := &  \ztype \rightharpoonup \localstatekwd\\
+& & \hfill  (\forall i . i \in S \rightarrow \exists . (ps : \localstatekwd) (i, ps) \in \privatestatepool{S}) \wedge   (\forall j . j \notin S  \rightarrow (j, \_) \in \localstatepool{S}) \\
+
+%\mcstatekwd & := & \mcstateconkwd :~ \ztype \rightarrow \set{i \mapsto \localstatekwd~\vert~ i \in \coreset } \rightarrow \mclog \rightarrow \hstatekwd\\
+\mcstatekwd & := & \mcstateconkwd :~ \ztype \rightarrow \localstatepool{\coreset} \rightarrow \mclog \rightarrow \hstatekwd\\
+\end{array}
+$$
+
+\noindent\fbox{oracle step: $(oracle:\mcoracle{\coreset}{\mclog}{\mcevent}) :  \mcstatekwd \rightarrow \cctracekwd \rightarrow \mcstatekwd \rightarrow \mcprop$}
+\begin{mathpar}
+\inferrule[progress]
+{ \getpstsome{\localstatekwd}{curid}{lsp}{(\localstate{ps}{\bfalse})}\\
+\hardwarelocalstep{curid'}{(\localview{ps}{l})}{(\localview{ps'}{l'})}\\
+\setpst{\localstatekwd}{curid'}{\localstate{ps'}{\btrue}}{lsp}{lsp'}}
+{\oraclestep{oracle}{(\mcstate{curid}{lsp}{l})}{\ccemptytrace}{(\mcstate{curid}{lsp'}{(\listappoppo{l'}{l})})}}
+
+\inferrule[yield]
+{  l_0 = \listconsoppo{\yieldbackev{curid}}{l} \\
+l' = \listconsoppo{\yieldev{curid'}}{l_0} \\
+\getpstsome{\localstatekwd}{curid'}{lsp}{(\localstate{ps}{\btrue})}\\
+\setpst{\localstatekwd}{curid'}{\localstate{ps}{\bfalse}}{lsp}{lsp'}\\
+\oget{\coreset}{\mclog}{\mcevent}{l_0}{oracle}{{\yieldbackev{curid}}}}
+{\oraclestep{oracle}{(\mcstate{curid}{lsp}{l})}{\ccemptytrace}{(\mcstate{curid}{lsp'}{l'})}}
+\end{mathpar}
+\caption{Multicore Machine with Hardware Oracle}
+\label{fig:chapter:conlink:multicore-machine-with-hardware-oracle}
+\end{figure}
+
+
+As discussed in Section~\ref{chapter:ccal:subsec:concurrent-layer-with-environment}, 
+one hidden component in multicore machine model is a logical participant, hardware scheduler. 
+The hardware scheduler builds a specific scheduling strategy for the single game that the verification wants to consider at that time.  
+It extends the private state definition by adding a boolean value, which tells us whether the CPU needs to perform its local hardware step or call hardware scheduler to give out the control. 
+First, the \textsf{Progress} rule is for local evaluation of each CPU. It uses the same evaluation rule (hardware local step) with the previous multicore machine model, 
+but change the boolean value from false to true to indicated that the CPU served its evaluation at this turn. 
+Second, the \text{Yield} rule is for the hardware scheduler.
+Similarly, it adds two hardware scheduler events into the log, but the difference in here with the previous multicore machine is it queries the environmental context with the full CPU Set and the current global log. 
+Then, the oracle will return a single event, which tells the next event that will perform its evaluation. 
+
+
+We also prove the simulation of each machine via using backward simulation (upward-forward simulation -- if the target language
+has a single step evaluation, then the source language has corresponding multiple steps.) 
+in $\compcert$. 
+directly proving backward simulation, however, requires us to prove multiple properties of the source language. 
+In this sense, $\compcert$ provide the way to show the equivalence of forward simulation and the backward simulation. 
+It, however, requires a certain condition, such as both languages have to be deterministic;
+thus using this method for the simulation proof that contains a multicore machine model (which is non-deterministic) 
+is impossible. 
+Therefore, we directly need to prove the backward refinement proof in here to inject the proof in the backward simulation form of $\compcert$ later. 
+
+\begin{figure}
+\noindent\fbox{variables for match relation}
+
+$$
+\begin{array}{lllr}
+cpuid & : & \ztype & \mbox{(starting CPU of the system)}\\
+hw\_o & : & \mcoracle{\coreset}{\mclog}{\mcevent} &  \mbox{(hardware scheduler oracle)}\\
+\end{array}
+$$
+
+\noindent\fbox{local match state: $\ztype \rightarrow \ztype \rightarrow \privatestate \rightarrow \localstatekwd \rightarrow \mcprop$}
+
+\begin{mathpar}
+\inferrule[match local neq]
+{(curid = i \rightarrow b = \btrue) \\
+(curid \neq i \rightarrow b = \bfalse) }
+{\matchlocal{curid}{i}{ps}{(\localstate{ps}{b})}}
+\end{mathpar}
+
+\noindent\fbox{match state : $\mcstatekwd \rightarrow \hstatekwd \rightarrow \mcprop$}
+
+\begin{mathpar}
+\inferrule[match state]
+{(\forall \ i \ ps \ ls \ . \ i \in \coreset \rightarrow \getpstsome{\privatestate}{i}{psp}{ps} \rightarrow\\\\
+\getpstsome{\localstatekwd}{i}{lsp}{ls} \rightarrow  \matchlocal{curid}{i}{ps}{ls})\\\\
+ l \neq \listconsoppo{\yieldev{\_}}{\_}\\
+ curid \in \coreset \\
+ \validlog{cpuid}{l} \\
+ \getcuridfromlog{cpuid}{l}{curid}}
+ {\matchstatehstate{(\mcstate{curid}{lsp}{l})}{(\hstate{curid}{psp}{l})}}
+\end{mathpar}
+
+\caption{Match Relation for the Refinement Proof between Multicore and Oracle Step Rules.}
+\label{fig:chapter:conlink:match-relation-multicore-oracle-steps}
+\end{figure}
+
+
+The most challenging part in the refinement proofs between two languages are defining the refinement relation between two states of those languages. 
+Figure~\ref{fig:chapter:conlink:match-relation-multicore-oracle-steps} shows the 
+refinement relation for those two states. 
+It tells that their local states should have the same value as well as the global log need to be equal. 
+
+
+\begin{figure}
+\noindent\fbox{hypothesis} 
+
+\begin{enumerate}
+\item valid$\_$cpuid: $cpuid \in \coreset$
+\item valid$\_$oracle$\_$def: $\validoraclenoeq{cpuid}{\coreset}{hw\_o}$
+\item related$\_$hw$\_$step$\_$hw$\_$oracle : \\
+$
+\begin{array}{l}
+\matchstatehstate{(\mcstate{curid}{lsp}{l})}{(\hstate{curid}{psp}{l})} \rightarrow \\
+\ \ \ \exists\ ev .\ \oget{\coreset}{\mclog}{\mcevent}{\listconsoppo{\yieldev{curid}}{l}}{hw\_o}{ev} \wedge \\
+\ \ \ \ \ \ \forall \ curid'' . \ ev = \yieldbackev{curid''} \rightarrow\\
+\ \ \ \ \ \ \ \ \  \forall \ curid' \ ps \ st . \\
+\ \ \ \ \ \ \ \ \ \ \ \ \hardwarelocalstep{curid'}{(\localview{ps}{(\listconsoppo{\yieldbackev{curid'}}{\listconsoppo{\yieldev{curid}}{l}})})}{st} \rightarrow\\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ curid' = curid'' \\
+\end{array}
+$
+\end{enumerate}
+
+\noindent\fbox{top lemmas}
+
+\begin{enumerate}
+\item one$\_$step$\_$hw$\_$refines$\_$oracle : \\
+$
+\begin{array}{l}
+\forall \ s_l \ s_l' \ t \ s_h . \ \hardwarestep{curid}{s_l}{t}{s_l'} \rightarrow  \matchstatehstate{s_h}{s_l} \rightarrow \\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \exists\ s_h' . \  \ccplusstep{\oraclestep{hw\_o}{s_h}{t}{s_h'}} \wedge  \matchstatehstate{s_h'}{s_l'}\\
+\end{array}
+$
+\item match$\_$state$\_$implies$\_$one$\_$step: \\
+$
+\begin{array}{l}
+\forall \ curid \ lsp \ l \ curid' \ hsp \ l' . \ \matchstatehstate{(\mcstate{curid}{lsp}{l})}{(\hstate{curid'}{hsp}{l'})} \rightarrow \\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \  \exists \ curid'' \ lsp' \ l'  . \ \\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \  \ \ \ \ccstarstep{\oraclestep{hw\_o}{(\mcstate{curid}{lsp}{l})}{\ccemptytrace}{(\mcstate{curid''}{lsp}{l'})}} \wedge\\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \  \ \ \ l' = \listconsoppo{\yieldbackev{curid''}}{\listconsoppo{\yieldev{curid}}{l}} \wedge\\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \  \ \ \ (\forall \ ps  . \ \getpstsome{\localstatekwd}{curid}{lsp}{(\localstate{ps}{\btrue})} \rightarrow \\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \  \ \ \ \ \ \ \ \ \ \  \ \ \setpst{\localstatekwd}{curid}{(\localstate{ps}{\bfalse})}{lsp}{lsp'} \\
+\end{array}
+$
+\end{enumerate}
+
+\caption{Proof between Multicore and Oracle Step Rules.}
+\label{fig:chapter:conlink:refinement-multicore-oracle-steps}
+\end{figure}
+
+Based on the relation we prove two key theorems in Figure~\ref{fig:chapter:conlink:refinement-multicore-oracle-steps}, 
+we prove that one step in the multicore machine model always has the corresponding multiple steps of multicore machine with hardware scheduler oracle (in lemma 1). 
+When proving the backward simulation in $\compcert$, providing the evidence about the progress property of the oracle machine, which is stated in the lemma 2. 
+Proving that lemmas require that there will always be a matched environmental context that is matched with the same scheduling sequence of the possible execution of the program in multicore machine model (among all non-deterministic interleaved cases of execution). 
+This is stated in hypothesis 3. 
+
+

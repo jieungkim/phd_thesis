@@ -1,0 +1,1494 @@
+\subsection{Multithreaded Machine Model}
+\label{chapter:linking:subsec:multithreaded-machine-model}
+
+Based on those definitions, we have formally defined 
+the multithreaded machine model that we have briefly 
+mentioned in Figure~\ref{fig:chapter:linking:multithreaded-linking-structure}.
+\begin{lstlisting}[language=C]
+Inductive ThreadState := | Environment | Available | Running (rs: regset).
+Fixpoint initial_map {A} (z: A) (i: Z -> A) (tids: list Z): ZMap.t A :=
+  match tids with
+    | nil => ZMap.init z
+    | tid::tids' => ZMap.set tid (i tid) (initial_map z i tids')
+  end.
+Definition init_regset {F V} (ge: Genv.t F V) i :=
+  if decide (i = main_thread) then
+    let pc := symbol_offset ge 1%positive Int.zero in
+    Running ((Pregmap.init Vundef) # PC <- pc # ESP <- Vzero)
+  else Available.
+Definition init_dproc (i : Z)  :=
+  if zeq main_thread i then main_init_dproc else nomain_init_dproc.
+\end{lstlisting}
+
+
+
+\begin{lstlisting}[language=C]
+  Inductive estate: Type :=
+    | EState: Z -> ZMap.t ThreadState -> mem -> EData -> Log -> estate.
+\end{lstlisting}
+
+
+\begin{lstlisting}[language=C]
+  Inductive estep (ge: genv) : estate -> trace -> estate -> Prop :=
+\end{lstlisting}
+
+
+\begin{lstlisting}[language=C]
+    | eexec_step_internal:
+        forall b ofs f i (rs: regset) m m' dp d d' ds' rs' curid rsm l,
+          ZMap.get curid rsm = Running rs ->
+          proc_id (uRData l) = curid ->
+          rs PC = Vptr b ofs ->
+          Genv.find_funct_ptr ge b = Some (Internal f) ->
+          find_instr (Int.unsigned ofs) f.(fn_code) = Some i ->
+          lastEvType l <> Some LogYieldTy ->
+          exec_instr ge f i rs (m, (uRData l,d)) = Next rs' (m', (ds',d')) ->
+          forall (Hget_dp: ZMap.get curid dp = Some d),
+            estep ge (EState curid rsm m dp l) E0
+                  (EState curid (ZMap.set curid (Running rs') rsm) m' (ZMap.set curid (Some d') dp) l)
+\end{lstlisting}
+
+
+\begin{lstlisting}[language=C]
+
+  | eexec_step_external:
+      forall b ef args res (rs: regset) m m' dp d d' ds' t rs' curid rsm l l',
+        ZMap.get curid rsm = Running rs ->
+        proc_id (uRData l) = curid ->
+        rs PC = Vptr b Int.zero ->
+        Genv.find_funct_ptr ge b = Some (External ef) ->
+        extcall_arguments rs m (ef_sig ef) args ->
+        lastEvType l <> Some LogYieldTy ->
+        external_call' (mem:= mwd (cdata PData)) (fun _ => True) ef ge args (m, (uRData l, d)) t res (m', (ds',d')) ->
+        rs' = (set_regs (loc_external_result (ef_sig ef)) res 
+                        (undef_regs (CR ZF :: CR CF :: CR PF :: CR SF :: CR OF :: nil)
+                                    (undef_regs (map preg_of destroyed_at_call) rs))) 
+                #PC <- (rs RA) #RA <- Vundef ->
+        (* forall largs_valid: val2Lval_list args largs, *)
+        forall NON_YIELD: match ef with
+                            | EF_external id _ => 
+                              if peq id thread_yield then False
+                              else if peq id thread_sleep then False
+                                   else
+                                     if has_event id then
+                                       (* exists largs choice optSyncPool, *)
+                                       exists largs choice,
+                                         val2Lval_list args largs  /\
+                                         choice_check id largs (uRData l) d = choice /\ 
+                                         (* sync_chpool_check id largs (uRData l) d = optSyncPool /\  
+                                         l' = (LEvent curid (LogPrim id largs choice optSyncPool) :: l) *)
+                                         l' = (LEvent curid (LogPrim id largs choice (snap_func d)) :: l) 
+                                     else
+                                       l' = l
+                            | _ => l' = l
+                          end,
+                          forall STACK:
+                          forall b o, rs ESP = Vptr b o ->
+                                      (Ple (Genv.genv_next ge) b /\ Plt b (Mem.nextblock m)),
+                          forall SP_NOT_VUNDEF: rs ESP <> Vundef,
+                          forall RA_NOT_VUNDEF: rs RA <> Vundef,
+                          forall (Hget_dp: ZMap.get curid dp = Some d),
+                            estep ge (EState curid rsm m dp l) t 
+                                  (EState curid (ZMap.set curid (Running rs') rsm) m' (ZMap.set curid (Some d') dp) l')
+\end{lstlisting}
+
+
+\begin{lstlisting}[language=C]
+    | eexec_step_prim_call:
+        forall b ef (rs: regset) m m' dp d d' ds' t rs' curid rsm l l',
+          ZMap.get curid rsm = Running rs ->
+          proc_id (uRData l) = curid ->
+          rs PC = Vptr b Int.zero ->
+          Genv.find_funct_ptr ge b = Some (External ef) ->
+          lastEvType l <> Some LogYieldTy ->
+          primitive_call (mem:= mwd (cdata PData)) ef ge rs (m, (uRData l, d)) t rs' (m', (ds', d')) ->
+          forall NON_YIELD: match ef with
+                              | EF_external id _ => 
+                                if peq id thread_yield then False
+                                else if peq id thread_sleep then False
+                                     else
+                                       if has_event id then
+                                         l' = (LEvent curid (LogPrim id nil 0 (snap_func d)) :: l)
+                                       else
+                                         l' = l
+                              | _ => l' = l
+                            end,
+                            forall (Hget_dp: ZMap.get curid dp = Some d),
+          estep ge (EState curid rsm m dp l) t 
+                (EState curid (ZMap.set curid (Running rs') rsm) m' (ZMap.set curid (Some d') dp) l')
+\end{lstlisting}
+
+\begin{lstlisting}[language=C]
+
+    | eexec_step_external_yield:
+        forall b ef (rs: regset) (m: mem) curid curid' rsm s l l' dp d,
+          ZMap.get curid rsm = Running rs ->
+          ZMap.get curid dp = Some d ->
+          proc_id (uRData l) = curid ->
+          rs PC = Vptr b Int.zero ->
+          Genv.find_funct_ptr ge b = Some (External ef) ->
+          stencil_matches s ge ->
+          l' = (LEvent curid (LogYield (Mem.nextblock m))::l) ->
+          lastEvType l <> Some LogYieldTy ->
+          (* event_check (LEvent curid (LogYield (Mem.nextblock m))) -> *)
+          state_checks thread_yield nil l dp ->
+          curid' = proc_id (uRData l') ->
+          forall (NON_YIELD: match ef with
+                               | EF_external id _ => 
+                                 if peq id thread_yield then True
+                                 else False
+                               | _ => False
+                             end),
+            estep ge (EState curid rsm m dp l) E0
+                  (EState curid' rsm m dp l')
+\end{lstlisting}
+
+\begin{lstlisting}[language=C]
+    | eexec_step_external_sleep:
+        forall b ef (rs: regset) (m: mem) curid curid' rsm s l l' dp d i,
+          ZMap.get curid rsm = Running rs ->
+          ZMap.get curid dp = Some d ->
+          proc_id (uRData l) = curid ->
+          rs PC = Vptr b Int.zero ->
+          Genv.find_funct_ptr ge b = Some (External ef) ->
+          stencil_matches s ge ->
+          l' = (LEvent curid (LogSleep (Int.unsigned i) (Mem.nextblock m)
+                                       (sync_chpool_check thread_sleep ((Lint i)::nil) (uRData l) d))::l) ->
+          lastEvType l <> Some LogYieldTy ->
+          state_checks thread_sleep (Lint i::nil) l dp ->
+          curid' = proc_id (uRData l') ->
+          forall
+            (Hargs: extcall_arguments rs m (mksignature (Tint:: nil) None cc_default) (Vint i:: nil))
+            (NON_YIELD: match ef with
+                               | EF_external id _ => 
+                                 if peq id thread_sleep then True
+                                 else False
+                               | _ => False
+                             end),
+            estep ge (EState curid rsm m dp l) E0
+                  (EState curid' rsm m dp l')
+\end{lstlisting}
+
+
+\begin{lstlisting}[language=C]
+    | eexec_step_external_empty:
+        forall m curid curid' rsm dp l l',
+          ZMap.get curid rsm = Environment ->
+          ZMap.get curid dp = None ->
+          proc_id (uRData l) = curid ->
+          (*
+          init_check (uRData l) ->
+          flag_checks curid dp ->
+          *)
+          l' = (Single_Oracle l::l) ->
+          curid' = proc_id (uRData l') ->
+          estep ge (EState curid rsm m dp l) E0
+                (EState curid' rsm m dp l')
+\end{lstlisting}
+
+\begin{lstlisting}[language=C]
+    | eexec_step_external_yield_back:
+        forall (rs' rs0: regset) (m m': mem) curid rsm l l' nb dp d e,
+          (ZMap.get curid rsm = Available /\ initial_thread_kctxt ge curid l = Some rs0) \/
+          ZMap.get curid rsm = Running rs0 ->
+          ZMap.get curid dp = Some d ->
+          proc_id (uRData l) = curid ->
+          last_op l = Some e ->
+          l' = (LEvent curid LogYieldBack::l) ->
+          rs' = (undef_regs (CR ZF :: CR CF :: CR PF :: CR SF :: CR OF :: nil)
+                            (undef_regs (map preg_of destroyed_at_call) rs0)) 
+                  # EAX <- Vundef #PC <- (rs0 RA) #RA <- Vundef ->
+          forall
+            (Hnextblock: getLogEventNB (e) = Some nb)
+            (LIFT_NEXTBLOCK: mem_lift_nextblock m (Pos.to_nat (nb) - Pos.to_nat (Mem.nextblock m) % nat) = m'),
+            estep ge (EState curid rsm m dp l) E0
+                  (EState curid (ZMap.set curid (Running rs') rsm) m' dp l').
+\end{lstlisting}
+
+
+\begin{lstlisting}[language=C]
+
+  Context (active_threads : list Z).
+
+  (** An active main thread is initialized as usual, other active
+    threads start out in the [Available] state, and non-active threads
+    are assigned to be [Environment] threads. *)
+
+  Inductive einitial_state {F V} (p: AST.program F V): estate -> Prop :=
+  | einitial_state_intro: 
+      forall m0,
+        Genv.init_mem p = Some m0 ->
+        let rsm := initial_map Environment (init_regset (Genv.globalenv p)) active_threads in
+        let dm := initial_map None (fun i => Some (thread_init_dproc i)) active_threads in
+        einitial_state p (EState main_thread rsm m0 dm nil).
+\end{lstlisting}
+
+Using them, we are able to provide the generic multithreaded machine mode, $\easm$
+
+
+\subsubsection{Refinement between EAsm and LAsm}
+
+
+\begin{lstlisting}[language=C]
+  Definition total_machine_regset (i : Z) rsm :=
+    exists rs, ZMap.get i rsm = Running rs \/ ZMap.get i rsm = Available.
+
+  Definition match_estate_regset (ge: genv) (i: Z) rsm (l : Log) (rs: regset) :=
+    (ZMap.get i rsm = Available /\ initial_thread_kctxt ge i l = Some rs) \/
+    (ZMap.get i rsm = Running rs).
+  
+  Definition match_estate_kctxt (rs: regset) (kctxt: regset) :=
+    forall r n, PregtoZ r = Some n -> rs r = kctxt r.
+
+  (** We need to maintain the following invariant: any running thread
+    has already been initialized. *)
+
+  Definition thread_init_invariant (ge: genv) rsm l :=
+    forall i rs,
+      ZMap.get i rsm = Running rs ->
+      initial_thread_kctxt ge i l <> None.
+\end{lstlisting}
+
+
+\begin{lstlisting}[language=C]
+
+  Definition do_init (ge: genv) (e : option LogEvent) l (kctxt: KContextPool) :=
+    match e with
+      | None => kctxt
+      | Some e =>
+        match thread_init_pc ge e with
+          | Some (i, pc) =>
+            match initial_thread_kctxt ge i l with
+              | Some _ => kctxt
+              | None => ZMap.set i (initial_regset_kctxt pc) kctxt
+            end
+          | None => kctxt
+        end
+    end.
+\end{lstlisting}
+
+
+\begin{lstlisting}[language=C]
+      Class AbstractRel :=
+        {
+          match_EData_RData: EData -> Log -> RData -> Prop;
+
+          match_init:
+            match_EData_RData
+              (initial_map None (fun i => Some (thread_init_dproc i)) full_thread_list)
+              nil
+              (init_adt multi_oracle_init7);
+\end{lstlisting}
+         
+\begin{lstlisting}[language=C]          
+          match_gss:
+            forall l dp d a
+                   (Hget_dp : ZMap.get (proc_id (uRData l)) dp = Some d)
+                   (Hdata : match_EData_RData dp l a),
+              match_EData_RData (ZMap.set (proc_id (uRData l)) (Some d) dp) l a;
+\end{lstlisting}
+         
+\begin{lstlisting}[language=C]          
+          acc_exec_load_match:
+            forall (ge: genv) a rs rd rs' TY (m m': mem) ds' l dp d' d addr,
+              (acc_exec_load (cl_oplus (cdata PData) LH L64)) 
+                fundef unit ge TY ((m, (uRData l, d)) : mwd (cdata PData)) addr rs rd 
+              = Next rs' ((m', (ds', d')) : mwd (cdata PData)) ->
+              lastEvType l <> Some LogYieldTy ->
+              match_EData_RData (ZMap.set (proc_id (uRData l)) (Some d) dp) l a ->
+              ZMap.get (proc_id (uRData l)) dp = Some d ->
+              exists a',
+                PBThread.exec_loadex ge TY ((m, a) : mwd (cdata RData)) addr rs rd 
+                = Next rs' ((m', a') : mwd (cdata RData)) /\
+                ds' = uRData l /\
+                match_EData_RData (ZMap.set (proc_id (uRData l)) (Some d') dp) l a' /\
+                kctxt a' = kctxt a;
+\end{lstlisting}
+         
+\begin{lstlisting}[language=C]     
+          acc_exec_store_match:
+            forall (ge: genv) a rs rd rs' TY ST (m m': mem) ds' l dp d' d addr,
+              (acc_exec_store (cl_oplus (cdata PData) LH L64)) 
+                fundef unit ge TY ((m, (uRData l, d)) : mwd (cdata PData)) addr rs rd ST =
+              Next rs' ((m', (ds', d')) : mwd (cdata PData)) -> 
+              lastEvType l <> Some LogYieldTy ->
+              match_EData_RData (ZMap.set (proc_id (uRData l)) (Some d) dp) l a ->
+              ZMap.get (proc_id (uRData l)) dp = Some d ->
+              exists a',
+                PBThread.exec_storeex ge TY ((m, a) : mwd (cdata RData)) addr rs rd ST 
+                = Next rs' ((m', a') : mwd (cdata RData))/\
+                ds' = uRData l /\
+                match_EData_RData (ZMap.set (proc_id (uRData l)) (Some d') dp) l a' /\
+                kctxt a' = kctxt a;
+\end{lstlisting}
+         
+\begin{lstlisting}[language=C]     
+          log_yield_call_match:
+            forall (ge: genv) (s : stencil) (b : block) (sg : signature) 
+                   (m m' : mem)  rsm rs des_rs' rs' l l' l'' d d' dp (a: cdata RData) nb yield_ev,
+              (forall i : Z,
+                  In i full_thread_list -> total_machine_regset i rsm) ->
+              (forall i : Z,
+                  i <> proc_id (uRData l) ->
+                  forall rs0 : regset,
+                    match_estate_regset ge i rsm l rs0 ->
+                    match_estate_kctxt rs0 (ZMap.get i (kctxt a))) ->
+
+              stencil_matches s ge ->
+              Genv.find_funct_ptr ge b =  Some (External (EF_external thread_yield sg)) ->
+              find_symbol s thread_yield = Some b ->
+              
+              match_EData_RData dp l a ->
+              
+              ZMap.get (proc_id (uRData l)) dp = Some d ->
+              ZMap.get (proc_id (uRData l)) rsm = Running rs ->
+              ZMap.get (proc_id (uRData l')) rsm = Available /\
+              initial_thread_kctxt ge (proc_id (uRData l')) l' = Some des_rs' \/
+              ZMap.get (proc_id (uRData l')) rsm = Running des_rs' ->
+              ZMap.get (proc_id (uRData l')) dp = Some d' ->
+
+
+              thread_init_invariant ge rsm l ->
+              lastEvType l <> Some LogYieldTy ->
+              state_checks thread_yield nil l dp ->
+
+              yield_ev = LEvent (proc_id (uRData l)) (LogYield (Mem.nextblock m)) ->
+              l' = yield_ev :: l ->
+              l'' = LEvent (proc_id (uRData l')) LogYieldBack :: l' ->
+              getLogEventNB yield_ev = Some nb ->
+              rs PC = Vptr b Int.zero ->
+              m' =  (mem_lift_nextblock m (Pos.to_nat (nb) - Pos.to_nat (Mem.nextblock m) % nat)) ->
+              rs' = (((undef_regs (CR ZF :: CR CF :: CR PF :: CR SF :: CR OF :: nil)
+                                  (undef_regs (map preg_of destroyed_at_call) des_rs'))
+                        # EAX <- Vundef) # PC <- (des_rs' RA)) # RA <- Vundef ->
+              exists (a': cdata RData),
+                primcall_thread_schedule_sem (prim_ident := thread_yield) big_thread_yield_spec s rs (m, a) rs' (m', a') /\
+                (forall i' : Z,
+                    i' <> proc_id (uRData l'') ->
+                    forall rs'' : regset,
+                      match_estate_regset ge i'
+                                          (ZMap.set (proc_id (uRData l'')) (Running rs') rsm) l'' rs'' ->
+                      match_estate_kctxt rs'' (ZMap.get i' (kctxt a'))) /\
+                thread_init_invariant ge (ZMap.set (proc_id (uRData l'')) (Running rs') rsm) l'' /\
+                match_EData_RData dp l'' a';
+\end{lstlisting}
+         
+\begin{lstlisting}[language=C]     
+          log_sleep_call_match:
+            forall (ge: genv) (s : stencil) (b : block) (sg : signature) 
+                   (m m' : mem)  rsm rs des_rs' rs' l l' l'' d d' dp (a: cdata RData) nb sleep_ev i0,
+              (forall i : Z,
+                  In i full_thread_list -> total_machine_regset i rsm) ->
+              (forall i : Z,
+                  i <> proc_id (uRData l) ->
+                  forall rs0 : regset,
+                    match_estate_regset ge i rsm l rs0 ->
+                    match_estate_kctxt rs0 (ZMap.get i (kctxt a))) ->
+              stencil_matches s ge ->
+              Genv.find_funct_ptr ge b =  Some (External (EF_external thread_sleep sg)) ->
+              find_symbol s thread_sleep = Some b ->
+              extcall_arguments rs m {| sig_args := Tint :: nil;
+                                        sig_res := None;
+                                        sig_cc := cc_default |} (Vint i0 :: nil) ->
+              match_EData_RData dp l a ->
+              
+              ZMap.get (proc_id (uRData l)) dp = Some d ->
+              ZMap.get (proc_id (uRData l)) rsm = Running rs ->
+              ZMap.get (proc_id (uRData l')) rsm = Available /\
+              initial_thread_kctxt ge (proc_id (uRData l')) l' = Some des_rs' \/
+              ZMap.get (proc_id (uRData l')) rsm = Running des_rs' ->
+              ZMap.get (proc_id (uRData l')) dp = Some d' ->
+
+
+              thread_init_invariant ge rsm l ->
+              lastEvType l <> Some LogYieldTy ->
+              state_checks thread_sleep (Lint i0 :: nil) l dp ->
+
+              sleep_ev = LEvent (proc_id (uRData l)) (LogSleep (Int.unsigned i0) (Mem.nextblock m)
+                                                               (sync_chpool_check thread_sleep  (Lint i0 :: nil) (uRData l) d)) ->
+              l' = sleep_ev :: l ->
+              l'' = LEvent (proc_id (uRData l')) LogYieldBack :: l' ->
+              getLogEventNB sleep_ev = Some nb ->
+              rs PC = Vptr b Int.zero ->
+              m' =  (mem_lift_nextblock m (Pos.to_nat (nb) - Pos.to_nat (Mem.nextblock m) % nat)) ->
+              rs' = (((undef_regs (CR ZF :: CR CF :: CR PF :: CR SF :: CR OF :: nil)
+                                  (undef_regs (map preg_of destroyed_at_call) des_rs'))
+                        # EAX <- Vundef) # PC <- (des_rs' RA)) # RA <- Vundef ->
+              exists (a': cdata RData),
+                primcall_thread_transfer_sem big_thread_sleep_spec s rs (m, a) rs' (m', a') /\
+                (forall i' : Z,
+                    i' <> proc_id (uRData l'') ->
+                    forall rs'' : regset,
+                      match_estate_regset ge i'
+                                          (ZMap.set (proc_id (uRData l'')) (Running rs') rsm) l'' rs'' ->
+                      match_estate_kctxt rs'' (ZMap.get i' (kctxt a'))) /\
+                thread_init_invariant ge (ZMap.set (proc_id (uRData l'')) (Running rs') rsm) l'' /\
+                match_EData_RData dp l'' a';
+\end{lstlisting}
+         
+\begin{lstlisting}[language=C]     
+          external_call_match_no_event:
+            forall (ge: genv) WB ef (args: list val) t res (m m' : mem) l d d' ds' (dp : EData) (a: RData),
+              external_call' (mem := mwd (cdata PData)) 
+                             (external_calls_ops :=  CompatExternalCalls.compatlayer_extcall_ops (LH <@$\oplus$@> L64))
+                             WB ef ge args (m, (uRData l, d)) t res (m', (ds', d')) ->
+              lastEvType l <> Some LogYieldTy ->
+              match_EData_RData dp l a ->
+              ZMap.get (proc_id (uRData l)) dp = Some d ->
+              forall (BUILTIN_ENABLED : match ef with
+                                        | EF_external id _ => 
+                                          if peq id thread_yield then False
+                                          else if peq id thread_sleep then False
+                                               else if has_event id then False else True
+                                        | _ => True
+                                        end),
+              exists (a': RData),
+                external_call' (mem := mwd (cdata RData)) 
+                               (external_calls_ops :=  CompatExternalCalls.compatlayer_extcall_ops (pbthread  <@$\oplus$@>  L64))
+                                WB ef ge args (m, a) t res (m', a') /\
+                ds' = uRData l /\
+                match_EData_RData (ZMap.set (proc_id (uRData l)) (Some d') dp) l a' /\
+                kctxt a' = do_init ge None l (kctxt a);
+\end{lstlisting}
+         
+\begin{lstlisting}[language=C]     
+          external_call_match_has_event:
+            forall (ge: genv) WB ef (args: list val) (largs : list lval) t res (m m' : mem) l l' d d' ds' 
+                   (dp : EData) (a: RData) (choice : Z) (* (optSync : option SyncChanPool) *),
+              external_call' (mem := mwd (cdata PData)) 
+                             (external_calls_ops :=  CompatExternalCalls.compatlayer_extcall_ops (LH  <@$\oplus$@>  L64))
+                             WB ef ge args (m, (uRData l, d)) t res (m', (ds', d')) ->
+              lastEvType l <> Some LogYieldTy ->
+              match_EData_RData dp l a ->
+              ZMap.get (proc_id (uRData l)) dp = Some d ->
+              val2Lval_list args largs  ->
+              forall (BUILTIN_ENABLED : match ef with
+                                        | EF_external id _ => 
+                                          if peq id thread_yield then False
+                                          else if peq id thread_sleep then False
+                                               else if has_event id 
+                                                    then
+                                                      choice_check id largs (uRData l) d = choice /\
+                                                      l' = LEvent (proc_id (uRData l)) (LogPrim id largs choice (snap_func d)) :: l 
+                                                    else False 
+                                        | _ => False
+                                        end),
+              exists (a': RData),
+                external_call' (mem := mwd (cdata RData)) 
+                               (external_calls_ops :=  CompatExternalCalls.compatlayer_extcall_ops (pbthread  <@$\oplus$@>  L64))
+                               WB ef ge args (m, a) t res (m', a') /\
+                ds' = uRData l' /\
+                match_EData_RData (ZMap.set (proc_id (uRData l)) (Some d') dp) l' a' /\
+                kctxt a' = do_init ge (external_function_event ef largs l choice (snap_func d)) l (kctxt a);
+\end{lstlisting}
+         
+\begin{lstlisting}[language=C]     
+          primitive_call_match:
+            forall (ge: genv) ef t rs rs' (m m' : mem) l l' d d' ds' dp (a: cdata RData),
+              primitive_call  (LayerConfigurationOps := LC (LH  <@$\oplus$@>  L64))  
+                              (mem := mwd (cdata PData)) ef ge rs (m, (uRData l, d)) t rs' (m', (ds', d')) ->
+              lastEvType l <> Some LogYieldTy ->
+              match_EData_RData dp l a ->
+              ZMap.get (proc_id (uRData l)) dp = Some d ->
+              forall (BUILTIN_ENABLED : match ef with
+                                        | EF_external id _ => 
+                                          if peq id thread_yield then False
+                                          else if peq id thread_sleep then False
+                                               else
+                                                 if has_event id
+                                                 then
+                                                   l' =
+                                                   LEvent (proc_id (uRData l)) (LogPrim id nil 0 (snap_func d)) :: l
+                                                 else l' = l
+                                        | _ => l' = l
+                                        end),
+              exists (a': cdata RData),
+                primitive_call  (LayerConfigurationOps := LC (pbthread  <@$\oplus$@>  L64)) 
+                                (mem := mwd (cdata RData)) ef ge rs (m, a) t rs' (m', a') /\
+                ds' = uRData l' /\
+                match_EData_RData (ZMap.set (proc_id (uRData l)) (Some d') dp) l' a' /\
+                kctxt a' = do_init ge (external_function_event ef nil l 0 (snap_func d)) l (kctxt a)
+        }.
+\end{lstlisting}
+
+\begin{lstlisting}[language=C]
+    Inductive match_estate_state ge: (estate (mem := mem)) -> 
+                                  (state (mem:= mwd (cdata RData))) -> Prop :=
+    | MATCH_ESTATE_STATE_NORMAL:
+        forall (rs: regset) (m: mem) a ae (l : Log) rsm
+               (Hlst_ev_type: lastEvType l <> Some LogYieldTy)
+               (Htotal : forall i, In i full_thread_list -> total_machine_regset i rsm)
+               (Hrs: match_estate_regset ge (proc_id (uRData l)) rsm l rs) (* my regset *)
+               (Hrsm: forall i,
+                        i <> (proc_id (uRData l)) ->
+                        forall rs0,
+                          match_estate_regset ge i rsm l rs0 ->
+                          match_estate_kctxt rs0 (ZMap.get i (kctxt a))) (* others' regset will be remained as same *)
+               (Hinit_inv: thread_init_invariant ge rsm l)
+               (Hdata: match_EData_RData ae l a), 
+          match_estate_state ge (EState (proc_id (uRData l)) rsm m ae l) (State rs (m, a))
+    | MATCH_ESTATE_STATE_SCHED:
+        forall (rs: regset) (m: mem) a ae (l : Log) rsm
+               (Hlst_ev_type: lastEvType l = Some LogYieldTy)
+               (Htotal : forall i, In i full_thread_list -> total_machine_regset i rsm)
+               (Hrs: match_estate_regset ge (proc_id (uRData (remove_hd l))) rsm (remove_hd l) rs) (* my regset *)
+               (Hrsm: forall i,
+                        i <> (proc_id (uRData (remove_hd l))) ->
+                        forall rs0,
+                          match_estate_regset ge i rsm (remove_hd l) rs0 ->
+                          match_estate_kctxt rs0 (ZMap.get i (kctxt a))) (* others' regset will be remained as same *)
+               (Hinit_inv: thread_init_invariant ge rsm (remove_hd l))
+               (Hdata: match_EData_RData ae (remove_hd l) a)
+               (pre_step: EAsm.estep ge (EState (proc_id (uRData (remove_hd l))) rsm m ae (remove_hd l)) E0
+                                     (EState (proc_id (uRData l)) rsm m ae l)),
+          match_estate_state ge (EState (proc_id (uRData l)) rsm m ae l) (State rs (m, a)).
+\end{lstlisting}
+
+\begin{lstlisting}[language=C]
+    Theorem EAsm_refine_LAsm:
+      forall ge t cst cst' rs m, 
+        genv_wf ge ->
+        EAsm.estep  ge cst t cst' -> 
+        match_estate_state ge cst (State rs m) ->
+        (exists st',
+          LAsm.step (lcfg_ops := LC (pbthread <@$\oplus$@> L64)) ge (State rs m) t st'
+          /\ match_estate_state ge cst' st') \/
+        ((measure_estate cst' < measure_estate cst)%nat /\
+         t = E0 /\
+         match_estate_state ge cst' (State rs m)).
+\end{lstlisting}
+%\section{Concurrent Multithreaded Machine Model}
+%\label{chapter:linking:subsec:concurrent-multithreaded-machine-model}
+%
+%Our multithreaded machine model relies not on the fixed thread set, but on 
+%the dynamic thread set specified by our configuration variables.
+%In this sense, the machine model $\easm$ is already a machine model that can run 
+%any kind of thread sets on it. 
+%Only one rule in $\easm$ need to be added to handle environment threads. 
+%
+%
+%One another level is introducing one more level of multithreaded machine model,
+%which only has two memories (memory for self thread and memory for othres).
+%This is required due to the current limitaiton of our algebraic memory model. 
+%The current algebraic memory model does not support 
+%1) n-ary relations; 2) commutativity very well. 
+%Thus, providing the refinement theorem is a little bit tricky. 
+
+%%%% FULL EASM %%%%%%%%
+%\subsection{Multithreaded Machine Model}\label{subsec:fulleasm}
+%
+%When it comes with the multithreaded concurrency, however, 
+%encapsulating our ideas only in the abstract data 
+%and thus in the state of their $\compcertx$\ is insufficient
+%due to multiple challenges. 
+%First, we have to replace the actual context switching semantics in Assembly source code with no-op 
+%like operations in thread-local layers. 
+%This simplification of yield and sleep behaviors is unclear when we try to enable it 
+%without touching any definitions in the machine model. 
+%In addition, thread-local layers should be purely local even for the process create primitive, 
+%which establishes the initial user context, kernel context, and other dynamic information for its child. 
+%This implies that our thread-local layer interface should have a method to dynamically 
+%build its initial state depending on the behavior of its parent. 
+%Third, each thread can build its stack in its memory, and it will change the next available block in the memory
+%after it calls  $\yield$  or  $\sleep$ .
+%Therefore, calling  scheduling primitives can arbitrarily update 
+%the memory block based on other threads' behavior, and our thread-local machine need to capture this behavior properly. 
+%We also want to use all benefits of $\compcertx$, which are not only layered approach 
+%but also behavior preserving between $C$ and complied $Assembly$ programs.
+%Lastly, we want a generic and scalable thread-local layer interface as much as possible.
+%Even if we add or remove multiple primitives in the layer that we want to link multiple 
+%thread-local layers together to refine it into a single CPU-local layer, 
+%we want to use the same machine model and reuse mostproofs that we have already done before. 
+%To fulfill all the above challenges, we have introduced a concurrent machine model, $\EAsmM{}$.
+%\begin{figure}
+%\begin{small}
+%\[
+%\begin{array}{llll llll}
+%(\textit{SharedData}) & \dshare & \in & Type &
+%(\textit{PrivateData}) &  \dproc & \in & Type\\
+%(\textit{InitSharedData}) & \dshare_{init} & \in & \dshare &
+%(\textit{ProcessorID}) & \cpuid & \in & \dshare \rightarrow Z\\
+%(\textit{ThreadID}) & \procid & \in & \dshare \rightarrow Z&
+%(\textit{BlockNum}) & \blocknum & \in & \mathbb{N} \\
+%(\textit{Mem}) & m & \in & loc \rightarrow val &
+%(\textit{NextBlock}) & \nextblockfun & \in & m \rightarrow  \mathbb{N} \\
+%\end{array}
+%\]
+%\begin{center}
+%(1) Data Types and Auxiliary Functions Related to Data Types
+%\end{center}
+%\vspace{-1em}
+%
+%\[
+%\begin{array}{llllllll}
+%(\textit{Lval}) & \lval & \in & Int \cup Ptr  &
+%(\textit{Largs}) & \largs & \in & list \ \lval  \\
+%(\textit{Ident}) & \threadfunid & \in & \{\yield,\ \sleep,\ \cdots\}&
+%(\textit{SnapShot}) & \dsnap & \in & Type  \\
+%(\textit{SnapShotFun}) & \snapfun & \in &  \dproc \rightarrow \dsnap &
+%(\textit{SleepEventUnit}) & \primevunit{sleep} & \in & Int \times \blocknum \times \dsnap \\
+%(\textit{YieldEventUnit}) & \primevunit{yield} & \in & \blocknum \times \dsnap &
+%(\textit{PrimEventUnit}) & \primevunit{\threadfunid} & \in & \threadfunid \times \largs \times \dsnap \\
+%(\textit{EventUnit}) &  \primevunit{} & \in &
+%\multicolumn{5}{l}{
+% \{\primevunit{sleep},\ \primevunit{sleep},\  \primevunit{ident},\  \yieldbackunit \} 
+% }
+% \\
+%(\textit{Event}) &  \Sevent & \in & tid \times \primevunit{} &
+%(\textit{Log}) &  \SLog & \in & list\ \Sevent \\
+%\end{array}
+%\]
+%\begin{center}
+%(2) Event and Log
+%\end{center}
+%\vspace{-1em}
+%
+%\[
+%\begin{array}{llll llll}
+%(\textit{ThreadSet}) & \threadset & \in & \{Z\} &
+%(\textit{FullThreadSet}) & \fullthreadset & \in & \threadset \\
+%(\textit{InitLog}) & \SLog_{init} & \in & \SLog &
+%(\textit{InitNb}) & \blocknum_{init} & \in & \blocknum \\
+%(\textit{EnvContext}) & \oracle^{t} & \in & \threadset \rightarrow \varphi^{\threadset} &
+%(\textit{Strategy}) & \varphi^{\threadset} & \in & \SLog \rightarrow \Sevent \\
+%\end{array}
+%\]
+%\begin{center}
+%(3) Environmental Context
+%\end{center}
+%\vspace{-1em}
+%
+%\[
+%\begin{array}{llllllll}
+%(\textit{Update}) & \updatefun & \in & \dshare \rightarrow \SLog \rightarrow \dshare &
+%(\textit{Construct}) & \updatefun_{init} \ l& := & \updatefun\ \dshare_{init} \ l  \ \ \ \ (l \in \SLog) \\
+%(\textit{StateCheck}) & \statecheck & \in &
+%\multicolumn{5}{l}{
+% \threadfunid \rightarrow \largs \rightarrow \dshare \rightarrow \dsnap \rightarrow \mathrm{Prop}
+% }
+% \\
+% (\textit{EventCheck}) & \haseventfun & \in & \threadfunid \rightarrow bool  &
+%(\textit{Reg})  &\regs & ::= & \mathsf{EIP} \ | \ \mathsf{EAX} \ | \  \cdots \\
+%(\textit{ThreadState}) & \threadstate & \in &
+%\multicolumn{5}{l}{
+% \{\mathrm{Environment}, \ \mathrm{Available}, \ \mathrm{Running}\ \regs \} 
+%  }
+%\end{array}
+%\]
+%\begin{center}
+%(4) Auxiliary Definitions for $\EAsmM{}$
+%\end{center}
+%\vspace{-1em}
+%
+%\end{small}
+%\caption{Additional Definitions for Concurrent Machine Model}
+%\label{fig:mach:thread-syntax}
+%\vspace{-17pt}
+%\end{figure}
+%Figure~\ref{fig:mach:thread-syntax} shows multiple definitions for $\EAsmM{}$ in addition to the several 
+%shared definitions with our CPU-local layer interface in Fig.~\ref{fig:mach:syntax}, and
+%with the given definitions, the machine state of $\EAsmM{}$ is defined as
+%\[
+%st_{EAsm} = (Z, f_{\threadstate}, m, \SLog, f_{\dproc})
+%\] 
+%where the first element implies the currently-running thread that performs the evaluation, 
+%$f_{\threadstate}$ is a partial map from a thread id to a thread state, 
+%$m$ ($loc \rightarrow val$) is a memory, $\SLog$ is a single log that is shared by the whole thread, 
+%$f_{\dproc}$ is a partial map from a thread id to a private state.
+%
+%The first step to facilitate this concurrent machine model is defining semantics with the full thread set on CPU $c$,
+%which is notated as $\EAsmM{[c, \fullthreadset]}$ when $\fullthreadset$ is a set of all active threads on CPU $c$.
+%At this step, key differences between this machine model and the machine model 
+%(Sec.~\ref{subsec:lowlevelasm}) for CPU-local layers are
+%1) the machine state contains an explicit set of registers;
+%2) the machine state has  information of currently-running thread in it; and 
+%3) the machine state has a log explicity rather than only having it in the abstract data. 
+%Those concepts works as vital roles when we replace a context switch as a no-op like operation as well as
+%when will show the thread isolation property.
+%
+%For example, the first one is replacing our context switch 
+%in CPU-local layers as a no-op like operation in thread-local layers.
+%The last one, having an explicit log in the machine itself, gives us 
+%a generality of our framework that handle multithreaded concurrency. 
+%When modeling this framework and machine models for multithreaded concurrency, 
+%we do not need to consider which primitives 
+%generate the event during their evaluation.
+%In terms of machine model level, 
+%we only need to consider a general and abstract method to raise an event and update 
+%a shared state using that event.
+%Concrete layers, of course, should be instantiated when we want to link those layers together, but 
+%this one is an another phase of our thread linking because we want to divide the whole process as 
+%a machine model level and a concrete layer refinement level. 
+%
+%Using those definitions, the evaluation rule for the external call of $\EAsmM{}$ will be defined as:
+%\begin{small}
+%\begin{mathpar}
+%\inferrule{
+%\updatefun_{init}(l) = ds \\
+%\procid(ds) = curid \\ 
+%f_{\threadstate}(curid) = \mathrm{Running}\ \regs\\
+%f_{\dproc}(curid) = Some\ d \\ 
+%id \neq sleep  \\
+%id \neq yield \\ 
+%\spec^{_{def}}_{_{id}}: (largs, \regs, m, ds, d) \ni (\textit{res} \cup \{\}, \regs', m', ds', d') \\
+%if\ \haseventfun(id)\ then\ l' = (curid, (id, largs, \snapfun(d)))::l  \ else\ l' = l \\
+%\updatefun_{init}(l') = ds' \\
+%f_{\threadstate}' = f_{\threadstate}[\mathrm{Running}\ \regs'/curid]\\
+%f_{\dproc}' = f_{\dproc}[Some\ d'/curid] \\
+%%\oracle, c\vdash \sstepr{\spec_{id}}{[largs]}{\regs, m, ds, d}{\textit{res}\cup \{\}}{\regs',  m', ds', d'}
+%}{
+%\fullthreadset, \oracle^t, c, \oracle\vdash_\codeinmath{EAsm} \sstep{\spec_{id}}{largs}{curid, f_{\threadstate}, m, l, f_{\dproc}}
+% {res \cup \{ \}, curid,f_{\threadstate}' , m', l', f_{\dproc}'}
+%}
+%\end{mathpar}
+%\end{small}
+%When evaluating external calls, 
+%we first construct the current shared data ($ds$) by replaying the log ($l$), 
+%and gets the information of the register values and the private abstract data that are mapped with the current 
+%running thread id.
+%Then, it evaluates the function, and update the state 
+%including the log when the external call function generates an event.
+%
+%Note that the current environmental context is same with that of CPU local layers. 
+%Since the lowest level $\EAsmM{[c, \fullthreadset]}$, which is just above the $\AsmLM$ for CPU local layers
+%contains the full thread in the state, 
+%its environmental context will be identical to the environmental context in 
+%the highest CPU local layers.
+%Looking at the external call evaluation rule, however, $\EAsmM{[c, \fullthreadset]}$
+%filters out the case when the current call is 
+%$\yield$ or $\sleep$ calls. 
+%Instead of using one common external call evaluation rule, the machine has introduced the 
+%specific rule for those scheduling primitives 
+%which change the current running thread id in the state.
+%\begin{small}
+%\begin{mathpar}
+%\inferrule{
+%\updatefun_{init}(l) = ds \\
+%\procid(ds) = curid \\ 
+%f_{\threadstate}(curid) = \mathrm{Running}\ \regs\\
+%\statecheck(\yield, [],ds,\snapfun(d)) \\ 
+%f_{\dproc}(curid) = Some\ d \\ 
+%\nextblockfun(m) = nb \\ 
+%l' = (curid, (nb, \snapfun(d)))::l \\
+%\updatefun_{init}(l') = ds' \\
+%\procid(ds') = curid' \\ 
+%%\oracle, c\vdash \sstepr{\spec_{id}}{[largs]}{\regs, m, ds, d}{\textit{res}\cup \{\}}{\regs',  m', ds', d'}
+%}{
+%\fullthreadset, \oracle^t, c, \oracle \vdash_\codeinmath{EAsm} \sstep{\yield}{[]}{curid, f_{\threadstate}, m, l, f_{\dproc}}
+% {\{ \}, curid', f_{\threadstate}, m', l', f_{\threadstate}}
+%}
+%\end{mathpar}
+%\end{small}
+%In the yield evaluation rule, the machine does not use any user defined specifications at all. 
+%Instead of that, the rule contains what $\yield$ should do explicitly. 
+%It appends a yield event into the current log, and change the currently-running thread id by evaluating the updated log.
+%In addition to that, it memorizes next block information when the thread calls yield to enable thread-local machines to
+%find the proper information for its thread-local stack building. 
+%The rule also contains the condition that checks the current state. 
+%This check guarantees that the current status of the thread (both shared and private data status) are valid to call $\yield$. 
+%We can use the whole private data for this status check, but the reason why we use a snapshot is getting a generality in the design. 
+%For the simplest case, our snapshot function can be defined as an identity function 
+%that gets a private data and returns the exact same private data as a result.
+%
+%After that, if the new currently-running thread id is available and it is in the set of our available thread set,
+%$\EAsmM{}$ needs to resume the evaluation with the newly scheduled thread id. 
+%Since we are considering $\EAsmM{[c, \fullthreadset]}$, the next running thread will always be 
+%available and $yieldBack$ rule in $\EAsmM{}$ sets correct register values and memory for the thread as follows:
+%\begin{small}
+%\begin{mathpar}
+%\inferrule{
+%\updatefun_{init}(l) = ds \\
+%\procid(ds) = curid \\ 
+%(f_{\threadstate}(curid) = \mathrm{Running}\ \regs) \vee
+%(f_{\threadstate}(curid) = \mathrm{Available} \wedge \initregs(curid, l) = Some \ \regs)\\
+%f_{\dproc}(curid) = Some\ d \\ 
+%last\_event(l) = ev \\
+%ev = (\_, (nb, \_)) \vee ev = (\_, (\_, nb, \_))  \\
+%\liftnextblock{m}{nb - \nextblock{m}} = m' \\
+%l' = (curid, \yieldbackunit)::l\\
+%%\oracle, c\vdash \sstepr{\spec_{id}}{[largs]}{\regs, m, ds, d}{\textit{res}\cup \{\}}{\regs',  m', ds', d'}
+%}{
+%\fullthreadset, \oracle^t, c, \oracle\vdash_\codeinmath{EAsm} \sstep{yieldBack}{[]}{curid, f_{\threadstate}, m, l, f_{\dproc}}
+% {\{ \}, curid, f_{\threadstate}[Running\ \regs/curid], m', l', f_{\dproc}}
+%}
+%\end{mathpar}
+%\end{small}
+%This rule has two cases. 
+%The first case is when the thread is already running, and we just need to use the thread state for the newly scheduled thread as it is.
+%However, if the thread is created recently and have never scheduled yet, 
+%Our machine checks whether the thread is actually available or not as well as establishes its register values by replaying the current shared log. 
+%Our abstract definition, 
+%$\begin{small}(\initregs \in Z \rightarrow \SLog \rightarrow \mathrm{option}\ \regs) \end{small}$ 
+%is used to check the validity of the thread creation and to build the 
+%correct register values (including kernel context values) for the initial move of the thread. 
+%In terms of concrete implementation, the machine always choose either the running thread id or the thread id that is ready to run
+%because we have already proven the correctness of process creation.
+%This $yieldBack$ rule also 
+%adjust the memory by using our \textit{algebraic memory model} discussed in Sec.~\ref{sec:multi-threaded-partial}
+%to shift the next 
+%available block to the proper position for the thread. 
+%Note that this lifting will return the identical memory as a result when all threads are available.
+%
+%
+%\para{Building initial state}
+%In this stage, all threads in the CPU ($c$) are in the set of our full thread set ($\fullthreadset$), and this implies that all threads will return a valid private data with $f_{\dproc}$.
+%However, this private abstract data is purely local, and threads cannot touch 
+%others' local values, even if other threads are its children.
+%This implies that each thread has its own responsibility to build its initial state. 
+%To handle this initial state building, we introduce an abstract definition,
+%${\small  \initdproc \in Z \rightarrow \mathrm{option}\ \dproc }$,
+% that gets a thread id and an initial shared log 
+%for the thread and returns proper initial values by searching the information inside its initial shared log. 
+%Definitely, this initial shared log should contain sufficient information to build an initial private state for each thread.
+%However, like other definitions in our $\EAsmM{}$ machine model, 
+%we do not have to concretely define this abstract definition at all
+%at this step. 
+%We leave them as an abstract one in our language level for us to design a general multithreaded machine model as much as possible.
+%Then, an initial abstract state ($f_\dproc$) of $\EAsmM{[c, \fullthreadset]}$ will be defined as 
+%\begin{small}
+%\[
+%\mathsf{map}\ (\mathsf{fun}\ i \Rightarrow (\mathsf{Some}\ \initdproc(i))) \ \fullthreadset
+%\]
+%\end{small}
+%, and we show the correctness of this mechanism while proving refinement theorems, 
+%both in the language level refinement 
+%and the concrete layer refinement.
+%Finally, with the whole thread set on CPU $c$, we are able to show the refinement theorem between two different machine models.
+%\begin{theorem}[$\EAsmM{}$ refines $\AsmLM$]
+%\label{theorem:easm_refine_lasm}
+%\begin{small}
+%Assume that the simulation relation between $\AsmLM$ and $\EAsmM{}$ is $\simrel(st_{\EAsmM{}}, st_{\AsmLM})$.
+%In addition, suppose that there exists a layer definition, $\mathrm{PH}$, that satisfies an abstract relation, $\absrel(\simrel(st_{\EAsmM{}}, st_{\AsmLM}), \mathrm{PH}, \CSched)$. Then,
+%$$\ltyp{(c, \oracle\vdash_{\AsmLM} L_\codeinmath{bthread})}{\absrel(\simrel(st_{\EAsmM{}}, st_{\AsmLM}), \mathrm{PH}, \CSched)}
+%{\varnothing}{(\fullthreadset, \oracle^t,  c, \oracle  \vdash_{\EAsmM{}} \mathrm{PH})}$$
+%\end{small}
+%\end{theorem}
+%
+% $\proofcase{initial\_state}$ We show that there exists a valid initial state of $\AsmLM$ which satisfies the simulation relation
+%$\simrel$ with the initial machine state of $\EAsmM{}$, which is stated as follows:
+%$$\simrel(init\_st_{\EAsmM{}}, init\_st_{\AsmLM})$$
+%This proof is based on the induction on our full thread set, $\fullthreadset$. 
+%The base case is trivial because a thread set in this case is an empty set.
+%For the inductive case, our proof relies on the abstract relation, $\absrel(\simrel(st_{\EAsmM{}}, st_{\AsmLM}), \mathrm{PH}, \CSched)$, which states the fact that
+% all thread in the set also satisfies the simulation relation. 
+%This is because we do not have concrete data type definitions, a concrete layer definition, and other concrete definitions yet. 
+%Showing the fact that our concrete implementation satisfies  $\absrel(\simrel(st_{\EAsmM{}}, st_{\AsmLM}), \mathrm{PH}, \CSched)$ can be done when we introduce actual implementations for all abstract definitions.
+%
+%$\proofcase{one\_step\_refinement}$
+%Next step is showing the fact that when $\simrel(st_{\EAsmM{}}, st_{\AsmLM})$ and when we have one step evaluation on $\EAsmM{}$, which is $\fullthreadset, \oracle^t, c, \oracle  \vdash_{\EAsmM{}} st_{\EAsmM{}} \ni st'_{\EAsmM{}} $, 
+%then there exists a $st'_{\AsmLM}$ that satisfies 
+%$$c, \oracle, \vdash_{\AsmLM{}} st_{\AsmLM} \ni st'_{\AsmLM} \wedge \simrel(st'_{\EAsmM{}}, st'_{\AsmLM})$$
+%or when the current evaluation of $\EAsmM{}$ is either $\yield$ or $\sleep$ case, 
+%$$\vert st_{\EAsmM{}} \vert > \vert st'_{\EAsmM{}} \vert \wedge \simrel(st'_{\EAsmM{}}, st_{\AsmLM})$$
+%when $\vert st_{\EAsmM{}} \vert$ is defined as $1$ if the type of the last event in the shared log of $st_{\EAsmM{}}$ 
+%is neither $\primevunit{\yield}$ nor $\primevunit{\sleep}$ and $0$ otherwise.
+%
+%Proving this property requires case analysis on $\EAsmM{}$ evaluation rules, and it  
+%also heavily relies on the abstract definition,  $\absrel(\simrel(st_{\EAsmM{}}, st_{\AsmLM}), \mathrm{PH}, \CSched)$.
+%For most cases except $\yield$ and $\sleep$, one step in $\EAsmM{}$ with $\fullthreadset$ 
+%is exactly matched with one step in $\AsmLM$, and we can show the existence of $st'_{\AsmLM}$ that satisfies 
+%$c, \oracle\vdash_{\AsmLM{}} st_{\AsmLM} \ni st'_{\AsmLM} \wedge \simrel(st'_{\EAsmM{}}, st'_{\AsmLM})$.
+%
+%In the $\yield$ case, we delay the evaluation of $\AsmLM$ because there is no evaluation rule in $\AsmLM$
+%which is exactly matched with this $\yield$ evaluation rule in $\EAsmM{}$. 
+%This is because we define the context switching behavior 
+%as two steps in our multithreaded concurrent machine model.
+%Therefore, instead of providing the next state of $\AsmLM$ and showing the existence of corresponding 
+%evaluation in $\AsmLM$, 
+%we show that this 
+%case satisfies $\vert st_{\EAsmM{}} \vert > \vert st'_{\EAsmM{}} \vert \wedge \simrel(st'_{\EAsmM{}}, st_{\AsmLM})$, 
+%which delays the evaluation in $\AsmLM$. 
+%Similar to the $\yield$ case, we show that the $\sleep$ case also 
+%satisfies $\vert st_{\EAsmM{}} \vert > \vert st'_{\EAsmM{}} \vert \wedge \simrel(st'_{\EAsmM{}}, st_{\AsmLM})$.
+%
+%In the $yieldBack$ case, the rule guarantees that the previous evaluation rule in $\EAsmM{}$ was either $\yield$ or $\sleep$ 
+%by its condition (\textit{\ie} $last\_event(l) = ev \wedge (ev = (\_, (nb, \_)) \vee ev = (\_, (\_, nb, \_)))$).
+%If the previous evaluation rule was the $\yield$ evaluation rule,
+%then the $yieldBack$ evaluation combined with the previous $\yield$ evaluation in $\EAsmM{}$
+%will be matched with the $\yield$ primitive evaluation in $\AsmLM$. 
+%Therefore, we can provide a valid next state of $\AsmLM$, which satisfies the simulation relation with the next state of 
+%$\EAsmM{}$. If the previous evaluation on $\EAsmM{}$ was $\sleep$, then the proof will be quite similar.
+
+%%%% PARTIAL EASM %%%%%%%%
+%\subsection{Partial Multithreaded Machine Model and Linking}\label{subsec:singleeasm}
+%
+%The next step in defining thread-local layer interface
+%is replacing other threads' evaluation using the strategy as we have already seen in Fig.~\ref{fig:chapter:conlink:threadlinking}. 
+%In this step, our machine does not guarantee that the scheduled thread id is always a member 
+%unning or available threads because the machine is not a total machine on CPU $c$. 
+%If the thread is not in both cases, we categorize it as a thread with an $\mathrm{Environment}$ state.
+%To handle the case,
+%$\EAsmM{}$ has a $\mathrm{Environment}$ rule
+%\begin{small}
+%\begin{mathpar}
+%\inferrule{
+%\updatefun_{init}(l) = ds \\
+%\procid(ds) = curid \\ 
+%f_{\threadstate}(curid) = \mathrm{Environment} \\
+%f_{\dproc}(curid) = None \\ 
+%\oracle^{t}(T_a) = \varphi^{T_a}\\
+%\varphi^{T_a}(l) = ev\\
+%l' = ev::l\\
+%\updatefun_{init}(l') = ds' \\
+%\procid(ds') = curid' \\ 
+%}{
+%\threadset_a, \oracle^t, c, \oracle\vdash_\codeinmath{EAsm} \sstep{\empty}{[]}{curid, f_{\threadstate}, m, l, f_{\dproc}}
+% {\{ \}, curid', f_{\threadstate}, m, l', f_{\threadstate}}
+%}
+%\end{mathpar}
+%\end{small}
+%, when $\threadset_a$ is a set of thread that is currently available. 
+%With a partial thread set, if the current thread $curid$ is in a set of $\fullthreadset - \threadset_a$ 
+%(\textit{\ie} $curid \in (\fullthreadset - \threadset_a)$),
+%we query our strategy using the current log and append the event that are performed by other threads to the current log.
+%For example, if the current full thread set is $\fullthreadset$ is $\{0, \ 1 \}$,
+%and we define a partial machine that only has $\{0\}$ as a currently available thread set, 
+%the environmental context for thread-local machine will be parameterized by $\{0\}$.
+%After that, the machine becomes a single threaded machine model, 
+%which contains $\{0\}$ as an only available or a running thread in the set.  
+%Even for the case with more than 2 threads, applying this step iteratively until the currently available thread set $\threadset_a$ become a singleton set is a key idea of our framework to build a thread-local machine. 
+%
+%\para{Thread Linking}
+%To link multiple thread-local machines as one multithreaded concurrent machine,  
+%we perform the above iteration of building a single-threaded concurrent machine model in a reversed way.
+%Let us first focus on two single-threaded concurrent machine models, 
+%$\EAsmM{[c, \{0\}]}$ and $\EAsmM{[c, \{1\}]}$.
+%Then, partial maps for thread private data ($f_\dproc$) of $\EAsmM{[c, \{0\}]}$ 
+%and of $\EAsmM{[c, \{1\}]}$ will be defined as\newline
+%\noindent
+%\begin{minipage}[t]{.5\textwidth}
+%\begin{small}
+%\[
+%f_{\dproc}(i):=
+%\begin{cases}
+% \codeinmath{Some \ d} & \codeinmath{when} \ i = 0\\
+%\codeinmath{None} & \text{otherwise}
+%\end{cases}
+%\]
+%\end{small}
+%\end{minipage}
+%\begin{minipage}[t]{.5\textwidth}
+%\begin{small}
+%\[
+%f_{\dproc}(i):=
+%\begin{cases}
+% \codeinmath{Some \ d} & \codeinmath{when} \ i = 1\\
+%\codeinmath{None} & \text{otherwise}
+%\end{cases}
+%\]
+%\end{small}
+%\end{minipage}
+%respectively.
+%Then, merging those two partial maps will be 
+%\begin{small}
+%\[
+%f_{\dproc}(i):=
+%\begin{cases}
+% \codeinmath{Some \ d} & \codeinmath{when} \ i = 0 \vee i = 1\\
+%\codeinmath{None} & \text{otherwise}
+%\end{cases}
+%\]
+%\end{small}
+%, which simply merge two maps together. 
+%For the partial map of the private register set, we can do the similar merging.
+%In terms of environmental context, both machines have the same environmental context, which is 
+%$\oracle^{t}$ even though they have different strategies from each other ($\oracle^{t}(\{0\})$ and $\oracle^{t}(\{1\})$).
+%With those environmental contexts, 
+%building $\oracle^{t}(\{0, 1\})$ is straightforward. 
+%We need to either  exclude the event generated by thread 1 from $\oracle^{t}(\{0\})$ or 
+%exclude the event generated by thread 0 from $\oracle^{t}(\{1\})$.
+%Then, having those two single-threaded local machines, we can merge their private states, registers, and a environmental context, 
+%and thus build a two-threaded concurrent machine model, $\EAsmM{[c, \{0, 1\}]}$.
+%If $\fullthreadset = \{0, 1\}$, then we do not need further merging, 
+%and the machine directly turns into a total concurrent machine 
+%model $\EAsmM{[c, \fullthreadset]}$. 
+%If not, we pick one thread $i$ (\textit{\ie} $i \in (\fullthreadset - \{0, 1\})$), 
+%and merge the thread again with the exactly 
+%same process that we have done for thread $0$ and thread $1$.
+%Generalizing this method makes our framework link two multithreaded machine models 
+%when two machines contain disjoint thread sets as their available (or running) thread sets.
+%When we define the operator for the above merging process as $\join$, which performs the above 
+%process for merging,
+%we can show when $\EAsmM{[c, \threadset_{left}]}$ and $\EAsmM{[c, \threadset_{right}]}$,
+%there always exists a valid composed concurrent machine.
+%\begin{small}
+%\[
+%\EAsmM{[c, \threadset_{left} \cup \threadset_{right}]} = \EAsmM{[c, \threadset_{left}]}\ \join\ \EAsmM{[c, \threadset_{right}]}
+% \]
+% \end{small}
+%when $\threadset_{\mathrm{left}}$ and $\threadset_{\mathrm{right}}$ are disjoint with each other.
+%We have also proved the refinement for this linking too.
+%
+%\begin{lemma}
+%\begin{small}
+%$$\ltyp{(\{\mathrm{left}, \mathrm{right}\}, \oracle^t, c, \oracle  \vdash_{\EAsmM{}} \mathrm{PH})}{}{\varnothing}
+%{(\{\mathrm{left}\}, \oracle^t, c, \oracle \vdash_{\EAsmM{}} \mathrm{PH}
+% \join \{\mathrm{right}\}, \oracle^t, c, \oracle  \vdash_{\EAsmM{}} \mathrm{PH})}
+%$$
+%\end{small}
+%\label{lemma:thread-single-compose}
+%\end{lemma}%
+%This lemma requires a lot of auxiliary lemmas and definitions.
+%Honestly, the proof is one of the most complex one among our whole proofs.
+%However, the basic idea is simple and really intuitive.
+%
+%
+%$\proofcase{initial\_state}$ 
+%Initial states of both machines in the right-hand side of the lemma, 
+%which are $\EAsmM{[c, \mathrm{\{left\}}]}$ and $\EAsmM{[c, \mathrm{\{right\}}]}$
+%will have the same shared log ($nil$) and the memory (the clean state). 
+%Therefore, we can easily  get those fields in the initial state 
+%of the left hand side machine, $\EAsmM{[c, \mathrm{\{left, rihgt\}}]}$.
+%For private abstract data and thread state pools of $\EAsmM{[c, \mathrm{\{left, rihgt\}}]}$, 
+%we apply our join operation on initial states of $\EAsmM{[c, \mathrm{\{left\}}]}$ and $\EAsmM{[c, \mathrm{\{right\}}]}$. 
+%By doing that, we can successfully construct an initial state of $\EAsmM{[c, \mathrm{\{left, rihgt\}}]}$.
+%
+%$\proofcase{one\_step\_refinement}$
+%Assuming that either $\EAsmM{[c, \mathrm{\{left\}}]}$ or  $\EAsmM{[c, \mathrm{\{right\}}]}$  performs one step
+%evaluation. 
+%And, the other one of them performs more than zero step evaluation. 
+%For the simplicity in this proof, we assume that $\EAsmM{[c, \mathrm{\{left\}}]}$ do one step evaluation and $\EAsmM{[c, \mathrm{\{right\}}]}$ do  star step (more than zero step) evaluations.
+%In this case, we can find at least more than one step evaluation on $\EAsmM{[c, \mathrm{\{left, rihgt\}}]}$
+%that can be matched with both evaluations on the right-hand side. 
+%Intuitively, this is simply replacing some environment steps in either $\EAsmM{[c, \mathrm{\{left\}}]}$ or $\EAsmM{[c, \mathrm{\{right\}}]}$ into other evaluation steps 
+%(\textit{\ie} external, primitive, $\yield$, $\sleep$, and $yieldBack$ steps) in $\EAsmM{[c, \mathrm{\{left, rihgt\}}]}$.
+%To prove this one, we need to do case analysis on the single step evaluation rules in $\EAsmM{[c, \mathrm{\{left\}}]}$.
+%All cases except the one, an environmental step, we can directly find out the matched state and one step evaluation in
+%$\EAsmM{[c, \mathrm{\{left, rihgt\}}]}$ because the current running thread is ``$\mathrm{left}$''. 
+%In the environmental step, $\EAsmM{[c, \mathrm{\{left, rihgt\}}]}$ either performs one environmental step or 
+%replaces the step into other evaluation rules (possibly multiple steps) that are performed by ``$\mathrm{right}$'' 
+%by additional case analysis on the event generated by the environmental step.
+%When the event generated by environmental step is not by $\mathrm{right}$, 
+%then $\EAsmM{[c, \mathrm{\{left, rihgt\}}]}$ will also do the single environmental step. 
+%However, if the event in the environmental step is raised by $\mathrm{right}$, we will replace the environmental step 
+%with star step evaluations on $\EAsmM{[c, \mathrm{\{right\}}]}$.
+%This star step may contain multiple silent steps that only affects the private data of $\mathrm{right}$.
+%In this case, we can update the corresponding private data in $\EAsmM{[c, \mathrm{\{left, rihgt\}}]}$ by apply the 
+%same star steps in $\EAsmM{[c, \mathrm{\{left, rihgt\}}]}$.
+%Therefore, we are always able to provide the matched state and evaluation rules for $\EAsmM{[c, \mathrm{\{left, rihgt\}}]}$.
+%
+%\ignore{
+%\noindent This theorem guarantees that,
+%once the multithreaded machine $\TAsm$ consists of
+%the whole thread set,
+% the properties of  threads running on top
+%can be propagated down to the layer that has concrete
+%scheduling implementations.
+%}
+%By generalizing this lemma, we can prove the general linking theorem. 
+%\begin{theorem}[Multithreaded Machine Model Linking]
+%\begin{small}
+%$$\ltyp{(\fullthreadset, \oracle^t, c, \oracle  \vdash_{\EAsmM{}} \mathrm{PH})}{}
+%{\varnothing}{\join_{tid \in T_{\mathrm{full}}} ( \{tid\}, \oracle^t, c, \oracle\vdash_{\EAsmM{}} \mathrm{PH})}$$
+%\end{small}
+%\label{theorem:thread-full-compose}
+%\end{theorem}
+%
+%Proving this theorem is generalization of the previous Lemma (Lemma~\ref{lemma:thread-single-compose}). 
+%One limitation in our merging operator is one of two partial $\EAsmM{}$ machines that we want to merge should have a singleton set as its available thread set. 
+%By restricting this aspect, we can 
+%prove this theorem by doing case analysis on the evaluation rules with singleton $\EAsmM{}$.
+%The proof is quite similar to the proof for Lemma~\ref{lemma:thread-single-compose}.
+%
+%
+%\ignore{One more additional theorem that we can easily achieve with this approach is also important for us to build out thread-local layer interface.
+%
+%\begin{theorem}[Single Threaded $\EAsmM{}$ Refines Full Threaded $\EAsmM{}$]
+%\begin{small}
+%$$\forall\ tid,\ tid\ \in\ \fullthreadset,\ (\ltyp{ \fullthreadset, \oracle^{t}, c, \oracle \vdash_{\EAsmM{}} \mathrm{PH})}{}
+%{\varnothing}{(\{tid\}, \oracle^{t}, c, \oracle \vdash_{\EAsmM{}} \mathrm{PH})})$$
+%\end{small}
+%\label{theorem:full-easm-refines-single-easm}
+%\end{theorem}}
+%
+%\ignore{
+%$\proofcase{initial\_state}$ 
+%The initial shared log and the initial memory will be same in both side. 
+%And,  the private data pool of $\EAsmM{[c, \fullthreadset]}$ will contain the proper initial private data 
+%for 
+%
+%$\proofcase{one\_step\_refinement}$
+%Assuming that either $\EAsmM{[c, \mathrm{\{left\}}]}$ or  $\EAsmM{[c, \mathrm{\{right\}}]}$  performs one step
+%evaluation. 
+%And, the other one of them performs more than zero step evaluation. 
+%For the simplicity in this proof, we assume that $\EAsmM{[c, \mathrm{\{left\}}]}$ do the one step evaluation and $\EAsmM{[c, \mathrm{\{right\}}]}$ do the star step (more than zero step) evaluation.
+%In this case, we can find at least more than one step evaluation on $\EAsmM{[c, \mathrm{\{left, rihgt\}}]}$
+%that can be matched with both evaluations on the right-hand side. 
+%Intuitively, this is simply replacing some environmental steps in either $\EAsmM{[c, \mathrm{\{left\}}]}$ or $\EAsmM{[c, \mathrm{\{right\}}]}$ with other evaluation steps 
+%(\textit{\ie} external, primitive, $\yield$, $\sleep$, and $yieldBack$ steps) in $\EAsmM{[c, \mathrm{\{left, rihgt\}}]}$.
+%To prove this one, we need to do the case analysis on the single step evaluation in $\EAsmM{[c, \mathrm{\{left\}}]}$.
+%All cases except the one, an environmental step, we can directly find out the matched state and one step evaluation in
+%$\EAsmM{[c, \mathrm{\{left, rihgt\}}]}$ because the current running thread is ``$\mathrm{left}$''. 
+%In the environmental step, $\EAsmM{[c, \mathrm{\{left, rihgt\}}]}$ either performs one environmental step or 
+%replaces the step with other evaluation rules (possibly multiple steps) that are performed by ``$\mathrm{right}$'' 
+%by an additional case analysis on the event generated by the environmental step.
+%When the event generated by environmental step is not by $\mathrm{right}$, 
+%then $\EAsmM{[c, \mathrm{\{left, rihgt\}}]}$ will also do the single environmental step. 
+%However, if the event in the environmental step is by $\mathrm{right}$, we will replace the environmental step 
+%with star step evaluations on $\EAsmM{[c, \mathrm{\{right\}}]}$.
+%This star step may contain multiple silent steps that only affects the private data of $\EAsmM{[c, \mathrm{\{right\}}]}$.
+%In this case, we can update the corresponding private data in $\EAsmM{[c, \mathrm{\{left, rihgt\}}]}$ by apply the 
+%same star steps in $\EAsmM{[c, \mathrm{\{left, rihgt\}}]}$.
+%Therefore, we are always able to provide the matched state and evaluation rules for $\EAsmM{[c, \mathrm{\{left, rihgt\}}]}$.
+%}
+
+
+\subsubsection{Single Thread EAsm refines Full Thread EAsm}
+
+\subsubsection{IIEAsm}
+\begin{lstlisting}[language=C]
+  (* fst mem : mine / snd mem : others *)
+  Inductive iestate: Type :=
+    | IEState: Z -> ZMap.t ThreadState -> (mem * mem) -> EData -> Log -> iestate.
+\end{lstlisting}
+
+\begin{lstlisting}[language=C]
+  Inductive iestep (ge: genv) : iestate -> trace -> iestate -> Prop :=
+\end{lstlisting}
+
+
+\begin{lstlisting}[language=C]
+    | ieexec_step_internal:
+        forall b ofs f i (rs: regset) mset mset' m m' dp d d' ds' rs' curid rsm l
+               (MOrigin: if (decide (curid = current_thread)) then m = fst mset else m = snd mset),
+          ZMap.get curid rsm = Running rs ->
+          proc_id (uRData l) = curid ->
+          rs PC = Vptr b ofs ->
+          Genv.find_funct_ptr ge b = Some (Internal f) ->
+          find_instr (Int.unsigned ofs) f.(fn_code) = Some i ->
+          lastEvType l <> Some LogYieldTy ->
+          exec_instr ge f i rs (m, (uRData l,d)) = Next rs' (m', (ds',d')) ->
+          forall (MUpdate: if (decide (curid = current_thread)) then mset' = (m', snd mset)
+                           else mset' = (fst mset, m'))
+                 (Hget_dp: ZMap.get curid dp = Some d),
+            iestep ge (IEState curid rsm mset dp l) E0
+                   (IEState curid (ZMap.set curid (Running rs') rsm) mset' 
+                            (ZMap.set curid (Some d') dp) l)
+\end{lstlisting}
+
+
+\begin{lstlisting}[language=C]
+                          
+  | ieexec_step_external:
+      forall b ef args res (rs: regset) mset mset' m m' dp d d' ds' t rs' curid rsm l l'
+             (MOrigin: if (decide (curid = current_thread)) then m = fst mset else m = snd mset),
+        ZMap.get curid rsm = Running rs ->
+        proc_id (uRData l) = curid ->
+        rs PC = Vptr b Int.zero ->
+        Genv.find_funct_ptr ge b = Some (External ef) ->
+        extcall_arguments rs m (ef_sig ef) args ->
+        lastEvType l <> Some LogYieldTy ->
+        external_call' (mem:= mwd (cdata PData)) (fun _ => True) ef ge args (m, (uRData l, d)) t res (m', (ds',d')) ->
+        rs' = (set_regs (loc_external_result (ef_sig ef)) res 
+                        (undef_regs (CR ZF :: CR CF :: CR PF :: CR SF :: CR OF :: nil)
+                                    (undef_regs (map preg_of destroyed_at_call) rs))) 
+                #PC <- (rs RA) #RA <- Vundef ->
+        forall NON_YIELD: 
+                 match ef with
+                 | EF_external id _ => 
+                   if peq id thread_yield then False
+                   else if peq id thread_sleep then False
+                        else
+                          if has_event id then
+                            exists largs choice,
+                              val2Lval_list args largs  /\
+                              choice_check id largs (uRData l) d = choice /\ 
+                              l' = (LEvent curid (LogPrim id largs choice (snap_func d)) :: l) 
+                          else
+                            l' = l
+                 | _ => l' = l
+                 end,
+                 forall STACK:
+                 forall b o, rs ESP = Vptr b o ->
+                             (Ple (Genv.genv_next ge) b /\ Plt b (Mem.nextblock m)),
+                 forall SP_NOT_VUNDEF: rs ESP <> Vundef,
+                 forall RA_NOT_VUNDEF: rs RA <> Vundef,
+                 forall (Hget_dp: ZMap.get curid dp = Some d),
+                 forall (MUpdate: if (decide (curid = current_thread)) then mset' = (m', snd mset)
+                                  else mset' = (fst mset, m')),
+                   iestep ge (IEState curid rsm mset dp l) t 
+                          (IEState curid (ZMap.set curid (Running rs') rsm) 
+                                   mset' (ZMap.set curid (Some d') dp) l')
+
+\end{lstlisting}
+
+\begin{lstlisting}[language=C]
+    | ieexec_step_prim_call:
+        forall b ef (rs: regset) mset mset' m m' dp d d' ds' t rs' curid rsm l l'
+               (MOrigin: if (decide (curid = current_thread)) then m = fst mset else m = snd mset),
+          ZMap.get curid rsm = Running rs ->
+          proc_id (uRData l) = curid ->
+          rs PC = Vptr b Int.zero ->
+          Genv.find_funct_ptr ge b = Some (External ef) ->
+          lastEvType l <> Some LogYieldTy ->
+          primitive_call (mem:= mwd (cdata PData)) ef ge rs (m, (uRData l, d)) t rs' (m', (ds', d')) ->
+          forall NON_YIELD: 
+                   match ef with
+                   | EF_external id _ => 
+                     if peq id thread_yield then False
+                     else if peq id thread_sleep then False
+                          else
+                            if has_event id then
+                              l' = (LEvent curid (LogPrim id nil 0 (snap_func d)) :: l)
+                            else
+                              l' = l
+                   | _ => l' = l
+                   end,
+                   forall (Hget_dp: ZMap.get curid dp = Some d),
+                   forall (MUpdate: if (decide (curid = current_thread)) then mset' = (m', snd mset)
+                                    else mset' = (fst mset, m')),
+                     iestep ge (IEState curid rsm mset dp l) t 
+                            (IEState curid (ZMap.set curid (Running rs') rsm) mset' 
+                                     (ZMap.set curid (Some d') dp) l')
+                            
+\end{lstlisting}
+
+\begin{lstlisting}[language=C]
+    | ieexec_step_external_yield:
+        forall b ef (rs: regset) (mset : (mem * mem)) (m: mem) curid curid' rsm s l l' dp d
+               (MOrigin: if (decide (curid = current_thread)) then m = fst mset else m = snd mset),
+          ZMap.get curid rsm = Running rs ->
+          ZMap.get curid dp = Some d ->
+          proc_id (uRData l) = curid ->
+          rs PC = Vptr b Int.zero ->
+          Genv.find_funct_ptr ge b = Some (External ef) ->
+          stencil_matches s ge ->
+          l' = (LEvent curid (LogYield (Mem.nextblock m))::l) ->
+          lastEvType l <> Some LogYieldTy ->
+          (* event_check (LEvent curid (LogYield (Mem.nextblock m))) -> *)
+          state_checks thread_yield nil l dp ->
+          curid' = proc_id (uRData l') ->
+          forall (NON_YIELD: match ef with
+                               | EF_external id _ => 
+                                 if peq id thread_yield then True
+                                 else False
+                               | _ => False
+                             end),
+            iestep ge (IEState curid rsm mset dp l) E0
+                  (IEState curid' rsm mset dp l')
+
+\end{lstlisting}
+
+\begin{lstlisting}[language=C]
+    | ieexec_step_external_sleep:
+        forall b ef (rs: regset) (mset : (mem * mem)) (m: mem) curid curid' rsm s l l' dp d i
+               (MOrigin: if (decide (curid = current_thread)) then m = fst mset else m = snd mset),
+          ZMap.get curid rsm = Running rs ->
+          ZMap.get curid dp = Some d ->
+          proc_id (uRData l) = curid ->
+          rs PC = Vptr b Int.zero ->
+          Genv.find_funct_ptr ge b = Some (External ef) ->
+          stencil_matches s ge ->
+          l' = (LEvent curid (LogSleep (Int.unsigned i) (Mem.nextblock m)
+                                       (sync_chpool_check thread_sleep ((Lint i)::nil) (uRData l) d))::l) ->
+          lastEvType l <> Some LogYieldTy ->
+          state_checks thread_sleep (Lint i::nil) l dp ->
+          curid' = proc_id (uRData l') ->
+          forall
+            (Hargs: extcall_arguments rs m (mksignature (Tint:: nil) None cc_default) (Vint i:: nil))
+            (NON_YIELD: match ef with
+                               | EF_external id _ => 
+                                 if peq id thread_sleep then True
+                                 else False
+                               | _ => False
+                             end),
+            iestep ge (IEState curid rsm mset dp l) E0
+                  (IEState curid' rsm mset dp l')
+\end{lstlisting}
+
+\begin{lstlisting}[language=C]
+
+    | ieexec_step_external_empty:
+        forall (mset:  (mem * mem)) curid curid' rsm dp l l',
+          ZMap.get curid rsm = Environment ->
+          ZMap.get curid dp = None ->
+          proc_id (uRData l) = curid ->
+          l' = (Single_Oracle l::l) ->
+          curid' = proc_id (uRData l') ->
+          iestep ge (IEState curid rsm mset dp l) E0
+                (IEState curid' rsm mset dp l')
+\end{lstlisting}
+
+
+\begin{lstlisting}[language=C]
+    | ieexec_step_external_yield_back:
+        forall (rs' rs0: regset) (mset mset' : (mem * mem)) (m m': mem) curid rsm l l' nb dp d e
+               (MOrigin: if (decide (curid = current_thread)) then m = fst mset else m = snd mset),
+          (ZMap.get curid rsm = Available /\ initial_thread_kctxt ge curid l = Some rs0) \/
+          ZMap.get curid rsm = Running rs0 ->
+          ZMap.get curid dp = Some d ->
+          proc_id (uRData l) = curid ->
+          last_op l = Some e ->
+          l' = (LEvent curid LogYieldBack::l) ->
+          rs' = (undef_regs (CR ZF :: CR CF :: CR PF :: CR SF :: CR OF :: nil)
+                            (undef_regs (map preg_of destroyed_at_call) rs0)) 
+                  # EAX <- Vundef #PC <- (rs0 RA) #RA <- Vundef ->
+          forall
+            (Hnextblock: getLogEventNB (e) = Some nb)
+            (LIFT_NEXTBLOCK: mem_lift_nextblock m (Pos.to_nat (nb) - Pos.to_nat (Mem.nextblock m) % nat) = m')
+            (MUpdate: if (decide (curid = current_thread)) then mset' = (m', snd mset) 
+                      else mset' = (fst mset, m')),
+            iestep ge (IEState curid rsm mset dp l) E0
+                   (IEState curid (ZMap.set curid (Running rs') rsm) mset' dp l').
+
+\end{lstlisting}
+
+\begin{lstlisting}[language=C]
+  Inductive ieinitial_state {F V} (p: AST.program F V): iestate -> Prop :=
+  | ieinitial_state_intro: 
+      forall m0,
+        Genv.init_mem p = Some m0 ->
+        let rsm := initial_map Environment (init_regset (Genv.globalenv p)) active_threads in
+        let dm := initial_map None (fun i => Some (thread_init_dproc i)) active_threads in
+        let dmem := (m0, m0) in
+        ieinitial_state p (IEState main_thread rsm dmem dm nil).
+\end{lstlisting}
+
+\subsubsection{Refinement between IIEAsm and EAsm}
+\begin{lstlisting}[language=C]
+  Definition yield_condition (tid: Z) (l: Log):=
+    (exists a l', l = a :: l'
+                  /\ proc_id (uRData l') = tid
+                  /\ getLogEventType a = LogYieldTy).
+
+  Definition active_condition (tid: Z) (l: Log):=
+    (proc_id (uRData l) = tid /\ lastEvType l <> Some LogYieldTy)
+    \/ yield_condition tid l.
+
+  Definition inyield_condition (l: Log) rsm :=
+    (exists a l', l = a :: l' 
+                  /\ ZMap.get (proc_id (uRData l')) rsm <> Environment
+                  /\ getLogEventType a = LogYieldTy).
+
+  Definition inactive_condition (l: Log) rsm :=
+    (ZMap.get (proc_id (uRData l)) rsm <> Environment /\
+     lastEvType l <> Some LogYieldTy)
+    \/ inyield_condition l rsm.
+\end{lstlisting}
+
+\begin{lstlisting}[language=C]
+  Definition mem_block_conditions (mp_h: (mem * mem)) (m_l : mem) (l : Log) : Prop :=
+    (mem_disjoint_union (fst mp_h) (snd mp_h) m_l) /\
+    (active_condition current_thread l -> 
+        (Mem.nextblock (snd mp_h) <= Mem.nextblock (fst mp_h)) % positive) /\
+    (forall i, i <> current_thread -> active_condition i l -> 
+               (Mem.nextblock (fst mp_h) <= Mem.nextblock (snd mp_h)) % positive) /\
+    (forall i, yield_condition i l -> Mem.nextblock m_l = last_nb l).
+  
+  Definition total_machine_regset (i : Z) rsm :=
+    exists rs, ZMap.get i rsm = Running rs \/ ZMap.get i rsm = Available.
+
+  Inductive match_iestate_estate (ge : genv) : (iestate (mem := mem)) -> 
+                                 (estate (mem := mem))  -> Prop :=  
+  | MATCH_IESTATE_ESTATE:
+      forall curid rsm_h rsm_l (dp_h dp_l : ZMap.t (option dproc)) (mp_h: (mem * mem)) m_l l
+             // current thread id 
+             (HCurID : proc_id (uRData l) = curid)
+
+             // for registers 
+             (HRsmDom3 : forall i, In i full_thread_list -> total_machine_regset i rsm_h)
+             (HRsmDom3 : forall i, In i full_thread_list -> total_machine_regset i rsm_l)
+             
+             (HRsmRel: forall i, In i full_thread_list ->
+                                 ts_lessdef (ZMap.get i rsm_h) (ZMap.get i rsm_l))
+             
+             // for private data 
+             (HDprocDom3: forall i, In i full_thread_list -> ZMap.get i dp_h <> None)
+             (HDprocDom3: forall i, In i full_thread_list -> ZMap.get i dp_l <> None)
+             (HDprocRel: forall i, In i full_thread_list -> ZMap.get i dp_h = ZMap.get i dp_l)
+
+             // for memory existence 
+             (HMemRel: mem_block_conditions mp_h m_l l),
+        
+        match_iestate_estate ge (IEState curid rsm_h mp_h dp_h l) (EState curid rsm_l m_l dp_l l).
+\end{lstlisting}
+
+\begin{lstlisting}[language=C]
+  Theorem one_step_Asm_E2E:
+    forall ge curid curid'  mp_h mp_h' m_l rsm_h rsm_l rsm_h' l l' (dp_h dp_l dp_h' : ZMap.t (option dproc)) t
+           (HEStep: IIEAsm.iestep ge (IEState curid rsm_h mp_h dp_h l) t (IEState curid' rsm_h' mp_h' dp_h' l'))
+           (HMatch: match_iestate_estate ge (IEState curid rsm_h mp_h dp_h l) (EState curid rsm_l m_l dp_l l)),
+    exists rsm_l' m_l' dp_l',
+      (plus EAsm.estep) ge (EState curid rsm_l m_l dp_l l) t (EState curid' rsm_l' m_l' dp_l' l')
+      /\ match_iestate_estate ge (IEState curid' rsm_h' mp_h' dp_h' l') (EState curid' rsm_l' m_l' dp_l' l').
+\end{lstlisting}
+
+\subsubsection{IIEAM refines IIEAsm}
+
+\begin{lstlisting}[language=C]
+  Definition total_machine_regset (i : Z) rsm :=
+    exists rs, ZMap.get i rsm = Running rs \/ ZMap.get i rsm = Available.  
+\end{lstlisting}
+
+
+\begin{lstlisting}[language=C]
+
+  Inductive match_iestate_state (ge : genv) : (iestate (mem := mem)) -> 
+                                              (iestate (mem := mem)) -> Prop :=  
+  | MATCH_IESTATE_STATE:
+      forall curid rsm_h rsm_l (dp_h dp_l : ZMap.t (option dproc)) mp_h mp_l l
+             // current thread id
+             (HCurID : proc_id (uRData l) = curid)
+
+             // for registers 
+             (HRsmDom1: forall i, In i full_thread_list -> i <> current_thread ->
+                                  ZMap.get i rsm_h = Environment)
+             (HRsmDom2: ZMap.get current_thread rsm_h <> Environment)
+             (HRsmDom3 : forall i, In i full_thread_list -> total_machine_regset i rsm_l)
+             
+             (HRsmRel: (ZMap.get current_thread rsm_h) = (ZMap.get current_thread rsm_l))
+             
+             // for private data 
+             (HDprocDom1: forall i, In i full_thread_list -> i <> current_thread ->
+                                    ZMap.get i dp_h = None)
+             (HDprocDom2: ZMap.get current_thread dp_h <> None)
+             (HDprocDom3: forall i, In i full_thread_list -> ZMap.get i dp_l <> None)
+             (HDprocRel: ZMap.get current_thread dp_h = ZMap.get current_thread dp_l)
+
+             // for memory 
+             (HMemRel: fst mp_h = fst mp_l),
+        match_iestate_state ge (IEState curid rsm_h mp_h dp_h l) (IEState curid rsm_l mp_l dp_l l).
+
+  Class IE2IERel :=
+    {
+
+      // liveness constraint for other threads. Other threads should gaurantee this property -
+      // within finite time, they should generate one event 
+      env_step_match:
+        forall (ge: genv) (mp_h mp_l: (mem * mem)) (curid curid': Z)
+               (rsm_h rsm_l : ZMap.t EAsmCommon.ThreadState) dp_h dp_l (l l' : Log)
+               (Hrsm: ZMap.get curid rsm_h = Environment)
+               (Hdproc: ZMap.get curid dp_h = None)
+               (Hcurid1: proc_id (uRData l) = curid)
+               (Hquery: l' = (Single_Oracle l)::l)
+               (Hcurid2: proc_id (uRData l') = curid')
+               (HMatch: match_iestate_state ge (IEState curid rsm_h mp_h dp_h l) 
+                                            (IEState curid rsm_l mp_l dp_l l)),
+        exists rsm_l' mp_l' dp_l' t,
+          (star IIEAsm.iestep) ge (IEState curid rsm_l mp_l dp_l l) t (IEState curid' rsm_l' mp_l' dp_l' l');
+
+
+      // for function call in Context. To make our framework work, Context on our layers should not 
+      //  use some functions (vload, vstore, annot) 
+      function_call_cond:
+        forall ef, match ef with
+              | EF_vload _ => False
+              | EF_vstore _ => False
+              | EF_vload_global _ _ _ => False
+              | EF_vstore_global _ _ _ => False
+              | EF_annot _ _ => False
+              | EF_annot_val _ _ => False
+              | _ => True
+              end
+    }.
+\end{lstlisting}
+
+\begin{lstlisting}[language=C]
+  Theorem one_step_Asm_E2E:
+    forall ge curid curid' mp_h mp_h' mp_l rsm_h rsm_l rsm_h' l l' (dp_h dp_l dp_h' : ZMap.t (option dproc)) t
+      (HEStep: IIEAsm.iestep ge (IEState curid rsm_h mp_h dp_h l) t (IEState curid' rsm_h' mp_h' dp_h' l'))
+      (HMatch: match_iestate_state ge (IEState curid rsm_h mp_h dp_h l) (IEState curid rsm_l mp_l dp_l l)),
+    exists rsm_l' mp_l' dp_l',
+      (plus IIEAsm.iestep) ge (IEState curid rsm_l mp_l dp_l l) t (IEState curid' rsm_l' mp_l' dp_l' l')
+      /\ match_iestate_state ge (IEState curid' rsm_h' mp_h' dp_h' l') (IEState curid' rsm_l' mp_l' dp_l' l').
+\end{lstlisting}

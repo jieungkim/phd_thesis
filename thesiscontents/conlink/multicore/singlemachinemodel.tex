@@ -1,0 +1,82 @@
+
+
+\subsection{Single Core Machine Model}
+\label{chapter:linking:subsec:single-core-machine-model}
+
+
+\begin{figure}
+\noindent\fbox{single state:}
+
+$
+\begin{array}{lll}
+\singlestatekwd & := & \singlestateconkwd :~ \ztype \rightarrow \localstate \rightarrow \mclog \rightarrow \singlestatekwd\\
+
+\end{array}
+$
+
+\noindent\fbox{single step: ${}_{[curid : \ztype]} (oracle : \mcoracle{\set{curid}}{\mclog}{\mcevent}) :  \singlestatekwd \rightarrow \cctracekwd \rightarrow \singlestatekwd \rightarrow \mcprop$}
+
+\begin{mathpar}
+
+\inferrule[progress]
+{ ls = \localstate{ps}{\bfalse} \\
+ls' = \localstate{ps'}{\btrue} \\
+\hardwarelocalstep{curid}{(\localview{ps}{l})}{(\localview{ps'}{l'})}}
+{\singlestep{curid}{oracle}{(\singlestate{curid}{ls}{l})}{\ccemptytrace}{(\singlestate{curid}{ls'}{(\listappoppo{l'}{l})})}}
+
+\inferrule[yield]
+{  l_0 = \listconsoppo{\yieldbackev{curid}}{l} \\
+l' = \listconsoppo{\yieldev{curid'}}{l_0} \\
+ls = \localstate{ps}{\btrue} \\
+ls' = \localstate{ps'}{\btrue} \\
+\oget{\set{curid}}{\mclog}{\mcevent}{l_0}{oracle}{\yieldbackev{curid'}}}
+{\singlestep{curid}{oracle}{(\singlestate{curid}{ls}{l})}{\ccemptytrace}{(\singlestate{curid'}{ls'}{l'})}}
+
+\inferrule[skip]
+{  l' = \listconsoppo{e}{l} \\
+curid' \neq curid\\
+\oget{\set{curid}}{\mclog}{\mcevent}{l}{oracle}{e} \\
+\backid{curid'}{e}{curid_0}}
+{\singlestep{curid}{oracle}{(\singlestate{curid'}{ls}{l})}{\ccemptytrace}{(\singlestate{curid_0}{ls}{l'})}}
+\end{mathpar}
+\caption{Single Core Machine Model.}
+\label{fig:chapter:conlink:single-core-machine-model}
+\end{figure}
+
+\begin{figure}
+\noindent\fbox{variables for match relation}
+$$
+\begin{array}{lllr}
+cpuid & : & \ztype &  \mbox{(starting and the focused CPU of the system)}\\
+\end{array}
+$$
+
+\noindent\fbox{match state : $\singlestatekwd \rightarrow \envstatekwd_{[cpuid]} \rightarrow \mcprop$}
+\begin{mathpar}
+\inferrule[match state]
+{\getpstsome{\localstatekwd}{cpuid}{lsp}{ls}}{\matchsinglestatestate{\set{cpuid}}{(\singlestate{curid}{ls}{l})}{(\envstate{\set{cpuid}}{curid}{lsp}{l})}}
+\end{mathpar}
+
+\noindent\fbox{top lemmas}
+\begin{enumerate}
+\item one$\_$step$\_$single$\_$refines$\_$env : \\
+$
+\begin{array}{l}
+\forall \ si\_o \ s_h \ s_h' \ t \ s_l . \ \singlestep{cpuid}{si\_o}{s_h}{t}{s_h'} \rightarrow  \matchsinglestatestate{\set{cpuid}}{s_h}{s_l} \rightarrow \\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \exists\ s_l' . \  \ccplusstep{\envstep{\set{cpuid}}{si\_o}{s_l}{t}{s_l'}} \wedge  \matchsinglestatestate{\set{cpuid}}{s_h'}{s_l'}\\
+\end{array}
+$
+\end{enumerate}
+\caption{Refinement Between a Single Core Machine and an Environmental Step Machine}
+\label{fig:chapter:conlink:cpu-single-to-env-theorem}
+\end{figure}
+
+Now, we are ready to build a local layer interface described in Section~\ref{chapter:ccal:subsec:local-layer-interface}. 
+The machine state for the single core machine contains 
+a CPU ID, the current running CPU, 
+a local state, which includes the private state of the current focused CPU,
+and a log that represents the shared state with other CPUs. 
+The step relation in this single core machine is same with the environmental step machine defined in Section~\ref{chapter:linking:subsec:concurrent-machine-model}. Figure~\ref{fig:chapter:conlink:single-core-machine-model} contains those definitions. 
+The refinement proof between the single core on the environmental step and the single core machine is straightforward since the similarity between
+those two states as well as the step relations.
+All those definitions are in Figure~\ref{fig:chapter:conlink:cpu-single-to-env-theorem}.
