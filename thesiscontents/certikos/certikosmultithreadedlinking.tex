@@ -55,3 +55,88 @@ This provides the relation bewteen PHBThread layer runs with EAsm and PBThread l
 This provides the relation bewteen PHThread layer runs with Hasm and PHBThread layer runs with TAsm. 
 
 
+
+
+
+
+%
+%\subsection{Layer Refinement for Thread Linking}\label{subsec:concrete-impl}
+%
+%From Sec.~\ref{subsec:lowlevelasm} to Sec.~\ref{subsec:hasm} ,
+%we show the whole process to 
+%build a thread-local layer interface
+%that tackles 
+%multiple challenges stated in Sec.~\ref{subsec:fulleasm}.
+%However, introducing this interface does not mean that all about building thread-local layers and 
+%linking multiple thread-local layers are straightforward. 
+%When looking at the refinement theorems in previous sections,
+%some are purely logical and only depend on machine model levels, 
+%but two of them, Theorem~\ref{theorem:easm_refine_lasm} and Theorem~\ref{theorem:hasm-refines_tasm} 
+%are relying on the abstract relation between two layers. 
+%To prove them, we have to introduce the instance of $\mathrm{PH}$ which satisfies both 
+%$\absrel(\simrel(st_{\EAsmM{}}, st_{\AsmLM}), \mathrm{PH}, \CSched)$ and 
+%$\absrelt(\simrel(st_{\AsmHM}, st_{\TAsmM{}}), \TSched, \mathrm{PH})$.
+%This instantiation also includes how we define concrete implementations of
+%abstract definitions that we have introduced in our multiple machine models. 
+%In this sense, we introduce a concrete layer $\TLink$, an instance of $\mathrm{PH}$
+%to give the evidence for the abstract definition in those two refinement theorems.
+%
+%Instantiating $\TLink$ contains multiple challenges, too.
+%We first need to divide $adt$ in $\AsmLM$ $\AsmHM$  into two separate data types, $\dshare$ and $\dproc$, and
+%define specifications  $(\spec^{_{def}}_{_{id}})$  for all primitives (except $\yield$ and $\sleep$) 
+%and memory access semantics based on the  
+%newly defined data types. 
+%Obviously, some data structures, such as a memory page permission table or an IPC (inter process communication) channel, 
+%cannot be trivially divided into into multiple thread-wise data structures.
+%In this sense, dividing the whole data structure of concurrent system requires a deep knowledge about how the system works,
+%and requires an amount of effort. 
+%
+%In addition, proving concrete implementations for all abstract definitions that we have introduced to model multiple intermediate machines
+%is an another step of works in this phase. 
+%For example, $\updatefun$ should have concrete definitions for the primitives that raise events
+%and the behavior of the function have to be consistent with the specifications of those primitive 
+%in terms of updating shared data states. 
+%Also, $\initdproc$ needs to search a proper thread-create event 
+%and construct a valid initial private data for each thread.
+%This behavior also keeps a consistent behavior with that of thread creation in CPU-local machine in 
+%$\CSched$. 
+%
+%When looking at the details of $\absrelt$, which relies on $\simrel(st_{\AsmHM}, st_{\TAsmM{}})$,
+%most cases in the simulation relation are straightforward because 
+%the relation is between two thread-local machines even though their machine models are different. 
+%With the given relation, providing the evidence of $\absrelt$ consists of 
+%1) all primitive specifications in $\TSched$ on $\AsmHM$ is consistent with the all primitive specifications in 
+%$\TLink$ on $\TAsmM{}$, and
+%2) all primitive can generate a proper event in $\TAsmM{}$. 
+%
+%However, $\absrel$ with $\simrel(st_{\EAsmM{}}, st_{\AsmLM})$ contains a plethora of challenges and corner cases. 
+%Defining a simulation relation between the shared data in $\EAsmM{}$ with the corresponding data in $\AsmLM$ is simple. 
+%On the other hand, in several cases in the private data, defining a simulation relation 
+%contains a lot of sophisticated cases because here is the place that we actually link per-thread data structures as 
+%a single per CPU data structures.
+%For example, to divide user memory to each thread successfully, 
+%exclusiveness property of our memory page allocation mechanism should be guaranteed and proved. 
+%To guarantee the consistent behavior between 
+% $\EAsmM{}$ and $\AsmLM$ in user context values, our simulation relation
+%has to distinguish the case when the thread is not created yet and the case after it is created.
+%This implies that we have to prove several additional lemmas for all primitives 
+%including  disjoint property of user memories, 
+%and correctness of thread-local behavior in thread creation and IPC, etc.
+%With those auxiliary lemmas and simulation relation, proving the evidence of $\absrel$ consists of 
+%1) all primitive specifications in $\TLink$ on $\EAsmM{}$ with all threads on CPU $c$ are consistent with  all primitive specifications in $\CSched$ on $\AsmLM$ with CPU $c$, and
+%2) all events have consistent behaviors with corresponding primitive specifications in terms of shared data updating.
+%
+%By introducing evidences of those two abstract relations, $\absrel$ and $\absrelt$, we finally achieve an instance for a thread-local layer interface, and link multiple thread-local layers to refine it into a single CPU-local layer.
+%This separation between a machine level and an actual implementation level not only makes us to enable our thread linking but also
+%gives us generality and scalability 
+%of our thread-linking framework.
+%$\CSched$ and $\TSched$ layers contain more than $35$ primitives. 
+%If we prove the refinement property for all primitives in all different machine level refinement theorems, 
+%the proof size will become much bigger than now and 
+%easily become unmanageable even though we use an interactive theorem prover, Coq, to prove them. 
+%However, thanks to our decoupling in our modeling and proofs, we can successfully prove these all related proofs about thread linking with reasonable efforts.
+%In addition to that,
+%if we want to add more primitives in $\CSched$  and $\TSched$, we do not need to prove the whole refinement and linking theorems 
+%that we have stated in previous sections. 
+%All those theorems will remain as same, and
+%the thing that we only have to change is updating $\absrel$ and $\absrelt$ instances according to the newly added data structures and primitives.

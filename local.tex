@@ -38,9 +38,19 @@
 	breakatwhitespace=false,         % sets if automatic breaks should only happen at whitespace
 	breaklines=true,                 % sets automatic line breaking
 	%captionpos=b,                   % sets the caption-position to bottom
-	commentstyle=\color{mygreen},    % comment style
+	commentstyle=\color{red},    % comment style
 	morecomment=[l]{//},
+    %morecomment=[s]{/*}{*/},
     morecomment=[s]{/*}{*/},
+    morecomment=[s]{*}{;},
+    morecomment=[n]{/*}{*/},
+    morecomment=[n]{*}{;},
+    morecomment=[s]{(*}{*)},
+    morecomment=[n]{(*}{*)},
+    morecomment=[s]{(**}{*)},
+    morecomment=[n]{(**}{*)},
+   % morecomment=[f][0][\color{green}]{*},
+    morecomment=[f][\color{red}][0]{\#},
 	deletekeywords={...},            % if you want to delete keywords from the given language
 	escapeinside={<@}{@>},          % if you want to add LaTeX within your code
 	extendedchars=true,              % lets you use non-ASCII characters; for 8-bits encodings only, does not work with UTF-8
@@ -387,6 +397,20 @@
 
 
 %%%%%%%%%%%%%% FROM MULTICORE AND MULTITHREADED LINKING
+%%%%%
+%%%%%
+%%%%%   For thread linking - need to check
+%%%%%
+%%%%%
+
+\newcommand{\threadyieldfunc}{\codeinmath{thread\_yield}}
+\newcommand{\threadsleepfunc}{\codeinmath{thread\_sleep}}
+
+
+\newcommand\join{\!\bowtie\!}
+
+\newcommand{\EAsmM}[1]{\mathsf{EAsm_{#1}}}
+\newcommand{\TAsmM}[1]{\mathsf{TAsm_{#1}}}
 
 \newcommand{\dshare}{\mathsf{sa}}
 \newcommand{\dproc}{\mathsf{pa}}
@@ -430,6 +454,31 @@
 
 
 \newcommand\Lpthread{L_\codeinmath{pthread}}
+
+
+\newcommand{\sstepr}[5]{#1(#2, #3) \ni (#4, #5)}
+\newcommand{\sstep}[4]{#1(#2, #3) \ni (#4)}
+
+\newcommand{\nextblockOP}[0]{\mathsf{nb}}
+\newcommand{\nextblock}[1]{\nextblockOP({#1})}
+\newcommand{\liftnextblockOP}[0]{\mathsf{liftnb}}
+\newcommand{\liftnextblock}[2]{\liftnextblockOP({#1}, {#2})}
+\newcommand{\extends}[2]{{#1} \subseteq {#2}}
+\newcommand{\inject}[3]{{#2} \stackrel{#1}{\hookrightarrow} {#3}}
+\newcommand{\alloc}[3]{\mathsf{alloc}({#1}, {#2}, {#3})}
+\newcommand{\store}[3]{\mathsf{st}({#1}, {#2}, {#3})}
+\newcommand{\load}[2]{\mathsf{ld}({#1}, {#2})}
+\newcommand{\some}[1]{\left\lfloor {#1} \right\rfloor}
+
+\newcommand{\disjointunionOP}[0]{\circledast}
+\newcommand{\disjointunion}[3]{{#1} \disjointunionOP {#2} \simeq {#3}}
+%%%%%
+%%%%%
+%%%%%   END of Thread Linking
+%%%%%
+%%%%%
+%%%%%
+
 
 %%%% CALCULUS
 \newcommand{\listlengthkwd}{{\mathrm{len_{lst}}}}
@@ -928,6 +977,14 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
 %   MULTITHREADED LINKING
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
+
+
+
+\newcommand{\TLink}{{\codeinmath{TLink}}}
+\newcommand{\CSched}{{\codeinmath{CSched}}}
+\newcommand{\TSched}{{\codeinmath{TSched}}}
+\newcommand{\yield}{\codeinmath{yield}}
+\newcommand{\sleep}{\codeinmath{sleep}}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
