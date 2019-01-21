@@ -1,0 +1,307 @@
+
+
+\subsection{Multithreaded Configuration Instance}
+\label{chapter:certikos:subsec:multithreaded-configuration-instance}
+
+Two big challenge in here is related initial state of thread local machines; 
+1) how we assing the initial state; 2) how we prove the invariant about initial state 
+of each thread. 
+Both of them are possible by using our global log. 
+
+\begin{lstlisting}[language=C]
+  Record sharedData :=
+    mk_sharedData {
+        CPU_ID: Z; (**r current CPU_ID *)
+        MM: MMTable; (**r table of the physical memory's information*)
+        MMSize: Z; (**r size of MMTable*)
+        vmxinfo: VMXInfo; (**r information of vmx*)
+        CR3: globalpointer; (**r abstract of CR3, stores the pointer to page table*)
+        pg: bool; (**r abstract of CR0, indicates whether the paging is enabled or not*)
+        cid: ZMap.t Z; (**r current thread id*)
+        nps: Z; (**r number of the pages*)
+        init: bool; (**r pure logic flag, show whether the initialization at this layer has been called or not*)
+        idpde: IDPDE; (**r shared identity maps *)
+        big_log: BigLogType;
+        big_oracle: BigOracle
+      }.
+\end{lstlisting}
+
+\begin{lstlisting}[language=C]
+  Record privData :=
+    mk_privData {
+        ti: trapinfo; (**r abstract of CR2, stores the address where page fault happens*)
+
+        ikern: bool; (**r pure logic flag, shows whether it's in kernel mode or not*)
+        ihost: bool; (**r logic flag, shows whether it's in the host mode or not*)         
+
+
+        HP: flatmem; (**r we model the memory from 1G to 3G as heap*)
+
+        AC : Container; (**r container tree for all agents *)
+        
+        uctxt : UContext; (**r user context pool*)
+
+        pperm: PPermT; (**r physical page permission table *) (* need fancy merging *)
+
+        PT: Z; (**r the current page table index*) 
+        ptpool: PMapPool; (**r page table pool*)
+        ipt: bool; (**r pure logic flag, shows whether the current page map is the kernel's page map*)
+        
+        syncchpool : SyncChanPool; (**r the channel pool for synchronous IPC*)
+        buffer: PageBufferPool; (**r page buffer in the IPC module*)
+
+        ept: EPT; (**r nested page table for guest mode*)
+        vmcs: VMCS; (**r virtual machine control structure for current VM *)
+        vmx: VMX;  (**r VMX structure to store the extra registers of host *) 
+
+        com1: SerialData; (**r serial port COM1*)
+        drv_serial: SerialDriver; (**r serial driver states*)
+        console_concrete: ConsoleDriverConcrete; (**r console driver states concrete implementation*)
+        console: ConsoleDriver; (**r console driver states*)
+
+        ioapic: IoApicData; (**r I/O Advanced Programmable Interrupt Controller *)
+        lapic: LApicData; (**r Local Advanced Programmable Interrupt Controller *)
+        tf: TrapFrames; (**r Trap frame automatically pushed by CPU *)
+        tf_reg: val; (** temporary place to save an intermediate tf regiter *) 
+        curr_intr_num: Z; (**r current interrupt vector number *)
+        intr_flag: bool; 
+        saved_intr_flags: list bool;
+
+        in_intr: bool; (**r in the interrupt handler *)
+        i_dev_serial: bool (**r in the critical section of operating serial *)
+      }.
+\end{lstlisting}
+
+\begin{lstlisting}[language=C]
+    Definition prim_thread_init_pc {F V} (ge : Genv.t F V) (name : ident) (args : list lval): option val :=
+      if peq name proc_create
+      then match Genv.find_symbol ge START_USER_FUN_LOC with
+           | Some b' => Some (Vptr b' Int.zero)
+           | _ => None
+           end
+      else None.
+
+    Definition cal_init_dproc (pv_adt : dproc) (parent: Z) (q: Z) (buc : block) (uc_ofs : int): dproc:= 
+      let uctx0 := uctxt pv_adt in
+      let uctx1 := ZMap.set U_SS CPU_GDT_UDATA
+                            (ZMap.set U_CS CPU_GDT_UCODE 
+                                      (ZMap.set U_DS CPU_GDT_UDATA
+                                                (ZMap.set U_ES CPU_GDT_UDATA uctx0))) in
+      (* U_EIP will be setted as zero for initial low level invariant proofs  
+        - To enable this one, I changed proc start and exit semantic rules 
+          we can optimize it later (after we port our version into the new layer framework *)
+      let uctx2 := ZMap.set U_EIP Vzero
+                            (ZMap.set U_EFLAGS FL_IF 
+                                      (ZMap.set U_ESP (Vint STACK_TOP) uctx1)) in
+      (pv_adt {pv_AC: (mkContainer q 0 parent nil true)} {pv_uctxt: uctx2}).
+
+    Fixpoint thread_init_dproc_iter (curid: Z) (l : Log) : option dproc :=
+      match l with 
+      | nil => None (* we may be able to remove this case *)
+      | ev::l' => 
+        match ev with 
+        | LEvent id ev_detail =>
+          match ev_detail with 
+          | LogPrim name largs new_id _=>
+            if peq name proc_create 
+            then if zeq curid new_id (* the function to calculate new_id is defined in ObjPHBThreadreplayfunction.v file *) 
+                 then match largs with 
+                      | (Lint elf_id)::(Lptr buc uc_ofs)::(Lint q)::nil =>
+                        match (zle_lt (id * Constant.max_children + 1) curid (id * Constant.max_children 
+                                                                              + 1 + Constant.max_children),
+                               zlt_lt Constant.TOTAL_CPU curid num_proc,
+                               zle_le 0 (Int.unsigned q) Int.max_unsigned,
+                               pg (update init_shared_adt l), 
+                               init (update init_shared_adt l)) with    
+                        (* from here - need to be consistent with  dnew_semantics in layerlib/PrimSemantics.v *) 
+                        (* this is the case that has the corresponding spawn and return the initialized private adt *)
+                        (* q is the initial quota / id is a parent of this thread *)
+                        (* id: parent / q : quota / curid : child *)
+                        | (left _, left _, left _, true, true) 
+                          => Some (cal_init_dproc nomain_init_priv_adt id (Int.unsigned q) buc uc_ofs)
+                        | ((*_, _, *) _, _, _, _) => None
+                        end
+                      | _ => None 
+                      end
+                 else thread_init_dproc_iter curid l'
+            else thread_init_dproc_iter curid l'
+          | _ => thread_init_dproc_iter curid l'
+          end
+        end
+      end.
+    
+    Definition thread_init_dproc_aux (curid: Z) (l : Log) : option dproc :=
+      if zeq curid main_thread 
+      then match l with 
+           | nil => Some main_init_dproc 
+           | _ => None
+           end
+      else thread_init_dproc_iter curid l.
+
+    Definition thread_init_dproc (curid: Z) : dproc :=
+      match thread_init_dproc_aux curid init_log with
+      | Some init_dproc_val => init_dproc_val
+      | _ => if zeq curid main_thread then main_init_dproc else nomain_init_priv_adt
+      end.
+\end{lstlisting}
+
+\begin{lstlisting}[language=C]
+Definition has_event (name : ident) :=
+  if peq name palloc then true else 
+    if peq name pt_resv then true else
+      if peq name proc_create then true else
+        if peq name thread_wakeup then true else
+          if peq name sched_init then true else
+            if peq name acquire_lock_CHAN then true else
+              if peq name release_lock_CHAN then true else
+                if peq name ipc_send_body then true else false.
+\end{lstlisting}
+
+\begin{lstlisting}[language=C]
+    Definition choice_check (name : ident) (largs : list lval) (sd: sharedData) (pd: privData) : Z :=
+      match prim_id_num name with 
+      | palloc_num =>
+        match largs with 
+        |  (Lint n)::nil => single_big_palloc_spec_test (Int.unsigned n) (sd, pd)
+        | _ => 42
+        end
+      | pt_resv_num => 
+        match largs with 
+        | (Lint n)::(Lint vadr)::(Lint perm)::nil => single_big_ptResv_spec_test (Int.unsigned n) 
+                                                                                 (Int.unsigned vadr)
+                                                                                 (Int.unsigned perm) (sd, pd)
+        | _ => 42
+        end
+      | proc_create_num =>
+        match largs with 
+        | (Lint elf_id)::(Lptr buc uc_ofs)::(Lint q)::nil => single_big_proc_create_spec_test 
+                                                               (sd, pd) buc uc_ofs (Int.unsigned q)
+        | _ => 0
+        end
+      | _ => 42 (* wrong case that should not be called *)
+      end.
+\end{lstlisting}
+
+\begin{lstlisting}[language=C]
+    Definition apply_event (ev : LogEvent) (adt : dshare) : option dshare := 
+      match ev with 
+      | LEvent tid ev_unit =>
+        match ev_unit with 
+        | LogPrim prim_id args choice dSnapShot =>
+          match prim_id_num prim_id with 
+          | palloc_num =>
+            match args with 
+            |  (Lint n)::nil =>
+               (* 0 means no allocation due to the usage of container and 1 means allocation trial happens *)
+               match single_big_palloc_spec_share (Int.unsigned n) choice adt with 
+               | Some (adt', _) => Some adt'
+               | _ => None 
+               end
+            | _ => None
+            end
+            <@$\cdots$@>
+            
+    Fixpoint update (adt: dshare) (sh_log : Log) {struct sh_log} : dshare :=
+      match sh_log with
+      | nil => adt
+      | hd::tl => let adt' := update adt tl in 
+                  match apply_event hd adt' with 
+                  | Some adt'' => adt'' 
+                  | _ => adt' 
+                  end
+      end.
+
+    Lemma update_invariant (I: dshare -> Prop):
+      (forall e d d', apply_event e d = Some d' -> I d -> I d') ->
+      (forall d l, I d -> I (update d l)).
+    Proof.
+      induction l; simpl; eauto.
+      destruct (apply_event a _) eqn:Hd'; eauto.
+    Qed.
+\end{lstlisting}
+
+\begin{lstlisting}[language=C]
+  Definition thread_init_pc {F V} (ge: Genv.t F V) (e : LogEvent) :=
+    match e with
+      | LEvent _ (LogPrim f args new_id _) => match prim_thread_init_pc ge f args with 
+                                            | Some pc => Some (new_id, pc)
+                                            | _ => None
+                                            end
+      | _ => None
+    end.
+
+  Definition thread_init_pc_of {F V} ge (i : Z) (e : LogEvent) : option val :=
+    match thread_init_pc (F:=F) (V:=V) ge e with
+      | Some (j, pc) => if decide (i = j) then Some pc else None
+      | None => None
+    end.
+
+  (** Using [thread_init_pc], we can extract the initial program
+    counter for a thread from any log. The initial state of the main
+    thread is hardcoded to point to main() as set by [make_program],
+    and is already available with an empty log. For other threads,
+    this function will compute their initial states by examining the
+    log for a corresponding spawn event. *)
+
+  Fixpoint initial_thread_pc {F V} (ge: Genv.t F V) i (l : Log) : option val :=
+    match l with
+      | e :: l' =>
+        match initial_thread_pc ge i l' with
+          | Some pc => Some pc
+          | None => thread_init_pc_of ge i e
+        end
+      | nil =>
+        match decide (i = main_thread) with
+          | left _ => Some (symbol_offset ge 1%positive Int.zero)
+          | right _ => None
+        end
+    end.
+
+  Definition initial_regset_state pc :=
+    (Pregmap.init Vundef) # PC <- pc # ESP <- Vzero.
+
+  Definition initial_thread_state {F V} (ge: Genv.t F V) i l : option regset :=
+    match initial_thread_pc ge i l with
+      | Some pc => Some (initial_regset_state pc)
+      | None => None
+    end.
+
+  (** Before we "return" into a (non-main) thread that is scheduled
+    for the first time, the saved context has a slightly different
+    format, where the code pointer is stored in [RA]. *)
+
+  Definition initial_regset_kctxt pc :=
+    (Pregmap.init Vundef) # RA <- pc # ESP <- Vzero.
+
+  Definition initial_thread_kctxt {F V} (ge: Genv.t F V) i l : option regset :=
+    match initial_thread_pc ge i l with
+      | Some pc => Some (initial_regset_kctxt pc)
+      | None => None
+    end.
+    
+  Definition init_mem_lift_nextblock (m: mem) :=
+    match init_log with
+      | nil => m
+      | _::_ => mem_lift_nextblock m (Pos.to_nat (last_nb init_log) -
+                                      Pos.to_nat (Mem.nextblock m))
+    end.
+
+\end{lstlisting}
+
+\begin{lstlisting}[language=C]
+    Program Instance s_oracle_prf : SingleOracle (single_data := AuxSingleAbstractDataType.single_data) 
+                                                 (single_oracle_ops := s_oracle_ops) 
+                                                 (threads_conf_ops := s_threads_ops):=
+      { 
+        has_event := has_event;
+        update := update;
+        thread_init_dproc := thread_init_dproc;
+        state_check := state_check;
+        sync_chpool_check := ObjPHBThreadReplayFunction.sync_chpool_check;
+        snap_func := snap_func;
+        snap_rev_func := snap_rev_func;
+        choice_check := ObjPHBThreadReplayFunction.choice_check;
+        PHThread2TCompose := PHThread2TComposeData.combine_data;
+        prim_thread_init_pc := @prim_thread_init_pc
+      }.
+\end{lstlisting}

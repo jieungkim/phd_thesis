@@ -9,10 +9,10 @@ fixed number of CPUs, the fixed initial state for all CPUs,
 as well as the fairness among CPUs.
 With those assumptions, 
 concurrent linking for multicore need to solve multiple challenges;
-1) hide non-determinism of multicore machine model (by using the strategy of hardware scheduler);
-2) build environmental context for each CPU;
-3) prove compositionality of multiple per-PCU machines;
-and 4) provide a simple environmental context for per-CPU machines. 
+(1) hide non-determinism of multicore machine model (by using the strategy of hardware scheduler);
+(2) build environmental context for each CPU;
+(3) prove compositionality of multiple per-PCU machines;
+and (4) provide a simple environmental context for per-CPU machines. 
 %Section~\ref{chapter:ccal:sec:ccal-overview} provides the way to handle 
 \begin{figure}
 \begin{center}
@@ -29,12 +29,5 @@ resolving one challenge requires multiple intermediate languages
 for simple proofs.) 
 Figure~\ref{fig:chapter:conlink:intermediate-languages-and-their-relationsihps-for-multicore-linking} shows
 all the intermediate languages as well as the proof structure that we have built for concurrent linking. 
-The number in the figure are exactly matched with the number for the challenges. 
+Numbers in the figure are exactly matched with the number for the challenges. 
 
-\input{thesiscontents/conlink/multicore/hwconf}
-\input{thesiscontents/conlink/multicore/multicoremachinemodel}
-\input{thesiscontents/conlink/multicore/oraclemachinemodel}
-\input{thesiscontents/conlink/multicore/envmachinemodel}
-\input{thesiscontents/conlink/multicore/singlemachinemodel}
-\input{thesiscontents/conlink/multicore/optimization}
-\input{thesiscontents/conlink/multicore/linkwithabove}

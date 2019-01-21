@@ -1,19 +1,20 @@
 As discussed in previous sections,  concurrent programs are hard to get to be right or to debug due to their interleaved behavior of multiple instances of the program as well as shared resources. 
-Previous two chapters handle how we hide interleaving as well as provide the way to treat shared resources in a controlled setting. 
-We propose  $\ccalname$ and show the example of its usage, the MCS Lock verification.
+Previous two chapters illustrate how we hide interleaving as well as provide the way to treat shared resources in a controlled setting. 
+Specifically, we propose  $\ccalname$ in Chapter~\ref{chapter:ccal} and show the example of its usage, the MCS Lock verification, in Chapter~\ref{chapter:mcs-lock}.
 They, however, do not mention about the last piece of concurrent program verification, 
-linking for the verified partial programs to form the claim that the full concurrent program satisfies the correctness, 
+combining the verified partial programs to form the claim that the full concurrent program satisfies the correctness, 
 which usually named as a parallel composition. 
 Chapter~\ref{chapter:ccal} also informally mention that providing a  parallel composition rule for more than one
 concurrent layers associated with a partially focused set of participants in the system. 
-It, however, overlooked and missed multiple challenges in the composition of real programs,
-which need to deal with details of programs, 
-such as an interaction between private state and shared state in the actual system and linking with the appropriate existing tool, a $\compcert$ compiler. 
-Thus, this chapter focuses on realistic issues when providing compositions in concurrent program verification,
+It, however, overlooked and missed multiple challenges in the composition when it is related to real programs,
+% which need to deal with details of programs, 
+such as aa complex interaction between private state and shared state in the actual system
+and connecting the proof composition with the appropriate existing and efficient tool for verification (\ie, a $\compcert$ compiler to use C language for program verification).
+Thus, this chapter focuses on  issues when providing compositions in concurrent program verification,
 both for multicore and multithreaded cases.
 
-Those concurrent linking has a considerable cost when compared to building layers for local reasoning (CPU-local layers or thread-local layers).
-First,  concurrent linking requires machine syntax and semantics 
+We realize that those concurrent linking has a considerable cost when compared to building layers for local reasoning (CPU-local layers or thread-local layers).
+First, concurrent linking requires machine syntax and semantics 
 for the whole program as long as partial concurrent programs.
 The previous work, $\compcertx$, the extension of $\compcert$
 supports powerful tool for building layered programs with single threaded (or sequential like) programs.
@@ -21,11 +22,11 @@ In this sense,
 building the sequential like programs (and providing local layer interface) discussed in Section~\ref{chapter:ccal:subsec:local-layer-interface} 
 is possible with those machine models,
 but they are not for parallel compositions. 
-In this sense, at each time when providing linking, 
-we should give the machine model that runs multiple instances of programs
-(such as multicore machine model and multithreaded machine model). 
+In this sense, at each time when providing parallel proof composition, 
+we should give the machine model that runs multiple instances of programs (\ie, a multicore machine model and a multithreaded machine model.) 
 Therefore, we  formally define (sequential consistency) multicore machine model that is reusable for multiple 
-machines (such as ARM and x86), 
+machines (such as ARM and $\intelmachine$),  
+as well as a multithreaded machine model with a capability of using software schedulers. 
 
 Second,  
 the linking proof should be generic as much as possible to reduce the impact of its high cost and complexity. 
@@ -34,8 +35,9 @@ on the program implementation (such as software scheduler implementation or proc
 but those dependencies should be minimized to apply the complex proofs to other implementations (or other machine models). 
 
 Third, 
-concurrent linking proofs are not only needed to handle the interaction between shared resources but also need to manage the private resources in sometimes. 
-For example, process creation in operating systems usually allocate the maximum resources 
+concurrent linking proofs (parallel composition proofs) 
+are not only needed to handle the interaction between shared resources but also need to manage  the private resources in sometimes. 
+For example, a process creation in operating systems usually allocate the maximum resources 
 for the created process (which are typically determined by their parent process).
 In some cases, those resources include a private state that does not share with other threads at all. 
 
@@ -88,8 +90,8 @@ about the composition of large-scale concurrent program verification that many r
 \end{figure}
 
 % concurrent layer  - the proof
-Certified Concurrent Abstraction Layer  ($\ccalname$)
-has proven that it is a useful tool 
+Certified Concurrent Abstraction Layer  ($\ccalname$) 
+has proven that it is a useful and efficient tool 
 for building and verifying concurrent programs with the layered structure 
 as we have shown in Chapter~\ref{chapter:ccal} and Chapter~\ref{chapter:mcs-lock}.
 In MCS Lock verification, for example, provide 
@@ -105,10 +107,25 @@ To guarantee the full correctness of the program,
 providing the judgment that handles the program with the whole CPU set ($D$) in it. 
 In this purpose, 
 We add the parallel composition rules in the layer calculus of $\ccalname$ in Section~\ref{chapter:ccal:subsec:local-layer-interface}, which is 
-\begin{mathpar}
-\inferrule{ }{\jieung{Need to add composition rule}\\
-\jieung{the PCOMP rule in the ccal paper is not supported at all in our framework.}}
-\end{mathpar}
+\begin{center}
+$\forall \codeinmath{P}. \ \semwmachine{L[D]}{\codeinmath{P}}{\codeinmath{mach}_{\codeinmath{full}}} \refines_{R_{comp}} \sum_{i \in D}\  (\semwmachine{L[i]}{\codeinmath{P}}{\codeinmath{mach}_{\codeinmath{con}}})$
+\end{center}
+when $\codeinmath{mach}_{\codeinmath{full}}$ is a machine model that runs the layer with the full focused set (without any environmental contexts),
+$\codeinmath{mach}_{\codeinmath{con}}$ is a machine model that runs the layer with a partial focused set,
+$\codeinmath{P}$ is a context program, 
+and $R_{comp}$ is a relation between them.
+Also, 
+providing the evidence about
+\begin{center}
+$\forall \codeinmath{P}. \ \semwmachine{L[D]}{\codeinmath{P}}{\codeinmath{mach}_{\codeinmath{full}}} \refines_{R_{link}} \semwmachine{L[i]}{\codeinmath{P}}{\codeinmath{mach}_{\codeinmath{local}}}$
+\end{center}
+is necessary for us to verify that
+the local layers built on the of our local layer interface $\codeinmath{mach}_{\codeinmath{local}}$ is 
+formally connected with the program without any environment contexts with the full machine model. 
+%\begin{mathpar}
+%\inferrule{L[i] }{\jieung{Need to add composition rule}\\
+%\jieung{the PCOMP rule in the ccal paper is not supported at all in our framework.}}
+%\end{mathpar}
 %\begin{mathpar}
 %\inferrule{
 %\ltyp{\PLayer{L_1}{A}{\oracle_A}}{R}{M}{\PLayer{L_2}{A}{\oracle_A'}} \\
@@ -118,13 +135,13 @@ We add the parallel composition rules in the layer calculus of $\ccalname$ in Se
 %\Compose{\PLayer{L_2}{A}{\oracle_A}}{\PLayer{L_2}{B}{\oracle_B}}{\PLayer{L_2}{A \cup B}{\oracle_C}}
 %}{\ltyp{\PLayer{L_1}{A \cup B}{\oracle_C}}{R}{M}{\PLayer{L_2}{A \cup B}{\oracle_C'}}}
 %\end{mathpar}
-based on the compositionality of multiple strategies 
+Proofs for them is based on the compositionality of multiple strategies 
 of partial programs discussed in Section~\ref{chapter:ccal:subsec:concurrent-linking-and compilation-for-local-layer}.   
-It looks simple in a high-level overview, but the reality is not simple at all
+It looks simple in a high-level idea, but the reality is not simple at all
 due to the reasons that we have discussed. 
 To solve those issues, 
-we introduce multiple configurations, auxiliary functions, as well as intermediate languages for linking (Figure~\ref{fig:chapter:conlink:concurrent-linking-structure}). 
-In the case of multicore linking, 
+we introduce multiple configurations, auxiliary functions, as well as intermediate languages for linking. 
+In the case of multicore linking (Figure~\ref{fig:chapter:conlink:concurrent-linking-structure} (a)),
 our purpose is using the framework not only for one single concurrent programs run on a specific machine model, 
 but also use it for other programs with other hardware models that satisfy the generic hardware setting properties. 
 Based on the abstract hardware setting, 
@@ -139,7 +156,7 @@ that can be injected to the $\compcert$'s backward simulation theorem to guarant
 Then, that multicore linking template should be able to be used for any layers alongside with sequential machine model in $\compcertx$ when they satisfy certain properties related to abstract HW setting)
 
 \jieung{need to revise the following part. It's quite ambiguous now}
-For multithreaded linking case, most claims in multicore linking remain almost the same. 
+For multithreaded linking case (Figure~\ref{fig:chapter:conlink:concurrent-linking-structure} (b)), most claims in multicore linking remain almost the same. 
 It, however, usually located in the middle of the system software stack, which already contains multiple primitives in the layer. 
 It requires us to handle that the multithreaded linking also need a generic form of those proofs for providing the linking framework to the layer by satisfying a particular property. 
 It also requires us to handle mutual exclusiveness of 
