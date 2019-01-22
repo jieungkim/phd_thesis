@@ -132,7 +132,7 @@ an atomic object for this page allocation table, by merging the lock acquire and
 the event for the shared resources together (See Section~\ref{chapter:mcslock:sec:evaluation} for more details.)
 \begin{figure}
 \lstinputlisting[language = C]{source_code/certikos/palloc_spec.v} 
-\caption{Page Allocation Function Specification (Written in $\coq$.)}
+\caption{Page Allocation Primitive Specification (Written in $\coq$.)}
 \label{fig:chapter:certikos:palloc-in-coq}
 \end{figure}
 The high-level specification for $\pallocfunc$ is in Figure~\ref{fig:chapter:certikos:palloc-in-coq}.
@@ -161,7 +161,7 @@ that the initialization procedure sets up the two-level page maps correctly rega
 
 \begin{figure}
 \lstinputlisting[language = C]{source_code/certikos/pagetable.v} 
-\caption{Page Table Definition (Written in $\coq$.)}
+\caption{Page Table Abstract Data Structure Definition (Written in $\coq$.)}
 \label{fig:chapter:certikos:page-table}
 \end{figure}
 In detail, the page table is a partial map from a process ID to its page table as the definition related to the page table (written in $\coq$) is in
@@ -183,7 +183,7 @@ A page table entry is one of three values;
 
  \begin{figure}
 \lstinputlisting[language = C]{source_code/certikos/ptresv_spec.v} 
-\caption{Page Table Reservation Function Definition (Written in $\coq$.)}
+\caption{Pate Table Reservation Primitive Specification (Written in $\coq$.)}
 \label{fig:chapter:certikos:ptresv-func}
 \end{figure}
  One important function that manipulates the page table is a page table reservation function,
@@ -301,16 +301,59 @@ The thread management module introduces the  thread control block,
 that contains the status of each thread (\ie, ready, run, \etc)
 as well as other information for the thread including the information about its quotas, parent, and children.
 
-The thread scheduler is associated with thread primitives; yield, sleep, and wake-up, which uses 
-the kernel context switching and the abstract queue library. 
+The thread scheduler is associated with thread primitives; yield, sleep, and wake-up, which uses the kernel context switching and the abstract queue library. 
 The ready
-Each CPU has a private ready queue ReadQ and a shared pending queue PendQ. 
-The context CPUs can insert threads to the current CPU’s pending queue. The mC2 kernel also provides a set of sleeping queues SleepQs, which are shared among all CPUs.
+Each CPU has a private ready queue and a shared pending queue (for our condition variable.) 
+The ready queue is private to each CPU; thus operations on the ready queue is only allowed by the owner of the queue.
+On the other hand, other CPUs in the system can insert threads to the current CPU’s pending queue. 
+$\certikos$ kernel also provides a set of sleeping queues, which are shared among all CPUs.
+Each sleeping queue is associated with its condition variable. 
 
-the yield primitive takes three steps: (1) dequeue the head of its pending queue (if it exists) and add it to its ready queue; (2) enqueue the running thread to the ready queue; and (3) dequeue the head of its ready queue and let it run. The sleep primitive simply adds the running thread to the sleeping queue and runs the next ready thread. The wakeup primitive contains two cases. If the thread to be woken up belongs to the current CPU, then the primitive adds the thread to its ready queue. Otherwise, wakeup adds the thread to the pending queue of the CPU it belongs to. Except for the manipulation of the private ready queue, all the other thread queue operations are protected by fine-grained locks.
+The \textit{yield} primitive works with three operations; 
+(1) when the pending queue is not empty, dequeue the head of its pending queue and add it to its ready queue;
+(2) enqueue the running thread to the ready queue; and 
+(3) dequeue the head of its ready queue to make it run.
+
+The \textit{sleep} primitive has two steps;
+(1) enqueue the running thread to the shared sleeping queue associated with the condition variable, which is an argument of the sleep primitive; and
+(2) dequeue the head of its ready queue to make it run.
+
+The \textit{wake-up} primitive contains two cases. 
+The first is when the thread that wants to wake up is the thread on the current CPU. 
+In this case, the primitive adds the thread to its ready queue because the primitive has permission to manipulate the ready queue directly.
+When the thread that will be wakened up is not in the current CPU, however, the wake-up primitive adds the thread to the pending queue of the CPU
+that the thread belongs to (\ie, notes that all CPUs can manipulate other CPUs' pending queues.) 
+
+\jieung{I found that we cannot guarantee liveness of the thread in the pending queue when proc create is infinitely invoked because it does not
+check the pending queue. But, it should be ok because our proc create is bounded with the maximum number of threads for each CPU.}
+\jieung{Can I use the scheduling figure in certikos paper (Figure 9)? Even if I can use that one, I need to modify it by adding proc create.}
+
+The process creation primitive also affects the scheduling.
+When one process wants to create its child, 
+it first checks the quota that the child wants to have (\ie, it is the argument of the primitive), 
+and then create the child by giving the new process ID to the child. 
+It then adds the newly created child at the end of the ready queue of the CPU that the parent and the newly created child belong to it. 
+As seen in these scheduling procedures, we do not allow the process migration from one CPU to others.
+
+Like what our layers do for other shared primitives, $\certikos$ provides the layer interface ($\codeinmath{PBThrd}$)
+that contains atomic specifications for all scheduling related primitives. 
+The layer, $\codeinmath{PBThrd}$, also merges all separate logs\footnote{Note that we divide the global log into multiple individual logs is associated with the corresponding shared objects from $\codeinmath{MBoot}$. The division is for the simplicity of our layer building, but we have to merge them into the single global log for multithreaded linking. We mentioned about it in multiple places in Chapter~\ref{chapter:mcs-lock} and Chapter~\ref{chapter:linking}} 
+into a single log to provide the top-most layer of our per-CPU modules (and thus the base layer for our multithreaded linking.)
+Figure~\ref{fig:chapter:certikos:proc-create-cpu-spec} and Figure~\ref{fig:chapter:certikos:thread-yield-cpu-spec} show the specification of the process creation primitive and the specification of the thread yield primitive, respectively.
+
+\begin{figure}
+\lstinputlisting[language = C]{source_code/certikos/cpu_proc_create.v} 
+\caption{Process Create Primitive Specification in $\codeinmath{PBThrd}$ (Written in $\coq$.)}
+\label{fig:chapter:certikos:proc-create-cpu-spec}
+\end{figure}
 
 
-We do not allow the process migration from one CPU to others. 
+\begin{figure}
+\lstinputlisting[language = C]{source_code/certikos/cpu_thread_yield.v} 
+\caption{Thread Yield Primitive Specification in $\codeinmath{PBThrd}$ (Written in $\coq$.)}
+\label{fig:chapter:certikos:thread-yield-cpu-spec} 
+\end{figure}
+
 
 \subsection{Connecting All per-CPU layers}
 \label{chapter:certikos:subsec:connecting-all-per-cpu-layers}
