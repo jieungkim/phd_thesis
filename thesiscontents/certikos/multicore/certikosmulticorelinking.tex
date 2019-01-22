@@ -12,3 +12,13 @@ use the concrete definition $L$, which will be the
 bottom layer of our local layer interface, 
 and combine those intermediate languages and proofs with $\compcert$ semantic and backward simulation 
 forms to connect them rigorously. 
+
+%
+%Similar to the multithreaded linking, a few steps are required to use our CCAL multicore linking library with mC2.
+%
+%    Instantiate hardware setting (HardWareSetting) and program transition rules (HardSemantics) that are required to instantiate all machine models in Concurrent_Linking_Def.v. Explanations about them can be found in Section 4-2 in this document. In our artifact, you can find the related definitions in {ccal, mc2}/mcertikos/multicore/semantics/HWSemImpl.v.
+%    Instantiate all the machine models by using the instances of HardWareSetting and HardSemantics from the previous step. Please look at all files ending with *SemImpl.v in {ccal, mc2}/mcertikos/multicore/semantics/, except HWSemImpl.v. You can also compare them with the abstract definitions of those machine models in {ccal, mc2}/mcertikos/conlib/conmclib/Concurrent_Linking_Def.v.
+%    Prove that any program on the mboot layer with LAsm contextually refines the program on the mboot layer with single_separate_semantics, which is the adjacent machine model with LAsm in our multicore linking framework. This proof is not provided by our CCAL toolkit because it heavily depends on the definition of the mboot layer.
+%    Instantiate all refinement proofs in Concurrent_Linking_Prop.v with concrete machine models defined in the previous step. This guarantees that "any program on the mboot layer with single_separate_semantics contextually refines that program on the mboot layer with hwstep_semantics (which is the non-deterministic x86 multicore semantics)". Thanks to our framework, most proofs in this step can be directly achieved by applying the existing refinement proofs in our library.
+%
+%In this way, we can finally prove that "any context program CTXT running on the mboot layer with LAsm contextually refines the context program CTXT running on the mboot layer with hwstep_semantics".

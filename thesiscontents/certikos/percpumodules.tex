@@ -8,8 +8,8 @@ Those modules consist of six components;
 two spinlock modules, a device driver module, a memory management module,  a process (thread) management module, and a virtual machine management module. 
 
 
-\subsubsection{Spinlock Module}
-
+\subsection{Spinlock Module}
+\label{chapter:certikos:subsec:spinlock-module}
 
 Spinlock provides the protection mechanism for shared resources by using its safety property, mutual exclusion of the owner for each lock. 
 We build two spinlock modules, 
@@ -47,7 +47,8 @@ The starvation freedom proof in this ticket lock is
 similar to that of MCS Lock in Chapter~\ref{chapter:mcs-lock}, but 
 it's simpler than that due to the simplicity of it.
 
-\subsubsection{Device Driver Module}
+\subsection{Device Driver Module}
+\label{chapter:certikos:subsec:device-driver-module}
 
 $\certikos$ supports device driver handling, and all these works are from the previous work by  Chen \etal~\cite{certikos:interrupt}.
 The work introduces a device model for multiple hardware devices,
@@ -59,14 +60,15 @@ with those triggered by devices.
 $\certikos$ has a single designated thread that is responsible for those interrupts,
 and our future direction is extending the current version to support more efficient concurrent-handling model that can cover both device drivers and multicore/multithreaded environments together.
 
-\subsubsection{Memory Management Module}
+\subsection{Memory Management Module}
+\label{chapter:certikos:subsec:memory-management-module}
 
 We built a memory management module with 15 layers, 
 which supports container for resource management, 2-level page tables, and dynamic page allocations for users.
 This module also contains the shared memory library,
 but we omit to explain the library because our thread linking does not include that. 
 
-
+\subsubsection{Container} 
 % container
 \begin{figure}
 \begin{minipage}[t]{.45\textwidth}
@@ -88,7 +90,7 @@ but we omit to explain the library because our thread linking does not include t
 \caption{Container Data Type Definition (Written in C and $\coq$.)}
 \label{fig:chapter:certikos:container}
 \end{figure}
-\paragraph{Container} manages the resource that each process (its children) can facilitate; 
+The container manages the resource that each process (its children) can facilitate; 
 In the case of memory management, for instance,
 the container memorizes the maximum number of pages (via the process' quota) 
 that each process can use or hand it over to its children.
@@ -109,14 +111,14 @@ It also prevents the undesirable information channel between different processes
 This container is a tree structure, and each CPU contains their tree with the root process for each core. 
 With this separation, the container of each core does not interfere by other containers in other cores. 
 
-
+\subsubsection{Physical memory management} 
 % physical memory management
 \begin{figure}
 \lstinputlisting[language = C, multicols=2]{source_code/certikos/palloc.c} 
 \caption{Page Allocation Function Implementation (Written in C.)}
 \label{fig:chapter:certikos:palloc-in-c}
 \end{figure}
-\paragraph{Physical memory management}  builds a physical page allocation map as well as a dynamic page allocator $\pallocfunc$, briefly explained 
+Our physical memory management module builds a physical page allocation map as well as a dynamic page allocator $\pallocfunc$, briefly explained 
 in Section~\ref{chapter:mcslock:sec:evaluation} with the source code in Figure~\ref{fig:chapter:mcslock:palloc-example}.
 As discussed in the section, the page allocation table $\codeinmath{AT}$ is shared by 
 all CPUs in the system; thus
@@ -148,8 +150,8 @@ and the lock in the lower layer will be released before the lock in the higher l
 This implicit order of lock acquisitions prevents deadlocks in the $\certikos$ kernel.
 
 
-\paragraph{Virtual memory management}
-is built on top of the physical memory management layers. 
+\subsubsection{Virtual memory management}
+The virtual memory management module is built on top of the physical memory management layers. 
 Our virtual memory management is
 based on the explicit modeling of the memory management unit (MMU) in our abstract data and thus abstract layers. 
 Our MMU model follows and mirrors the paging hardware; thus memory accesses made by both the kernel and the user programs are translated using the two-level page maps. 
@@ -197,8 +199,8 @@ information into the page table.
 When either of any processes fails during this evaluation, it returns the magic number as its result, which is distinguishable with 
 any return values of the function.
 
-\subsubsection{Intel Virtualization Module}
-
+\subsection{Intel Virtualization Module}
+\label{chapter:certikos:subsec:virtualization-module}
 
 Our $\certikos$ can run at most one virtual machine per one core;
 and our Intel virtualization module implements layers related to the virtual machine management,
@@ -214,47 +216,104 @@ They model VMCS and VMX data structures  in their
 as well as provide primitives that properly initialize and manipulate them. 
 This module also introduces two $\codeinmath{vm\_enter}$ and $\codeinmath{vm\_exit}$ primitives to enter and exit from the host mode.
 
+\jieung{Need to change the word process (or thread) to make them to be consistent}
+\subsection{Process Management Module}
+\label{chapter:certikos:subsec:process-management-module}
+Our process management module contains 
+a kernel context switching, an abstract queue library, thread management which includes scheduling primitives (\ie, yield, sleep, wake up)
+and dynamic process creation. 
 
-\subsubsection{Process Management Module}
+\subsubsection{Kernel Context Switching}
 
-Our process management introduces the thread control block, kernel context switching, user context switching, scheduling queues, dynamic process creation via quota system, and scheduling primitives, which are yield and sleep functions. 
-
-
-
-Our process management module introduces the thread control block (TCB). 
-
-The thread scheduling is done by the three primitives yield, sleep, and wakeup, using the abstract queue library (cf. Fig. 9). Each CPU has a private ready queue ReadQ and a shared pending queue PendQ. The context CPUs can insert threads to the current CPU’s pending queue. The mC2 kernel also provides a set of sleeping queues SleepQs, which are shared among all CPUs.
-
-
-
-thread control blocks, 
-
-introduces the thread control block (TCB) and manages the resources of dynamically spawned threads (e.g., quotas) and their meta-data (e.g., parent, chil-
-dren, thread state). For each thread, one page (4KB) is allo- cated for its kernel stack.
-
-
-
-The important parts of our process management is providing 
-thread spawn (thus process create), yield, and sleep (with condition variables) functions.
-It also relies on providing the proofs about 
-context switching as well as scheduling queues.
-It also provides 
-the verified layers that contains context switchings (in-kernel context switching as well as user-kernel context switching)
+\begin{figure}
+\lstinputlisting[language = C,multicols=2]{source_code/certikos/kctxt_switch.S} 
+\caption{Kernel Context Switch Implementation (Written in Assembly.)}
+\label{fig:chapter:certikos:kernel-context-switch-impl}
+\end{figure}
+Our process management first introduces the context switching written in Assembly, of which the implementation is in Figure~\ref{fig:chapter:certikos:kernel-context-switch-impl}.
+We first abstracts the kernel context pool in the memory ($\codeinmath{KCtxtPool\_LOC}$ in Figure~\ref{fig:chapter:certikos:kernel-context-switch-impl}) 
+into the kernel context map in the abstract data:
+\begin{lstlisting}[language = C]
+Definition KContext := regset.
+Definition KContextPool := ZMap.t KContext.
+\end{lstlisting}
+By using that, we provide the layer interface that contains the kernel context switching as its primitive
+\lstinputlisting[language = C]{source_code/certikos/kctxt_switch.v}
+which stores the kernel context of $\codeinmath{src}$ and returns the kernel context of $\codeinmath{des}$ as its result.
 
 
+\jieung{I need to decide whether I will add this subsubsection or not}
+\subsubsection{User Context Switching}
+
+A few layers introduce the user context that contains the list of user registers that we save and restore when 
+the context switching happens between users and kernel (via trap and system calls.)
+Similar to the case of kernel context switching, $\certikos$ models the user context in the abstract data and verify the functionality of user context switching. 
+It, however, differs from the kernel context switching.
+User context switching specifications in $\certikos$ only describes the saves and restores of the second half of the full context switching.
+The hardware has responsibilities for the first half, which will automatically save and restore them.
 
 
-As shown in Fig. 9, the yield primitive takes three steps: (1) dequeue the head of its pending queue (if it exists) and add it to its ready queue; (2) enqueue the running thread to the ready queue; and (3) dequeue the head of its ready queue and let it run. The sleep primitive simply adds the running thread to the sleeping queue and runs the next ready thread. The wakeup primitive contains two cases. If the thread to be woken up belongs to the current CPU, then the primitive adds the thread to its ready queue. Otherwise, wakeup adds the thread to the pending queue of the CPU it belongs to. Except for the manipulation of the private ready queue, all the other thread queue operations are protected by fine-grained locks.
+\subsubsection{Abstract Queue Library}
+
+The abstract queue with having a FIFO property works as bases of multiple crucial services of $\certikos$. 
+The thread management and the condition variable (via sleep and wake-up) in our kernel heavily rely on this abstract queue library. 
+The implementation of this abstract queue uses 
+doubly-linked lists; thus each node in lists is defined as 
+\begin{lstlisting}[language = C, multicols=2]
+// TDQ in C
+struct TDQ_node{
+uint head; uint tail; };
+// TDQ in Coq
+Inductive TDQueue :=
+| TDQUndef | TDQValid (head tail: Z).   
+\end{lstlisting}
+To provide the simple interface for the queue, 
+we abstracts the queue state as $\coq$ lists as
+\begin{lstlisting}[language = C]
+Inductive AbQueue := | AbQUndef | AbQValid (l: list Z).
+\end{lstlisting}
+and local queue operations,
+ \textit{enqueue} and \textit{dequeue},
+are directly specified as the operations over the abstract lists as follows:
+\begin{lstlisting}[language = C]
+Function local_enqueue_spec (n i: Z) (adt: RData): option RData :=
+  <@$\cdots$@>
+  {abq: ZMap.set n (AbQValid (l ++ (i::nil))) (abq adt)}
+  <@$\cdots$@>
+\end{lstlisting}
+Since those queues can be shared by multiple processes in the system, 
+we associate each shared queue with a lock,
+\begin{lstlisting}[language = C]
+Function enqueue_atomic_spec (n i: Z) (adt: RData): option RData :=
+  match acquire_lock_ABTCB_spec n adt with
+  | Some adt0 => match local_enqueue_spec n i adt0 with
+                             | Some adt1 => release_lock_ABTCB_spec n adt1
+                             | _ => None
+                             end
+  | _ => None
+  end.
+\end{lstlisting}
+and provide the atomic interface for the queue by using the \textit{log-lift} pattern in $\ccalname$.
 
 
+\subsubsection{Thread Management}
+The thread management module introduces the  thread control block, 
+that contains the status of each thread (\ie, ready, run, \etc)
+as well as other information for the thread including the information about its quotas, parent, and children.
 
-Layer Interface PUCtxtIntro In PUCtxtIntro, we introduce the user context that contains the list of user registers that we save and restore when user traps into the kernel or jumps back to the user space, in addition to the primitives to actually save and restore the user registers. Note that we only save and restore the second half in software, as the first half is automatically saved and restored by the hardware.
-Layer Interface PProc In this layer interface, we introduce the primitive proc$\_$create that spawns a new process, where it spawns the managing kernel thread via thread$\_$spawn, loads ELF, and sets proper user context using the setter primitives from the PUCtxtIntro layer.
+The thread scheduler is associated with thread primitives; yield, sleep, and wake-up, which uses 
+the kernel context switching and the abstract queue library. 
+The ready
+Each CPU has a private ready queue ReadQ and a shared pending queue PendQ. 
+The context CPUs can insert threads to the current CPU’s pending queue. The mC2 kernel also provides a set of sleeping queues SleepQs, which are shared among all CPUs.
+
+the yield primitive takes three steps: (1) dequeue the head of its pending queue (if it exists) and add it to its ready queue; (2) enqueue the running thread to the ready queue; and (3) dequeue the head of its ready queue and let it run. The sleep primitive simply adds the running thread to the sleeping queue and runs the next ready thread. The wakeup primitive contains two cases. If the thread to be woken up belongs to the current CPU, then the primitive adds the thread to its ready queue. Otherwise, wakeup adds the thread to the pending queue of the CPU it belongs to. Except for the manipulation of the private ready queue, all the other thread queue operations are protected by fine-grained locks.
 
 
+We do not allow the process migration from one CPU to others. 
 
-
-\subsubsection{Connecting All per-CPU layers}
+\subsection{Connecting All per-CPU layers}
+\label{chapter:certikos:subsec:connecting-all-per-cpu-layers}
 
 We have introduces 60 layers for all those modules in our per-CPU layers, from the $\codeinmath{MBoot}$ layer to the 
 $\codeinmath{PBThrd}$ layer.

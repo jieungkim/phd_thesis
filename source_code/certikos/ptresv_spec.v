@@ -32,7 +32,6 @@ Function ptInsert_spec (nn vadr padr perm: Z) (adt: RData) : option (RData * Z) 
   | _ => None
   end.
 
-
 Function ptResv_spec (n vadr perm: Z) (adt: RData): option (RData * Z) :=
   // allocate a page
   match palloc_spec n adt with

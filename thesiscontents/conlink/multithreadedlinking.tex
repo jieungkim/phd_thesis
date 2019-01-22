@@ -153,3 +153,35 @@ we have defined two abstract relations,
 which is $AbsRelC$ and $AbsRelT$ in the figure with will work 
 with the arbitrary layers for each machines as well as the thread configuration $C$. 
 
+
+%
+%The multithreaded-layer-building files are located in the ccal/ccalmtlib/ directory. They contain: multiple machine models used to build a per-thread layer interface; abstract definitions to build the proper context necessary for the per-thread layer interface; the memory model for per-thread layers; proofs (including refinement) connecting those machine models; and proofs of compositionality of our machine models. The directory contains three intermediate machine models and the per-thread machine model, described as follows:
+
+%EAsmCommon.v 	Common definitions for EAsm and IIEAsm in the below.
+%EAsm.v 	Multithreaded machine model with environmental context and a single global memory for all threads (Section 5.2 in the submission). This is the lowest-level machine model in our multi-threaded linking library. This machine model in the view of multithreaded linking is related to env_step in Concurrent_Linking_Def.v in the multicore linking.
+%IIEAsm.v 	Multithreaded machine model with environmental context and divided memories (related to Section 5.2 in the submission), separating the current thread from other threads. This machine model makes it easy to prove the refinement between the single threaded machine model (TAsm) and the multithreaded machine model with a single global memory (EAsm).
+%TAsm.v 	Single threaded machine model with an explicit environment step in its evaluation rule (related to Section 5.3 in the submission). This machine model is already a thread-local machine model, but we cannot use our thread-safe CompCertX with this model due to the difference between the underlying machine model of CompCert (and its extensions) and this TAsm. Therefore, we add one more machine model, HAsm, to fully facilitate the power of CompCert.
+%HAsm.v 	Single threaded machine model for thread-safe CompCertX. This one is quite similar to LAsm (the machine model of CompCertX), but it can dynamically allocate the initial state for each thread (related to Section 5.3 in the submission).
+%HAsmLinkTemplate.v 	Vertical and horizontal linking template for per-thread layers.
+%
+%Building certified multithreaded layers also requires us to define the proper memory model, as described in Section 5.5 of our submission. There are three files in our artifact that are related to this memory extension.
+%File 	Description
+%AlgebraicMem.v 	Algebraic memory model for multithreaded layer interface.
+%AlgebraicMemImpl.v 	Algebraic memory model implementation.
+%LAsmAbsDataProperty.v 	LAsm properties for Algebraic memory model.
+%
+%Building the thread local layer interface also requires providing the proper context for the interface. For this purpose, we provide multiple abstract definitions and functions, as well as properties of those definitions/functions, that must be instantiated when one uses our toolkit to verify an actual program. The following table shows the files that are related to those abstract definitions. We also provide an example illustrating how to use them in our example section (see Section 5-4 (3) in this document).
+%File 	Description
+%SingleAbstractDataType.v 	Abstract data definitions for intermediate machine models (EAsm, IIEAsm, and TAsm) in multithreaded linking library.
+%RegsetLessdef.v 	Properties related to register values.
+%SingleOracleDef.v 	Event definitions for multithreaded program linking.
+%SingleOracle.v 	Properties of the global log, an environmental context, and other definitions that are required to build the proper context for the per-thread layer interface as well as for multithreaded linking.
+%SingleConfiguration.v 	Top-level configuration definitions for multithreaded linking. This includes the definitions in SingleOracle.v and other definitions that are related to building the per-thread layer interface and multithreaded linking (e.g., variables for current thread id, main thread of the CPU, active thread set in the CPU, etc).
+%
+%Similar to the multicore library in our CCAL, the multithreaded library also provides several proofs that can be generically applied to programs; these proofs can be used with any layer definitions and programs as long as they can fulfill the requirements of our toolkit. There are six files relating to these proofs:
+%
+%EAsmPropLib.v 	Basic properties related to EAsm, used in the refinement theorems for those machine models as well as in the proofs of compositionality of EAsm.
+%AsmIIE2E.v 	Refinement theorem between IIEAsm and EAsm. Both are multithreaded layers with a full active thread set, but their memory models are slightly different.
+%AsmIIE2IIE.v 	Refinement theorem between IIEAsm with one single thread and IIEAsm with a full active thread set on the CPU.
+%AsmT2IIE.v 	Refinement theorem between TAsm (single threaded machine) and IIEAsm with one single thread.
+%{EAsmCompose.v, EAsmComposeRefinement.v} 	Compositionality of EAsm (not used in mC2 example).

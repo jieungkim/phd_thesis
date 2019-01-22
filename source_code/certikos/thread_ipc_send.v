@@ -10,7 +10,7 @@ Function thread_syncsendto_chan_spec (chanid vaddr scount : Z) (adt : RData)
     match thread_ipc_send_body_spec vaddr scount adt0 with
     | Some (adt1, res) =>
       // release the lock for chanid (channel ID)
-      match big2_release_lock_SC_spec chanid adt1 with
+      match release_lock_SC_spec chanid adt1 with
       | Some adt2 => Some (adt2, res) | _ => None
       end
     | _ => None
