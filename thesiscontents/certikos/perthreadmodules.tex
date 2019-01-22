@@ -1,36 +1,80 @@
-\section{Per Thread Modules}
+\section{Per-thread Modules}
 \label{chapter:certikos:sec:per-thread-modules}
 
-Due to the restrictions that we mentioned,
-we only includes small pieces of our operating system in oure per-thread modules.
+Due to the restrictions that we mentioned in Section~\ref{chapter:linking:sec:multithreaded-linking},
+building per-thread stacks is not possible with the current toolkit. 
+This restriction makes us to build few layers in our per-thread modules,
+so we only includes small pieces of our operating system in them.
 
-\paragraph{IPC Module}
+\subsubsection{IPC Module}
 
-IPC is the module that provides the communication between threads.
-It's communication is inter-thread/CPU, so all threads in our system can communicate with others if it does not exceed the capacity of our system. 
+$\certikos$ supports a double-copy inter-process communication (IPC) protocol.
+Senders and receivers of IPC use the dynamically allocated IPC channel for their communication. 
+When a sender wants to send the message, 
+it copies the sender's message in its memory to the mailbox in the kernel (the designated kernel memory pages for IPC) associated with the channel ID ($chanid$).
+When the channel associated with the channel ID is busy, the sender goes into the sleep mode by itself until the other user of the channel
+(\ie, the receiver for the communication) wake up the sender, then completes the message copy again. 
+On the other hand, a receiver copies the values in the mailbox to the receiver's memory, and wakes up the sender to be scheduled 
+for the next communication. 
+Since IPC channels are shared by all processes in the system, 
+we assign one lock instance per each channel in our IPC implementation.
+ \begin{figure}
+\begin{center}
+\lstinputlisting[language = C]{source_code/certikos/thread_ipc_send.v}
+(a) IPC Send Spec.
+\lstinputlisting[language = C]{source_code/certikos/thread_ipc_receive.v} 
+(a) IPC Receive Spec.
+\end{center}
+\caption{Top-level IPC Specifications (Written in $\coq$.)}
+\label{fig:chapter:certikos:ipc-specs}
+\end{figure}
+The top level specifications for both IPC send and receive functions are defined in Figure~\ref{fig:chapter:certikos:ipc-specs}
+even though lots of details are hidden. 
 
-One reason of this module to be allocated in the thread local machine is that 
-the receive function relies on the sleep function call to avoid busy waiting. 
 
-\paragraph{Trap Handler Module}
+\subsubsection{Trap Handler Module}
+The trap handler module is providing the top-level API, the $\codeinmath{TSyscall}$ layer, of our operating systems to users.  
+The module begins with the layer that contains a list of primitives to retrieve the system call arguments and return values
+by following the convention.
+When we trap into the kernel, the register $\codeinmath{EAX}$ has the system call number, and other registers contain the system call arguments in order of $\codeinmath{EBX}$, $\codeinmath{ECX}$, $\codeinmath{EDX}$, $\codeinmath{ESI}$, and $\codeinmath{EDI}$. 
+When $\certikos$ returns to the user after the system call, we use $\codeinmath{EAX}$ for the error number and 
+return values with other registers with the order of 
+ $\codeinmath{EBX}$, $\codeinmath{ECX}$, $\codeinmath{EDX}$, $\codeinmath{ESI}$, and $\codeinmath{EDI}$. 
+Based on them, 
+we built a list of system call handlers with the guarantee of safety condition for them, 
+``the semantics of each system call handler does not get stuck.'' 
+our top-most layer also implements the system call dispatcher that facilitates the proper system call handler based on the system call number in the $\codeinmath{EAX}$ register.
+The $\codeinmath{TSyscall}$ layer also contains the page fault handler as its interface.
 
-The Trap handler module is providing the top-level API of our operating systems to users.  
+\subsubsection{Connecting All Per-thread Layers}
+We have introduces 7 layers for all those modules in our per-thread layers, from the $\codeinmath{PHThrd}$ layer to the 
+$\codeinmath{TSyscall}$ layer.
+Similar to the per-CPU modules, all those layers can be linked together via the composition rules described in Section~\ref{chapter:ccal:subsec:linking};
+thus form a single contextual refinement theorem, which is defined in Theorem~\ref{theorem:chapter:certikos:per-thread-contextual-refinement},
+which corresponds to the number (2) in Figure~\ref{fig:chapter:certikos:top-level-multicore-theorem}.
+\begin{theorem}[Contextual Refinement for Per-thread layers]
+\label{theorem:chapter:certikos:per-thread-contextual-refinement}
+Let's assume that $tid$ is a valid thread ID, $\oracle_{\codeinmath{thrd}}$ and  $\oracle'_{\codeinmath{thrd}}$ are environmental contexts for 
+$\codeinmath{PHThrd}$  and $\codeinmath{TSyscall}$ layers, respectively, and $\codeinmath{CTXT}$ is an any context program. Then, we can say that
+\begin{center}
+$\semwmachine{\codeinmath{PHThrd}[tid, \oracle_{\codeinmath{thrd}}]}{\certikos_{\codeinmath{td}} \oplus \codeinmath{Ctxt}}{\codeinmath{mach}_{\hasm}} \refines_{R_{\certikos_\codeinmath{td}}} \semwmachine{\codeinmath{TSyscall}[tid, \oracle'_{\codeinmath{thrd}}]}{\codeinmath{Ctxt}}{{\codeinmath{mach}_{\hasm}}}$
+\end{center}
+when ${R_{\certikos_\codeinmath{td}}}$ is a refinement relation between those two layers (the refinement relation can be achieved by 
+connecting all the refinement relations in between 7 per-thread layers.)
+\end{theorem}
 
-\paragraph{Connecting All Layers in Per-Thread Modules}
 
-All the ingredients that we have mentioned in here is to provide a single correctness 
-theorem for the all system. 
-
-
-\begin{lstlisting}[language=C]
-  Theorem Per_Thread_CertiKOS_correct:
-    forall (s: stencil) (CTXT: LAsm.module) kernel combined_program user_program
-           (builtin_idents_norepet_prf: CompCertBuiltins.BuiltinIdentsNorepet),
-      CertiKOS.per_thread_certikos = OK kernel ->
-      make_program s (CTXT <@$\oplus$@> kernel) (PHThread.phthread  <@$\oplus$@>  L64) = OK combined_program ->
-      make_program s CTXT (TSysCall.tsyscall  <@$\oplus$@>  L64) = OK user_program ->
-      inhabited
-        (backward_simulation
-           (HAsm.semantics (TSysCall.tsyscall  <@$\oplus$@>  L64) user_program)
-           (HAsm.semantics (PHThread.phthread <@$\oplus$@> L64) combined_program)).
-\end{lstlisting}
+%This theorem shows that "any context program CTXT running on the tsyscall layer contextually refines the context program CTXT plus per_thread_mC2 running on phthread (the bottom-most layer interface of per-thread layers) with HAsm". HAsm is described in Section 4-2 in this document; it can use CompCertX to propagate the C proofs down to the assembly level (HAsm), and it has the power to dynamically allocate the proper initial state for each thread. To link the proofs for all layers together, we use the LinkSourceTemplate.v library for source code in all layers, and the HAsmLinkTemplate.v library (both libraries are mentioned in Section 4 of this document) for proofs in all layers.
+%
+%\begin{lstlisting}[language=C]
+%  Theorem Per_Thread_CertiKOS_correct:
+%    forall (s: stencil) (CTXT: LAsm.module) kernel combined_program user_program
+%           (builtin_idents_norepet_prf: CompCertBuiltins.BuiltinIdentsNorepet),
+%      CertiKOS.per_thread_certikos = OK kernel ->
+%      make_program s (CTXT <@$\oplus$@> kernel) (PHThread.phthread  <@$\oplus$@>  L64) = OK combined_program ->
+%      make_program s CTXT (TSysCall.tsyscall  <@$\oplus$@>  L64) = OK user_program ->
+%      inhabited
+%        (backward_simulation
+%           (HAsm.semantics (TSysCall.tsyscall  <@$\oplus$@>  L64) user_program)
+%           (HAsm.semantics (PHThread.phthread <@$\oplus$@> L64) combined_program)).
+%\end{lstlisting}

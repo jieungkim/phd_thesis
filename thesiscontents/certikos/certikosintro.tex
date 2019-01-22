@@ -1,50 +1,15 @@
-
-\jieung{ I included some figures that others' added in their dissertations. Is it ok?}
-
-\jieung{I try to minimize the descriptions of per CPU module and per Thread module to distinguish those parts with 
-others' dissertations. But, can I add more texts for  them?} 
-
-\jieung{I did not include performance evaluations in here, cause my dissertation is not related to anything about them, as well as those parts 
-are already in others' dissertations.} 
-
-
-\begin{figure}
-\includegraphics[width=\textwidth, page=11]{figs/certikos/concurrent_linking}
-\caption{Idea of Dividing $\certikos$}
-\label{fig:chapter:certikos:idea-of-dividing-certikos}
-\jieung{Resize it!!}
-\end{figure}
-
-\begin{figure}
-\includegraphics[width=\textwidth, page=13]{figs/certikos/concurrent_linking}
-\caption{Idea of Dividing $\certikos$ with Formal Definitions} 
-\label{fig:chapter:certikos:idea-of-dividing-certikos-with-formal-def}
-\jieung{Resize it!!}
-\end{figure}
-
-In this chapter, we briefly present our work on concurrent operating system verification, especially 
-how $/ccalname$ in Chapter~\ref{chapter:ccal} and concurrent linking libraries in Chapter~\ref{chapter:linking} are applied 
+This chapter presents our work on concurrent operating system verification, especially 
+how $\ccalname$ in Chapter~\ref{chapter:ccal} and concurrent linking template in Chapter~\ref{chapter:linking} are applied 
 to verify a large-scaled and practical concurrent operation system, $\certikos$.
+We divide the full OS kernel as a stack of layers, independently verify them, 
+and connecting them via our layer linking library. 
+In addition to that, 
+we glue multiple instances in concurrent evaluations together by using concurrent linking (composition) templates, both for multicore and for multithreaded concurrency.  
 Our certified kernel is written in 6500 lines of C and x86 assembly
-and runs on stock x86 multicore machines. This is
-the first proof of functional correctness of a complete,
+and runs on stock x86 multicore machines with supporting fine-grained locking concurrency. 
+$\certikos$ is the first proof of functional correctness of a complete,
 general-purpose concurrent OS kernel with fine-grained locking,
 which supports a single top-level correctness theorem. 
-%
-%We have successfully developed a fully certified concurrent OS kernel n $\coq$~\cite{coq}. Using $\certikos$ as the base, 
-%we also provide variance of certified kernels, including hypervisor.
-%Our kernel cointain fine-grained locking 
-%as well as sleep-and-wakeup primitives, and can run on 
-%
-%Our kernels support both fine-grained locking and sleep- wakeup primitives and can run on stock x86 multicore hardware. Our certified hypervisor kernel consists of 6000 lines of C and x86 assembly, and can boot a version of Linux as a guest. To our knowledge, this is the first proof of functional correctness of a complete, general-purpose concurrent OS kernel with fine-grained locking.
 
-The overall structure of our top-level theorem for $\certikos$ is described in...
-
-
-\begin{figure}
-\includegraphics[width=\textwidth]{figs/certikos/sysarch}
-\caption{System Architecture of $\certikos$}
-\label{fig:chapter:certikos:system-architecture-of-certikos}
-\jieung{Can I use it?}
-\end{figure}
-
+\jieung{ Few things to consider: 
+1) I used one figure from CertiKOS paper. Is it OK?: 2) I try to minimize the descriptions of per CPU module and per Thread module to distinguish those parts with others' dissertations. But, can I add more texts for  them if it is necessary: 2) I did not include performance evaluations in here, cause my dissertation is not related to anything about them, as well as those parts  are already in others' dissertations.}

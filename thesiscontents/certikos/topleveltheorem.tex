@@ -2,19 +2,31 @@
 \label{chapter:certikos:sec:top-level-theorem}
 
 
-\begin{figure}
-\includegraphics[width=\textwidth]{figs/certikos/layer_diagram}
-\caption{Layer Diagram for $\certikos$}
-\label{fig:chapter:certikos:layer-diagram-for-certikos}
-\jieung{Let's slightly modify it}
-\end{figure}
+Using all results described in this chapter, 
+we finally show the top-level single theorem for the correctness of $\certikos$, 
+described in Theorem~\ref{theorem:chapter:certikos:contextual-refinement-theorem-for-certikos}. 
+\begin{theorem}[Contextual Refinement Theorem for $\certikos$]
+\label{theorem:chapter:certikos:contextual-refinement-theorem-for-certikos}
+Let's assume that $tid$ is a valid thread ID, $\oracle_{tid}$ is an
+environmental context for thread $tid$, and $\codeinmath{Ctxt}$ is a
+ context program that runs on top of the $certikos$. 
+ Then, we want to prove that 
+ \begin{center}
+\begin{tabular}{c}
+$\semwmachine{\codeinmath{MBoot}}{\codeinmath{CertiKOS} \oplus \codeinmath{Ctxt}}{\codeinmath{mach}_{\codeinmath{x86mc}}} \refines_{R_{\codeinmath{certikos}}} \semwmachine{\codeinmath{TSyscall}[tid, \oracle_{tid}]}{\codeinmath{Ctxt}}{{\codeinmath{mach}_{\codeinmath{x86thrd}}}}$\\
+\end{tabular}
+\end{center}
+\end{theorem}
+The proof of this theorem is 
+straightforward with 
+the lemmas that we have stated in previous sections.
 
+\begin{proof}
+First, we assume that 
 
-With the all ingredients in this chapter, 
-connecting all proof pieces in $\certikos$ is available;
-thus we provide a single correctness theorem for $\certikos$
-as well as connecting proofs
-for the theorem.
+\end{proof}
+
+In $\coq$, the theorem is stated as follows:
 
 \begin{lstlisting}[language=C]
   Theorem CertiKOS_correct:
@@ -35,3 +47,18 @@ for the theorem.
              ((CTXT <@$\oplus$@> k1) <@$\oplus$@> k2)
              combined_program)).
 \end{lstlisting}
+and the proof is exactly same with the 
+
+%\begin{figure}
+%\includegraphics[width=\textwidth]{figs/certikos/layer_diagram}
+%\caption{Layer Diagram for $\certikos$}
+%\label{fig:chapter:certikos:layer-diagram-for-certikos}
+%\jieung{Let's slightly modify it}
+%\end{figure}
+
+
+With the all ingredients in this chapter, 
+connecting all proof pieces in $\certikos$ is available;
+thus we provide a single correctness theorem for $\certikos$
+as well as connecting proofs
+for the theorem.

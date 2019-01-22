@@ -1,92 +1,296 @@
-\section{Per CPU Modules}
+\section{Per-CPU Modules}
 \label{chapter:certikos:sec:per-cpu-modules}
 
-\jieung{Need to rephrase all those parts}
-
-Based on the lowest layer that are connected with our multicore machine model, 
-we build six modules that are tied with a single CPU.
-
-\paragraph{Spinlock Module}
-
-depends on an atomic ticket object, which consists of two fields: ticket and now. Figure 6 shows one implementation of a ticket lock. The atomic increment to the ticket is achieved through the atomic fetch-and-increment (FAI) operation (implemented using the xaddl instruction with the lock prefix in x86). As described in Sec. 3.5, the switch points at this abstraction level have been shuffled and merged so that there is exactly one switch point in front of each atomic operation. Thus, the lock implementations generate a list of events; for example, when CPU t attempts to acquire the lock i, it continuously generates the event
-“t.get now i” (line 9) until the latest now is increased to the ticket value returned by the event “t.inc ticket i” (line 8), and then followed by the event “t.pull i” (line 10):
-
-Certifying the atomic ticket lock object consists of two main proof obligations: (1) the lock guarantees mutual exclu-
-ueue i
-sion,Qand (2) the lock implementation is starvation-free.
-
-Mutual exclusion is straightforward for a ticket lock. At any time, only the thread whose ticket is equal to the current serving ticket (i.e., the value of now) can hold the lock. Furthermore, each thread’s ticket is unique as the fetch-and-increment operation is atomic (line 8 in Fig. 6). Thanks to this mutual exclusion property, it is safe to pull the shared memory associated with the lock i to the local copy at line 10. Before releasing the lock, the local copy is pushed back to the shared memory at line 13 in Fig. 6.
-
-Starvation-freedom can be proved by showing that lock acquire eventually succeeds. To prove this, we impose a set of invariants on the environment context at this layer.
+Per-CPU modules in $\certikos$ (Figure~\ref{fig:chapter:certikos:top-level-multicore-theorem}) is refining a part of $\certikos$ modules,
+which are included in $\certikos_{\codeinmath{cpu}}$ in the figure, based on the $\codeinmath{MBoot}$ layer, 
+into the local layer interface, $\codeinmath{PBThrd}$.
+Those modules consist of six components;
+two spinlock modules, a device driver module, a memory management module,  a process (thread) management module, and a virtual machine management module. 
 
 
-Spinglock provides the protection mechanism for shared resources by using its property, mutual exclusion of the owner for each lock. 
-We built two different spinlock modules, ticket Lock and MCS Lock.
-
-is known to have better scalability than ticket lock on large numbers of CPUs. In the mC2 kernel, we have also implemented a version of MCS locks [37]. The starvation-freedom proof of the MCS lock is similar to that of the ticket lock. The difference is that the MCS lock release operation waits in a loop until the next waiting thread (if it exists) has added itself to a linked list, so we need similar proofs for both acquire and release instead of only for acquire.
+\subsubsection{Spinlock Module}
 
 
-\paragraph{Device Driver Module}
+Spinlock provides the protection mechanism for shared resources by using its safety property, mutual exclusion of the owner for each lock. 
+We build two spinlock modules, 
+MCS Lock~\cite{mcs91} and Ticket Lock~\cite{lwn:ticketlocks} modules.
+Since we have already discussed MCS Lock in Chapter~\ref{chapter:mcs-lock}, 
+we only explain ticket lock here.
 
-$\certikos$ supports device driver handling, and all this works are from the previous work.
+The concept of a ticket lock is similar to the ticket management system that is common in many bakeries, banks, and delis. 
+In the system, 
+there is a dispenser which gives the numbered ticket to the clients upon arrival. 
+Each time the next ticket number is ready to 
+be served, 
+the system updates now serving sign by increasing the now-serving number. 
+\begin{figure}
+\lstinputlisting[language = C, multicols=2]{source_code/certikos/ticketlock.c} 
+\caption{Ticket Lock Implementation (Written in C.)}
+\label{fig:chapter:certikos:ticket-lock-example}
+\end{figure}
+Implementing a ticket lock follows the same manner with this high-level idea.
+It is built on top of an atomic object that contains two fields, \textit{next} and \textit{now},
+and operations for a dispenser, checking the now-serving number, as well as increasing the now serving number when
+it is ready to serve the next ticket. 
+Figure~\ref{fig:chapter:certikos:ticket-lock-example} shows the implementation of our ticket lock (few insignificant parts are omitted.)
+Our lock module provides multiple lock instances associated with their own lock identifier;
+thus all operations on the lock object specify the lock ID as its argument, which is $lkid$ in this example.
+We provides three getter/setter primitives, $\codeinmath{FAI}$, $\codeinmath{get\_now}$, and $\codeinmath{incr\_now}$,
+that correspond to the three operations of the atomic object.
+Among them, the atomic increment to the ticket (the operation of the dispenser) 
+uses the atomic fetch-and-increment (FAI) operation, that is implemented using the $\codeinmath{xaddl}$ instruction with the 
+lock prefix in $\intelmachine$.
 
- Chen \etal~\jieung{need to cite}
- present a framework to allow interrupts inside the kernel for better interrupt-processing latency of their verified kernel with device drivers. The work has been successfully ported into our setting relatively easily thanks to the fact that their event-based machine model is consistent with our interleaving machine model.
- 
+We also prove the starvation freedom property for this Ticket Lock based on the assumption about hardware fairness,
+which implies that each CPU has a fair chance to execute its one program instance.
+The starvation freedom proof in this ticket lock is 
+similar to that of MCS Lock in Chapter~\ref{chapter:mcs-lock}, but 
+it's simpler than that due to the simplicity of it.
 
-\paragraph{Memory Management Module}
+\subsubsection{Device Driver Module}
 
-We built memory management module with 14 layers, 
-which supports 2-level page tables, dynamic page allocations for users, 
-container to manage resources, 
-as well as shared memory between two threads. 
+$\certikos$ supports device driver handling, and all these works are from the previous work by  Chen \etal~\cite{certikos:interrupt}.
+The work introduces a device model for multiple hardware devices,
+as well as a formal model for interrupts. 
+Based on them, they verify interruptible code and insert them into the sequential $\certikos$~\cite{deepspec}, a prior work of our concurrent $\certikos$. 
+The work has  successfully ported to the concurrent $\certikos$
+by clearly separating the concurrent aspects of multicore/multithreaded environments
+with those triggered by devices.
+$\certikos$ has a single designated thread that is responsible for those interrupts,
+and our future direction is extending the current version to support more efficient concurrent-handling model that can cover both device drivers and multicore/multithreaded environments together.
 
-\textbf{Physical memory management} maintains the physical pages and provides a dynamic page allocator palloc (cf. Fig. 7). As the page allocation table AT is shared among different CPUs, we associate it with a lock lock AT. The dynamic page allocator is then refined into an atomic ob- ject where the palloc implementation is proved to satisfy an atomic interface, with the proof that lock utilization for lock AT satisfies Invariant 1. Once the dynamic page allocator is introduced as an atomic object, the lock acquire and lock release for lock AT are not allowed to be invoked at higher
+\subsubsection{Memory Management Module}
 
-layers. Thus, in this layered approach, it is not possible that a thread holding a lock defined in a lower layer tries to acquire another lock introduced in a higher layer, i.e., the order that a thread acquires different locks is guided by the order that the locks are introduced in the layers. This implicit order of lock acquisitions prevents deadlocks in the mC2 kernel.
-Another function of the physical memory management is to dynamically track and bound the memory usage of each thread. A container object is used to record information for each thread (array cn in Fig. 7); one piece of information tracked is the thread’s quota. Inspired by the notions of con- tainers and quotas in HiStar [51], a thread in mC2 is spawned with some quota specifying the maximum number of pages that the thread will ever be allowed to allocate. As can be seen in Fig. 7, palloc returns an error code if the requesting thread has no remaining quota (lines 4 and 5), and the quota is decremented when a page is successfully allocated (line 17). Quota enforcement allows the kernel to prevent a denial-of- service attack, where one thread repeatedly allocates pages and uses up all available memory (thus denying other threads from allocating pages). From a security standpoint, it also pre- vents the undesirable information channel between different threads that occurs due to such an attack
-
-
-\textbf{Virtual memory management}
-provides consecutive virtual address spaces on top of physical memory management (cf. Fig. 8(b)). Because much of the code assumes that the memory management sets up the virtual address space properly, initialization has been a sticking point in previous verification efforts [26, 47], in which the virtual address space setup is either not verified, or verified separately as an external lemma. We address this challenge by modeling the memory management unit (MMU) explicitly in our abstraction layers. As shown in Fig. 8(a), the hardware MMU is modeled in a way that mirrors the paging hardware, and memory accesses made by both the kernel and the user programs are translated using the two-level page maps. We proved not only that the primitives of virtual memory management manipulate the page maps correctly, but also that the initialization procedure sets up the two-level page maps properly in terms of the hardware address translation.
+We built a memory management module with 15 layers, 
+which supports container for resource management, 2-level page tables, and dynamic page allocations for users.
+This module also contains the shared memory library,
+but we omit to explain the library because our thread linking does not include that. 
 
 
+% container
+\begin{figure}
+\begin{minipage}[t]{.45\textwidth}
+\raggedright
+\lstinputlisting[language = C]{source_code/certikos/container.c} 
+\begin{center}
+(a) Data Type Def. for Container in C
+\end{center}
+\end{minipage}
+\hfill
+\noindent
+\begin{minipage}[t]{.45\textwidth}
+\raggedleft
+\lstinputlisting[language = C]{source_code/certikos/container.v} 
+\begin{center}
+(b) Data Type Def. for Container in $\coq$
+\end{center}
+\end{minipage}
+\caption{Container Data Type Definition (Written in C and $\coq$.)}
+\label{fig:chapter:certikos:container}
+\end{figure}
+\paragraph{Container} manages the resource that each process (its children) can facilitate; 
+In the case of memory management, for instance,
+the container memorizes the maximum number of pages (via the process' quota) 
+that each process can use or hand it over to its children.
+Definitions of container data structure (both in C and $\coq$) are in 
+Figure~\ref{fig:chapter:certikos:container}. 
+By following our \textit{fun-lift} pattern of $\ccalname$ (Section~\ref{chapter:ccal:subsec:local-layer-interface}, 
+we built getter/setter functions based on the C data structure (left in the figure), 
+and refines them with the functions that uses $\coq$ data structure (right in the figure.)
 
-\paragraph{Process Management Module}
+Our container object stems from the notion of containers and quotas in HiStar~\cite{zeldovich06};
+thus our process creation is parameterized by the number for the process' quota, the maximum number of pages that 
+the process can occupy.
+This Quota works as a protection for a denial-of-service attack, where one process repeatedly allocates pages and uses up all available memory. 
+Denying other threads from allocating pages via a denial-of-service attack due to this quota system. 
+Since each process has its capacity, all processes can fairly use memory pages even though some processes occupy their maximum pages specified in quota. 
+It also prevents the undesirable information channel between different processes that occur due to such an attack.
 
-The key of our process management is providing 
-thread spawn (thus process create), yield, and sleep functions.
-It also relies on providing the proofs about 
-context switching as well as scheduling queues.
+This container is a tree structure, and each CPU contains their tree with the root process for each core. 
+With this separation, the container of each core does not interfere by other containers in other cores. 
 
+
+% physical memory management
+\begin{figure}
+\lstinputlisting[language = C, multicols=2]{source_code/certikos/palloc.c} 
+\caption{Page Allocation Function Implementation (Written in C.)}
+\label{fig:chapter:certikos:palloc-in-c}
+\end{figure}
+\paragraph{Physical memory management}  builds a physical page allocation map as well as a dynamic page allocator $\pallocfunc$, briefly explained 
+in Section~\ref{chapter:mcslock:sec:evaluation} with the source code in Figure~\ref{fig:chapter:mcslock:palloc-example}.
+As discussed in the section, the page allocation table $\codeinmath{AT}$ is shared by 
+all CPUs in the system; thus
+the designated lock, $\codeinmath{acquire\_lock\_AT}$ and  $\codeinmath{release\_lock\_AT}$,
+encapsulates the function $(\codeinmath{palloc\_aux}$ that touches and manipulate the $\codeinmath{AT}$.
+The full source code for both functions are in Figure~\ref{fig:chapter:certikos:palloc-in-c}.
+Once we prove that the correctness of those functions, we facilitate 
+the \textit{log-lift} pattern of $\ccalname$ (Section~\ref{chapter:ccal:subsec:local-layer-interface}) to simplify the interleaving for this object,
+and introduce 
+an atomic object for this page allocation table, by merging the lock acquire and lock release as well as 
+the event for the shared resources together (See Section~\ref{chapter:mcslock:sec:evaluation} for more details.)
+\begin{figure}
+\lstinputlisting[language = C]{source_code/certikos/palloc_spec.v} 
+\caption{Page Allocation Function Specification (Written in $\coq$.)}
+\label{fig:chapter:certikos:palloc-in-coq}
+\end{figure}
+The high-level specification for $\pallocfunc$ is in Figure~\ref{fig:chapter:certikos:palloc-in-coq}.
+In the figure, \lstinline$RData$ is a type of abstract data, $AC$ is a container field in the abstract data. 
+\lstinline$CalAT_log_real$ is the function to pull out the current allocation table state by replaying  the log
+related to page allocations in the system, and \lstinline$pperm$ is a CPU-local page permission table. 
+With that given information, \lstinline$palloc_spec$ updates a single event (\lstinline$OPALLOCE$) into the log based on the result of the page allocation operation with considering the relate interleaving with other CPUs via the environmental context (\lstinline$multi_oracle$ in the figure.)
+The lock instance for this page allocation, one element in our spinlock pool, are not allowed to be invoked at higher layers;
+thus processes that hold the lock for other shared objects 
+cannot hold (and does not release) the lock for page allocation.
+With providing this atomic interface for those locks,
+processes precisely follow the order of acquiring and releasing locks with the layer order, which implies that 
+the lock in the higher layer will be acquired before the lock in the lower layer,
+and the lock in the lower layer will be released before the lock in the higher layer.
+This implicit order of lock acquisitions prevents deadlocks in the $\certikos$ kernel.
+
+
+\paragraph{Virtual memory management}
+is built on top of the physical memory management layers. 
+Our virtual memory management is
+based on the explicit modeling of the memory management unit (MMU) in our abstract data and thus abstract layers. 
+Our MMU model follows and mirrors the paging hardware; thus memory accesses made by both the kernel and the user programs are translated using the two-level page maps. 
+The purpose of our verification in the virtual memory management module is
+not only showing the correctness of the manipulation on the page maps but also proving 
+that the initialization procedure sets up the two-level page maps correctly regarding the hardware address translation.
+
+\begin{figure}
+\lstinputlisting[language = C]{source_code/certikos/pagetable.v} 
+\caption{Page Table Definition (Written in $\coq$.)}
+\label{fig:chapter:certikos:page-table}
+\end{figure}
+In detail, the page table is a partial map from a process ID to its page table as the definition related to the page table (written in $\coq$) is in
+Figure~\ref{fig:chapter:certikos:page-table}. 
+Page table 0 is reserved for the kernel page table, which is defined as an identity map,
+and we map the low memory as an identity map with kernel only permission
+for every process' page table.
+It reduces the complexity of our permission resolution because when each process traps into the kernel,
+the kernel can still access kernel data natively via memory access
+without switching to the kernel page table. 
+In the figure, 
+\lstinline$IDPDE$ is an identity  map, which maps its address to every page directory entry when we need an identity mapping.
+The page table structure, \lstinline$PMapPool$, is a partial map from a process identifier to its 2-level page table , \lstinline$PMap$.
+ Each page directory entry (\lstinline$PDE$) has one of four values;
+ 1) the proper page table entry (\lstinline$PDEValid$); 2) an identity map (\lstinline$PDEID$); 3) unallocated (\lstinline$PDEUnPresent$); or 4) uninitialized or invalid (\lstinline$PDEUndef$). 
+A page table entry is one of three values;
+1)  a valid address with proper permission (\lstinline$PTEValid$); 2) remaining unmapped (\lstinline$PTEUnPresent$);
+ or 3) uninitialized or invalid (\lstinline$PTEUndef$).
+
+ \begin{figure}
+\lstinputlisting[language = C]{source_code/certikos/ptresv_spec.v} 
+\caption{Page Table Reservation Function Definition (Written in $\coq$.)}
+\label{fig:chapter:certikos:ptresv-func}
+\end{figure}
+ One important function that manipulates the page table is a page table reservation function,
+ which updates each process' page table.
+ The specification for the function is defined in Figure~\ref{fig:chapter:certikos:ptresv-func},
+  where  $\codeinmath{ptInsert\_spec}$ is a specification for the $\codeinmath{ptInsert}$ function which links 
+the physical address mapping with the virtual address mapping. 
+The function first checks whether the corresponding page directory entry is already mapped to any page table entries.
+If it is not, it allocates one by invoking $\codeinmath{ptAllocPDE}$ primitive that corresponds to the  $\codeinmath{ptAllocPDE\_spec}$
+in the figure.
+The $\codeinmath{ptInsertPTE\_spec}$ is the specification for function $\codeinmath{ptInsertPTE}$ that actually inserts the page 
+information into the page table. 
+When either of any processes fails during this evaluation, it returns the magic number as its result, which is distinguishable with 
+any return values of the function.
+
+\subsubsection{Intel Virtualization Module}
+
+
+Our $\certikos$ can run at most one virtual machine per one core;
+and our Intel virtualization module implements layers related to the virtual machine management,
+the hardware-assisted virtualization technology Intel VT-x.  
+The module introduces the four-level Extended Page Table (EPT), 
+similar to the two-level in-kernel page table structure except having  two additional levels, 
+as well as several primitives to manipulate the extended page entries.
+It also contains layers to introduce the Virtual Machine Control Structure (VMCS) and the
+ Virtual Machine Extension metadata (VMX).
+Those layers introduce VMCS and VMX objects, which consists of their data structures as well as primitives. 
+They model VMCS and VMX data structures  in their 
+ abstract layers (introduce those data structures as parts of an abstract state)
+as well as provide primitives that properly initialize and manipulate them. 
+This module also introduces two $\codeinmath{vm\_enter}$ and $\codeinmath{vm\_exit}$ primitives to enter and exit from the host mode.
+
+
+\subsubsection{Process Management Module}
+
+Our process management introduces the thread control block, kernel context switching, user context switching, scheduling queues, dynamic process creation via quota system, and scheduling primitives, which are yield and sleep functions. 
+
+
+
+Our process management module introduces the thread control block (TCB). 
+
+The thread scheduling is done by the three primitives yield, sleep, and wakeup, using the abstract queue library (cf. Fig. 9). Each CPU has a private ready queue ReadQ and a shared pending queue PendQ. The context CPUs can insert threads to the current CPU’s pending queue. The mC2 kernel also provides a set of sleeping queues SleepQs, which are shared among all CPUs.
+
+
+
+thread control blocks, 
 
 introduces the thread control block (TCB) and manages the resources of dynamically spawned threads (e.g., quotas) and their meta-data (e.g., parent, chil-
-dren, thread state). For each thread, one page (4KB) is allo- cated for its kernel stack. We use an external tool [8] to prove that the stack usage of our compiled kernel is much less than 4KB, so stack overflows cannot occur inside the kernel.
-The thread scheduling is done by the three primitives yield, sleep, and wakeup, using the abstract queue library (cf. Fig. 9). Each CPU has a private ready queue ReadQ and a shared pending queue PendQ. The context CPUs can insert threads to the current CPU’s pending queue. The mC2 kernel also provides a set of sleeping queues SleepQs, which are shared among all CPUs.
+dren, thread state). For each thread, one page (4KB) is allo- cated for its kernel stack.
+
+
+
+The important parts of our process management is providing 
+thread spawn (thus process create), yield, and sleep (with condition variables) functions.
+It also relies on providing the proofs about 
+context switching as well as scheduling queues.
+It also provides 
+the verified layers that contains context switchings (in-kernel context switching as well as user-kernel context switching)
+
+
+
+
 As shown in Fig. 9, the yield primitive takes three steps: (1) dequeue the head of its pending queue (if it exists) and add it to its ready queue; (2) enqueue the running thread to the ready queue; and (3) dequeue the head of its ready queue and let it run. The sleep primitive simply adds the running thread to the sleeping queue and runs the next ready thread. The wakeup primitive contains two cases. If the thread to be woken up belongs to the current CPU, then the primitive adds the thread to its ready queue. Otherwise, wakeup adds the thread to the pending queue of the CPU it belongs to. Except for the manipulation of the private ready queue, all the other thread queue operations are protected by fine-grained locks.
 
 
-\paragraph{Virtual Machine Support Module}
 
-$\certikos$ supports virtual machine related code. 
+Layer Interface PUCtxtIntro In PUCtxtIntro, we introduce the user context that contains the list of user registers that we save and restore when user traps into the kernel or jumps back to the user space, in addition to the primitives to actually save and restore the user registers. Note that we only save and restore the second half in software, as the first half is automatically saved and restored by the hardware.
+Layer Interface PProc In this layer interface, we introduce the primitive proc$\_$create that spawns a new process, where it spawns the managing kernel thread via thread$\_$spawn, loads ELF, and sets proper user context using the setter primitives from the PUCtxtIntro layer.
 
-\paragraph{Connecting All Layers in Per-CPU Modules}
 
-Connecting the whole CPU-local layers are possible and 
-our layer library provides the canonical forms for this process. 
-In short, the layer calculus described in Section~\ref{chapter:ccal:subsec:linking} is sufficient for us to 
-connect all layers and provide the theorem that 
-the bottom-most layer in all per-CPU modules contextually refines the top-most layer in all per-CPU modules.
 
-\begin{lstlisting}[language=C]
-  Theorem Per_CPU_CertiKOS_correct:
-    forall (s: stencil) (CTXT: LAsm.module) kernel combined_program user_program
-           (builtin_idents_norepet_prf: CompCertBuiltins.BuiltinIdentsNorepet),
-      CertiKOS.per_cpu_certikos = OK kernel ->
-      make_program s (CTXT <@$\oplus$@> kernel) (MBoot.mboot <@$\oplus$@> L64) = OK combined_program ->
-      make_program s CTXT (PBThread.pbthread <@$\oplus$@> L64) = OK user_program ->
-      inhabited
-        (backward_simulation
-           (LAsm.semantics (lcfg_ops := LC (PBThread.pbthread <@$\oplus$@> L64)) user_program)
-           (LAsm.semantics (lcfg_ops := LC (MBoot.mboot <@$\oplus$@> L64)) combined_program)).
-\end{lstlisting}
+
+\subsubsection{Connecting All per-CPU layers}
+
+We have introduces 60 layers for all those modules in our per-CPU layers, from the $\codeinmath{MBoot}$ layer to the 
+$\codeinmath{PBThrd}$ layer.
+All those layers can be linked together via the composition rules described in Section~\ref{chapter:ccal:subsec:linking};
+thus form a single contextual refinement theorem, which is defined in Theorem~\ref{theorem:chapter:certikos:per-cpu-contextual-refinement},
+which corresponds to the number (1) in Figure~\ref{fig:chapter:certikos:top-level-multicore-theorem}.
+\begin{theorem}[Contextual Refinement for Per-CPU layers]
+\label{theorem:chapter:certikos:per-cpu-contextual-refinement}
+Let's assume that $cid$ is a valid CPU ID (in between 0 and 7), $\oracle_{\codeinmath{cpu}}$ and  $\oracle'_{\codeinmath{cpu}}$ are 
+environmental contexts for $\codeinmath{MBoot}$  and $\codeinmath{PBThrd}$ layers, respectively, and $\codeinmath{CTXT}$ is an any context program. Then, we can say that
+\begin{center}
+$\semwmachine{\codeinmath{MBoot}[cid, \oracle_{\codeinmath{cpu}}]}{\certikos_{\codeinmath{cpu}} \oplus \codeinmath{Ctxt}}{\codeinmath{mach}_{\lasm}} \refines_{R_{\certikos_\codeinmath{cpu}}} \semwmachine{\codeinmath{PBThrd}[cid, \oracle'_{\codeinmath{cpu}}]}{\codeinmath{Ctxt}}{{\codeinmath{mach}_{\lasm}}}$
+\end{center}
+when ${R_{\certikos_\codeinmath{cpu}}}$ is a refinement relation between those two layers (the refinement relation can be achieved by 
+connecting all the refinement relations in between 60 per-CPU layers.)
+\end{theorem}
+
+%Informally, this theorem states the following property:
+%\begin{quote} 
+%"any context program $\codeinmath{Ctxt}$ running on the $\codeinmath{PBThrd}$ layer (the top-most layer interface of per-CPU layers) contextually refines the context program $\codeinmath{Ctxt}$ plus  the implementation of CPU local modules of $\certikos$, $\certikos_{\codeinmath{cpu}}$,
+%running on $\codeinmath{MBoot}$ (the bottom-most layer interface of per-thread layers) with LAsm".
+%\end{quote}
+%%
+
+%This corresponds to the number (14) in Figure~\ref{fig:chapter:certikos:top-level-multicore-theorem}.
+
+%
+%\begin{lstlisting}[language=C]
+%  Theorem Per_CPU_CertiKOS_correct:
+%    forall (s: stencil) (CTXT: LAsm.module) kernel combined_program user_program
+%           (builtin_idents_norepet_prf: CompCertBuiltins.BuiltinIdentsNorepet),
+%      CertiKOS.per_cpu_certikos = OK kernel ->
+%      make_program s (CTXT <@$\oplus$@> kernel) (MBoot.mboot <@$\oplus$@> L64) = OK combined_program ->
+%      make_program s CTXT (PBThread.pbthread <@$\oplus$@> L64) = OK user_program ->
+%      inhabited
+%        (backward_simulation
+%           (LAsm.semantics (lcfg_ops := LC (PBThread.pbthread <@$\oplus$@> L64)) user_program)
+%           (LAsm.semantics (lcfg_ops := LC (MBoot.mboot <@$\oplus$@> L64)) combined_program)).
+%\end{lstlisting}
