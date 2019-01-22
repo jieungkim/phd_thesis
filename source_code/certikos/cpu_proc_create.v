@@ -1,4 +1,4 @@
-Definition big_proc_create_spec (adt: RData) (b bkern buc: block) (ofs_uc: int) (q: Z) 
+Definition big_proc_create_spec (adt: RData) (b bkc buc: block) (ofs_uc: int) (q: Z) 
   : option (RData * Z) :=
   let curid := ZMap.get (CPU_ID adt) (cid adt) in
   let c := ZMap.get curid (AC adt) in
@@ -23,7 +23,7 @@ Definition big_proc_create_spec (adt: RData) (b bkern buc: block) (ofs_uc: int) 
       <@$\cdots$@>
         // build the new kernel context for the child
         let rs := ((ZMap.get i (kctxt adt))#SP <- (Vptr b ofs))
-                   #RA <- (Vptr bkern Int.zero) in
+                   #RA <- (Vptr bkc Int.zero) in
         // build the new user context for the child
         let uctx := <@$\cdots$@>
         // return the new state and the child's thread ID

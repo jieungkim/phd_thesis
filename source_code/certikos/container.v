@@ -1,5 +1,5 @@
 // container in Coq (and in abs. data)
-Inductive Container : Type :=
+Inductive Container :=
   mkContainer {
     cquota : Z;
     cusage : Z;

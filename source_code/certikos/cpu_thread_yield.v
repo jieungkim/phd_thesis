@@ -1,5 +1,4 @@
-Function big_thread_yield_spec (adt: RData) (rs: KContext) 
-  : option (RData * KContext) :=
+Function big_thread_yield_spec (adt: RData) (rs: KCtxt) : option (RData * KCtxt) :=
   let cpu := CPU_ID adt in
   let curid := (ZMap.get (CPU_ID adt) (cid adt)) in
   <@$\cdots$@>

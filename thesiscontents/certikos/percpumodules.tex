@@ -6,7 +6,7 @@ which are included in $\certikos_{\codeinmath{cpu}}$ in the figure, based on the
 into the local layer interface, $\codeinmath{PBThrd}$.
 Those modules consist of six components;
 two spinlock modules, a device driver module, a memory management module,  a process (thread) management module, and a virtual machine management module. 
-
+\jieung{process? thread? which one will I choose?}
 
 \subsection{Spinlock Module}
 \label{chapter:certikos:subsec:spinlock-module}
@@ -233,12 +233,12 @@ and dynamic process creation.
 Our process management first introduces the context switching written in Assembly, of which the implementation is in Figure~\ref{fig:chapter:certikos:kernel-context-switch-impl}.
 We first abstracts the kernel context pool in the memory ($\codeinmath{KCtxtPool\_LOC}$ in Figure~\ref{fig:chapter:certikos:kernel-context-switch-impl}) 
 into the kernel context map in the abstract data:
-\begin{lstlisting}[language = C]
-Definition KContext := regset.
-Definition KContextPool := ZMap.t KContext.
+\begin{lstlisting}[language = C, deletekeywords = {Context}]
+Definition KCtxt := regset.
+Definition KCtxtPool := ZMap.t KCtxt.
 \end{lstlisting}
 By using that, we provide the layer interface that contains the kernel context switching as its primitive
-\lstinputlisting[language = C]{source_code/certikos/kctxt_switch.v}
+\lstinputlisting[language = C, deletekeywords = Context]{source_code/certikos/kctxt_switch.v}
 which stores the kernel context of $\codeinmath{src}$ and returns the kernel context of $\codeinmath{des}$ as its result.
 
 
@@ -342,7 +342,7 @@ into a single log to provide the top-most layer of our per-CPU modules (and thus
 Figure~\ref{fig:chapter:certikos:proc-create-cpu-spec} and Figure~\ref{fig:chapter:certikos:thread-yield-cpu-spec} show the specification of the process creation primitive and the specification of the thread yield primitive, respectively.
 
 \begin{figure}
-\lstinputlisting[language = C]{source_code/certikos/cpu_proc_create.v} 
+\lstinputlisting[language =C, deletekeywords={int}]{source_code/certikos/cpu_proc_create.v} 
 \caption{Process Create Primitive Specification in $\codeinmath{PBThrd}$ (Written in $\coq$.)}
 \label{fig:chapter:certikos:proc-create-cpu-spec}
 \end{figure}

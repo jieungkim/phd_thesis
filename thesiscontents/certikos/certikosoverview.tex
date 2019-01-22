@@ -41,14 +41,15 @@ to prove the contextual refinement between the $\certikos$ implementation with t
 the top-most layer for our OS layers ($\codeinmath{TSyscall}$ - the layer that defines system calls as its primitives).
 Informally, we wants to prove that
 \begin{quote}
-"Any context program $\codeinmath{CTXT}$ running on the $\codeinmath{TSyscall}$ layer (the top-most layer of $\certikos$) with $\hasm$, a machine model for a per-thread layer interface,
+"Any context program $\codeinmath{CTXT}$ running on the $\codeinmath{TSyscall}$ layer (the top-most layer of $\certikos$) on $\hasm$, a machine model for a per-thread layer interface, with the valid thread ID ($tid$)
+and a valid environmental context ($\oracle_{\codeinmath{thrd}})$ 
 contextually refines the context program $\codeinmath{CTXT}$ plus $\certikos$ kernel code running on $\codeinmath{MBoot}$ layer (the bottom-most layer of $\certikos$) with a hardware step semantics describing a non-deterministic $\intelmachine$ multicore machine model."
 \end{quote}
 Formally (with the notations in the previous chapters), the theorem we want to provide as the top-level theorem for $\certikos$ is 
  \begin{center}
 \begin{tabular}{c}
-$\forall\ tid\   \oracle_{tid}\ \codeinmath{CTXT},$\\
-$\semwmachine{\codeinmath{MBoot}}{\codeinmath{CertiKOS} \oplus \codeinmath{Ctxt}}{\codeinmath{mach}_{\codeinmath{x86}}} \refines_{R_{\codeinmath{certikos}}} \semwmachine{\codeinmath{TSyscall}[tid, \oracle_{tid}]}{\codeinmath{Ctxt}}{{\codeinmath{mach}_{\hasm}}}$\\
+$\forall\ tid\   \oracle_{\codeinmath{thrd}}\ \codeinmath{CTXT},$\\
+$\semwmachine{\codeinmath{MBoot}}{\codeinmath{CertiKOS} \oplus \codeinmath{Ctxt}}{\codeinmath{mach}_{\codeinmath{x86}}} \refines_{R_{\codeinmath{certikos}}} \semwmachine{\codeinmath{TSyscall}[tid, \oracle_{\codeinmath{thrd}}]}{\codeinmath{Ctxt}}{{\codeinmath{mach}_{\hasm}}}$\\
 \end{tabular}
 \end{center}
 which involves not only contextual refinement proofs between multiple local layers but also contextual refinement proofs between

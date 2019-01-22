@@ -38,6 +38,6 @@ Function ptResv_spec (n vadr perm: Z) (adt: RData): option (RData * Z) :=
   | Some (adt1, b) =>
     if zeq b 0 then Some (adt1, MagicNumber)
     // update the page table for the newly allocated page
-    else ptInsert_spec n vadr b perm abd'
+    else ptInsert_spec n vadr b perm abd1
   | _ => None
   end.
