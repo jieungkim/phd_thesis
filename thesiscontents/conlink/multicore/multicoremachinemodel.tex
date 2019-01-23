@@ -3,15 +3,15 @@
 
 
 \begin{figure}
-\noindent\fbox{own state and local view:}
+\noindent\fbox{local view (the view for the state from each CPU):}
 
 $$
 \begin{array}{llll}
-\localviewkwd & := & \localviewconkwd :~\privatestate \rightarrow \mclog \rightarrow \localviewkwd \\
+\localviewkwd & := & \localview{(ls :~\privatestate)}{(log: \mclog)}\\
 \end{array}
 $$
 
-\noindent\fbox{hardware local step: $\ztype \rightarrow \localviewkwd \rightarrow \localview \rightarrow \mcprop$}
+\noindent\fbox{hardware local step: $\ztype \rightarrow \localviewkwd \rightarrow \localviewkwd \rightarrow \mcprop$}
 
 \begin{mathpar}
 \inferrule[acqrule]
@@ -54,8 +54,9 @@ check the program counter first, then perform each steps.
 Note that rules for acquiring shared and release shared first check the owner that is associated with the shared resource,
 but they do not have any safety condition to guarantee that the owner of that shared resource is in a valid status when they are invoked. 
 
+
 \begin{figure}
-\noindent\fbox{hstate:} 
+\noindent\fbox{hstate (the global state for the concurrent machines):} 
 
 $$
 \begin{array}{lll}
@@ -63,7 +64,7 @@ $$
 \privatestatepool{S : \set{\ztype}} & := &  \ztype \rightharpoonup \privatestate \\
 & & \hfill  (\forall i . i \in S \rightarrow \exists . (ps : \privatestate) (i, ps) \in \privatestatepool{S}) \wedge   (\forall j . j \notin S  \rightarrow (j, \_) \in \privatestatepool{S}) \\
 
-\hstatekwd& := & \hstateconkwd :~ \ztype \rightarrow \privatestatepool{\coreset} \rightarrow \mclog \rightarrow \hstatekwd\\
+\hstatekwd& := & \hstate{(curid: \ztype)}{(lsp: \privatestatepool{\coreset})}{(log: \mclog)}\\
 \end{array}
 $$
 

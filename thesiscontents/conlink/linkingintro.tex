@@ -1,7 +1,7 @@
 \jieung{Check the notations for list app and cons (and others) - those things should be consistent with the operators in previous sections}
    
 
-As discussed in previous sections,  concurrent programs are hard to get to be right or to debug due to their interleaved behavior of multiple instances of the program as well as shared resources. 
+As discussed in previous chapters,  concurrent programs are hard to get to be right or to debug due to their interleaved behavior of multiple instances of the program as well as shared resources. 
 Previous two chapters illustrate how we hide interleaving as well as provide the way to treat shared resources in a controlled setting. 
 Specifically, we propose  $\ccalname$ in Chapter~\ref{chapter:ccal} and show the example of its usage, the MCS Lock verification, in Chapter~\ref{chapter:mcs-lock}.
 They, however, do not mention about the last piece of concurrent program verification, 
@@ -18,12 +18,17 @@ both for multicore and multithreaded cases.
 
 We realize that those concurrent linking has a considerable cost when compared to building layers for local reasoning (CPU-local layers or thread-local layers).
 First, concurrent linking requires machine syntax and semantics 
-for the whole program as long as partial concurrent programs.
+for the whole program as long as partial concurrent programs (or the machine that can run either of them.)
+providing those machine models, however, also related to the source language of our verified programs.
+To build the system software with supporting easy development, 
+the tool that can support both high-level languages (C) as well as low-level ones (Assembly) and 
+compose the programs written by them is necessary.
 The previous work, $\compcertx$, the extension of $\compcert$
-supports powerful tool for building layered programs with single threaded (or sequential like) programs.
+supports powerful tool for building layered programs with single threaded (or sequential like) programs with 
+resolving those issues.
 In this sense, 
 building the sequential like programs (and providing local layer interface) discussed in Section~\ref{chapter:ccal:subsec:local-layer-interface} 
-is possible with those machine models,
+is promising with those machine models,
 but they are not for parallel compositions. 
 In this sense, at each time when providing parallel proof composition, 
 we should give the machine model that runs multiple instances of programs (\ie, a multicore machine model and a multithreaded machine model.) 
@@ -59,13 +64,14 @@ In some cases, those resources include a private state that does not share with 
 %and connect those languages with the assembly machine model that can be used with CompCert. 
 
 
-We overcome those issues by introducing multiple environment configurations, intermediate languages, 
+We overcome those issues by introducing multiple environment configurations, abstract intermediate languages,
+proofs between those languages,  
 as well as applying those definitions to the linking techniques to the existing verified concurrent operating systems. 
 None of the previous works expose those challenges or empirical studies in linking for concurrent program verification,
 that we discuss in this paper.
-This chapter is not aiming to introduce a new theory, 
-but provide a valuable empirical study that 
-about the composition of large-scale concurrent program verification that many readers are interested in it.
+%This chapter is not aiming to introduce a new theory, 
+%but provide a valuable empirical study that 
+%about the composition of large-scale concurrent program verification that many readers are interested in it.
 
 
 \section{Overview}
@@ -79,6 +85,7 @@ about the composition of large-scale concurrent program verification that many r
 
 
 \begin{figure}
+\jieung{Need to revise those figures. If I will add the linking with concrete layers in the next section, I need to simplify those figures}
 \begin{center}
 \includegraphics[width=0.7\textwidth]{figs/conlink/cpu_linking_structure}\newline
 (a) Multicore linking structure
@@ -87,7 +94,7 @@ about the composition of large-scale concurrent program verification that many r
 \includegraphics[width=0.7\textwidth]{figs/conlink/thread_linking_structure}\newline
 (b) Multithreaded linking structure
 \end{center}
-\jieung{Need to revise those figures. If I will add the linking with concrete layers in the next section, I need to simplify those figures}
+\textbf{Note:} Components in grey boxes are discussed in the next chapter, but we include them in this figure for better understanding.
 \caption{Concurrent Linking Structure.}
 \label{fig:chapter:conlink:concurrent-linking-structure}
 \end{figure}
@@ -111,19 +118,20 @@ providing the judgment that handles the program with the whole CPU set ($D$) in 
 In this purpose, 
 We add the parallel composition rules in the layer calculus of $\ccalname$ in Section~\ref{chapter:ccal:subsec:local-layer-interface}, which is 
 \begin{center}
-$\forall \codeinmath{P}. \ \semwmachine{L[D]}{\codeinmath{P}}{\codeinmath{mach}_{\codeinmath{full}}} \refines_{R_{comp}} \sum_{i \in D}\  (\semwmachine{L[i]}{\codeinmath{P}}{\codeinmath{mach}_{\codeinmath{con}}})$
+$\forall \codeinmath{P}. \ \semwmachine{L[D]}{\codeinmath{P}}{\codeinmath{mach}_{\codeinmath{full}}} \refines_{R_{comp}} \sum_{i \in D}\  (\semwmachine{L[i]}{\codeinmath{P}}{\codeinmath{mach}_{\codeinmath{local}}})$
 \end{center}
+\jieung{In thread linking, $L$s are different.. but bi-similar!!}
 when $\codeinmath{mach}_{\codeinmath{full}}$ is a machine model that runs the layer with the full focused set (without any environmental contexts),
-$\codeinmath{mach}_{\codeinmath{con}}$ is a machine model that runs the layer with a partial focused set,
+$\codeinmath{mach}_{\codeinmath{local}}$ is a machine model that runs the layer with a singleton focused set (such as a machine model of $\compcertx$),
 $\codeinmath{P}$ is a context program, 
 and $R_{comp}$ is a relation between them.
 Also, 
 providing the evidence about
 \begin{center}
-$\forall \codeinmath{P}. \ \semwmachine{L[D]}{\codeinmath{P}}{\codeinmath{mach}_{\codeinmath{full}}} \refines_{R_{link}} \semwmachine{L[i]}{\codeinmath{P}}{\codeinmath{mach}_{\codeinmath{local}}}$
+$\forall \codeinmath{P}. \ \semwmachine{L[D]}{\codeinmath{P}}{\codeinmath{mach}_{\codeinmath{full}}} \refines_{R_{link}} \semwmachine{L[i, \oracle_{\codeinmath{local}}]}{\codeinmath{P}}{\codeinmath{mach}_{\codeinmath{local}}}$
 \end{center}
 is necessary for us to verify that
-the local layers built on the of our local layer interface $\codeinmath{mach}_{\codeinmath{local}}$ is 
+the local layers built on top of our local layer interface $\codeinmath{mach}_{\codeinmath{local}}$ is 
 formally connected with the program without any environment contexts with the full machine model. 
 %\begin{mathpar}
 %\inferrule{L[i] }{\jieung{Need to add composition rule}\\
@@ -141,7 +149,7 @@ formally connected with the program without any environment contexts with the fu
 Proofs for them is based on the compositionality of multiple strategies 
 of partial programs discussed in Section~\ref{chapter:ccal:subsec:concurrent-linking-and compilation-for-local-layer}.   
 It looks simple in a high-level idea, but the reality is not simple at all
-due to the reasons that we have discussed. 
+due to the reasons that we have discussed.  \jieung{Will add more details (by restating the previous parts a little bit.)}
 To solve those issues, 
 we introduce multiple configurations, auxiliary functions, as well as intermediate languages for linking. 
 In the case of multicore linking (Figure~\ref{fig:chapter:conlink:concurrent-linking-structure} (a)),
@@ -171,9 +179,7 @@ fill out the layer definition, configurations, and the generic properties to lin
 Our framework still has multiple limitations. 
 It, however, can be adapted to the large-scaled concurrent program verification, such as operating systems. 
 
-\jieung{need to strengthen the claim by adding more sentences}
-\jieung{need to compare it with CompCertTSO paper}
-\jieung{need to cite A formally verified compiler back-end paper}
+\jieung{Things to do; strengthen the claim by adding more sentences; compare it with CompCertTSO paper -- it's not hard; cite A formally verified compiler back-end paper}
 
 
 
@@ -272,7 +278,7 @@ certain regions of memory through some relation.
 For specifications of primitives that only touch local state, the transition is straightforward.
 Specifications of primitives that contain network transition primitives, on the other hand,
 must use the environment context for the instance $i$ ($\oracle_i$)
-to model the behavior of other instances (discussed in Sect.~\ref{subsec:network-primitives}).
+to model the behavior of other instances.
 For example, the specification of a function that broadcasts a message from a proposer to a set of acceptors must query the environment context
 between each send to learn how the environment has changed.
 The other two components of the layer definition, $\Rely$ and $\Guard$,

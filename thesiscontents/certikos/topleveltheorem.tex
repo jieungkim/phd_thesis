@@ -20,34 +20,34 @@ $\semwmachine{\codeinmath{MBoot}}{\codeinmath{CertiKOS} \oplus \codeinmath{Ctxt}
 The proof of this theorem is 
 straightforward with 
 the lemmas that we have stated in previous sections.
-
-\begin{proof}
-First, we assume that 
-
-\end{proof}
+%
+%\begin{proof}
+%First, we assume that 
+%
+%\end{proof}
 
 In $\coq$, the theorem is stated as follows:
-
-\begin{lstlisting}[language=C]
-  Theorem CertiKOS_correct:
-    forall (s: stencil) (CTXT: LAsm.module) k1 k2 p combined_program user_program,
-      genv_next s = init_nb ->
-      CertiKOS.per_thread_certikos = OK k1 ->
-      CertiKOS.per_cpu_certikos = OK k2 ->
-      forall Hmp: make_program s ((CTXT <@$\oplus$@> k1) <@$\oplus$@> k2) (MBoot.mboot <@$\oplus$@> L64) = OK combined_program,
-      make_program s (CTXT <@$\oplus$@> k1) (PHThread.phthread <@$\oplus$@> L64) = OK p ->
-      make_program s CTXT (TSysCall.tsyscall <@$\oplus$@> L64) = OK user_program ->
-      noglobvar p ->
-      inhabited
-        (backward_simulation
-           (HAsm.semantics (TSysCall.tsyscall <@$\oplus$@> L64) user_program)
-           (HWStepSemImpl.hwstep_semantics 
-             (Hmakege := make_program_globalenv _ _ _ _ Hmp)
-             (Genv.globalenv combined_program) s
-             ((CTXT <@$\oplus$@> k1) <@$\oplus$@> k2)
-             combined_program)).
-\end{lstlisting}
-and the proof is exactly same with the 
+%
+%\begin{lstlisting}[language=C]
+%  Theorem CertiKOS_correct:
+%    forall (s: stencil) (CTXT: LAsm.module) k1 k2 p combined_program user_program,
+%      genv_next s = init_nb ->
+%      CertiKOS.per_thread_certikos = OK k1 ->
+%      CertiKOS.per_cpu_certikos = OK k2 ->
+%      forall Hmp: make_program s ((CTXT <@$\oplus$@> k1) <@$\oplus$@> k2) (MBoot.mboot <@$\oplus$@> L64) = OK combined_program,
+%      make_program s (CTXT <@$\oplus$@> k1) (PHThread.phthread <@$\oplus$@> L64) = OK p ->
+%      make_program s CTXT (TSysCall.tsyscall <@$\oplus$@> L64) = OK user_program ->
+%      noglobvar p ->
+%      inhabited
+%        (backward_simulation
+%           (HAsm.semantics (TSysCall.tsyscall <@$\oplus$@> L64) user_program)
+%           (HWStepSemImpl.hwstep_semantics 
+%             (Hmakege := make_program_globalenv _ _ _ _ Hmp)
+%             (Genv.globalenv combined_program) s
+%             ((CTXT <@$\oplus$@> k1) <@$\oplus$@> k2)
+%             combined_program)).
+%\end{lstlisting}
+%and the proof is exactly same with the 
 
 %\begin{figure}
 %\includegraphics[width=\textwidth]{figs/certikos/layer_diagram}

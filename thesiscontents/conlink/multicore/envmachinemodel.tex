@@ -14,26 +14,22 @@ This machine model does not provide the interface for us to build layers on top 
 
 \noindent\fbox{environmental state: }
 
-$
+$$
 \begin{array}{lll}
-\envstatekwd_{[A : \set{\ztype}]}& := & \mcstateconkwd :~ \ztype \rightarrow \localstatepool{A} \rightarrow \mclog \rightarrow \localstatekwd\\
+\envstatekwd_{[A : \set{\ztype}]}& := & \envstate{A}{(curid: \ztype)}{(lsp: \localstatepool{A})}{(log: \mclog)}\\
 \end{array}
-$
+$$
 
 \noindent\fbox{back id function:}
-
-\begin{tabular}{l}
-$
+$$
 \backidkwd (curid : \ztype) (e : \mcevent):= \left\{\begin{array}{lr}
 curid' & \text{for } e = \yieldbackev{curid'} \\
 \schedid &   \text{for } e =\yieldev{\_} \\
 curid & \text{Otherwise}
         \end{array} \right.
- $\\
-\end{tabular}
+ $$
 
-
-\noindent\fbox{env step: ${}_{[A : \set{\ztype}]} (oracle:\mcoracle{A}{\mclog}{\mcevent}) :  \mcstatekwd_{[A]} \rightarrow \cctracekwd \rightarrow \mcstatekwd_{[A]} \rightarrow \mcprop$}
+\noindent\fbox{env step: ${}_{[A : \set{\ztype}]} (oracle:\mcoracle{A}{\mclog}{\mcevent}) :  \envstatekwd_{[A : \set{\ztype}]} \rightarrow \cctracekwd \rightarrow \envstatekwd_{[A : \set{\ztype}]} \rightarrow \mcprop$}
 
 \begin{mathpar}
 \inferrule[progress]
@@ -104,27 +100,45 @@ l \neq \listconsoppo{\yieldev{\_}}{\_}\\
 {\matchestatestate{(\envstate{\coreset}{curid}{lsp}{l})}{(\mcstate{curid}{lsp}{l})}}
 \end{mathpar}
 
+%
+%\noindent\fbox{hypothesis}
+%
+%\begin{enumerate}
+%\item valid$\_$oracle$\_$def: $\validoraclenoeq{cpuid}{\coreset}{hw\_o }$
+%\end{enumerate}
+%
+%\noindent\fbox{top lemmas}
+%
+%\begin{enumerate}
+%\item one$\_$step$\_$env$\_$refines$\_$oracle : \\
+%$
+%\begin{array}{l}
+%\forall \ s_h \ s_h' \ t \ s_l . \ \envstep{\coreset}{hw\_o }{s_h}{t}{s_h'} \rightarrow  \matchestatestate{s_h}{s_l} \rightarrow \\
+%\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \exists\ s_l' . \  \ccplusstep{\oraclestep{hw\_o }{s_l}{t}{s_l'}} \wedge  \matchstatehstate{s_h'}{s_l'}\\
+%\end{array}
+%$
+%\end{enumerate}
+\caption{Parallel Composition Proof for Multicore}
+\label{fig:chapter:conlink:parallel-composition-for-multicore}
+\end{figure}
 
-\noindent\fbox{hypothesis}
 
-\begin{enumerate}
-\item valid$\_$oracle$\_$def: $\validoraclenoeq{cpuid}{\coreset}{hw\_o }$
-\end{enumerate}
+\begin{hypothesis}[valid$\_$oracle$\_$def]
+\begin{tabular}{P{0.95\textwidth}}
+$\validoraclenoeq{cpuid}{\coreset}{hw\_o }$\\
+\end{tabular}
+\end{hypothesis}
 
-\noindent\fbox{top lemmas}
-
-\begin{enumerate}
-\item one$\_$step$\_$env$\_$refines$\_$oracle : \\
+\begin{lemma}[one$\_$step$\_$env$\_$refines$\_$oracle]
+\begin{tabular}{P{0.95\textwidth}}
 $
 \begin{array}{l}
 \forall \ s_h \ s_h' \ t \ s_l . \ \envstep{\coreset}{hw\_o }{s_h}{t}{s_h'} \rightarrow  \matchestatestate{s_h}{s_l} \rightarrow \\
 \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \exists\ s_l' . \  \ccplusstep{\oraclestep{hw\_o }{s_l}{t}{s_l'}} \wedge  \matchstatehstate{s_h'}{s_l'}\\
 \end{array}
-$
-\end{enumerate}
-\caption{Parallel Composition Proof for Multicore}
-\label{fig:chapter:conlink:parallel-composition-for-multicore}
-\end{figure}
+$\\
+\end{tabular}
+\end{lemma}
 
 Figure~\ref{fig:chapter:conlink:parallel-composition-for-multicore} shows the full context of the proof. 
 The proof is relatively easy after defining the proper refinement relation. 
@@ -252,20 +266,81 @@ b = \bfalse \rightarrow  l = \listconsoppo{\yieldbackev{\_}}{\_})}
 \end{figure}
 
 
-\begin{figure}
-\noindent\fbox{hypothesis}
+%\begin{figure}
+%\noindent\fbox{hypothesis}
+%
+%\begin{enumerate}
+%\item valid$\_$cpuid: $cpuid \in \coreset$
+%\item valid$\_$oracle$\_$cond: $\validoraclenoeq{cpuid}{\set{cpuid}}{si\_o}$
+%\item related$\_$single$\_$oracle$\_$hw$\_$oracle$\_$def : \\
+%$
+%\begin{array}{l}
+%\forall \ l \ ev  . \ \validlog{cpuid}{l} \rightarrow l = \listconsoppo{\yieldev{\_}}{\_} \rightarrow\\
+%\ \ \ \ \oget{\set{cpuid}}{\mclog}{\mcevent}{l}{si\_o}{ev} \rightarrow \oget{\coreset}{\mclog}{\mcevent}{l}{hw\_o}{ev} \\
+%\end{array}
+%$
+%\item relate$\_$single$\_$oracle$\_$concrete$\_$step$\_$def: \\ 
+%$
+%\begin{array}{l}
+%\forall \ curid' \ curid \ lsp' \ lsp \ l' \ l \ l\_res \ ps \ ev  . \\
+%\ \ \ \matchestateestate{\set{cpuid}}{(\envstate{\set{cpuid}}{curid'}{lsp'}{l'})}{(\envstate{\coreset}{curid}{lsp}{l})} \rightarrow\\
+%\ \ \ \getcuridfromlognoeq{cpuid}{l} \neq cpuid \rightarrow \\
+%\ \ \ \getpstsome{\localstatekwd}{\getcuridfromlognoeq{cpuid}{l}}{lsp}{(\localstate{ps}{false})} \rightarrow \\
+%\ \ \ \oget{\set{cpuid}}{\mclog}{\mcevent}{l}{si\_o}{ev} \rightarrow \\
+%\ \ \ \localstepev{ev}{l\_res} \rightarrow l = \listconsoppo{\yieldbackev{\_}}{\_} \rightarrow \\
+%\ \ \ \exists\ (ps' : \privatestate) . \ \hardwarelocalstep{(\getcuridfromlognoeq{cpuid}{l})}{(\localview{ps}{l})}{(\localview{ps'}{l\_res})} \\
+%\end{array}
+%$
+%\end{enumerate}
+%
+%
+%\noindent\fbox{top lemmas}
+%
+%\begin{enumerate}
+%\item one$\_$step$\_$env$\_$refines$\_$oracle : \\
+%$
+%\begin{array}{l}
+%\forall \ s_h \ s_h' \ t \ s_l. \ \envstep{\set{cpuid}}{si\_o}{s_h}{t}{s_h'} \rightarrow  \matchestateestate{\set{cpuid}}{s_h}{s_l} \rightarrow \\
+%\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ (\exists \ s_l' .\ (\ccplusstep{\envstep{\coreset}{hw\_o}{s_l}{t}{s_l'}} \wedge\\
+%\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \  \matchestateestate{\set{cpuid}}{s_h'}{s_l'}) \vee \\ 
+%\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ (\mcstatemeasurenoeq{\set{cpuid}}{s_h'} < \mcstatemeasurenoeq{\set{cpuid}}{s_h} \wedge t = \ccemptytrace \wedge \\ 
+%\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \matchestateestate{\set{cpuid}}{s_h'}{s_l})\\
+%\end{array}
+%$
+%\end{enumerate}
+%\caption{Refinement between a single core and a full core set over environmental step machines}
+%\label{fig:chapter:conlink:cpu-env-to-env-theorem}
+%\end{figure}
 
-\begin{enumerate}
-\item valid$\_$cpuid: $cpuid \in \coreset$
-\item valid$\_$oracle$\_$cond: $\validoraclenoeq{cpuid}{\set{cpuid}}{si\_o}$
-\item related$\_$single$\_$oracle$\_$hw$\_$oracle$\_$def : \\
+
+
+\begin{hypothesis}[valid$\_$cpuid]
+\begin{tabular}{P{0.95\textwidth}}
+$cpuid \in \coreset$
+\end{tabular}
+\end{hypothesis}
+
+\begin{hypothesis}[ valid$\_$oracle$\_$cond]
+\begin{tabular}{P{0.95\textwidth}}
+$\validoraclenoeq{cpuid}{\set{cpuid}}{si\_o}$
+\end{tabular}
+\end{hypothesis}
+
+
+\begin{hypothesis}[related$\_$single$\_$oracle$\_$hw$\_$oracle$\_$def]
+\begin{tabular}{P{0.95\textwidth}}
 $
 \begin{array}{l}
 \forall \ l \ ev  . \ \validlog{cpuid}{l} \rightarrow l = \listconsoppo{\yieldev{\_}}{\_} \rightarrow\\
 \ \ \ \ \oget{\set{cpuid}}{\mclog}{\mcevent}{l}{si\_o}{ev} \rightarrow \oget{\coreset}{\mclog}{\mcevent}{l}{hw\_o}{ev} \\
 \end{array}
 $
-\item relate$\_$single$\_$oracle$\_$concrete$\_$step$\_$def: \\ 
+\end{tabular}
+\end{hypothesis}
+
+
+\begin{hypothesis}[relate$\_$single$\_$oracle$\_$concrete$\_$step$\_$def]
+\begin{tabular}{P{0.95\textwidth}}
 $
 \begin{array}{l}
 \forall \ curid' \ curid \ lsp' \ lsp \ l' \ l \ l\_res \ ps \ ev  . \\
@@ -277,13 +352,13 @@ $
 \ \ \ \exists\ (ps' : \privatestate) . \ \hardwarelocalstep{(\getcuridfromlognoeq{cpuid}{l})}{(\localview{ps}{l})}{(\localview{ps'}{l\_res})} \\
 \end{array}
 $
-\end{enumerate}
+\end{tabular}
+\end{hypothesis}
 
 
-\noindent\fbox{top lemmas}
 
-\begin{enumerate}
-\item one$\_$step$\_$env$\_$refines$\_$oracle : \\
+\begin{lemma}[one$\_$step$\_$env$\_$refines$\_$oracle]
+\begin{tabular}{P{0.95\textwidth}}
 $
 \begin{array}{l}
 \forall \ s_h \ s_h' \ t \ s_l. \ \envstep{\set{cpuid}}{si\_o}{s_h}{t}{s_h'} \rightarrow  \matchestateestate{\set{cpuid}}{s_h}{s_l} \rightarrow \\
@@ -293,14 +368,10 @@ $
 \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \matchestateestate{\set{cpuid}}{s_h'}{s_l})\\
 \end{array}
 $
-\end{enumerate}
-\caption{Refinement between a single core and a full core set over environmental step machines}
-\label{fig:chapter:conlink:cpu-env-to-env-theorem}
-\end{figure}
+\end{tabular}
+\end{lemma}
 
-
-
-Figure~\ref{fig:chapter:conlink:cpu-env-to-env-theorem} provide the 
+Those hypotheses and the lemma provides
 refinement proof between two machines, 
 which is a key theorem that informally says, the single core machine evaluation based on the environmental context $si\_o$ (that contains 
 the strategies for the whole participants of the system except the current CPU ID)

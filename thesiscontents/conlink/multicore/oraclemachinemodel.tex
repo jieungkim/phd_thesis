@@ -1,7 +1,7 @@
 
 
 
-\subsection{Multicore Machine Model with Hardware Scheduler}
+\subsection{Oracle Machine Model: Multicore Machine Model with Hardware Scheduler}
 \label{chapter:linking:subsec:multicore-machine-model-with-hardware-scheduler}
 
 
@@ -9,12 +9,12 @@
 \noindent\fbox{state: }
 $$
 \begin{array}{lll}
-\localstatekwd &:=& \localstateconkwd : \privatestate \rightarrow \booltype \rightarrow \localstatekwd\\
+\localstatekwd &:=& \localstate{(ps: \privatestate)}{(coin: \booltype)}\\
 \localstatepool{S : \set{\ztype}} & := &  \ztype \rightharpoonup \localstatekwd\\
 & & \hfill  (\forall i . i \in S \rightarrow \exists . (ps : \localstatekwd) (i, ps) \in \privatestatepool{S}) \wedge   (\forall j . j \notin S  \rightarrow (j, \_) \in \localstatepool{S}) \\
 
 %\mcstatekwd & := & \mcstateconkwd :~ \ztype \rightarrow \set{i \mapsto \localstatekwd~\vert~ i \in \coreset } \rightarrow \mclog \rightarrow \hstatekwd\\
-\mcstatekwd & := & \mcstateconkwd :~ \ztype \rightarrow \localstatepool{\coreset} \rightarrow \mclog \rightarrow \hstatekwd\\
+\mcstatekwd & := & \mcstate{(curid: \ztype)}{(lsp: \localstatepool{\coreset})}{(log: \mclog)}\\
 \end{array}
 $$
 
@@ -103,13 +103,20 @@ refinement relation for those two states.
 It tells that their local states should have the same value as well as the global log need to be equal. 
 
 
-\begin{figure}
-\noindent\fbox{hypothesis} 
+\begin{hypothesis}[valid$\_$cpuid]
+\begin{tabular}{P{0.95\textwidth}}
+$cpuid \in \coreset$
+\end{tabular}
+\end{hypothesis}
 
-\begin{enumerate}
-\item valid$\_$cpuid: $cpuid \in \coreset$
-\item valid$\_$oracle$\_$def: $\validoraclenoeq{cpuid}{\coreset}{hw\_o}$
-\item related$\_$hw$\_$step$\_$hw$\_$oracle : \\
+\begin{hypothesis}[valid$\_$oracle$\_$def]
+\begin{tabular}{P{0.95\textwidth}}
+$\validoraclenoeq{cpuid}{\coreset}{hw\_o}$
+\end{tabular}
+\end{hypothesis}
+
+\begin{hypothesis}[related$\_$hw$\_$step$\_$hw$\_$oracle]
+\begin{tabular}{P{0.95\textwidth}}
 $
 \begin{array}{l}
 \matchstatehstate{(\mcstate{curid}{lsp}{l})}{(\hstate{curid}{psp}{l})} \rightarrow \\
@@ -120,19 +127,23 @@ $
 \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ curid' = curid'' \\
 \end{array}
 $
-\end{enumerate}
+\end{tabular}
+\end{hypothesis}
 
-\noindent\fbox{top lemmas}
 
-\begin{enumerate}
-\item one$\_$step$\_$hw$\_$refines$\_$oracle : \\
+\begin{lemma}[one$\_$step$\_$hw$\_$refines$\_$oracle]
+\begin{tabular}{P{0.95\textwidth}}
 $
 \begin{array}{l}
 \forall \ s_l \ s_l' \ t \ s_h . \ \hardwarestep{curid}{s_l}{t}{s_l'} \rightarrow  \matchstatehstate{s_h}{s_l} \rightarrow \\
 \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \exists\ s_h' . \  \ccplusstep{\oraclestep{hw\_o}{s_h}{t}{s_h'}} \wedge  \matchstatehstate{s_h'}{s_l'}\\
 \end{array}
 $
-\item match$\_$state$\_$implies$\_$one$\_$step: \\
+\end{tabular}
+\end{lemma}
+
+\begin{lemma}[match$\_$state$\_$implies$\_$one$\_$step]
+\begin{tabular}{P{0.95\textwidth}}
 $
 \begin{array}{l}
 \forall \ curid \ lsp \ l \ curid' \ hsp \ l' . \ \matchstatehstate{(\mcstate{curid}{lsp}{l})}{(\hstate{curid'}{hsp}{l'})} \rightarrow \\
@@ -143,13 +154,55 @@ $
 \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \  \ \ \ \ \ \ \ \ \ \  \ \ \setpst{\localstatekwd}{curid}{(\localstate{ps}{\bfalse})}{lsp}{lsp'} \\
 \end{array}
 $
-\end{enumerate}
+\end{tabular}
+\end{lemma}
 
-\caption{Proof between Multicore and Oracle Step Rules.}
-\label{fig:chapter:conlink:refinement-multicore-oracle-steps}
-\end{figure}
 
-Based on the relation we prove two key theorems in Figure~\ref{fig:chapter:conlink:refinement-multicore-oracle-steps}, 
+
+%\noindent\fbox{hypothesis} 
+%
+%\begin{enumerate}
+%\item valid$\_$cpuid: $cpuid \in \coreset$
+%\item valid$\_$oracle$\_$def: $\validoraclenoeq{cpuid}{\coreset}{hw\_o}$
+%\item related$\_$hw$\_$step$\_$hw$\_$oracle : \\
+%$
+%\begin{array}{l}
+%\matchstatehstate{(\mcstate{curid}{lsp}{l})}{(\hstate{curid}{psp}{l})} \rightarrow \\
+%\ \ \ \exists\ ev .\ \oget{\coreset}{\mclog}{\mcevent}{\listconsoppo{\yieldev{curid}}{l}}{hw\_o}{ev} \wedge \\
+%\ \ \ \ \ \ \forall \ curid'' . \ ev = \yieldbackev{curid''} \rightarrow\\
+%\ \ \ \ \ \ \ \ \  \forall \ curid' \ ps \ st . \\
+%\ \ \ \ \ \ \ \ \ \ \ \ \hardwarelocalstep{curid'}{(\localview{ps}{(\listconsoppo{\yieldbackev{curid'}}{\listconsoppo{\yieldev{curid}}{l}})})}{st} \rightarrow\\
+%\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ curid' = curid'' \\
+%\end{array}
+%$
+%\end{enumerate}
+%
+%\noindent\fbox{top lemmas}
+%
+%\begin{enumerate}
+%\item one$\_$step$\_$hw$\_$refines$\_$oracle : \\
+%$
+%\begin{array}{l}
+%\forall \ s_l \ s_l' \ t \ s_h . \ \hardwarestep{curid}{s_l}{t}{s_l'} \rightarrow  \matchstatehstate{s_h}{s_l} \rightarrow \\
+%\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \exists\ s_h' . \  \ccplusstep{\oraclestep{hw\_o}{s_h}{t}{s_h'}} \wedge  \matchstatehstate{s_h'}{s_l'}\\
+%\end{array}
+%$
+%\item match$\_$state$\_$implies$\_$one$\_$step: \\
+%$
+%\begin{array}{l}
+%\forall \ curid \ lsp \ l \ curid' \ hsp \ l' . \ \matchstatehstate{(\mcstate{curid}{lsp}{l})}{(\hstate{curid'}{hsp}{l'})} \rightarrow \\
+%\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \  \exists \ curid'' \ lsp' \ l'  . \ \\
+%\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \  \ \ \ \ccstarstep{\oraclestep{hw\_o}{(\mcstate{curid}{lsp}{l})}{\ccemptytrace}{(\mcstate{curid''}{lsp}{l'})}} \wedge\\
+%\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \  \ \ \ l' = \listconsoppo{\yieldbackev{curid''}}{\listconsoppo{\yieldev{curid}}{l}} \wedge\\
+%\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \  \ \ \ (\forall \ ps  . \ \getpstsome{\localstatekwd}{curid}{lsp}{(\localstate{ps}{\btrue})} \rightarrow \\
+%\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \  \ \ \ \ \ \ \ \ \ \  \ \ \setpst{\localstatekwd}{curid}{(\localstate{ps}{\bfalse})}{lsp}{lsp'} \\
+%\end{array}
+%$
+%\end{enumerate}
+
+
+
+Based on the relation we prove two key lemmas; 
 we prove that one step in the multicore machine model always has the corresponding multiple steps of multicore machine with hardware scheduler oracle (in lemma 1). 
 When proving the backward simulation in $\compcert$, providing the evidence about the progress property of the oracle machine, which is stated in the lemma 2. 
 Proving that lemmas require that there will always be a matched environmental context that is matched with the same scheduling sequence of the possible execution of the program in multicore machine model (among all non-deterministic interleaved cases of execution). 

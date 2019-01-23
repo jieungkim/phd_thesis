@@ -1,24 +1,27 @@
 \section{Multicore Linking for CertiKOS}
 \label{chapter:certikos:sec:multicore-linking-for-certikos}
 
-Multicore linking in CertiKOS facilitates all the intermediate languages
-and proofs in Section~\ref{chapter:linking:sec:multicore-linking}.
+Similar to the multithreaded linking instances in Section~\ref{chapter:certikos:sec:multithreaded-linking-for-certikos}\jieung{Need to write that part}, a few steps are required us to provide the multicore linking for $\certikos$.
+For the linking with $\certikos$
+our goal is facilitating all the intermediate languages
+and proofs in Section~\ref{chapter:linking:sec:multicore-linking},
+and
 Figure~\ref{fig:chapter:conlink:intermediate-languages-and-their-relationsihps-for-multicore-linking} and 
 Section~\ref{chapter:linking:sec:multicore-linking} show all definitions and 
-proofs that connect all those things. 
-However, to build the local layer interface, 
-Instantiating the hardware configuration, 
-use the concrete definition $L$, which will be the 
-bottom layer of our local layer interface, 
-and combine those intermediate languages and proofs with $\compcert$ semantic and backward simulation 
-forms to connect them rigorously. 
+proofs that the linking for $\certikos$ wants to use. 
+To use them, 
+Instantiating hardware setting (HardWareSetting) and the local program transition rules (HardSemantics) 
+(defined in Figure~\ref{fig:chapter:conlink:hardware-local-step-transition-rules})
+are required. 
 
+With the concrete definitions for those abstract configurations, 
+The one thing that we required for the linking (without getting any benefits from the framework and the library)
+is providing the evidence that any program on the $\codeinmath{MBoot}$ layer with $\codeinmath{Mach}_{\lasm}$ is contextually refined by the program on the $\codeinmath{MBoot}$ layer with $\singleseparatestepkwd$, which is the adjacent machine model with $\codeinmath{Mach}_{\lasm}$ in our multicore linking framework. This proof is not provided by our multicore linking library toolkit because it heavily depends on the definition of the $\codeinmath{Mach}_{\lasm}$ layer.
+
+Without those two things, 
+providing the proof instances for other parts is straightforward with our library. 
+By connecting the configuration instances and our machine (and proof) libraries, 
+we are able to use  all refinement proofs in Section~\ref{chapter:linking:sec:multicore-linking}. 
+This guarantees that ``any program on the $\codeinmath{MBoot}$ layer with $\singleseparatestepkwd$ contextually refines that program on the $\codeinmath{MBoot}$ layer with $\hardwarestepkwd$ (which is the non-deterministic $\intelmachine$ multicore semantics).''
+Thanks to our framework, most proofs in this step can be directly achieved by applying the existing refinement proofs in our library.
 %
-%Similar to the multithreaded linking, a few steps are required to use our CCAL multicore linking library with mC2.
-%
-%    Instantiate hardware setting (HardWareSetting) and program transition rules (HardSemantics) that are required to instantiate all machine models in Concurrent_Linking_Def.v. Explanations about them can be found in Section 4-2 in this document. In our artifact, you can find the related definitions in {ccal, mc2}/mcertikos/multicore/semantics/HWSemImpl.v.
-%    Instantiate all the machine models by using the instances of HardWareSetting and HardSemantics from the previous step. Please look at all files ending with *SemImpl.v in {ccal, mc2}/mcertikos/multicore/semantics/, except HWSemImpl.v. You can also compare them with the abstract definitions of those machine models in {ccal, mc2}/mcertikos/conlib/conmclib/Concurrent_Linking_Def.v.
-%    Prove that any program on the mboot layer with LAsm contextually refines the program on the mboot layer with single_separate_semantics, which is the adjacent machine model with LAsm in our multicore linking framework. This proof is not provided by our CCAL toolkit because it heavily depends on the definition of the mboot layer.
-%    Instantiate all refinement proofs in Concurrent_Linking_Prop.v with concrete machine models defined in the previous step. This guarantees that "any program on the mboot layer with single_separate_semantics contextually refines that program on the mboot layer with hwstep_semantics (which is the non-deterministic x86 multicore semantics)". Thanks to our framework, most proofs in this step can be directly achieved by applying the existing refinement proofs in our library.
-%
-%In this way, we can finally prove that "any context program CTXT running on the mboot layer with LAsm contextually refines the context program CTXT running on the mboot layer with hwstep_semantics".

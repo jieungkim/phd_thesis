@@ -33,20 +33,29 @@ provides the primitive (which gives the extra transition rules for the state of 
 %\label{fig:chapter:certikos:compcertx-state-definition}
 %\end{figure}
 
-The $\compcertx$ state definition is
+The state definition for a machine model of  $\compcertx$ ($\lasm$) is
 \begin{lstlisting}
 Inductive state <@$\cdots$@> : Type :=
-  | State: regset -> mem -> state.
+  | State: regset -> (mem: mwd LDATAOps)-> state.
 \end{lstlisting}
-The $\compcertx$ state is defined as a pair, 
-a register and a memory. 
+which is a pair consists of  a register and a memory. 
+Thanks to the similarity between this state definition and the state definition of $\compcert$, 
+$\compcertx$ facilitates many parts of verified compiler of $\compcert$ with some modifications. 
 The memory in the $\compcertx$ is also a pair of two elements, 
 a memory (a map from a identifier to a value) and an abstract data. 
-The abstract data can contain 
+\begin{lstlisting}
+Definition <@$\pi$@>_mem {D}: mwd D -> mem := fst.
+Definition <@$\pi$@>_data {D}: mwd D -> ldata_type D := snd.
+\end{lstlisting}
+The memory is same with the memory in the $\compcert$, which is a map from its index (a pair of a block ID and an offset) to 
+the value (with the type information). 
+The abstract data gives us a huge freedom on the state definition by allowing us to add 
 multiple fields in it. 
 To use the existing tools as much as possible, 
 we also include our global log in the abstract data (as we have seen in Chapter~\ref{chapter:mcs-lock}.
 \jieung{Need to add more descriptions about our state definition}
+Thus, the \lstinline$(mem: mwd LDATAOps)$ can be interpreted as a tuple consists of 
+\lstinline$mem$, \lstinline$abs_data$, and \lstinline$global_log$.
 
 \begin{figure}
 \begin{lstlisting}[language=C]
@@ -82,8 +91,9 @@ Record RData :=
 \end{figure}
 
 The layer definition for the bottom layer is in Figure~\ref{chapter:certikos:subsec:hardware-configuration-instance},
+contains a set of primitives, 
 which is basically a partial map from a primitive ID ($\primitiveid$) to the specifications ($\spec$).
-and the abstract data for the bottom layer is in Figure~\ref{fig:chapter:certikos:abstract-data-for-bottom-layer}.
+Each layer also use its abstract data, and the abstract data definition for the bottom layer is in Figure~\ref{fig:chapter:certikos:abstract-data-for-bottom-layer}.
 As mentioned, 
 we have provided atomic fetch and increase as an atomic operation in the layer 
 and it will update the log in the abstract data ($\codeinmath{multi\_log}$), which is 
@@ -161,7 +171,7 @@ we designated 8 for the scheduler ID.
 Those configurations are all included in the 
 \lstinline$hdsetting$ class, and the instance of the type class
 is as follows:
-\begin{lstlisting}[language=C]
+\begin{lstlisting}[language=C, deletekeywords={int}]
 Global Instance hdseting: HardWaredSetting := {
   private_state := mstate;
   shared_piece := list Integers.Byte.int;
@@ -637,7 +647,7 @@ Inductive command_predicate (ge: genv): mstate -> command -> Prop :=
   rs Asm.PC = Vptr b Int.zero -> Genv.find_funct_ptr ge b = Some (External ef) ->
   match ef with  | EF_external eid _ => if peq eid atomic_FAI then True else False
   <@$\cdots$@>
-  command_predicate ge (Asm.State rs m) (ATOMIC lid atomic_FAI)
+  command_predicate ge (State rs m) (ATOMIC lid atomic_FAI)
 <@$\cdots$@>
 \end{lstlisting}
 which shows the case when the current function pointer is pointing out the \lstinline$atomic_FAI$
@@ -658,10 +668,10 @@ For instance, the evaluation relation for get shared is
     Genv.find_symbol ge id = Some b -> id2size (Int.unsigned index) = Some (size, id)
     -> Mem.loadbytes m b 0 size = Some (ByteList l)
     <@$\cdots$@>
-     let a' := a {multi_log: ZMap.set z (MultiDef (TEVENT (CPU_ID a)
+     let a_res := a {multi_log: ZMap.set z (MultiDef (TEVENT (CPU_ID a)
        (TSHARED (OMEME l)) :: ml0)) (multi_log a)} in
-    get_shared_sem ge (Asm.State (mem:= mwd LDATAOps) rs (m, a)) l 
-       (Asm.State (rs'#RA <- Vundef#Asm.PC <- (rs RA)) (m, a')).
+    get_shared_sem ge (State (mem:= mwd LDATAOps) rs (m, a)) l 
+       (State (rs_res#RA <- Vundef#PC <- (rs RA)) (m, a_res)).
 \end{lstlisting}
 %\begin{lstlisting}[language=C]
 %    Inductive get_shared_sem (ge: genv) : 
@@ -691,7 +701,7 @@ Inductive atomic_exec (ge: genv):
   Z -> Z -> mstate -> Log -> mstate -> OtherEvent -> Prop :=
   | atomic_step_external:
   <@$\cdots$@>
-  atomic_exec ge cid id (Asm.State rs m) sl (Asm.State rs' m') e
+  atomic_exec ge cid id (State rs m) sl (State rs_res m_res) e
   <@$\cdots$@>
 \end{lstlisting}
 
@@ -711,7 +721,8 @@ Global Program Instance hdsem : HardSemantics (hdset:= hdseting) := {
   private_step := private_exec ge;
   get_shared := get_shared_sem ge;
   set_shared := set_shared_sem ge;
-  atomic_step := atomic_exec ge }.
+  atomic_step := atomic_exec ge 
+}.
 \end{lstlisting}
 \caption{Instance for the Hardware Local Transition Rules.}
 \label{fig:chapter:certikos:hardware-local-step-transition-rules}

@@ -10,14 +10,14 @@ For example, the refinement proof between an environmental step machine with a s
 as follows:
 \begin{lstlisting}[language=C]
 Lemma one_step_env_refines_env_concrete:
-  forall st t st' st0
-    (Hone: env_step_single_aux_ge' ge st t st')
-    (Hmatch: match_eestate_link st st0),
-    (exists st0',
-      (plus env_step_full_aux_ge') ge st0 t st0' /\
-        match_eestate_link st' st0') \/
-      ((state_measure (s_set current_CPU_ID) st' < state_measure (s_set current_CPU_ID) st)%nat /\ t = E0 /\
-        match_eestate_link st' st0).
+  forall st_h1 t st_h2 st_l1
+    (Hone: env_step_single_aux_ge_p ge st_h1 t st_h2)
+    (Hmatch: match_eestate_link st_h1 st_l1),
+    (exists st_l2,
+      (plus env_step_full_aux_ge_p) ge st_l1 t st_l2 /\
+        match_eestate_link st_h2 st_l2) \/
+      ((state_measure (s_set current_CPU_ID) st_h2 < state_measure (s_set current_CPU_ID) st_h1)%nat /\ t = E0 /\
+        match_eestate_link st_h2 st_l1).
 Proof.
   <@$\cdots$@>
    eapply single_env_step_refines_full_env_step in Hone; eauto.
@@ -43,23 +43,39 @@ Theorem cl_backward_simulation:
 
 The top level theorem for multicore linking uses the backward simulation proofs 
 for each steps that we have described in Section~\ref{chapter:linking:sec:multicore-linking}.
-The top level theorem is in Figure~\ref{fig:chapter:certikos:top-level-multicore-theorem}.
+The top level theorem is in Theorem~\ref{theorem:chapter:certikos:contextual-refinement-theorem-in-certikos-multicore-linking}.
+\begin{theorem}[Multicore Linking Theorem for $\certikos$]
+\label{theorem:chapter:certikos:contextual-refinement-theorem-in-certikos-multicore-linking}
+Let's assume that $cid$ is a valid CPU ID, $\oracle_{cpu}$ is an
+environmental context for thread $cid$, and $\codeinmath{Ctxt}$ is a
+ context program that runs on top of the $certikos$. 
+ Then, we want to prove that 
+ \begin{center}
+\begin{tabular}{c}
+$\semwmachine{\codeinmath{MBoot}}{\codeinmath{Ctxt}}{\codeinmath{mach}_{\codeinmath{x86mc}}} \refines_{R_{\codeinmath{mclink}}} \semwmachine{\codeinmath{MBoot}[cid, \oracle_{cpu}]}{\codeinmath{Ctxt}}{{\codeinmath{mach}_{\lasm}}}$\\
+\end{tabular}
+\end{center}
+when ${R_{\certikos_\codeinmath{mclink}}}$ is a refinement relation for multicore linking.
+\end{theorem}
+%The top level theorem is in Figure~\ref{fig:chapter:certikos:top-level-multicore-theorem}.
+%
+%\begin{figure}
+%\begin{lstlisting}[language=C]
+%Theorem concurrent_backward_simulation:
+%  forall (s: stencil) (CTXT: LAsm.module) (ph: AST.program fundef unit)
+%    (Hmakep: make_program (module_ops:= LAsm.module_ops) s CTXT (mboot <@$\oplus$@> L64) = OK ph),
+%    backward_simulation
+%    (LAsm.semantics (lcfg_ops := LC (mboot <@$\oplus$@> L64)) ph)          
+%    (hwstep_semantics 
+%      (Hmakege := make_program_globalenv (make_program_ops := make_program_ops) 
+%      _ _ _ _ Hmakep) (Genv.globalenv ph) s CTXT ph).
+%\end{lstlisting}
+%\caption{Top Level Multicore Linking Theorem}
+%\label{fig:chapter:certikos:top-level-multicore-theorem}
+%\end{figure}
 
-\begin{figure}
-\begin{lstlisting}[language=C]
-Theorem concurrent_backward_simulation:
-  forall (s: stencil) (CTXT: LAsm.module) (ph: AST.program fundef unit)
-    (Hmakep: make_program (module_ops:= LAsm.module_ops) s CTXT (mboot <@$\oplus$@> L64) = OK ph),
-    backward_simulation
-    (LAsm.semantics (lcfg_ops := LC (mboot <@$\oplus$@> L64)) ph)          
-    (hwstep_semantics 
-      (Hmakege := make_program_globalenv (make_program_ops := make_program_ops) 
-      _ _ _ _ Hmakep) (Genv.globalenv ph) s CTXT ph).
-\end{lstlisting}
-\caption{Top Level Multicore Linking Theorem}
-\label{fig:chapter:certikos:top-level-multicore-theorem}
-\end{figure}
 
-The proof, of course has several assumptions. 
-\jieung{need to mention assumptions}
 
+\jieung{need to mention assumptions - The proof, of course has several assumptions. }
+\jieung{OK. Change $\codeinmath{Mach}_{xxx}$ in Multicore Linking Framework as the form that does not have $Mach$.
+This for the instance. Then, we add $Mach$ in this section to distinguish the abstract definition for intermediate languages and the concrete definitions} 

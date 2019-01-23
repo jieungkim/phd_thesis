@@ -52,7 +52,7 @@ Definition hw_step_aux :=
 
 Inductive hw_step_aux_ge : genv -> hstate -> trace -> hstate -> Prop :=
   | hw_step_aux_ge_intro : 
-    forall s t s', hw_step_aux s t s' -> hw_step_aux_ge ge s t s'.
+    forall s1 t s2, hw_step_aux s1 t s2 -> hw_step_aux_ge ge s1 t s2.
 \end{lstlisting}
 
 \begin{itemize}[leftmargin=*]
@@ -102,7 +102,7 @@ Definition oracle_step_aux :=
 
 Inductive oracle_step_aux_ge : genv -> state -> trace -> state -> Prop :=
   | oracle_step_aux_ge_intro : 
-    forall s t s', oracle_step_aux s t s' -> oracle_step_aux_ge ge s t s'.
+    forall s1 t s2, oracle_step_aux s1 t s2 -> oracle_step_aux_ge ge s1 t s2.
 \end{lstlisting}
 
 \begin{itemize}[leftmargin=*]
@@ -159,7 +159,7 @@ Definition env_step_aux:=
 
 Inductive env_step_aux_ge : genv -> (estate (A:= cores))  -> trace -> (estate (A:= cores)) -> Prop :=
   | env_step_aux_ge_intro : 
-    forall s t s', env_step_aux s t s' -> env_step_aux_ge ge s t s'.
+    forall s1 t s2, env_step_aux s1 t s2 -> env_step_aux_ge ge s1 t s2.
 \end{lstlisting}
 
 \begin{itemize}[leftmargin=*]
@@ -197,7 +197,7 @@ Definition single_step_aux :=
 Inductive single_step_aux_ge : genv -> single_state -> trace -> 
   single_state -> Prop :=
   | single_step_aux_ge_intro : 
-    forall s t s', single_step_aux s t s' -> single_step_aux_ge ge s t s'.
+    forall s1 t s2, single_step_aux s1 t s2 -> single_step_aux_ge ge s1 t s2.
 \end{lstlisting}
 
 
@@ -237,7 +237,7 @@ Definition single_big_step_aux :=
 Inductive single_big_step_aux_ge : genv -> single_state -> trace -> 
   single_state -> Prop :=
   | single_big_step_aux_ge_intro : 
-    forall s t s', single_big_step_aux s t s' -> single_big_step_aux_ge ge s t s'.
+    forall s1 t s2, single_big_step_aux s1 t s2 -> single_big_step_aux_ge ge s1 t s2.
 \end{lstlisting}
 
 
@@ -274,7 +274,7 @@ Definition single_big2_step_aux :=
 
 Inductive single_big2_step_aux_ge : genv -> rstate -> trace -> rstate -> Prop :=
  | single_big2_step_aux_ge_intro : 
-   forall s t s', single_big2_step_aux s t s' -> single_big2_step_aux_ge ge s t s'.
+   forall s1 t s2, single_big2_step_aux s1 t s2 -> single_big2_step_aux_ge ge s1 t s2.
 \end{lstlisting}
 
 
@@ -310,7 +310,7 @@ Definition single_split_step_aux :=
 
 Inductive single_split_step_aux_ge : genv -> srstate -> trace -> srstate -> Prop :=
   | single_split_step_aux_ge_intro : 
-  forall s t s', single_split_step_aux s t s' -> single_split_step_aux_ge ge s t s'.
+  forall s1 t s2, single_split_step_aux s1 t s2 -> single_split_step_aux_ge ge s1 t s2.
 \end{lstlisting}
 
 
@@ -349,8 +349,8 @@ Definition single_reorder_step_aux :=
   
 Inductive single_reorder_step_aux_ge : genv -> rstate -> trace -> rstate -> Prop :=
   | single_reorder_step_aux_ge_intro : 
-    forall s t s', single_reorder_step_aux s t s' -> 
-      single_reorder_step_aux_ge ge s t s'.  
+    forall s1 t s2, single_reorder_step_aux s1 t s2 -> 
+      single_reorder_step_aux_ge ge s1 t s2.  
 \end{lstlisting}
 
 
@@ -388,8 +388,8 @@ Definition single_separate_step_aux :=
 Inductive single_separate_step_aux_ge : genv -> sp_state -> trace -> 
   sp_state -> Prop :=
    | single_separate_step_aux_ge_intro : 
-     forall s t s', single_separate_step_aux s t s' -> 
-       single_separate_step_aux_ge ge s t s'.
+     forall s1 t s2, single_separate_step_aux s1 t s2 -> 
+       single_separate_step_aux_ge ge s1 t s2.
 \end{lstlisting}
 
 \begin{itemize}[leftmargin=*]

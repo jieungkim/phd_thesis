@@ -66,7 +66,7 @@ We have introduces 7 layers for all those modules in our per-thread layers, from
 $\codeinmath{TSyscall}$ layer.
 Similar to the per-CPU modules, all those layers can be linked together via the composition rules described in Section~\ref{chapter:ccal:subsec:linking};
 thus form a single contextual refinement theorem, which is defined in Theorem~\ref{theorem:chapter:certikos:per-thread-contextual-refinement},
-which corresponds to the number (2) in Figure~\ref{fig:chapter:certikos:top-level-multicore-theorem}.
+which corresponds to the number (2) in Figure~\ref{fig:chapter:certikos:idea-of-dividing-certikos-with-formal-def}.
 \begin{theorem}[Contextual Refinement for Per-thread layers]
 \label{theorem:chapter:certikos:per-thread-contextual-refinement}
 Let's assume that $tid$ is a valid thread ID, $\oracle_{\codeinmath{thrd}}$ and  $\oracle'_{\codeinmath{thrd}}$ are environmental contexts for 

@@ -84,7 +84,7 @@ ls' = \localstate{ps}{\bfalse} \\
 \noindent\fbox{rstate:}
 $$
 \begin{array}{lll}
-\rstatekwd & := & \rstateconkwd : \privatestate \rightarrow \mclog \rightarrow \rstatekwd\\
+\rstatekwd & := & \rstate{(ps : \privatestate)}{(log: \mclog)}\\
 \end{array}
 $$
 
@@ -132,32 +132,68 @@ l \neq \listconsoppo{\yieldev{\_}}{\_}\\
 {\matchbsstatesstate{s_h}{s_l}}
 \end{mathpar}
 
-\noindent\fbox{hypothesis}
-\begin{enumerate}
-\item valid$\_$cpuid: $cpuid \in \coreset$
-\item valid$\_$oracle$\_$def: $\validoraclenoeq{cpuid}{\set{cpuid}}{si\_o }$
-\end{enumerate}
+%\noindent\fbox{hypothesis}
+%\begin{enumerate}
+%\item valid$\_$cpuid: $cpuid \in \coreset$
+%\item valid$\_$oracle$\_$def: $\validoraclenoeq{cpuid}{\set{cpuid}}{si\_o }$
+%\end{enumerate}
+%
+%\noindent\fbox{top lemmas}
+%
+%\begin{enumerate}
+%\item start$\_$step$\_$get$\_$env$\_$log: \\
+%$\begin{array}{l}
+%\forall \ n \ l \ res \ l' \ ps \ curid . \ cpuid \neq curid \rightarrow \yieldbackfunc{n}{cpuid}{l}{res}{si\_o}{l'} \rightarrow\\
+%\ccstarstep{\singlestep{cpuid}{si\_o}{(\singlestate{curid}{ps}{(\listappoppo{res}{l})})}{\ccemptytrace}{(\singlestate{cpuid}{ps}{(\listappoppo{l'}{l})})}}\\ 
+%\end{array}
+%$
+%\item one$\_$step$\_$big$\_$refines$\_$single : \\
+%$
+%\begin{array}{l}
+%\forall \ s_h \ s_h' \ t \ s_l . \ \singlebigstep{cpuid}{si\_o}{s_h}{t}{s_h'} \rightarrow  \matchbsstatesstate{s_h}{s_l} \rightarrow \\
+%\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \exists\ s\_l' . \  \ccplusstep{\singlestep{cpuid}{si\_o}{s_l}{t}{s_l'}} \wedge  \matchbsstatesstate{s_h'}{s_l'}\\
+%\end{array}
+%$
+%\end{enumerate}
+\caption{Big Refines Single}
+\label{fig:chapter:conlink:big-refines-single}
+\end{figure}
 
-\noindent\fbox{top lemmas}
+\begin{hypothesis}[valid$\_$cpuid]
+\begin{tabular}{P{0.95\textwidth}}
+$cpuid \in \coreset$
+\end{tabular}
+\end{hypothesis}
 
-\begin{enumerate}
-\item start$\_$step$\_$get$\_$env$\_$log: \\
-$\begin{array}{l}
+\begin{hypothesis}[valid$\_$oracle$\_$def]
+\begin{tabular}{P{0.95\textwidth}}
+$\validoraclenoeq{cpuid}{\set{cpuid}}{si\_o }$
+\end{tabular}
+\end{hypothesis}
+
+
+\begin{lemma}[start$\_$step$\_$get$\_$env$\_$log]
+\begin{tabular}{P{0.95\textwidth}}
+$
+\begin{array}{l}
 \forall \ n \ l \ res \ l' \ ps \ curid . \ cpuid \neq curid \rightarrow \yieldbackfunc{n}{cpuid}{l}{res}{si\_o}{l'} \rightarrow\\
 \ccstarstep{\singlestep{cpuid}{si\_o}{(\singlestate{curid}{ps}{(\listappoppo{res}{l})})}{\ccemptytrace}{(\singlestate{cpuid}{ps}{(\listappoppo{l'}{l})})}}\\ 
 \end{array}
 $
-\item one$\_$step$\_$big$\_$refines$\_$single : \\
+\end{tabular}
+\end{lemma}
+
+\begin{lemma}[one$\_$step$\_$big$\_$refines$\_$single]
+\begin{tabular}{P{0.95\textwidth}}
 $
 \begin{array}{l}
 \forall \ s_h \ s_h' \ t \ s_l . \ \singlebigstep{cpuid}{si\_o}{s_h}{t}{s_h'} \rightarrow  \matchbsstatesstate{s_h}{s_l} \rightarrow \\
 \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \exists\ s\_l' . \  \ccplusstep{\singlestep{cpuid}{si\_o}{s_l}{t}{s_l'}} \wedge  \matchbsstatesstate{s_h'}{s_l'}\\
 \end{array}
 $
-\end{enumerate}
-\caption{Big Refines Single}
-\label{fig:chapter:conlink:big-refines-single}
-\end{figure}
+\end{tabular}
+\end{lemma}
+
 
 \begin{figure}
 \noindent\fbox{match state : $\rstatekwd \rightarrow \singlestatekwd \rightarrow \mcprop$}
@@ -166,41 +202,52 @@ $
 {\ }
 {\matchrstatesinglestate{cpuid}{(\rstate{ps}{l})}{(\singlestate{cpuid}{(\localstate{ps}{true})}{l}}}
 \end{mathpar}
+%
+%\noindent\fbox{hypothesis}
+%\begin{enumerate}
+%\item valid$\_$oracle$\_$def: $\validoraclenoeq{cpuid}{\coreset}{hw\_o }$
+%\end{enumerate}
 
-\noindent\fbox{hypothesis}
-\begin{enumerate}
-\item valid$\_$oracle$\_$def: $\validoraclenoeq{cpuid}{\coreset}{hw\_o }$
-\end{enumerate}
+%\noindent\fbox{top lemmas}
+%\begin{enumerate}
+%\item one$\_$step$\_$big2$\_$refines$\_$big : \\
+%$
+%\begin{array}{l}
+%\forall \ s_h \ s_h' \ t \ s_l . \ \singlebigtwostep{cpuid}{si\_o}{s_h}{t}{s_h'} \rightarrow  \matchrstatesinglestate{cpuid}{s_h}{s_l} \rightarrow \\
+%\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \exists\ s\_l' . \  \ccplusstep{\singlebigstep{cpuid}{si\_o}{s_l}{t}{s_l'}} \wedge  \matchrstatesinglestate{cpuid}{s_h'}{s_l'}\\
+%\end{array}
+%$
+%\end{enumerate}
+\caption{Big2 Refines Big} 
+\label{fig:chapter:conlink:bigtwo-refines-big}
+\end{figure}
 
-\noindent\fbox{top lemmas}
-\begin{enumerate}
-\item one$\_$step$\_$big2$\_$refines$\_$big : \\
+
+\begin{lemma}[one$\_$step$\_$big2$\_$refines$\_$big]
+\begin{tabular}{P{0.95\textwidth}}
 $
 \begin{array}{l}
 \forall \ s_h \ s_h' \ t \ s_l . \ \singlebigtwostep{cpuid}{si\_o}{s_h}{t}{s_h'} \rightarrow  \matchrstatesinglestate{cpuid}{s_h}{s_l} \rightarrow \\
 \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \exists\ s\_l' . \  \ccplusstep{\singlebigstep{cpuid}{si\_o}{s_l}{t}{s_l'}} \wedge  \matchrstatesinglestate{cpuid}{s_h'}{s_l'}\\
 \end{array}
 $
-\end{enumerate}
-\caption{Big2 Refines Big} 
-\label{fig:chapter:conlink:bigtwo-refines-big}
-\end{figure}
-
+\end{tabular}
+\end{lemma}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{figure}
 \noindent\fbox{single local view:}
-$
+$$
 \begin{array}{lll}
-\singlelocalviewkwd & := & \singlelocalviewconskwd : \privatestate \rightarrow \singlelocalviewkwd\\
+\singlelocalviewkwd & := & \singlelocalview{(ps:\privatestate)}\\
 \end{array}
-$
+$$
 
 \noindent\fbox{single local step: $\ztype \rightarrow \singlelocalviewkwd \rightarrow \singlelocalviewkwd \rightarrow \mcprop$}
 
-\begin{mathpar}[private]
-\inferrule
+\begin{mathpar}
+\inferrule[private]
 {\programcounter{ps}{\privatecmdkwd}\\
 \privatestep{curid}{ps}{ps'}}
 { \singlelocalstep{curid}{(\singlelocalview{ps})}{(\singlelocalview{ps'})}}
@@ -252,7 +299,7 @@ which you can see in Figure~\ref{fig:chapter:conlink:single-split-step-rules}.
 \noindent\fbox{srstate:}
 $$
 \begin{array}{lll}
-\srstatekwd & := & \srstateconkwd : \privatestate \rightarrow \mclog \rightarrow \mclog \rightarrow \srstatekwd \\
+\srstatekwd & := & \srstate{(ps:\privatestate)}{(log_{global}: \mclog)}{(log_{cache} :\mclog)}\\
 \end{array}
 $$
 
@@ -284,31 +331,31 @@ l_0 = \listappoppo{al_0}{l}\\
 {\matchsrstaterstate{(\srstate{ps}{l}{al})}{(\rstate{ps}{l'})}}
 \end{mathpar}
 
-\noindent\fbox{top lemmas}
-
-\begin{enumerate}
-\item single$\_$local$\_$imply$\_$env:\\
-$
-\begin{array}{l}
-\forall \ cpuid \ l \ ps \ ps' .\ \singlelocalstep{cpuid}{(\singlelocalview{ps})}{(\singlelocalview{ps'})} \rightarrow \\
-\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \hardwarelocalstep{cpuid}{(\localview{ps}{l})}{(\localview{ps'}{\nulllist})}\\
-\end{array}
-$
-\item single$\_$log$\_$imply$\_$env:\\
-$
-\begin{array}{l}
-\forall \ cpuid \ l \ l' \ ps \ ps' .\ \singlelogstep{cpuid}{(\localview{ps}{l})}{(\localview{ps'}{l'})} \rightarrow \\
-\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \hardwarelocalstep{cpuid}{(\localview{ps}{l})}{(\localview{ps'}{l'})}\\
-\end{array}
-$
-\item one$\_$step$\_$split$\_$refines$\_$big2 : \\
-$
-\begin{array}{l}
-\forall \ cpuid \ si\_o \ s_h \ s_h' \ t \ s_l . \ \singlesplitstep{cpuid}{si\_o}{s_h}{t}{s_h'} \rightarrow  \matchsrstaterstate{s_h}{s_l} \rightarrow \\
-\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \exists\ s_l' . \  \ccplusstep{\singlebigtwostep{cpuid}{si\_o}{s_l}{t}{s_l'}} \wedge  \matchsrstaterstate{s_h'}{s_l'}\\
-\end{array}
-$
-\end{enumerate}
+%\noindent\fbox{top lemmas}
+%
+%\begin{enumerate}
+%\item single$\_$local$\_$imply$\_$env:\\
+%$
+%\begin{array}{l}
+%\forall \ cpuid \ l \ ps \ ps' .\ \singlelocalstep{cpuid}{(\singlelocalview{ps})}{(\singlelocalview{ps'})} \rightarrow \\
+%\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \hardwarelocalstep{cpuid}{(\localview{ps}{l})}{(\localview{ps'}{\nulllist})}\\
+%\end{array}
+%$
+%\item single$\_$log$\_$imply$\_$env:\\
+%$
+%\begin{array}{l}
+%\forall \ cpuid \ l \ l' \ ps \ ps' .\ \singlelogstep{cpuid}{(\localview{ps}{l})}{(\localview{ps'}{l'})} \rightarrow \\
+%\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \hardwarelocalstep{cpuid}{(\localview{ps}{l})}{(\localview{ps'}{l'})}\\
+%\end{array}
+%$
+%\item one$\_$step$\_$split$\_$refines$\_$big2 : \\
+%$
+%\begin{array}{l}
+%\forall \ cpuid \ si\_o \ s_h \ s_h' \ t \ s_l . \ \singlesplitstep{cpuid}{si\_o}{s_h}{t}{s_h'} \rightarrow  \matchsrstaterstate{s_h}{s_l} \rightarrow \\
+%\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \exists\ s_l' . \  \ccplusstep{\singlebigtwostep{cpuid}{si\_o}{s_l}{t}{s_l'}} \wedge  \matchsrstaterstate{s_h'}{s_l'}\\
+%\end{array}
+%$
+%\end{enumerate}
 \caption{Split Refines Big2}
 \label{fig:chapter:conlink:split-refines-bigtwo}
 \end{figure}
@@ -317,8 +364,48 @@ The refinement between this model and the big step style single core machine req
 With those lemmas 
 the top-level proof, the lemma 3 in  Figure~\ref{fig:chapter:conlink:split-refines-bigtwo} is straightforward.
 
+
+
+\begin{lemma}[single$\_$local$\_$imply$\_$env]
+\begin{tabular}{P{0.95\textwidth}}
+$
+\begin{array}{l}
+\forall \ cpuid \ l \ ps \ ps' .\ \singlelocalstep{cpuid}{(\singlelocalview{ps})}{(\singlelocalview{ps'})} \rightarrow \\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \hardwarelocalstep{cpuid}{(\localview{ps}{l})}{(\localview{ps'}{\nulllist})}\\
+\end{array}
+$
+\end{tabular}
+\end{lemma}
+
+
+\begin{lemma}[single$\_$log$\_$imply$\_$env]
+\begin{tabular}{P{0.95\textwidth}}
+$
+\begin{array}{l}
+\forall \ cpuid \ l \ l' \ ps \ ps' .\ \singlelogstep{cpuid}{(\localview{ps}{l})}{(\localview{ps'}{l'})} \rightarrow \\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \hardwarelocalstep{cpuid}{(\localview{ps}{l})}{(\localview{ps'}{l'})}\\
+\end{array}
+$
+\end{tabular}
+\end{lemma}
+
+
+
+\begin{lemma}[one$\_$step$\_$split$\_$refines$\_$big2]
+\begin{tabular}{P{0.95\textwidth}}
+$
+\begin{array}{l}
+\forall \ cpuid \ si\_o \ s_h \ s_h' \ t \ s_l . \ \singlesplitstep{cpuid}{si\_o}{s_h}{t}{s_h'} \rightarrow  \matchsrstaterstate{s_h}{s_l} \rightarrow \\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \exists\ s_l' . \  \ccplusstep{\singlebigtwostep{cpuid}{si\_o}{s_l}{t}{s_l'}} \wedge  \matchsrstaterstate{s_h'}{s_l'}\\
+\end{array}
+$
+\end{tabular}
+\end{lemma}
+
+
+
 \begin{figure}
-\noindent\fbox{single reorder step: ${}_{[curid : \ztype]} (oracle : \mcoracle{\set{curid}}{\mclog}{\mclog}) :  \srstatekwd \rightarrow \cctracekwd \rightarrow \srstatekwd \rightarrow \mcprop$}
+\noindent\fbox{reorder step: ${}_{[curid : \ztype]} (oracle : \mcoracle{\set{curid}}{\mclog}{\mclog}) :  \srstatekwd \rightarrow \cctracekwd \rightarrow \srstatekwd \rightarrow \mcprop$}
 
 \begin{mathpar}
 \inferrule
@@ -375,10 +462,48 @@ l_h \neq \listconsoppo{\yieldev{\_}}{\_} \\
 {\matchrstatesrstate{(\rstate{ps_h}{l_h})}{(\srstate{ps_l}{l_l}{al})}}
 \end{mathpar}
 
-\noindent\fbox{hypothesis}
-\begin{enumerate}
-\item valid$\_$oracle$\_$def: $\validoraclenoeq{cpuid}{\set{cpuid}}{si\_o }$
-\item YieldBack$\_$consistence$\_$with$\_$reorder$\_$o :\\
+%\noindent\fbox{hypothesis}
+%\begin{enumerate}
+%\item valid$\_$oracle$\_$def: $\validoraclenoeq{cpuid}{\set{cpuid}}{si\_o }$
+%\item YieldBack$\_$consistence$\_$with$\_$reorder$\_$o :\\
+%$
+%\begin{array}{l}
+%\forall \ ps_h \ l_h \ ps_l \ l_l \ al.\ \matchrstatesrstate{(\rstate{ps_h}{l_h})}{(\srstate{ps_l}{l_l}{al})} \rightarrow \\
+%\ \ \ \ \ \ \ \ \ \ \validlog{cpuid}{(\listconsoppo{\yieldev{cpuid}}{\listappoppo{al}{l_l}})} \rightarrow \\
+%\ \ \ \ \ \ \ \ \ \ \exists\ l_1. \ \yieldbackfunc{\timebound}{cpuid}{\listconsoppo{\yieldev{cpuid}}{\listappoppo{al}{l_l}}}{\nulllist}{si\_o}{l_1} \wedge \\ 
+%\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \forall \ l_1' .\  \oget{\set{cpuid}}{\mclog}{\mclog}{l_h}{re\_o}{l_1'} \rightarrow \\ 
+%\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \  \ \ \ \ \ \ l_1' = \listappoppo{l_1}{\listconsoppo{\yieldev{cpuid}}{al}} \\
+%\end{array}
+%$
+%\end{enumerate}
+%
+%\noindent\fbox{top lemmas}
+%\begin{enumerate}
+%\item one$\_$step$\_$reorder$\_$refines$\_$split : \\
+%$
+%\begin{array}{l}
+%\forall \ s_h \ s_h' \ t \ s_l . \ \singlereorderstep{cpuid}{re\_o}{s_h}{t}{s_h'} \rightarrow  \matchrstatesrstate{s_h}{s_l} \rightarrow \\
+%\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \exists\ s_l' .\ \singlesplitstep{cpuid}{si\_o}{s_l}{t}{s_l'} \wedge  \matchrstatesrstate{s_h'}{s_l'}\\
+%\end{array}
+%$
+%\end{enumerate}
+\caption{Reorder Refines Split}
+\label{fig:chapter:conlink:reorder-refines-split}
+\end{figure}
+%%%%%%%%%%%%%%%%
+The refinement proof between those different kinds of oracle queries needs an assumption about the relation between those two queries. 
+The hypothesis 2 in Figure~\ref{fig:chapter:conlink:reorder-refines-split} 
+states the hypothesis that is 
+required to prove the top level lemma (lemma 1) in Figure~\ref{fig:chapter:conlink:reorder-refines-split}.
+
+\begin{hypothesis}[valid$\_$oracle$\_$def]
+\begin{tabular}{P{0.95\textwidth}}
+$\validoraclenoeq{cpuid}{\set{cpuid}}{si\_o }$
+\end{tabular}
+\end{hypothesis}
+
+\begin{hypothesis}[YieldBack$\_$consistence$\_$with$\_$reorder$\_$o]
+\begin{tabular}{P{0.95\textwidth}}
 $
 \begin{array}{l}
 \forall \ ps_h \ l_h \ ps_l \ l_l \ al.\ \matchrstatesrstate{(\rstate{ps_h}{l_h})}{(\srstate{ps_l}{l_l}{al})} \rightarrow \\
@@ -388,26 +513,19 @@ $
 \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \  \ \ \ \ \ \ l_1' = \listappoppo{l_1}{\listconsoppo{\yieldev{cpuid}}{al}} \\
 \end{array}
 $
-\end{enumerate}
+\end{tabular}
+\end{hypothesis}
 
-\noindent\fbox{top lemmas}
-\begin{enumerate}
-\item one$\_$step$\_$reorder$\_$refines$\_$split : \\
+\begin{lemma}[one$\_$step$\_$reorder$\_$refines$\_$split]
+\begin{tabular}{P{0.95\textwidth}}
 $
 \begin{array}{l}
 \forall \ s_h \ s_h' \ t \ s_l . \ \singlereorderstep{cpuid}{re\_o}{s_h}{t}{s_h'} \rightarrow  \matchrstatesrstate{s_h}{s_l} \rightarrow \\
 \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \exists\ s_l' .\ \singlesplitstep{cpuid}{si\_o}{s_l}{t}{s_l'} \wedge  \matchrstatesrstate{s_h'}{s_l'}\\
 \end{array}
 $
-\end{enumerate}
-\caption{Reorder Refines Split}
-\label{fig:chapter:conlink:reorder-refines-split}
-\end{figure}
-%%%%%%%%%%%%%%%%
-The refinement proof between those different kinds of oracle queries needs an assumption about the relation between those two queries. 
-The hypothesis 2 in Figure~\ref{fig:chapter:conlink:reorder-refines-split} 
-states the hypothesis that is 
-required to prove the top level lemma (lemma 1) in Figure~\ref{fig:chapter:conlink:reorder-refines-split}.
+\end{tabular}
+\end{lemma}
 
 
 \begin{figure}
@@ -448,29 +566,29 @@ $$
 {\mcreducelogfunc{l}{l'}}
 {\matchrrstaterrstae{(\rstate{ps}{l'})}{(\rstate{ps}{l})}}
 \end{mathpar}
-
-\noindent\fbox{hypothesis}
-\begin{enumerate}
-\item relate$\_$reorder$\_$oracle$\_$def: \\
-$
-\begin{array}{l}
-\forall \ ps \ l.\ \matchrrstaterrstae{(\rstate{ps}{(\mcreducelogfuncnoeq{l})}}{(\rstate{ps}{l})} \rightarrow \\
-\ \ \ \ \ \ \ \ \ \ \ \ \forall \ l_h. \ \oget{\set{cpuid}}{\mclog}{\mclog}{(\mcreducelogfuncnoeq{l})}{hi\_re\_o}{l\_h} \rightarrow \\
-\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \exists \ l. \ \oget{\set{cpuid}}{\mclog}{\mclog}{l}{lo\_re\_o}{l\_l} \wedge \mcreducelogfunc{l\_l}{l\_h} \\
-\end{array}
-$
-\end{enumerate}
-
-\noindent\fbox{top lemmas}
-\begin{enumerate}
-\item one$\_$step$\_$reorder$\_$refines$\_$reorder : \\
-$
-\begin{array}{l}
-\forall \ s_h \ s_h' \ t \ s_l . \ \singlereorderstep{cpuid}{hi\_re\_o}{s_h}{t}{s\_h'} \rightarrow \matchrrstaterrstae{s_h}{s_l} \rightarrow \\
-\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \exists\ s_l' . \  \singlereorderstep{cpuid}{lo\_re\_o}{s_l}{t}{s\_l'} \wedge  \matchrrstaterrstae{s_h'}{s_l'}\\
-\end{array}
-$
-\end{enumerate}
+%
+%\noindent\fbox{hypothesis}
+%\begin{enumerate}
+%\item relate$\_$reorder$\_$oracle$\_$def: \\
+%$
+%\begin{array}{l}
+%\forall \ ps \ l.\ \matchrrstaterrstae{(\rstate{ps}{(\mcreducelogfuncnoeq{l})}}{(\rstate{ps}{l})} \rightarrow \\
+%\ \ \ \ \ \ \ \ \ \ \ \ \forall \ l_h. \ \oget{\set{cpuid}}{\mclog}{\mclog}{(\mcreducelogfuncnoeq{l})}{hi\_re\_o}{l\_h} \rightarrow \\
+%\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \exists \ l. \ \oget{\set{cpuid}}{\mclog}{\mclog}{l}{lo\_re\_o}{l\_l} \wedge \mcreducelogfunc{l\_l}{l\_h} \\
+%\end{array}
+%$
+%\end{enumerate}
+%
+%\noindent\fbox{top lemmas}
+%\begin{enumerate}
+%\item one$\_$step$\_$reorder$\_$refines$\_$reorder : \\
+%$
+%\begin{array}{l}
+%\forall \ s_h \ s_h' \ t \ s_l . \ \singlereorderstep{cpuid}{hi\_re\_o}{s_h}{t}{s\_h'} \rightarrow \matchrrstaterrstae{s_h}{s_l} \rightarrow \\
+%\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \exists\ s_l' . \  \singlereorderstep{cpuid}{lo\_re\_o}{s_l}{t}{s\_l'} \wedge  \matchrrstaterrstae{s_h'}{s_l'}\\
+%\end{array}
+%$
+%\end{enumerate}
 \caption{Reorder Refines Reorder}
 \label{fig:chapter:conlink:reorder-refines-reorder}
 \end{figure}
@@ -488,6 +606,28 @@ It also shows that those two machines
 that are same but use different logs
 can be connected via the lemma 1 in  Figure~\ref{fig:chapter:conlink:reorder-refines-reorder}.
 
+\begin{hypothesis}[relate$\_$reorder$\_$oracle$\_$def]
+\begin{tabular}{P{0.95\textwidth}}
+$
+\begin{array}{l}
+\forall \ ps \ l.\ \matchrrstaterrstae{(\rstate{ps}{(\mcreducelogfuncnoeq{l})}}{(\rstate{ps}{l})} \rightarrow \\
+\ \ \ \ \ \ \ \ \ \ \ \ \forall \ l_h. \ \oget{\set{cpuid}}{\mclog}{\mclog}{(\mcreducelogfuncnoeq{l})}{hi\_re\_o}{l\_h} \rightarrow \\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \exists \ l. \ \oget{\set{cpuid}}{\mclog}{\mclog}{l}{lo\_re\_o}{l\_l} \wedge \mcreducelogfunc{l\_l}{l\_h} \\
+\end{array}
+$
+\end{tabular}
+\end{hypothesis}
+
+\begin{lemma}[one$\_$step$\_$reorder$\_$refines$\_$reorder]
+\begin{tabular}{P{0.95\textwidth}}
+$
+\begin{array}{l}
+\forall \ s_h \ s_h' \ t \ s_l . \ \singlereorderstep{cpuid}{hi\_re\_o}{s_h}{t}{s\_h'} \rightarrow \matchrrstaterrstae{s_h}{s_l} \rightarrow \\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \exists\ s_l' . \  \singlereorderstep{cpuid}{lo\_re\_o}{s_l}{t}{s\_l'} \wedge  \matchrrstaterrstae{s_h'}{s_l'}\\
+\end{array}
+$
+\end{tabular}
+\end{lemma}
 
 
 \subsubsection{Divide the Global Log}
@@ -501,7 +641,7 @@ $$
 \separatelogtypekwd & := & \listconstructorkwd\ \separateeventkwd\\
 \separatelogkwd & := &   \ztype \rightarrow \separatelogtypekwd \\
 \separateoraclelogtypekwd & := & \ztype \times \separatelogtypekwd \times \primitiveid \\
-\spstatekwd & := & \spstateconkwd : \privatestate \rightarrow \separatelogkwd \rightarrow \spstatekwd \\
+\spstatekwd & := & \spstate{(ps: \privatestate)}{(log_{sep}: \separatelogkwd)} \\
 \end{array}
 $$
 
@@ -571,7 +711,7 @@ $$
 \end{figure}
 
 \begin{figure}
-\noindent\fbox{separate step:
+\noindent\fbox{sep step:
 ${}_{[curid : \ztype]} (oracle : \mcoracle{\set{curid}}{\separateoraclelogtypekwd}{\separatelogtypekwd}) :  \spstatekwd \rightarrow \cctracekwd \rightarrow \spstatekwd \rightarrow \mcprop$
 }
 \begin{mathpar}
@@ -648,13 +788,13 @@ $
 \begin{figure}
 \noindent\fbox{variables for match relation}
 
-$
+$$
 \begin{array}{lllr}
 cpuid & : & \ztype & \mbox{(starting CPU of the system)}\\
 sep\_o & : & \mcoracle{\set{cpuid}}{\separateoraclelogtypekwd}{\separatelogtypekwd} &  \mbox{(separate log type oracle)}\\
 re\_o & : & \mcoracle{\set{cpuid}}{\mclog}{\mclog} &  \mbox{(reordered log oracle)}\\
 \end{array}
-$
+$$
 
 \noindent\fbox{match logs : $\ztype \rightarrow \separatelogkwd \rightarrow \mclog \rightarrow \mcprop$}
 \begin{mathpar}
@@ -673,31 +813,31 @@ $
 {\matchspstaterstate{curid}{(\spstate{ps}{l_{sep}})}{(\rstate{ps}{l_{glob}})}}
 \end{mathpar}
 
-\noindent\fbox{hypothesis}
-\begin{enumerate}
-\item valid$\_$oracle$'\_$def: $\validoracleprim{cpuid}{re\_o }$
-\item relate$\_$separate$\_$oracle$\_$reorder$\_$oracle$\_$def:\\
-$
-\begin{array}{l}
-\forall \ ps \ l_{sep} \ l_{glob} \ id  \ l_{id} \ l_{id}' \ e .\ \matchspstaterstate{curid}{(\spstate{ps}{l_{sep}})}{(\rstate{ps}{l_{glob}})} \rightarrow \\
-\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \getseparatelog{id}{l_{sep}}{l_{id}} \rightarrow \\
-\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \  \oget{\set{cpuid}}{\separateoraclelogtypekwd}{\separatelogtypekwd}{(id, l_{id}, e)}{sep\_o}{l_{id}'} \\
-\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \   \exists \ l_{glob}' .\ \oget{\set{cpuid}}{\mclog}{\mclog}{l_{glob}}{re\_o}{l_{glob}'} \wedge \\
-\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \  \ \ \ \ \ \ \loggetatom{\listapp{l_{glob}'}{l_{glob}}}{id}{\separatelogtwolognoeq{\listapp{l_{id}'}{l_{id}}}{id}} \\
-\end{array}
-$
-\end{enumerate}
-
-\noindent\fbox{top lemmas}
-\begin{enumerate}
-\item one$\_$step$\_$separate$\_$refines$\_$reorder : \\
-$
-\begin{array}{l}
-\forall \ s_h \ s_h' \ t \ s_l . \ \singleseparatestep{cpuid}{sep\_o}{s_h}{t}{s_h'} \rightarrow  \matchspstaterstate{cpuid}{s_h}{s_l} \rightarrow \\
-\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \exists\ s_l' . \  \singlereorderstep{cpuid}{re\_o}{s_l}{t}{s_l'} \wedge  \matchspstaterstate{cpuid}{s_h'}{s_l'}\\
-\end{array}
-$
-\end{enumerate}
+%\noindent\fbox{hypothesis}
+%\begin{enumerate}
+%\item valid$\_$oracle$'\_$def: $\validoracleprim{cpuid}{re\_o }$
+%\item relate$\_$separate$\_$oracle$\_$reorder$\_$oracle$\_$def:\\
+%$
+%\begin{array}{l}
+%\forall \ ps \ l_{sep} \ l_{glob} \ id  \ l_{id} \ l_{id}' \ e .\ \matchspstaterstate{curid}{(\spstate{ps}{l_{sep}})}{(\rstate{ps}{l_{glob}})} \rightarrow \\
+%\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \getseparatelog{id}{l_{sep}}{l_{id}} \rightarrow \\
+%\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \  \oget{\set{cpuid}}{\separateoraclelogtypekwd}{\separatelogtypekwd}{(id, l_{id}, e)}{sep\_o}{l_{id}'} \\
+%\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \   \exists \ l_{glob}' .\ \oget{\set{cpuid}}{\mclog}{\mclog}{l_{glob}}{re\_o}{l_{glob}'} \wedge \\
+%\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \  \ \ \ \ \ \ \loggetatom{\listapp{l_{glob}'}{l_{glob}}}{id}{\separatelogtwolognoeq{\listapp{l_{id}'}{l_{id}}}{id}} \\
+%\end{array}
+%$
+%\end{enumerate}
+%
+%\noindent\fbox{top lemmas}
+%\begin{enumerate}
+%\item one$\_$step$\_$separate$\_$refines$\_$reorder : \\
+%$
+%\begin{array}{l}
+%\forall \ s_h \ s_h' \ t \ s_l . \ \singleseparatestep{cpuid}{sep\_o}{s_h}{t}{s_h'} \rightarrow  \matchspstaterstate{cpuid}{s_h}{s_l} \rightarrow \\
+%\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \exists\ s_l' . \  \singlereorderstep{cpuid}{re\_o}{s_l}{t}{s_l'} \wedge  \matchspstaterstate{cpuid}{s_h'}{s_l'}\\
+%\end{array}
+%$
+%\end{enumerate}
 \caption{Separate Refines Reorder}
 \label{fig:chapter:conlink:separate-refines-reorder}
 \end{figure}
@@ -724,3 +864,34 @@ we also provide the refinement proof that can be further used for the $\compcert
 Figure~\ref{fig:chapter:conlink:auxiliary-functions-separate-refines-reorder} and 
 Figure~\ref{fig:chapter:conlink:separate-refines-reorder} shows 
 the related auxiliary functions, match relations, hypothesis, and proofs for them.
+
+\begin{hypothesis}[valid$\_$oracle$'\_$def]
+\begin{tabular}{P{0.95\textwidth}}
+$\validoracleprim{cpuid}{re\_o }$
+\end{tabular}
+\end{hypothesis}
+
+\begin{hypothesis}[relate$\_$separate$\_$oracle$\_$reorder$\_$oracle$\_$def]
+\begin{tabular}{P{0.95\textwidth}}
+$
+\begin{array}{l}
+\forall \ ps \ l_{sep} \ l_{glob} \ id  \ l_{id} \ l_{id}' \ e .\ \matchspstaterstate{curid}{(\spstate{ps}{l_{sep}})}{(\rstate{ps}{l_{glob}})} \rightarrow \\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \getseparatelog{id}{l_{sep}}{l_{id}} \rightarrow \\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \  \oget{\set{cpuid}}{\separateoraclelogtypekwd}{\separatelogtypekwd}{(id, l_{id}, e)}{sep\_o}{l_{id}'} \\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \   \exists \ l_{glob}' .\ \oget{\set{cpuid}}{\mclog}{\mclog}{l_{glob}}{re\_o}{l_{glob}'} \wedge \\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \  \ \ \ \ \ \ \loggetatom{\listapp{l_{glob}'}{l_{glob}}}{id}{\separatelogtwolognoeq{\listapp{l_{id}'}{l_{id}}}{id}} \\
+\end{array}
+$
+\end{tabular}
+\end{hypothesis}
+
+\begin{lemma}[one$\_$step$\_$separate$\_$refines$\_$reorder]
+\begin{tabular}{P{0.95\textwidth}}
+$
+\begin{array}{l}
+\forall \ s_h \ s_h' \ t \ s_l . \ \singleseparatestep{cpuid}{sep\_o}{s_h}{t}{s_h'} \rightarrow  \matchspstaterstate{cpuid}{s_h}{s_l} \rightarrow \\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \exists\ s_l' . \  \singlereorderstep{cpuid}{re\_o}{s_l}{t}{s_l'} \wedge  \matchspstaterstate{cpuid}{s_h'}{s_l'}\\
+\end{array}
+$
+\end{tabular}
+\end{lemma}

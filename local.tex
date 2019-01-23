@@ -82,6 +82,7 @@
 \newtheorem{definition}{Definition}
 \newtheorem{theorem}{Theorem}
 \newtheorem{lemma}{Lemma}
+\newtheorem{hypothesis}{Hypothesis}
 \newtheorem{corollary}{Corollary}
 \newtheorem*{remark}{Remark}
 \newtheorem{invariant}{Invariant}
@@ -404,6 +405,9 @@
 %%%%%
 %%%%%
 
+\newcommand{\hardwaresetting}{\codeinmath{HardwareSetting}}
+\newcommand{\hardwaresemantics}{\codeinmath{HWSemantics}}
+
 \newcommand{\threadyieldfunc}{\codeinmath{thread\_yield}}
 \newcommand{\threadsleepfunc}{\codeinmath{thread\_sleep}}
 
@@ -625,199 +629,199 @@
 % syntax 
 
 \newcommand{\privatestate}{{\rho_{mc}}}
-\newcommand{\privatestatepoolkwd}{{\mathrm{psp}}}
+\newcommand{\privatestatepoolkwd}{{\codeinmath{psp}}}
 \newcommand{\privatestatepool}[1]{{{\privatestatepoolkwd}_{[#1]}}}
-\newcommand{\sharedpiece}{{\Theta{mc}}}
-\newcommand{\atomicevent}{{\mathrm{\textbf{\textit{e}}}_{\mathrm{atom}}}}
-\newcommand{\primitiveid}{{\mathrm{ID}_{pr}}}
-\newcommand{\atomiceventidentkwd}{{\mathrm{GetID}_{\mathrm{atom}}}}
-\newcommand{\atomiceventident}[1]{{\mathrm{GetID}_{\mathrm{atom}}({#1})}}
+\newcommand{\sharedpiece}{{\varsigma_{mc}}}
+\newcommand{\atomicevent}{{\codeinmath{\textbf{\textit{e}}}_{\codeinmath{atom}}}}
+\newcommand{\primitiveid}{{\codeinmath{ID}_{pr}}}
+\newcommand{\atomiceventidentkwd}{{\codeinmath{GetID}_{\codeinmath{atom}}}}
+\newcommand{\atomiceventident}[1]{{\codeinmath{GetID}_{\codeinmath{atom}}({#1})}}
 
 \newcommand{\coreset}{{\mathbb{S}_{core}}}
-\newcommand{\schedid}{{\mathrm{ID}_{sched}}}
+\newcommand{\schedid}{{\codeinmath{ID}_{sched}}}
 
-\newcommand{\command}{{\mathrm{\textbf{\textit{cmd}}_{mc}}}}
-\newcommand{\mcevent}{{\mathrm{\textbf{\textit{ev}}}_{mc}}}
-\newcommand{\mclog}{{\mathrm{\textbf{\textit{log}}}_{\mathrm{mc}}}}
+\newcommand{\command}{{\codeinmath{\textbf{\textit{cmd}}}_{\codeinmath{mc}}}}
+\newcommand{\mcevent}{{\codeinmath{\textbf{\textit{ev}}}_{mc}}}
+\newcommand{\mclog}{{\codeinmath{\textbf{\textit{log}}}_{\mathrm{mc}}}}
 \newcommand{\mcoraclekwd}{{\varepsilon_{mc}}}
 \newcommand{\mcoracle}[3]{{{\mcoraclekwd}_{[{#1}, {#2}, {#3}]}}}
-\newcommand{\ogetkwd}{{\mathrm{\textbf{oget}}}}
+\newcommand{\ogetkwd}{{\codeinmath{\textbf{oget}}}}
 \newcommand{\ogetnoeq}[5]{{\ogetkwd_{[{#1}, {#2}, {#3}]}({#4}, {#5})}}
 \newcommand{\oget}[6]{{\ogetnoeq{#1}{#2}{#3}{#4}{#5} = \optionsome \ {#6}}}
 
 
 %event and command 
-\newcommand{\privatecmdkwd}{{\mathrm{PRIVATE}}}
-\newcommand{\atomiccmdkwd}{{\mathrm{ATOMIC}}}
+\newcommand{\privatecmdkwd}{{\codeinmath{PRIVATE}}}
+\newcommand{\atomiccmdkwd}{{\codeinmath{ATOMIC}}}
 \newcommand{\atomiccmd}[2]{{\atomiccmdkwd\langle{#1}, {#2}\rangle}}
-\newcommand{\acqsharedcmdkwd}{{\mathrm{ACQ}\_\mathrm{SHARED}}}
+\newcommand{\acqsharedcmdkwd}{{\codeinmath{ACQ}\_\codeinmath{SHARED}}}
 \newcommand{\acqsharedcmd}[1]{{\acqsharedcmdkwd\langle{#1}\rangle}}
-\newcommand{\relsharedcmdkwd}{{\mathrm{REL}\_\mathrm{SHARED}}}
+\newcommand{\relsharedcmdkwd}{{\codeinmath{REL}\_\codeinmath{SHARED}}}
 \newcommand{\relsharedcmd}[1]{{\relsharedcmdkwd\langle{#1}\rangle}}
 
 
-\newcommand{\yieldevkwd}{{\mathrm{EYIELD}}}
+\newcommand{\yieldevkwd}{{\codeinmath{EYIELD}}}
 \newcommand{\yieldev}[1]{{\yieldevkwd\langle{#1}\rangle}}
-\newcommand{\yieldbackevkwd}{{\mathrm{EBACK}}}
+\newcommand{\yieldbackevkwd}{{\codeinmath{EBACK}}}
 \newcommand{\yieldbackev}[1]{{\yieldbackevkwd\langle{#1}\rangle}}
-\newcommand{\acqevkwd}{{\mathrm{EACQ}}}
+\newcommand{\acqevkwd}{{\codeinmath{EACQ}}}
 \newcommand{\acqev}[2]{{\acqevkwd\langle{#1}, {#2}\rangle}}
-\newcommand{\relevkwd}{{\mathrm{EREL}}}
+\newcommand{\relevkwd}{{\codeinmath{EREL}}}
 \newcommand{\relev}[3]{{\relevkwd\langle{#1}, {#2}, {#3}\rangle}}
-\newcommand{\atomicevkwd}{{\mathrm{EATOMIC}}}
+\newcommand{\atomicevkwd}{{\codeinmath{EATOMIC}}}
 \newcommand{\atomicev}[3]{{\atomicevkwd\langle{#1}, {#2}, {#3}\rangle}}
 
 % semantics 
-\newcommand{\mcprop}{{\mathcal{P}}}
-\newcommand{\optioncmd}[1]{{\mathrm{option}~{#1}}}
+\newcommand{\mcprop}{{\codeinmath{P}}}
+\newcommand{\optioncmd}[1]{{\codeinmath{option}~{#1}}}
 
-\newcommand{\programcounterkwd}{{\mathrm{\textbf{PC}}}}
+\newcommand{\programcounterkwd}{{\codeinmath{\textbf{PC}}}}
 \newcommand{\programcounter}[2]{{\programcounterkwd \ {#1} \ {#2}}}
-\newcommand{\privatestepkwd}{{{\mathrm{step}_{private}}}}
+\newcommand{\privatestepkwd}{{{\codeinmath{Eval}_{\codeinmath{private}}}}}
 \newcommand{\privatestep}[3]{{\privatestepkwd \ {#1} \ {#2} \ {#3}}}
-\newcommand{\getsharedstepkwd}{{\mathrm{step}_{get}}}
+\newcommand{\getsharedstepkwd}{{\codeinmath{Eval}_{\codeinmath{get}}}}
 \newcommand{\getsharedstep}[3]{{\getsharedstepkwd \ {#1} \ {#2} \ {#3}}}
-\newcommand{\setsharedstepkwd}{{\mathrm{step}_{set}}}
+\newcommand{\setsharedstepkwd}{{\codeinmath{Eval}_{\codeinmath{set}}}}
 \newcommand{\setsharedstep}[3]{{\setsharedstepkwd \ {#1} \ {#2} \ {#3}}}
-\newcommand{\atomicstepkwd}{{\mathrm{step}_{atom}}}
+\newcommand{\atomicstepkwd}{{\codeinmath{Eval}_{\codeinmath{atom}}}}
 \newcommand{\atomicstep}[6]{{\atomicstepkwd \ {#1} \ {#2} \ {#3} \ {#4} \ {#5} \ {#6}}}
-\newcommand{\loggetatomkwd}{{\mathrm{lget}_{atom}}}
+\newcommand{\loggetatomkwd}{{\codeinmath{lget}_{\codeinmath{atom}}}}
 \newcommand{\loggetatomnoeq}[2]{{\loggetatomkwd({#1}, {#2})}}
 \newcommand{\loggetatom}[3]{{\loggetatomnoeq{#1}{#2} = {#3}}}
 
 % hardware local step related definitions 
-\newcommand{\ofreekwd}{{\mathrm{OFREE}}}
+\newcommand{\ofreekwd}{{\codeinmath{OFREE}}}
 \newcommand{\ofreestate}[1]{{\ofreekwd\langle{#1}\rangle}}
-\newcommand{\ownkwd}{{\mathrm{OWN}}}
+\newcommand{\ownkwd}{{\codeinmath{OWN}}}
 \newcommand{\ownstate}[1]{{\ownkwd\langle{#1}\rangle}}
-\newcommand{\ownstatekwd}{{\mathrm{Owner}}}
+\newcommand{\ownstatekwd}{{\codeinmath{Owner}}}
 
-\newcommand{\hstatekwd}{{\mathrm{hstate}}}
-\newcommand{\hstateconkwd}{{\mathrm{HState}}}
+\newcommand{\hstatekwd}{{\codeinmath{hstate}}}
+\newcommand{\hstateconkwd}{{\codeinmath{HState}}}
 \newcommand{\hstate}[3]{{\hstateconkwd \ {#1} \ {#2}\ {#3}}}
-\newcommand{\localviewkwd}{{\mathrm{l}\_\mathrm{view}}}
-\newcommand{\localviewconkwd}{{\mathrm{LView}}}
+\newcommand{\localviewkwd}{{\codeinmath{view}_{\codeinmath{l}}}}
+\newcommand{\localviewconkwd}{{\codeinmath{LView}}}
 \newcommand{\localview}[2]{{\localviewconkwd \ {#1} \ {#2}}}
-\newcommand{\calownerkwd}{{\mathrm{CalOwner}}}
+\newcommand{\calownerkwd}{{\codeinmath{CalOwner}}}
 \newcommand{\calowner}[3]{{\calownerkwd({#1},{#2})={#3}}}
 
-\newcommand{\hardwarelocalstep}[3]{{\mathrm{step}_{hwlocal} \ {#1}\ {#2}\ {#3}}}
+\newcommand{\hardwarelocalstep}[3]{{\codeinmath{LMach}_{{\codeinmath{CPU}}} \ {#1}\ {#2}\ {#3}}}
 
-\newcommand{\getpstkwd}{{\mathrm{getPST}}}
+\newcommand{\getpstkwd}{{\codeinmath{getPST}}}
 \newcommand{\getpstnoeq}[3]{{\getpstkwd_{[{#1}]}~({#2},\ {#3})}}
 \newcommand{\getpstsome}[4]{{\getpstnoeq{#1}{#2}{#3} = \optionsome \ {#4}}}
 \newcommand{\getpstnone}[3]{{\getpstnoeq{#1}{#2}{#3}   = \optionnone}}
 
-\newcommand{\setpstkwd}{{\mathrm{setPST}}}
+\newcommand{\setpstkwd}{{\codeinmath{setPST}}}
 \newcommand{\setpstnoeq}[4]{{\setpstkwd_{[{#1}]}~({#2}, \ {#3}, \ {#4})}}
 \newcommand{\setpst}[5]{{\setpstnoeq{#1}{#2}{#3}{#4} = {#5}}}
 
 
-\newcommand{\hardwarestepkwd}{{{\mathrm{hw}_{mc}\_\mathrm{step}}}}
+\newcommand{\hardwarestepkwd}{{{\codeinmath{Mach}_\codeinmath{mc}}}}
 \newcommand{\hardwarestep}[4]{{\hardwarestepkwd~{#1}~{#2}~{#3}~{#4}}}
 
 
 % for oracle fairness
-\newcommand{\timebound}{{\lceil{\mathcal{T}}\rceil}}
-\newcommand{\yieldbackfunckwd}{{\mathrm{AbsYBack}}}
+\newcommand{\timebound}{{\lceil{\codeinmath{T}}\rceil}}
+\newcommand{\yieldbackfunckwd}{{\codeinmath{AbsYBack}}}
 \newcommand{\yieldbackfuncnoeq}[5]{{\yieldbackfunckwd_{#1}({#2},{#3},{#4},{#5})}}
 
 \newcommand{\yieldbackfunc}[6]{{\yieldbackfuncnoeq{#1}{#2}{#3}{#4}{#5} = \optionsome\ {#6}}}
 
 
 % for oracle step
-\newcommand{\localstatekwd}{{\mathrm{l}\_\mathrm{state}}}
-\newcommand{\localstatepool}[1]{{\mathrm{lsp}_{[#1]}}}
-\newcommand{\localstateconkwd}{{\mathrm{LState}}}
+\newcommand{\localstatekwd}{{\codeinmath{state}_{\codeinmath{l}}}}
+\newcommand{\localstatepool}[1]{{\codeinmath{lsp}_{[#1]}}}
+\newcommand{\localstateconkwd}{{\codeinmath{LState}}}
 \newcommand{\localstate}[2]{{\localstateconkwd~{#1}~{#2}}}
 
-\newcommand{\mcstatekwd}{{\mathrm{state}}}
-\newcommand{\mcstateconkwd}{{\mathrm{State}}}
+\newcommand{\mcstatekwd}{{\codeinmath{state}}}
+\newcommand{\mcstateconkwd}{{\codeinmath{State}}}
 \newcommand{\mcstate}[3]{{\mcstateconkwd \ {#1} \ {#2}\ {#3}}}
 
 
-\newcommand{\oraclestepkwd}{{{\mathrm{oracle}_{mc}\_\mathrm{step}}}}
+\newcommand{\oraclestepkwd}{{{\codeinmath{Mach}_{\codeinmath{hworacle}}}}}
 \newcommand{\oraclestep}[4]{{\oraclestepkwd~{#1}~{#2}~{#3}~{#4}}}
 
 
 % for env step
 
-\newcommand{\envstatekwd}{{\mathrm{estate}}}
-\newcommand{\envstateconkwd}{{\mathrm{EState}}}
+\newcommand{\envstatekwd}{{\codeinmath{estate}}}
+\newcommand{\envstateconkwd}{{\codeinmath{EState}}}
 \newcommand{\envstate}[4]{{\envstateconkwd_{[{#1}]}~{#2}~{#3}~{#4}}}
-\newcommand{\envstepkwd}{{\mathrm{env}\_\mathrm{step}}}
+\newcommand{\envstepkwd}{{\codeinmath{Mach}_{\codeinmath{env}}}}
 \newcommand{\envstep}[5]{{\envstepkwd_{[{#1}]}~{#2}~{#3}~{#4}~{#5}}}
-\newcommand{\backidkwd}{{\mathrm{backID}}}
+\newcommand{\backidkwd}{{\codeinmath{backID}}}
 \newcommand{\backid}[3]{{\backidkwd({#1}, {#2}) = {#3}}}
 
 % for single, single big, single big2 step
-\newcommand{\singlestatekwd}{{\mathrm{s}\_\mathrm{state}}}
-\newcommand{\singlestateconkwd}{{\mathrm{SState}}}
+\newcommand{\singlestatekwd}{{\codeinmath{state}_{\codeinmath{si}}}}
+\newcommand{\singlestateconkwd}{{\codeinmath{SState}}}
 \newcommand{\singlestate}[3]{{\singlestateconkwd~{#1}~{#2}~{#3}}}
-\newcommand{\singlestepkwd}{{{\mathrm{single}\_\mathrm{step}}}}
+\newcommand{\singlestepkwd}{{{\codeinmath{Mach}_{\codeinmath{si}}}}}
 \newcommand{\singlestep}[5]{{\singlestepkwd_{[{#1}]}~{#2}~{#3}~{#4}~{#5}}}
 
-\newcommand{\singlebigstepkwd}{{\mathrm{single}\_\mathrm{big}\_\mathrm{step}}}
+\newcommand{\singlebigstepkwd}{{\codeinmath{Mach}_{\codeinmath{si\_big}}}}
 \newcommand{\singlebigstep}[5]{{\singlebigstepkwd_{[{#1}]}~{#2}~{#3}~{#4}~{#5}}}
 
 
-\newcommand{\rstatekwd}{{\mathrm{rstate}}}
-\newcommand{\rstateconkwd}{{\mathrm{RState}}}
+\newcommand{\rstatekwd}{{\codeinmath{rstate}}}
+\newcommand{\rstateconkwd}{{\codeinmath{RState}}}
 \newcommand{\rstate}[2]{{\rstateconkwd~{#1}~{#2}}}
-\newcommand{\singlebigtwostepkwd}{{\mathrm{single}\_\mathrm{big2}\_\mathrm{step}}}
+\newcommand{\singlebigtwostepkwd}{{\codeinmath{Mach}_{\codeinmath{si\_big}'}}}
 \newcommand{\singlebigtwostep}[5]{{\singlebigtwostepkwd_{[{#1}]}~{#2}~{#3}~{#4}~{#5}}}
 
 % split step and reorder step
 
-\newcommand{\singlelocalviewkwd}{{\mathrm{s}\_\mathrm{l}\_\mathrm{view}}}
-\newcommand{\singlelocalviewconskwd}{{\mathrm{SView}}}
+\newcommand{\singlelocalviewkwd}{{\codeinmath{view}_{\codeinmath{si}\_\codeinmath{l}}}}
+\newcommand{\singlelocalviewconskwd}{{\codeinmath{SView}}}
 \newcommand{\singlelocalview}[1]{{\singlelocalviewconskwd~{#1}}}
-\newcommand{\singlelocalstepkwd}{{\mathrm{single}\_\mathrm{local}\_\mathrm{step}}}
+\newcommand{\singlelocalstepkwd}{{\codeinmath{LMach}_{\codeinmath{si}_{\codeinmath{local}}}}}
 \newcommand{\singlelocalstep}[3]{{\singlelocalstepkwd~{#1}~{#2}~{#3}}}
 
-\newcommand{\singlelogstepkwd}{{\mathrm{single}\_\mathrm{log}\_\mathrm{step}}}
+\newcommand{\singlelogstepkwd}{{\codeinmath{LMach}_{\codeinmath{si}_{\codeinmath{log}}}}}
 \newcommand{\singlelogstep}[3]{{\singlelogstepkwd~{#1}~{#2}~{#3}}}
 
-\newcommand{\srstatekwd}{{\mathrm{srstate}}}
-\newcommand{\srstateconkwd}{{\mathrm{SRState}}}
+\newcommand{\srstatekwd}{{\codeinmath{srstate}}}
+\newcommand{\srstateconkwd}{{\codeinmath{SRState}}}
 \newcommand{\srstate}[3]{{\srstateconkwd~{#1}~{#2}~{#3}}}
-\newcommand{\singlesplitstepkwd}{{\mathrm{single}\_\mathrm{split}\_\mathrm{step}}}
+\newcommand{\singlesplitstepkwd}{{\codeinmath{Mach}_{\mathrm{split}}}}
 \newcommand{\singlesplitstep}[5]{{\singlesplitstepkwd_{[{#1}]}~{#2}~{#3}~{#4}~{#5}}}
 
-\newcommand{\singlereorderstepkwd}{{\mathrm{single}\_\mathrm{reorder}\_\mathrm{step}}}
+\newcommand{\singlereorderstepkwd}{{\codeinmath{Mach}_{\codeinmath{reorder}}}}
 \newcommand{\singlereorderstep}[5]{{\singlereorderstepkwd_{[{#1}]}~{#2}~{#3}~{#4}~{#5}}}
 
 
 % separate step
 
-\newcommand{\separateeventkwd}{{\mathrm{\textbf{\textit{sp}}}\_\mathrm{\textbf{\textit{ev}}}}}
-\newcommand{\separateacqevkwd}{{\mathrm{SEACQ}}}
+\newcommand{\separateeventkwd}{{\mcevent_{\codeinmath{sep}}}}
+\newcommand{\separateacqevkwd}{{\codeinmath{SEACQ}}}
 \newcommand{\separateacqev}[1]{{\separateacqevkwd\langle{#1}\rangle}}
-\newcommand{\separaterelevkwd}{{\mathrm{SEREL}}}
+\newcommand{\separaterelevkwd}{{\codeinmath{SEREL}}}
 \newcommand{\separaterelev}[2]{{\separaterelevkwd\langle{#1}, {#2}\rangle}}
-\newcommand{\separateatomicevkwd}{{\mathrm{SEATOMIC}}}
+\newcommand{\separateatomicevkwd}{{\codeinmath{SEATOMIC}}}
 \newcommand{\separateatomicev}[2]{{\separateatomicevkwd\langle{#1},{#2}\rangle}}
 
-\newcommand{\separatelogtypekwd}{{\mathrm{sp}\_\mathrm{l}\_\mathrm{ty}}}
-\newcommand{\separatelogkwd}{{\mathrm{sp}\_\mathrm{l}}}
-\newcommand{\separateoraclelogtypekwd}{{\mclog_{\_sp}}}
+\newcommand{\separatelogtypekwd}{{\mclog_{\codeinmath{sep}}}}
+\newcommand{\separatelogkwd}{{\overline{\separatelogtypekwd}}}
+\newcommand{\separateoraclelogtypekwd}{{\mathcal{O}_{\separatelogtypekwd}}}
 
-\newcommand{\spstatekwd}{{\mathrm{sp}\_\mathrm{state}}}
-\newcommand{\spstateconkwd}{{\mathrm{SPState}}}
+\newcommand{\spstatekwd}{{\codeinmath{state}_{\codeinmath{sep}}}}
+\newcommand{\spstateconkwd}{{\codeinmath{SPState}}}
 \newcommand{\spstate}[2]{{\spstateconkwd~{#1}~{#2}}}
 
-\newcommand{\separatelogstepkwd}{{\mathrm{sp}\_\mathrm{log}\_{\mathrm{step}}}}
+\newcommand{\separatelogstepkwd}{{\codeinmath{LMach}_{\separatelogtypekwd}}}
 \newcommand{\separatelogstep}[5]{{\separatelogstepkwd~{#1}~{#2}~{#3}~{#4}~{#5}}}
 
-\newcommand{\separateeventtwoeventkwd}{{\mathrm{sp}\_\mathrm{ev}\_2\_\mathrm{ev}}}
+\newcommand{\separateeventtwoeventkwd}{{{\codeinmath{Get}\mcevent}_{_{\separateeventkwd}}}}
 \newcommand{\separateeventtwoeventnoeq}[2]{{\separateeventtwoeventkwd({#1}, {#2})}}
 \newcommand{\separateeventtwoevent}[3]{\separateeventtwoeventnoeq{#1}{#2} = {#3}}
 
-\newcommand{\separatelogtwologkwd}{{\mathrm{sp}\_\mathrm{log}\_2\_\mathrm{log}}}
+\newcommand{\separatelogtwologkwd}{{\codeinmath{Get}\mclog}_{_{\separatelogtypekwd}}}
 \newcommand{\separatelogtwolognoeq}[2]{{\separatelogtwologkwd({#1}, {#2})}}
 \newcommand{\separatelogtwolog}[3]{\separatelogtwolognoeq{#1}{#2} = {#3}}
 
-\newcommand{\separateeventtwoidkwd}{{\mathrm{sp}\_\mathrm{ev}\_2\_\mathrm{id}}}
+\newcommand{\separateeventtwoidkwd}{{\codeinmath{Get}\codeinmath{ID}_{_{\separateeventkwd}}}}
 \newcommand{\separateeventtwoidnoeq}[1]{{\separateeventtwoidkwd({#1})}}
 \newcommand{\separateeventtwoid}[2]{\separateeventtwoidnoeq{#1}= {#2}}
 
@@ -825,16 +829,16 @@
 \newcommand{\acqsharedid}{{\mbox{\textsf{acq}}\_\mbox{shared}}}
 \newcommand{\relsharedid}{{\mbox{\textsf{rel}}\_\mbox{shared}}}
 
-\newcommand{\getseplogkwd}{{\mathrm{getSlog}}}
+\newcommand{\getseplogkwd}{{\codeinmath{getSlog}}}
 \newcommand{\getseplognoeq}[2]{{\getseplogkwd({#1},{#2})}}
 \newcommand{\getseparatelog}[3]{{\getseplognoeq{#1}{#2} = {#3}}}
 
 
-\newcommand{\setseplogkwd}{{\mathrm{setSlog}}}
+\newcommand{\setseplogkwd}{{\codeinmath{setSlog}}}
 \newcommand{\setseplognoeq}[3]{{\setseplogkwd({#1},{#2},{#3})}}
 \newcommand{\getseplog}[4]{{\setseplognoeq{#1}{#2}{#3} = {#4}}}
 
-\newcommand{\singleseparatestepkwd}{{\mathrm{single}\_\mathrm{separate}\_\mathrm{step}}}
+\newcommand{\singleseparatestepkwd}{{\codeinmath{Mach}_{\codeinmath{sep}}}}
 \newcommand{\singleseparatestep}[5]{{\singleseparatestepkwd_{[#1]}~{#2}~{#3}~{#4}~{#5}}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
@@ -842,38 +846,38 @@
 % refinement relations
 
 % generic semantics
-\newcommand{\ccplusstepkwd}{{\mathrm{plus}}}
+\newcommand{\ccplusstepkwd}{{\codeinmath{plus}}}
 \newcommand{\ccplusstep}[1]{{\ccplusstepkwd~{#1}}}
 
-\newcommand{\ccstarstepkwd}{{\mathrm{star}}}
+\newcommand{\ccstarstepkwd}{{\codeinmath{star}}}
 \newcommand{\ccstarstep}[1]{{\ccstarstepkwd~{#1}}}
 
 % valid log 
-\newcommand{\eventsourcefunckwd}{{\mathrm{ev}\_\mathrm{src}}}
+\newcommand{\eventsourcefunckwd}{{\codeinmath{src}_{\mcevent}}}
 \newcommand{\eventsourcefuncnoeq}[1]{{\eventsourcefunckwd({#1})}}
 \newcommand{\eventsourcefunc}[2]{{\eventsourcefuncnoeq{#1} = {#2}}}
 
-\newcommand{\eventdesfunckwd}{{\mathrm{ev}\_\mathrm{des}}}
+\newcommand{\eventdesfunckwd}{{\codeinmath{des}_{\mcevent}}}
 \newcommand{\eventdesfuncnoeq}[1]{{\eventdesfunckwd({#1})}}
 \newcommand{\eventdesfunc}[2]{{\eventdesfuncnoeq{#1} = {#2}}}
 
-\newcommand{\getcuridfromlogkwd}{{\mathrm{getCidFromLog}}}
+\newcommand{\getcuridfromlogkwd}{{\codeinmath{getCid}_{\mclog}}}
 \newcommand{\getcuridfromlognoeq}[2]{{\getcuridfromlogkwd({#1}, {#2})}}
 \newcommand{\getcuridfromlog}[3]{{\getcuridfromlognoeq{#1}{#2} = {#3}}}
 
 
-\newcommand{\validlogcheckkwd}{{\mathrm{valid}\_\mathrm{log}\_\mathrm{check}}}
+\newcommand{\validlogcheckkwd}{{\codeinmath{check}_{\codeinmath{valid}\_\mathrm{log}}}}
 \newcommand{\validlogcheck}[2]{{\validlogcheckkwd~{#1}~{#2}}}
 
-\newcommand{\validlogkwd}{{\mathrm{valid}\_\mathrm{log}}}
+\newcommand{\validlogkwd}{{\codeinmath{valid}_{\codeinmath{log}}}}
 \newcommand{\validlog}[2]{{\validlogkwd~{#1}~{#2}}}
 
-\newcommand{\validoraclekwd}{{\mathrm{valid}\_\mathrm{o}}}
+\newcommand{\validoraclekwd}{{\codeinmath{valid}_{\codeinmath{EC}}}}
 \newcommand{\validoraclenoeq}[3]{\validoraclekwd({#1}, {#2}, {#3})}
 
 %%%% oracle refines hardware
 
-\newcommand{\matchlocalkwd}{{\mathcal{M}_{local}}}
+\newcommand{\matchlocalkwd}{{\mathcal{M}_{\codeinmath{local}}}}
 \newcommand{\matchlocal}[4]{{\matchlocalkwd~{#1}~{#2}~{#3}~{#4}}}
 \newcommand{\matchstatehstatekwd}{{\mathcal{M}_{[\mathrm{st},\mathrm{hst}]}}}
 \newcommand{\matchstatehstate}[2]{{\matchstatehstatekwd~{#1}~{#2}}}
@@ -884,63 +888,63 @@
 
 %%%% env refines env
 
-\newcommand{\mcmeasurekwd}{{\mathrm{measure}}}
+\newcommand{\mcmeasurekwd}{{\codeinmath{measure}_{\mclog}}}
 \newcommand{\mcmeasurenoeq}[1]{{\mcmeasurekwd({#1})}}
 \newcommand{\mcmeasure}[2]{{\mcmeasurenoeq{#1} = {#2}}}
 
-\newcommand{\mcstatemeasurekwd}{{\mathrm{st}\_\mathrm{measure}}}
+\newcommand{\mcstatemeasurekwd}{{\codeinmath{measure}_{\codeinmath{st}_{mc}}}}
 \newcommand{\mcstatemeasurenoeq}[2]{{\mcstatemeasurekwd({#1}, {#2})}}
 \newcommand{\mcstatemeasure}[3]{{\mcstatemeasurenoeq{#1}{#2} = {#3}}}
 
 
-\newcommand{\localstepevkwd}{{\mathrm{l}\_\mathrm{step}\_\mathrm{ev}}}
+\newcommand{\localstepevkwd}{{\codeinmath{l}\_\codeinmath{step}\_\codeinmath{ev}}}
 \newcommand{\localstepevnoeq}[1]{{\localstepevkwd({#1})}}
 \newcommand{\localstepev}[2]{{\localstepevnoeq{#1} = {#2}}}
 
-\newcommand{\matchestateestatekwd}[1]{{\mathcal{M}_{[\mathrm{est}\langle{#1}\rangle,\mathrm{est}\langle\coreset\rangle]}}}
+\newcommand{\matchestateestatekwd}[1]{{\mathcal{M}_{[\codeinmath{est}\langle{#1}\rangle,\codeinmath{est}\langle\coreset\rangle]}}}
 \newcommand{\matchestateestate}[3]{{\matchestateestatekwd{#1}~{#2}~{#3}}}
 
 %%%% single refines env
 
-\newcommand{\matchsinglestatestatekwd}[1]{{\mathcal{M}_{[\mathrm{sist},\mathrm{est}\langle{#1}\rangle]}}}
+\newcommand{\matchsinglestatestatekwd}[1]{{\mathcal{M}_{[\codeinmath{sist},\codeinmath{est}\langle{#1}\rangle]}}}
 \newcommand{\matchsinglestatestate}[3]{{\matchsinglestatestatekwd{#1}~{#2}~{#3}}}
 
 %%%% big refines single
-\newcommand{\matchbsstatesstatekwd}{{\mathcal{M}_{[\mathrm{bsist},\mathrm{sist}]}}}
+\newcommand{\matchbsstatesstatekwd}{{\mathcal{M}_{[\codeinmath{bsist},\codeinmath{sist}]}}}
 \newcommand{\matchbsstatesstate}[2]{{\matchbsstatesstatekwd~{#1}~{#2}}}
 
 %%%% big2 refines big
 
 
 
-\newcommand{\matchrstatesinglestatekwd}{{\mathcal{M}_{[\mathrm{rst},\mathrm{sist}]}}}
+\newcommand{\matchrstatesinglestatekwd}{{\mathcal{M}_{[\codeinmath{rst},\codeinmath{sist}]}}}
 \newcommand{\matchrstatesinglestate}[3]{{\matchrstatesinglestatekwd~{#1}~{#2}~{#3}}}
 
 %%%% split refines big2
 
-\newcommand{\matchsrstaterstatekwd}{{\mathcal{M}_{[\mathrm{srst},\mathrm{rst}]}}}
+\newcommand{\matchsrstaterstatekwd}{{\mathcal{M}_{[\codeinmath{srst},\codeinmath{rst}]}}}
 \newcommand{\matchsrstaterstate}[2]{{\matchsrstaterstatekwd~{#1}~{#2}}}
 
 %%%% reorder refines split 
 
-\newcommand{\validcachelogmemberskwd}{{\mathrm{validCacheLMem}}}
+\newcommand{\validcachelogmemberskwd}{{\codeinmath{validCacheLMem}}}
 \newcommand{\validcachelogmembers}[2]{{\validcachelogmemberskwd~{#1}~{#2}}}
-\newcommand{\matchrstatesrstatekwd}{{\mathcal{M}_{[\mathrm{rst},\mathrm{srst}]}}}
+\newcommand{\matchrstatesrstatekwd}{{\mathcal{M}_{[\codeinmath{rst},\codeinmath{srst}]}}}
 \newcommand{\matchrstatesrstate}[2]{{\matchrstatesrstatekwd~{#1}~{#2}}}
 
 %%%% reorder refines reorder
 
-\newcommand{\mcreducelogfunckwd}{{\mathrm{redLog}}}
+\newcommand{\mcreducelogfunckwd}{{\codeinmath{redLog}}}
 \newcommand{\mcreducelogfuncnoeq}[1]{{\mcreducelogfunckwd({#1})}}
 \newcommand{\mcreducelogfunc}[2]{{\mcreducelogfuncnoeq{#1} = {#2}}}
 
-\newcommand{\matchrrstaterrstaekwd}{{\mathcal{M}_{[\mathrm{rst},\mathrm{rst}]}}}
+\newcommand{\matchrrstaterrstaekwd}{{\mathcal{M}_{[\codeinmath{rst},\codeinmath{rst}]}}}
 \newcommand{\matchrrstaterrstae}[2]{{\matchrrstaterrstaekwd~{#1}~{#2}}}
 
 %%%% separate refines reorder
 
 
-\newcommand{\removecacheeventkwd}{{\mathrm{RmvCEv}}}
+\newcommand{\removecacheeventkwd}{{\codeinmath{RmvCEv}}}
 \newcommand{\removecacheeventnoeq}[2]{{\removecacheeventkwd({#1}, {#2})}}
 \newcommand{\removecacheevent}[3]{{\removecacheeventnoeq{#1}{#2} = {#3}}}
 
@@ -952,7 +956,7 @@
 \newcommand{\mcmatchlogskwd}{{\mathcal{M}_{[\separatelogkwd, \mclog]}}}
 \newcommand{\mcmatchlogs}[3]{{\mcmatchlogskwd~{#1}~{#2}~{#3}}}
 
-\newcommand{\matchspstaterstatekwd}{{\mathcal{M}_{[\mathrm{spst},\mathrm{rst}]}}}
+\newcommand{\matchspstaterstatekwd}{{\mathcal{M}_{[\codeinmath{spst},\codeinmath{rst}]}}}
 \newcommand{\matchspstaterstate}[3]{{\matchspstaterstatekwd~{#1}~{#2}~{#3}}}
 
 
@@ -961,7 +965,7 @@
 % for linking
 
 
-\newcommand{\primid}{id}
+\newcommand{\primid}{\primitiveid}
 \newcommand{\primspec}[1]{\sigma_{#1}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5

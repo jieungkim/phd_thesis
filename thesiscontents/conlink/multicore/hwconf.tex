@@ -11,23 +11,20 @@ It, however, requires complex details in the intermediate languages,
 such as including a bunch of assembly instructions, memory models, 
 restrictions in the semantics definition in $\compcert$ (because we follow 
 the simulation proofs for the framework).
-To avoid those complexities, 
+To avoid those complexities while focusing on building multicore linking  libraries,
 our framework define multiple abstract definitions (hardware configurations, auxiliary functions, 
 abstract states, and abstract transition rules)
 that most intermediate languages can commonly use, 
 and then be instantiated later. 
-
-
 %To hide the machine-dependent and subtle definitions in detail while providing multicore lining framework, 
 %we define our semantics with hardware configuration, 
 %which contains the abstract form for us to follow for multicore linking.
-
 Figure~\ref{fig:chapter:conlinkg:abstract-hardware-configuration-and-semantics} provides the 
 abstract hardware configurations and semantics that are
 not stick into any specific hardware (such as $\intelmachine$ or ARM). 
 
 \begin{figure}
-\noindent\fbox{abstract hardware setting, abstract command definitions:}
+\noindent\fbox{abstract hardware setting, abstract command definitions ($\hardwaresetting$):}
 $$
 \begin{array}{lllr}
 \privatestate &:& \toptype & \mbox{(private state)}\\
@@ -38,8 +35,7 @@ $$
 \schedid & : & \ztype & \mbox{(logical hardware scheduler CPU ID: } \schedid \notin \coreset\mbox{)}\\
 \end{array}
 $$
-
- $$
+$$
 \begin{array}{lll}
 \command &:=& \privatecmdkwd ~\vert~ \atomiccmdkwd\langle id : \ztype, e:\primitiveid\rangle\\
 && \vert~ \acqsharedcmdkwd\langle id : \ztype\rangle~\vert~\relsharedcmdkwd\langle id : \ztype\rangle\\
@@ -52,30 +48,22 @@ $$
 \ogetkwd_{[S: \set{\ztype}, log : \toptype, ret : \toptype]} & : &   log \rightarrow \mcoracle{S}{log}{ret} \rightarrow ret \\
 \end{array}
 $$
-
 \noindent\fbox{own state:}
-
 $$
 \begin{array}{llll}
 \ownstatekwd & := & \ofreekwd\langle s : \optioncmd~\sharedpiece\rangle~\vert~\ownkwd\langle i : \ztype\rangle \\
 \end{array}
 $$
-
-
-\noindent\fbox{abstract hardware semantics:}
-
+\noindent\fbox{abstract hardware semantics ($\hardwaresemantics$) :}
 $$
 \begin{array}{llll}
 \programcounterkwd & : &  \privatestate \rightarrow \command \rightarrow \mcprop\\
-\privatestepkwd & : & \ztype \rightarrow \privatestate \rightarrow \privatestate \rightarrow \mcprop \\
+\privatestepkwd & : & \ztype  \rightarrow \privatestate \rightarrow \privatestate \rightarrow \mcprop \\
 \getsharedstepkwd & : & \privatestate \rightarrow \sharedpiece \rightarrow \privatestate \rightarrow  \rightarrow \mcprop \\ 
-\setsharedstepkwd & :  & \privatestate \rightarrow \optioncmd{\privatestate} \rightarrow \mclog \rightarrow \privatestate \rightarrow \atomicevent \rightarrow \mcprop\\
-\atomicstepkwd & : &  \ztype \rightarrow \ztype \rightarrow \privatestate \rightarrow \mclog \rightarrow \privatestate \rightarrow \atomicevent \rightarrow \mcprop  \\
+\setsharedstepkwd & :  & \privatestate \rightarrow \optioncmd{\privatestate}  \rightarrow \privatestate \rightarrow \mcprop\\
+\atomicstepkwd & : &  \ztype \rightarrow \ztype  \rightarrow \privatestate \rightarrow \mclog \rightarrow \privatestate \rightarrow \atomicevent \rightarrow \mcprop  \\
 \end{array}
 $$
-
-
-
 \caption{Abstract Hardware Configuration and Semantics.}
 \label{fig:chapter:conlinkg:abstract-hardware-configuration-and-semantics}
 \end{figure}
@@ -92,7 +80,7 @@ which are private, atomic, acquire shared, and release shared operations.
 Two operations, acquire shared and release shared, are logical and work as an unsafe ownership transfer operations for shared resources. 
 The global log contains multiple kinds of even in $\mcevent$. 
 Three of them correspond to three commands, atomic, acquire shared and release shared. 
-On the other hand, the private operation does not generate any event, because it does not affect others' behavior at all. 
+On the other hand, private operations do not generate any event, because it does not affect others' behavior at all. 
 By using acquire shared and release shared events,
 calculating the ownership that is related to the shared resource with the identifier ($id$) is possible. 
 To notate the ownership status, we define the ``own state'', $\ownstatekwd$.
@@ -106,10 +94,15 @@ The abstract semantics contain
 four program rules and one special rules ($\programcounterkwd$). 
 $\programcounterkwd$ tells us the next command that we have to evaluate, 
 and other four kinds of rules are for the operations that are associated with the corresponding commands.
+The private hardware semantics takes the current CPU ID and private state and returns the private states. 
+The get hardware semantics is get the private  state and returns the shared piece and the private state as its result. 
+The set hardware semantics is get the private  state and the shared piece and returns the private state as its result. 
+The last rule, the atomic hardware semantics is get the CPU ID, the atomic event ID (primitive ID for the atomic operation), 
+the private state, and the log, and returns the private state and the event generated by the operation. 
 
 
 \begin{figure}
-\noindent\fbox{properties of abstract hardware semantics:}
+\noindent\fbox{projection function from the global log to the log related to the specific primitive:}
 \begin{center}
 \begin{tabular}{l}
 $
@@ -126,10 +119,7 @@ $\\
 \end{tabular}
 \end{center}
 
-
-
 \noindent\fbox{calculate owner:}
-
 \begin{center}
 \begin{tabular}{l}
 $
@@ -158,8 +148,8 @@ $\calownerkwd$ function gets the current owner of the shared resource associated
 Note that $\calownerkwd$ does not have any safety guarantee on the ownership control.
 The responsibility of those safety control does not rely on the hardware configuration but depends on the actual software implementation, such as spinlocks. 
 
-
 \begin{figure}
+\noindent\fbox{properties of abstract hardware semantics:}
 \begin{mathpar}
 \inferrule[PC Determ]
 {\programcounter{ps}{c_1} \\
@@ -204,6 +194,7 @@ requires the validity check (\textsf{Atomic Valid}).
 
 
 \begin{figure}
+\noindent\fbox{auxiliary functions for getting information from events and logs:}
 
 %
 %  (* eback is always generated by scheduler *) 
@@ -217,6 +208,8 @@ requires the validity check (\textsf{Atomic Valid}).
 %    end.
 %
 
+\begin{center}
+\begin{tabular}{l}
 $
 \eventsourcefunckwd (ev : \mcevent) : \ztype := 
  \left\{\begin{array}{lr}
@@ -224,8 +217,7 @@ $
 i  & \text{for } ev =\yieldev{i}  \vee ev= \acqev{i}{\_} \\
    & \vee ev = \relev{i}{\_}{\_} \vee ev =  \atomicev{i}{\_}{\_}\\
 \end{array} \right.
-$
-
+$\\
 %
 %  Definition event_des (e: event) :=
 %    match e with
@@ -236,7 +228,6 @@ $
 %      | EATOMIC i _ _ => i
 %    end.
 %
-
 $
 \eventdesfunckwd (ev : \mcevent) : \ztype := 
  \left\{\begin{array}{lr}
@@ -244,8 +235,7 @@ $
 i & \text{for } ev= \yieldbackev{i} \vee ev = \acqev{i}{\_}\\
    & ev=  \relev{i}{\_}{\_} \vee ev = \atomicev{i}{\_}{\_}\\
 \end{array} \right.
-$
-
+$\\
 %
 %  Definition get_curid_from_log (start_core : Z) (l : Log) : Z :=
 %    match l with
@@ -253,15 +243,15 @@ $
 %    | e::l' => event_des e
 %    end.
 %
-
 $
 \getcuridfromlogkwd (start\_core : \ztype) (l : \mclog): \ztype :=
  \left\{\begin{array}{lr}
 start\_core & \text{for }  l = \nulllist \\
 \eventdesfuncnoeq{ev} & \text{for } l = \listconsoppo{ev}{\_}\\
 \end{array} \right.
-$
-
+$\\
+\end{tabular}
+\end{center}
 \caption{Auxiliary Functions for Events: they are necessary for refinement proofs.}
 \label{fig:chapter:conlink:auxiliary-functions-for-events-in-refinement}
 \end{figure}
@@ -276,6 +266,7 @@ as the current running CPU ID.
 We will show how it is related to our evaluation rules from the next section.
 
 \begin{figure}
+\noindent\fbox{valid log and oracle definitions (based on rely-guarantee):}
 %   
 %    Definition valid_log_check (start_core : Z) (l : Log) :=
 %      match l with
@@ -290,20 +281,19 @@ We will show how it is related to our evaluation rules from the next section.
 %              end
 %        end
 %      end.
-
 \begin{mathpar}
 \inferrule[valid log check - nil]
 {\ }
 {\validlogcheck{start\_core}{\nulllist}}
 
-\inferrule[valid check - yieldback]
+\inferrule[valid log check- yieldback]
 { l = \listconsoppo{e}{l'} \\
 e = \yieldbackev{j} \\
 l' = \listconsoppo{\yieldev{\_}}{\_}\\
 j \in \coreset}
 {\validlogcheck{start\_core}{l}}
 
-\inferrule[valid check - yield]
+\inferrule[valid log check - yield]
 {l = \listconsoppo{e}{l'} \\
 e = \yieldev{from} \\
 l' \neq \listconsoppo{\yieldev{\_}}{\_}\\
@@ -311,7 +301,7 @@ l' \neq \listconsoppo{\yieldev{\_}}{\_}\\
 from \in \coreset}
 {\validlogcheck{start\_core}{l}}
 
-\inferrule[valid check - other]
+\inferrule[valid log check - other]
 {l = \listconsoppo{e}{l'} \\
 e \neq \yieldev{\_} \\
 e \neq \yieldbackev{\_} \\

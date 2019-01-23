@@ -1,7 +1,7 @@
 \section{Per-CPU Modules}
 \label{chapter:certikos:sec:per-cpu-modules}
 
-Per-CPU modules in $\certikos$ (Figure~\ref{fig:chapter:certikos:top-level-multicore-theorem}) is refining a part of $\certikos$ modules,
+Per-CPU modules in $\certikos$ is refining a part of $\certikos$ modules,
 which are included in $\certikos_{\codeinmath{cpu}}$ in the figure, based on the $\codeinmath{MBoot}$ layer, 
 into the local layer interface, $\codeinmath{PBThrd}$.
 Those modules consist of six components;
@@ -362,7 +362,7 @@ We have introduces 60 layers for all those modules in our per-CPU layers, from t
 $\codeinmath{PBThrd}$ layer.
 All those layers can be linked together via the composition rules described in Section~\ref{chapter:ccal:subsec:linking};
 thus form a single contextual refinement theorem, which is defined in Theorem~\ref{theorem:chapter:certikos:per-cpu-contextual-refinement},
-which corresponds to the number (1) in Figure~\ref{fig:chapter:certikos:top-level-multicore-theorem}.
+which corresponds to the number (1) in Figure~\ref{fig:chapter:certikos:idea-of-dividing-certikos-with-formal-def}.
 \begin{theorem}[Contextual Refinement for Per-CPU layers]
 \label{theorem:chapter:certikos:per-cpu-contextual-refinement}
 Let's assume that $cid$ is a valid CPU ID (in between 0 and 7), $\oracle_{\codeinmath{cpu}}$ and  $\oracle'_{\codeinmath{cpu}}$ are 

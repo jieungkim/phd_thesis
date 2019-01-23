@@ -9,8 +9,7 @@
 
 $
 \begin{array}{lll}
-\singlestatekwd & := & \singlestateconkwd :~ \ztype \rightarrow \localstate \rightarrow \mclog \rightarrow \singlestatekwd\\
-
+\singlestatekwd & := & \singlestate{(curid: \ztype)}{(ls: \localstatekwd)}{(log:\mclog)}\\
 \end{array}
 $
 
@@ -57,19 +56,20 @@ $$
 {\getpstsome{\localstatekwd}{cpuid}{lsp}{ls}}{\matchsinglestatestate{\set{cpuid}}{(\singlestate{curid}{ls}{l})}{(\envstate{\set{cpuid}}{curid}{lsp}{l})}}
 \end{mathpar}
 
-\noindent\fbox{top lemmas}
-\begin{enumerate}
-\item one$\_$step$\_$single$\_$refines$\_$env : \\
-$
-\begin{array}{l}
-\forall \ si\_o \ s_h \ s_h' \ t \ s_l . \ \singlestep{cpuid}{si\_o}{s_h}{t}{s_h'} \rightarrow  \matchsinglestatestate{\set{cpuid}}{s_h}{s_l} \rightarrow \\
-\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \exists\ s_l' . \  \ccplusstep{\envstep{\set{cpuid}}{si\_o}{s_l}{t}{s_l'}} \wedge  \matchsinglestatestate{\set{cpuid}}{s_h'}{s_l'}\\
-\end{array}
-$
-\end{enumerate}
+%\noindent\fbox{top lemmas}
+%\begin{enumerate}
+%\item one$\_$step$\_$single$\_$refines$\_$env : \\
+%$
+%\begin{array}{l}
+%\forall \ si\_o \ s_h \ s_h' \ t \ s_l . \ \singlestep{cpuid}{si\_o}{s_h}{t}{s_h'} \rightarrow  \matchsinglestatestate{\set{cpuid}}{s_h}{s_l} \rightarrow \\
+%\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \exists\ s_l' . \  \ccplusstep{\envstep{\set{cpuid}}{si\_o}{s_l}{t}{s_l'}} \wedge  \matchsinglestatestate{\set{cpuid}}{s_h'}{s_l'}\\
+%\end{array}
+%$
+%\end{enumerate}
 \caption{Refinement Between a Single Core Machine and an Environmental Step Machine}
 \label{fig:chapter:conlink:cpu-single-to-env-theorem}
 \end{figure}
+
 
 Now, we are ready to build a local layer interface described in Section~\ref{chapter:ccal:subsec:local-layer-interface}. 
 The machine state for the single core machine contains 
@@ -80,3 +80,15 @@ The step relation in this single core machine is same with the environmental ste
 The refinement proof between the single core on the environmental step and the single core machine is straightforward since the similarity between
 those two states as well as the step relations.
 All those definitions are in Figure~\ref{fig:chapter:conlink:cpu-single-to-env-theorem}.
+
+\begin{lemma}[one$\_$step$\_$single$\_$refines$\_$env]
+\begin{tabular}{P{0.95\textwidth}}
+$
+\begin{array}{l}
+\forall \ si\_o \ s_h \ s_h' \ t \ s_l . \ \singlestep{cpuid}{si\_o}{s_h}{t}{s_h'} \rightarrow  \matchsinglestatestate{\set{cpuid}}{s_h}{s_l} \rightarrow \\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \exists\ s_l' . \  \ccplusstep{\envstep{\set{cpuid}}{si\_o}{s_l}{t}{s_l'}} \wedge  \matchsinglestatestate{\set{cpuid}}{s_h'}{s_l'}\\
+\end{array}
+$
+\end{tabular}
+\end{lemma}
+
