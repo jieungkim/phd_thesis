@@ -321,14 +321,14 @@ Those properties also have to be instantiated later with the concrete definition
 %    }.
 %\end{lstlisting}
 \begin{lstlisting}[language=C, , morekeywords={Class}]
-Class SingleOracleProp `{thread_conf_prf: ThreadsConfiguration}:= {
+Class SingleOracleP `{thread_conf_prf: ThreadsConfiguration}:= {
   update_proc_id:
-    forall d d' d'' l a, update d l =  d' ->
+    forall d1 d2 d3 l a, update d1 l =  d2 ->
       getLogEventType a = LogOtherTy ->
-      update d (a :: l) =  d'' -> proc_id d'' = proc_id d';
+      update d1 (a :: l) =  d3 -> proc_id d3 = proc_id d2;
   update_processor_id:
-    forall d d' d'' l a, update d l = d' -> 
-      update d (a::l) = d'' -> processor_id d'' = processor_id d';
+    forall d1 d2 d3 l a, update d1 l = d2 -> 
+      update d1 (a::l) = d3 -> processor_id d2 = processor_id d3;
        
   prim_thread_init_pc_global:
     forall {F V} (ge: Genv.t F V) f vargs v,
@@ -341,10 +341,27 @@ Class SingleOracleProp `{thread_conf_prf: ThreadsConfiguration}:= {
       prim_thread_init_pc ge1 f vargs = Some v ->
       prim_thread_init_pc ge2 f vargs = Some v }.
 \end{lstlisting}
+We also defined multiple properties related to 
+update functions, which we defined in the
+\lstinline$SingleOracleP$ contains properties about auxiliary functions.
+The  first is about the process ID update. 
+It tells that the process ID will not be updated unless we evaluate 
+scheduling events, yield or sleep events. 
+The second one is about the CPU ID, which implies that 
+the CPU ID is always remained as same. 
+Remeber that the log in here is a log
+for multithreaded linking, which implies that 
+one event in here contains the information for multiple events in the previous definitions. 
+Other two are for the properties of initial program counter value for each 
+process.
+We support a compositional compilation, and thus 
+we do not have the full information of the context programs.
+We however, requires the condition about the program counter of each threads' initial state,
+becauseo of the safety condition as well as its uniqueness.
 
 
 \begin{lstlisting}[language=C, , morekeywords={Class}]
-Class SingleOracleLinkProp `{thread_conf_prf: ThreadsConfiguration}:= {
+Class SingleOracleLinkP `{thread_conf_prf: ThreadsConfiguration}:= {
   Oracle_le_nb: 
   forall l, (last_nb l <= last_nb (Single_Oracle l :: l)) % positive;
 
@@ -353,10 +370,10 @@ Class SingleOracleLinkProp `{thread_conf_prf: ThreadsConfiguration}:= {
       exists i, Single_Oracle l = LEvent i LogYieldBack;
 
   oracle_init_log:
-    forall (l': Log) (e: LogEvent) (l: Log),
-      init_log = l' ++ e :: l -> Single_Oracle l = e;
+    forall (l_p: Log) (e: LogEvent) (l: Log),
+      init_log = l_p ++ e :: l -> Single_Oracle l = e;
       
-  init_log_structure:
+  init_log_property:
     init_log = nil \/
     exists l e, init_log = LEvent (proc_id (uRData l)) LogYieldBack :: l /\
       proc_id (uRData l) <> proc_id (uRData nil) /\ last_op l = Some e /\
@@ -365,11 +382,10 @@ Class SingleOracleLinkProp `{thread_conf_prf: ThreadsConfiguration}:= {
         proc_id (uRData l2) <> 
         proc_id (uRData init_log) }.
 \end{lstlisting}
-We also defined multiple properties related to 
-update functions as well as initial log. 
-\lstinline$SingleOracleProp$ contains properties about auxiliary functions, 
-and \lstinline$SingleOracleLinkProp$  contains the constraints
+
+We also requires the restrictions about the form of the initial log (and the log) 
+and \lstinline$SingleOracleLinkP$  contains the constraints
 the properties about the log that 
 the log has to  satisfy them. 
-
-\jieung{I think exposing all those functions in here is not a good idea. I need to rearrange them.} 
+\jieung{I think exposing all those functions in here is not a good idea. I need to rearrange them.
+we can defer the explanation of some of them}

@@ -33,22 +33,24 @@ provides the primitive (which gives the extra transition rules for the state of 
 %\label{fig:chapter:certikos:compcertx-state-definition}
 %\end{figure}
 
-The state definition for a machine model of  $\compcertx$ ($\lasm$) is
+As discussed in Section~\ref{chapter:linking:sec:multithreaded-linking}, t
+he state definition for a machine model of  $\compcertx$ ($\lasm$) is
 \begin{lstlisting}
 Inductive state <@$\cdots$@> : Type :=
   | State: regset -> (mem: mwd LDATAOps)-> state.
 \end{lstlisting}
 which is a pair consists of  a register and a memory. 
 Thanks to the similarity between this state definition and the state definition of $\compcert$, 
-$\compcertx$ facilitates many parts of verified compiler of $\compcert$ with some modifications. 
+$\compcertx$ facilitates many parts of verified compiler of $\compcert$ with some modifications, and it is applicable to our concurrent program verification (since 
+we built all layers based on our sequential-like layer interfaces.)
 The memory in the $\compcertx$ is also a pair of two elements, 
 a memory (a map from a identifier to a value) and an abstract data. 
 \begin{lstlisting}
 Definition <@$\pi$@>_mem {D}: mwd D -> mem := fst.
 Definition <@$\pi$@>_data {D}: mwd D -> ldata_type D := snd.
 \end{lstlisting}
-The memory is same with the memory in the $\compcert$, which is a map from its index (a pair of a block ID and an offset) to 
-the value (with the type information). 
+The memory is same with the memory in the $\compcert$~\cite{leroy08}, which is a map from its index (a pair of a block ID and an offset) to 
+the value alongside with its type information for the size of the value. 
 The abstract data gives us a huge freedom on the state definition by allowing us to add 
 multiple fields in it. 
 To use the existing tools as much as possible, 
@@ -90,8 +92,11 @@ Record RData :=
 \label{fig:chapter:certikos:abstract-data-for-bottom-layer}
 \end{figure}
 
+The machine model for $\compcertx$ is always parameterized by a specific layer definition. 
+The primitive definitions in the layer $\Layer$ (when $\PLayer{L}{\ignorechar}{\ignorechar} = (\Layer, \ignorechar, \ignorechar)$) contains a set of primitives 
+that can be called by the context programs.
 The layer definition for the bottom layer is in Figure~\ref{chapter:certikos:subsec:hardware-configuration-instance},
-contains a set of primitives, 
+also contains a set of primitives, 
 which is basically a partial map from a primitive ID ($\primitiveid$) to the specifications ($\spec$).
 Each layer also use its abstract data, and the abstract data definition for the bottom layer is in Figure~\ref{fig:chapter:certikos:abstract-data-for-bottom-layer}.
 As mentioned, 
@@ -99,7 +104,9 @@ we have provided atomic fetch and increase as an atomic operation in the layer
 and it will update the log in the abstract data ($\codeinmath{multi\_log}$), which is 
 a part of our state definition. 
 
-Our hardware configuration instance is closely related to those definitions. 
+Our hardware configuration instance is closely related to those definitions
+because they are parts of the lowest machine model 
+in our certified concurrent abstraction layers.
 Atomic operations in the configuration (Figure~\ref{fig:chapter:conlinkg:abstract-hardware-configuration-and-semantics}), for example,
 need to include $\codeinmath{atomic\_FAI}$  
 in it and the local evaluation rule in the atomic statement in Figure~\ref{fig:chapter:conlink:hardware-local-step-transition-rules}  has to 
@@ -136,10 +143,6 @@ consistent with the specification of the primitive.
 %      sched_id := 9
 %    }.
 %\end{lstlisting}
-
-With those things, 
-we have to instance all the definitions in Figure~\ref{chapter:certikos:subsec:hardware-configuration-instance}.
-
 The private state can be instantiated with 
 the state definition in the machine model of $\compcertx$,
 and the shared piece is a list of byte, which represents 
@@ -149,6 +152,7 @@ which is mapped with the atomic operation that the bottom layer of our interface
 For example, \lstinline$OINC_TICKET (n: nat)$ corresponds to the fetch and increase primitive,
 and it instantiates the definition $\mcevent$ in Figure~\ref{chapter:certikos:subsec:hardware-configuration-instance}.
 \begin{lstlisting}[language=C]
+ // <@${\color{red}  \mcevent}$@>
   Inductive OtherEvent :=
   (* Events used for the ticket-lock primitives: *)
   | OINC_TICKET (n: nat)
@@ -157,6 +161,7 @@ and it instantiates the definition $\mcevent$ in Figure~\ref{chapter:certikos:su
 In addition, \lstinline$OtherEvent_2_ident$ is an instance for $\atomiceventidentkwd$ function, which is the function
 that gets the event and returns the corresponding identifier (the primitive identifier) that is related to the event.
 \begin{lstlisting}[language=C]
+  // <@${\color{red}  \atomiceventidentkwd}$@>
   Function OtherEvent_2_ident (e: OtherEvent) :=
     match e with
       | OINC_TICKET _ => atomic_FAI
@@ -173,8 +178,8 @@ Those configurations are all included in the
 is as follows:
 \begin{lstlisting}[language=C, deletekeywords={int}]
 Global Instance hdseting: HardWaredSetting := {
-  private_state := mstate;
-  shared_piece := list Integers.Byte.int;
+  private_state := state; // <@$\color{red} \privatestate$@>
+  shared_piece := list Integers.Byte.int; // <@$\color{red} \sharedpiece$@>
   atomic_event := OtherEvent;
   atomic_event_ident := OtherEvent_2_ident;
   core_set := cpu_set;
@@ -631,12 +636,11 @@ as well as the state definition.
 %\end{figure}
 
 All our intermediate languages 
-also relies on the abstract transition rules for 
+also rely on the abstract transition rules for 
 private, shared, release, and atomic steps, and the special auxiliary function, $\programcounterkwd$.
 Similar to the previous definitions, 
 it also facilitate the layer definition (the $\codeinmath{mboot}$ layer), 
 and the $\compcertx$ definition.
-
 For example, the program counter command
 for fetch-and-increase function call is
 \begin{lstlisting}[language=C]
@@ -653,12 +657,13 @@ Inductive command_predicate (ge: genv): mstate -> command -> Prop :=
 which shows the case when the current function pointer is pointing out the \lstinline$atomic_FAI$
 In the rule, \lstinline$(ge :genv)$ stands for the global environment that contains the 
 global information such as the function names, global variables of the whole programs.
+
 \jieung{Need additional explanation}
 
 Similarly, all abstract hardware semantics in  Figure~\ref{fig:chapter:conlinkg:abstract-hardware-configuration-and-semantics}.
 are defined 
 by slightly modifying the step relation in $\compcertx$ 
-and by the case analysis for the primitive identifiers. 
+7and by the case analysis for the primitive identifiers. 
 For instance, the evaluation relation for get shared is
 \begin{lstlisting}[language=C]
  Inductive get_shared_sem (ge: genv) 

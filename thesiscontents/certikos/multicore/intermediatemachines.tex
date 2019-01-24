@@ -3,7 +3,8 @@
 \label{chapter:certikos:subsec:intermediate-machine-instantiation}
 
 Our intermediate machine models are abstract languages, but 
-our goal is connecting them with backward simulation proofs in $\compcert$~\jieung{need to cite back-end paper}
+our goal is connecting them with backward simulation proofs that $\compcert$~\cite{leroy06}.
+
 For that purpose, 
 we need to instantiate those abstract languages to make them fit into 
 the semantics definition in $\compcert$.
@@ -14,7 +15,7 @@ We provide those instances in this section.
 We show how we instantiate each intermediate language 
 in this section. All of them follows the exactly same form, 
 and need to provide the evidence about the receptiveness and the single event property (each step will generate at most a single event of $\compcert$ trace). 
-To use the forward simulation implies the backward simulation technique \jieung{cite back end paper},
+To use the forward simulation implies the backward simulation technique~\cite{leroy06},
 providing the deterministic behavior of those languages 
 are necessary. 
 In this sense, 

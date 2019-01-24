@@ -56,6 +56,222 @@ l' = (tid YIELDBACK)::(\oracle_{\codeinmath{thrd}} tid (tid YIELD::l)))}
  due to the dynamically allocated values for each thread.
 
 Instead of having a fixed value for PC and abstract data, 
-we have used 
-
+we have used the calculated value 
+for them. 
  \jieung{Need to add ref for the section}
+ 
+ 
+ 
+ \subsubsection{Refinement Between HAsm and TAsm}
+
+Similar to the proof between the $\lasm$ and $\easm$,
+we provides the proof template about 
+
+\begin{lstlisting}[language=C]
+      Class AbstractRelT:=
+        {
+          match_dproc_RData: dproc -> Log -> RData -> Prop;
+
+          match_curid: current_thread = current_curid;
+
+          match_init:
+            match_dproc_RData
+              (thread_init_dproc current_thread)
+              init_log
+              (thread_init_rdata current_thread);
+\end{lstlisting}
+
+\begin{lstlisting}[language=C]
+          get_env_log_exist: 
+            forall e l l' curid, 
+              proc_id (uRData l) = curid ->
+              lastEvType l <> Some LogYieldTy ->
+              l' = e::l ->
+              lastEvType l' = Some LogYieldTy ->
+              match last_op l' with
+              | Some e => match e with 
+                          | LEvent curid' _ => curid = curid'
+                          end
+              | _ => False
+              end ->
+              exists l'', get_env_log limit curid l' = Some l'' /\ lastEvType l'' = Some LogYieldTy;
+\end{lstlisting}
+
+\begin{lstlisting}[language=C]
+          yield_nextstate_match:
+            forall curid  ae (m m' : mem) (a a': RData) (l l' l'' l''': Log) e nb WB ef (ge : genv) args m t res,
+              lastEvType l <> Some LogYieldTy ->
+              proc_id (uRData l) = curid ->
+              match_dproc_RData ae l a ->
+              l' = LEvent curid (LogYield (Mem.nextblock m)) :: l ->
+              get_env_log limit curid l' = Some l'' ->
+              last_op l'' = Some e ->
+              getLogEventNB e = Some nb -> 
+              l''' = LEvent current_curid LogYieldBack::l'' ->
+              match ef with 
+              | EF_external id _ =>
+                if peq id thread_yield then True else False 
+              | _ => False
+              end ->
+              external_call' (mem := mwd (cdata RData)) 
+                             (external_calls_ops :=  CompatExternalCalls.compatlayer_extcall_ops (phthread <@$\oplus$@>  L64))
+                             WB ef ge args (m, a) t res (m', a') ->
+              (mem_lift_nextblock m (Pos.to_nat nb - Pos.to_nat (Mem.nextblock m)) = m') /\
+              match_dproc_RData ae l''' a' /\
+              state_check thread_yield nil l ae /\
+              proc_id (uRData l''') = curid;
+\end{lstlisting}
+
+%\begin{lstlisting}[language=C]
+%          sleep_nextstate_match:
+%            forall curid  ae (m m' : mem) (a a': RData) (l l' l'' l''': Log) e nb WB ef (ge : genv) args m t res i,
+%              lastEvType l <> Some LogYieldTy ->
+%              proc_id (uRData l) = curid ->
+%              match_dproc_RData ae l a ->
+%              l' = LEvent curid (LogSleep (Int.unsigned i) (Mem.nextblock m)
+%                                          (sync_chpool_check thread_sleep (Lint i::nil) (uRData l) ae))::l ->
+%              get_env_log limit curid l' = Some l'' ->
+%              last_op l'' = Some e ->
+%              getLogEventNB e = Some nb -> 
+%              l''' = LEvent current_curid LogYieldBack::l'' ->
+%              match ef with 
+%              | EF_external id _ =>
+%                if peq id thread_sleep then True else False 
+%              | _ => False
+%              end ->
+%              external_call' (mem := mwd (cdata RData)) 
+%                             (external_calls_ops :=  CompatExternalCalls.compatlayer_extcall_ops (phthread <@$\oplus$@>  L64))
+%                             WB ef ge args (m, a) t res (m', a') ->
+%              args = Vint i :: nil ->
+%              (mem_lift_nextblock m (Pos.to_nat nb - Pos.to_nat (Mem.nextblock m)) = m') /\
+%              match_dproc_RData ae l''' a' /\
+%              state_check thread_sleep (Lint i::nil) l ae /\
+%              proc_id (uRData l''') = curid;
+%\end{lstlisting}
+
+\begin{lstlisting}[language=C]
+          acc_exec_load_match:
+            forall (ge: genv) a a' rs rd rs' TY (m m': mem) l d addr,
+              exec_loadex ge TY (m, a) addr rs rd = Next rs' (m', a') ->
+              match_dproc_RData d l a ->
+              exists d',
+                (acc_exec_load (cl_oplus (cdata PData) LH L64)) 
+                  fundef unit ge TY (m, (uRData l, d)) addr rs rd = Next rs' (m', (uRData l, d')) /\
+                match_dproc_RData d' l a';
+
+          acc_exec_store_match:
+            forall (ge: genv) a a' rs rd rs' TY ST (m m': mem) l  d addr,           
+              exec_storeex ge TY (m, a) addr rs rd ST = Next rs' (m', a') ->
+              match_dproc_RData d l a ->
+              exists d' : dproc,
+                (acc_exec_store (cl_oplus (cdata PData) LH L64)) 
+                  fundef unit ge TY (m, (uRData l, d)) addr rs rd ST =
+                Next rs' (m', (uRData l, d')) /\ match_dproc_RData d' l a';
+\end{lstlisting}
+
+\begin{lstlisting}[language=C]
+          external_call_match_no_event:
+            forall (ge: genv) WB ef (args: list val) t res (m m' : mem) (a a': RData) ae l,
+              external_call' (mem := mwd (cdata RData)) 
+                             (external_calls_ops :=  CompatExternalCalls.compatlayer_extcall_ops (phthread <@$\oplus$@>  L64))
+                             WB ef ge args (m, a) t res (m', a') ->
+              match_dproc_RData ae l a ->
+              proc_id (uRData l) = current_curid ->
+              lastEvType l <> Some LogYieldTy ->
+              match ef with
+              | EF_external id _ => 
+                if peq id thread_yield then False
+                else if peq id thread_sleep then False
+                     else if has_event id then False else True
+              | _ => True
+              end -> 
+              exists ae',
+                external_call' (mem := mwd (cdata PData)) 
+                               (external_calls_ops :=  CompatExternalCalls.compatlayer_extcall_ops (LH <@$\oplus$@>  L64))
+                               WB ef ge args (m, (uRData l, ae)) t res (m', (uRData l, ae')) /\
+                match_dproc_RData ae' l a' /\
+                proc_id (uRData l) = current_curid;
+\end{lstlisting}
+
+\begin{lstlisting}[language=C]
+          external_call_match_has_event:
+            forall (ge: genv) WB ef (args: list val) t res (m m' : mem) (a a': RData) ae l,
+              external_call' (mem := mwd (cdata RData)) 
+                             (external_calls_ops :=  CompatExternalCalls.compatlayer_extcall_ops (phthread <@$\oplus$@>  L64))
+                             WB ef ge args (m, a) t res (m', a') ->
+              match_dproc_RData ae l a ->
+              proc_id (uRData l) = current_curid ->
+              lastEvType l <> Some LogYieldTy ->
+              match ef with
+              | EF_external id _ => 
+                if peq id thread_yield then False
+                else if peq id thread_sleep then False
+                     else if has_event id then True else False
+              | _ => False
+              end -> 
+              exists (largs : list lval) ae' (l' : Log),
+                external_call' (mem := mwd (cdata PData)) 
+                               (external_calls_ops :=  CompatExternalCalls.compatlayer_extcall_ops (LH <@$\oplus$@>  L64))
+                               WB ef ge args (m, (uRData l, ae)) t res (m', (uRData l', ae')) /\
+                match_dproc_RData ae' l' a' /\
+                val2Lval_list args largs /\
+                
+                proc_id (uRData l') = current_curid /\
+                match ef with 
+                | EF_external id _ =>
+                  exists choice,
+                  choice_check id largs (uRData l) ae = choice /\
+                  l' = LEvent (proc_id (uRData l)) (LogPrim id largs choice (snap_func ae)) :: l
+                | _ =>  l' = l
+                end;
+\end{lstlisting}
+
+%\begin{lstlisting}[language=C]
+%          primitive_call_match:
+%            forall (ge: genv) ef t rs rs' (m m' : mem) l a a' ae,
+%              primitive_call  (LayerConfigurationOps := compatlayer_configuration_ops (phthread <@$\oplus$@> L64))
+%                              (mem := mwd (cdata RData)) ef ge rs (m, a) t rs' (m', a') ->
+%              match_dproc_RData ae l a ->
+%              proc_id (uRData l) = current_curid ->
+%              match ef with
+%              | EF_external id _ => 
+%                if peq id thread_yield then False
+%                else if peq id thread_sleep then False
+%                     else True
+%              | _ => True
+%              end -> 
+%              exists l' ae',
+%                primitive_call  (LayerConfigurationOps := lcfg_ops) 
+%                                (mem := mwd (cdata PData)) ef ge rs (m, (uRData l, ae)) t rs' (m', (uRData l', ae')) /\
+%                match_dproc_RData ae' l' a' /\
+%                proc_id (uRData l') = current_curid /\
+%                match ef with
+%                | EF_external id _ => 
+%                  if has_event id
+%                  then l' = LEvent (proc_id (uRData l)) (LogPrim id nil 0 (snap_func ae)) :: l
+%                  else l' = l
+%                | _ => l' = l
+%                end
+%        }.
+%\end{lstlisting}
+
+\begin{lstlisting}[language=C]
+    Inductive match_tstate: (state (mem:= mwd (cdata RData))) -> 
+                                  (tstate (mem := mem)) -> Prop :=
+    | MATCH_TSTATE:
+        forall (rs: regset) (m: mem) a ae (l : Log)
+               (Hdata: match_dproc_RData ae l a)
+               (Hcurid: proc_id (uRData l) = current_curid)
+               (Hlast: lastEvType l <> Some LogYieldTy),
+          match_tstate (State rs (m, a)) (TState current_curid rs m ae l).
+\end{lstlisting}
+
+\begin{lstlisting}[language=C]
+    Theorem LAsm_refine_TAsm :
+      forall ge t rs m rs' m' st, 
+        LAsm.step (lcfg_ops := compatlayer_configuration_ops (phthread <@$\oplus$@> L64)) ge (State rs m) t (State rs' m') ->
+        match_tstate (State rs m) st ->
+        exists st',        
+          TAsm.tstep ge st t st'
+          /\ match_tstate (State rs' m') st'.
+\end{lstlisting}
