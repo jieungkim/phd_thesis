@@ -8,64 +8,119 @@ They follows the definition of $\compcertx$,
 which is an extension of $\compcert$ and is defined as
 \begin{lstlisting}[language=C]
 Inductive state `{memory_model_ops: Mem.MemoryModelOps mem}: Type :=
-  | State: regset -> mem -> state.
+  | State: regset -> (mem :mwd AbsData) -> state.
 \end{lstlisting}
-where the memory, $mem$, contains a memory itself (a partial map from a identifier to the value), an abstract data (which is a collection of abstract data representations), as well as
+where the memory, $mem$, is an extension of $\compcert$ memory which  contains a memory itself (a partial map from a identifier to the value), an abstract data (which is a collection of abstract data representations), as well as
 a global log.
 In other words, 
 $mem$ in the state is precisely a tuple consists of those three elements.
+Thus, the state of this machine (we call it $\lasm$) is  a tuple
+\begin{center}
+$st_{\lasm} = (\regs, m, adt, l)$ 
+\end{center}
+, which consists of four elements; 1) $\regs$ is a register set;
+2)  $m$ is a memory; 3) $adt$ is an abstract data; and 4) $l$ is a log.
+By successfully integrating our framework with $\compcertx$, we do not need to modify the language semantics and machine model to build CPU local layers from the previous version for the sequential machine. 
+
 With those definitions, the evaluation transition relation has a type
+% hide GE
+%\begin{lstlisting}[language=C]
+%  Inductive step (ge: genv): state -> trace -> state -> Prop :=
+%\end{lstlisting}
 \begin{lstlisting}[language=C]
-  Inductive step (ge: genv): state -> trace -> state -> Prop :=
+  Inductive step: state -> trace -> state -> Prop :=
 \end{lstlisting}
-which change the state by the transition with recording $\compcert$ style trace. 
+which change the state by the transition with recording $\compcert$ style trace,
+which is 
+\begin{center}
+$\codeinmath{Mach}_{\lasm}: st_{\lasm} \rightarrow \cctracekwd \rightarrow st_{\lasm} \rightarrow \mcprop$
+\end{center}
 
 The step relation contains five rules, 
 but we explain only three rules in this section, which are the rules 
 that are sufficient for us to explain our thread-linking framework.
-
-\begin{lstlisting}[language=C]
+\begin{lstlisting}[language=C, deletekeywords={unsigned}]
     | exec_step_internal:
-        forall b ofs f i rs m rs' m',
+        forall b ofs f i rs m rs_res m_res,
         rs PC = Vptr b ofs ->
         Genv.find_funct_ptr ge b = Some (Internal f) ->
         find_instr (Int.unsigned ofs) f.(fn_code) = Some i ->
-        exec_instr ge f i rs m = Next rs' m' ->
-        step ge (State rs m) E0 (State rs' m')
+        exec_instr ge f i rs m = Next rs_res m_res ->
+        step ge (State rs m) E0 (State rs_res m_res)
 \end{lstlisting}
 The first rule is for internal instruction revaluation rules, 
 that defines the rules for bunch of possible instructions including 
 memory load and stores. 
+%\begin{lstlisting}[language=C]
+%    | exec_step_external:
+%        forall b ef args res rs m t rs_res m_res,
+%        rs PC = Vptr b Int.zero ->
+%        Genv.find_funct_ptr ge b = Some (External ef) ->
+%        extcall_arguments rs m (ef_sig ef) args ->
+%        external_call (fun _ => True) ef ge args m t res m_res ->
+%        rs_res = (set_regs (loc_external_result (ef_sig ef)) res 
+%                      (undef_regs (CR ZF :: CR CF :: CR PF :: CR SF :: CR OF :: nil) 
+%                      (undef_regs (map preg_of destroyed_at_call) rs)))
+%                        #PC <- (rs RA) #RA <- Vundef ->
+%        forall STACK:
+%        forall b o, rs ESP = Vptr b o ->
+%                    (Ple (Genv.genv_next ge) b /\ Plt b (Mem.nextblock m)),
+%        forall SP_NOT_VUNDEF: rs ESP <> Vundef,
+%        forall RA_NOT_VUNDEF: rs RA <> Vundef,
+%        step ge (State rs m) t (State rs_res m_res)
+%\end{lstlisting}
 \begin{lstlisting}[language=C]
     | exec_step_external:
-        forall b ef args res rs m t rs' m',
+        forall b ef args res rs m t rs_res m_res,
         rs PC = Vptr b Int.zero ->
         Genv.find_funct_ptr ge b = Some (External ef) ->
         extcall_arguments rs m (ef_sig ef) args ->
-        external_call' (fun _ => True) ef ge args m t res m' ->
-      rs' = (set_regs (loc_external_result (ef_sig ef)) res (undef_regs (CR ZF :: CR CF :: CR PF :: CR SF :: CR OF :: nil) (undef_regs (map preg_of destroyed_at_call) rs))) #PC <- (rs RA) #RA <- Vundef ->
-        forall STACK:
-        forall b o, rs ESP = Vptr b o ->
-                    (Ple (Genv.genv_next ge) b /\ Plt b (Mem.nextblock m)),
-        forall SP_NOT_VUNDEF: rs ESP <> Vundef,
-        forall RA_NOT_VUNDEF: rs RA <> Vundef,
-        step ge (State rs m) t (State rs' m')
+        external_call<@$'$@> (fun _ => True) ef ge args m t res m_res ->
+        rs_res = <@$\cdots$@>
+        step ge (State rs m) t (State rs_res m_res)
 \end{lstlisting}
 the next one is for external call transition rules, which is
 the evaluation rules for external function calls.
+All primitives in the layer defines (including $\CSched$) the transition triggered by the primitive with the folllowing type: 
+is defined as follows:
+\begin{center}
+$\PLayer{\CSched}{cid}{\oracle_{\codeinmath{cpu}}}(\Layer)(id)
+ \vdash_{\lasm}  \sstepr{\spec_{id}}{args}{\regs, m, adt, l}{\textit{res}\cup \{\}}{\regs',  m', adt', l'}$
+\end{center}
+when $\spec_{id}$ is a specification for primitive $id$. Which the specification, the judgement means that it takes arguments ($args$) and a state of the machine, 
+then it returns  a single value (or null) and the returned state.
+For example, the external call rule in $\compcertx$\ $\AsmLM$ machine, 
+which is also used for $\yield$ and $\sleep$ functions. 
+For example, the specification of $\yield$ is defined as \\
+\begin{mathpar}
+\inferrule[Yield Rule]
+{ m = m' \\
+get\_curid(l) = cid\\
+l' = YIELD::l\\
+get\_curid(l') = cid'\\
+adt.kctxt[curid'] = \regs'\\
+adt' = adt/[adt.kctxt := adt.kctxt/[cid = \regs]]}
+{\PLayer{\CSched}{cid}{\oracle_{\codeinmath{cpu}}}(\Layer)(\yield)
+ \vdash_{\lasm}  \sstepr{\spec_{\yield}}{args}{\regs, m, adt, l}{\textit{res}\cup \{\}}{\regs',  m', adt', l'}}
+\end{mathpar}
+which implies that it touches the local state of this machine as well as updating the global log by 
+adding the proper event for the yield call. 
+
+
+%\begin{lstlisting}[language=C]
+%    | exec_step_prim_call:
+%        forall b ef rs m t rs' m',
+%          rs PC = Vptr b Int.zero ->
+%          Genv.find_funct_ptr ge b = Some (External ef) ->
+%          primitive_call ef ge rs m t rs' m' ->
+%          step ge (State rs m) t (State rs' m').
+%%\end{lstlisting}
+%The third is a primitive call that is also similar to the external calls,
+%but all information is hidden in the specifications. 
+%\jieung{1. Do we actually need to explain it? I think we do not  need to do}
+%\jieung{If we explain it, we need to explain primitive calls more} 
+In this CPU local layers, the initial state in this CPU local machine model is statically defined as
 \begin{lstlisting}[language=C]
-    | exec_step_prim_call:
-        forall b ef rs m t rs' m',
-          rs PC = Vptr b Int.zero ->
-          Genv.find_funct_ptr ge b = Some (External ef) ->
-          primitive_call ef ge rs m t rs' m' ->
-          step ge (State rs m) t (State rs' m').
-\end{lstlisting}
-The third is a primitive call that is also similar to the external calls,
-but all information is hidden in the specifications. 
-\jieung{1. Do we actually need to explain it? I think we do not  need to do}
-\jieung{If we explain it, we need to explain primitive calls more} 
-\begin{lstlisting}
   Inductive initial_state {F V} (p: AST.program F V): state -> Prop :=
     | initial_state_intro m0:
         Genv.init_mem p = Some m0 ->
@@ -75,28 +130,9 @@ but all information is hidden in the specifications.
           # ESP <- Vzero in
         initial_state p (State rs0 m0).
 \end{lstlisting}
-The initial state of this semantics is define 
-set the initial stack pointer as the initial value, which is zero,
-and set the program counter as a function pointer for the main function in the program. 
+which sets the initial stack pointer as the initial value (zero),
+and sets the program counter as a function pointer for the main function in the program. 
 
-As we have discussed,
-the first step is introducing scheduling primitives in our CPU local layers..
-In terms of artifacts, 
-The language model that we have used in CPU-local layers is $\compcertx$\ propposed by \cite{deepspec}, and 
-The machine state of it is
-\begin{center}
-$st_{\AsmLM} = (\regs, (m, adt))$
-\end{center}
-where $\regs$ is a register set, $m$ is a memory, and $adt$ is an abstract data.
-To use this existing tool as much as possible, we encapsulate the idea of 
-our concurrent machine mode in this machine state, 
-mostly in the abstract data ($adt$) among the components.
-For instance, when looking at the state of the first example (1) in Fig.~\ref{fig:chapter:conlink:threadlinking}, the state is defined as $st = (\rho, m, a, l)$, but both $a$ and $l$ are actually two components of $adt$ in our implementation level.
-By successfully integrating our framework with $\compcertx$, we do not need to modify the language semantics and machine model
-to build CPU local layers.
-For example, the external call rule in $\compcertx$\ $\AsmLM$ machine, 
-which is also used for $\yield$ and $\sleep$ functions,  
-is defined as follows:
-\begin{center}
-$c, \oracle \vdash_{\AsmLM} \sstepr{\spec_{_{id}}}{args}{\regs, m, adt}{\textit{res}\cup \{\}}{\regs',  m', adt'}$
-\end{center}
+
+
+

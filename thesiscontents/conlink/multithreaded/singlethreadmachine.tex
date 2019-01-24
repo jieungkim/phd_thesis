@@ -1,0 +1,61 @@
+\subsection{Machine model for Single Threaded}
+\label{chapter:linking:subsec:machine-model-for-single-threaded}
+
+
+Now we introduce the single threaded machine model that has a capability of
+ using the same compiler with the $\lasm$. 
+\begin{lstlisting}[language=C]
+  Definition semantics (L: compatlayer _) `{acc_def: !AccessorsDefined L} :=
+    LAsm.semantics (asm_init := hasm_init_state) (lcfg_ops := LC L).
+\end{lstlisting}
+ We name this model $\hasm$, 
+ and the state definition, the evaluation rules in the machine model are 
+ exactly same with the $\lasm$. 
+ It, however, contains the different specifications for scheduling primitives. 
+\jieung{Need to show the spec for them} 
+
+\begin{definition}[Same Domain]
+$\CSched[\_, \_] = (\Layer_{\CSched}, \_ , \_) \rightarrow \TSched[\_, \_] = (\Layer_{\TSched}, \_ , \_) \rightarrow 
+\forall id.\ (id, \_) \in \Layer_{\CSched}  \leftrightarrow (id, \_) \in \Layer_{\TSched} $
+\end{definition}
+
+\begin{mathpar}
+\inferrule[Yield Rule]
+{
+l' = (\oracle_{\codeinmath{thrd}} tid (tid YIELD::l)))
+l' = (tid YIELDBACK)::(\oracle_{\codeinmath{thrd}} tid (tid YIELD::l)))}
+{\PLayer{\TSched}{cid}{\oracle_{\codeinmath{cpu}}}(\Layer)(\yield)
+ \vdash_{\hasm}  \sstepr{\spec_{\yield}}{args}{\regs, m, adt, l}{\textit{res}\cup \{\}}{\regs,  m, adt, l'}}
+\end{mathpar}
+
+
+%\begin{lstliting}[language=C]
+%  Inductive initial_state {F V} p: state (mem := mwd (cdata RData)) -> Prop :=
+%    | initial_state_intro m0 m1 d pc:        
+%        Genv.init_mem (F:=F) (V:=V) p = Some (m0, d) ->
+%        init_mem_lift_nextblock m0 = m1 ->
+%        let ge := Genv.globalenv p in
+%        initial_thread_pc ge current_thread init_log = Some pc ->
+%        let rs0 := (Pregmap.init Vundef) # PC <- pc # ESP <- Vzero in
+%        initial_state p (State rs0 (m1, d)).
+%\end{lstlisting}
+
+\begin{lstlisting}[language=C]
+  Inductive initial_state {F V} p: state (mem := mwd (cdata RData)) -> Prop :=
+    | initial_state_intro m0 m1 d pc:        
+        // d = thread_init_rdata current_thread
+        Genv.init_mem (F:=F) (V:=V) p = Some (m0, d) ->
+        init_mem_lift_nextblock m0 = m1 ->
+        let ge := Genv.globalenv p in
+        initial_thread_pc ge current_thread init_log = Some pc ->
+        let rs0 := (Pregmap.init Vundef) # PC <- pc # ESP <- Vzero in
+        initial_state p (State rs0 (m1, d)).
+\end{lstlisting}
+ In addition to that, 
+ the initial state is slightly different from that of $\lasm$ 
+ due to the dynamically allocated values for each thread.
+
+Instead of having a fixed value for PC and abstract data, 
+we have used 
+
+ \jieung{Need to add ref for the section}

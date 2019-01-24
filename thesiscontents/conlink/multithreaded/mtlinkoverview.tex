@@ -6,35 +6,41 @@
 \begin{center}
 \includegraphics[width=\textwidth]{figs/conlink/thread-linking}
 \end{center}
-\jieung{I am redrawing this figure later (better drawing is necessary)}
+\jieung{I am currently redrawing this figure - 1. It is too complex and I want to focus on the evaluation only with 
+yield funciton calls. 2. It is quite similar to the drawings in CCAL paper / I do not want to use it (I think that should be OK with this thesis, but for linking paper submission??}
 \caption{Thread Linking Structure}
 \label{fig:chapter:conlink:threadlinking}
 \end{figure}
 
-Using them, the basic idea is similar to it for multicore linking. 
-The basic structure of multithreaded linking is described in Figure~\ref{fig:chapter:conlink:threadlinking}.
-To introduced the per-thread layer machine, 
-the first thing is dividing a single CPU machine into multithreaded machine models,
-which implies that the state of the machine is 
-a set of private states a single shared log. 
-A set of private states is a partial map from a thread id to its private state designed as a tuple that contains 
-a register set, a memory, as well as an abstract state. 
-
-In the figure, the bottom layer interface (\cf Figure~\ref{fig:chapter:conlink:threadlinking} (1)) is still a CPU-local layer,
-and the layer contains only one register set and one private abstract data in its state.
+Using them, the basic idea in multithreaded linking is similar to it for multicore linking and the
+ basic structure of multithreaded linking is described in Figure~\ref{fig:chapter:conlink:threadlinking}, 
+ which shows the example of multithreaded linking only with the calls for \lstinline$yield$ functions.
+ 
+The CPU local machine (parameterized by the layer - $\CSched$ - that contains the proper software schedulers for our mulitthreaded linking framework)
+can be viewed  as a deterministic multithreaded machine with one CPU (behavior of other threads on other CPUs are already described in the environmental context for other CPUs.)
+Since the environmental context for CPUs already hides the non-determinism, 
+this multithreaded machine is analogous to the oracle machine for multicore linking in Section~\ref{chapter:linking:subsec:multicore-machine-model-with-hardware-scheduler}. 
+It however does not have the clearly divided private states for each thread,
+since it is the machine model for us to build multiple local layer interfaces on it.
+This model is corresponding to the machine in Figure~\ref{fig:chapter:conlink:threadlinking} (1). 
+The machine only contains only one register set and one private abstract data in its state.
 The layer definitely captures the execution of the whole thread set of CPU $c$ 
 and does not support thread-local reasoning.
-As a first step of building thread-local layer interface, 
-we divide our CPU-local private data (a private register set, a memory, and a private abstract data) into multiple thread-local
-private datum (Figure~\ref{fig:chapter:conlink:threadlinking}). 
+
+In this sense, the first step to introduced the per-thread layer machine, 
+is dividing a single CPU machine into multithreaded machine models,
+which implies that the state of the machine is 
+a set of private states a single shared log (Figure~\ref{fig:chapter:conlink:threadlinking} (2)).
+A set of private states is a partial map from a thread id to its private state designed as a tuple that contains 
+a register set, a memory, as well as an abstract state. 
 Since the layer contains multiple private datum, we also add the flag for currently-running thread $curid$ in the state. 
 By doing this, we can also resolve one challenge in our thread-local machine, which is to replace an assembly style 
-context switch with no-op like operation. 
+context switch with no-op like operation (challenge number (1) in the previuos section)
 The layer contains per-thread register sets and, thus, the register values do not need to update along the change of the currently-running thread id. By changing the thread id alone, the layer knows which thread-local private data should be 
 used during the current evaluation.
 Now each thread can use its own private data for its evaluation, but that is not sufficient at all. 
 In fact, scheduling switches in this layer has a similar meaning with the ones in the lower layer, 
-$\CSched$ (\ie, the blue $\yield$) but with differentcontext switching styles.
+$\CSched$ (\ie, the $\yield$) but with different context switching styles.
 Ideally, we would like to reason about each thread execution 
 independently, and later formally combine the reasoning to obtain a global
 property for the full set of threads on the same CPU.
@@ -43,27 +49,28 @@ a partially-composed set of threads to support this.
 
 Therefore,  a new layer (\cf Figure~\ref{fig:chapter:conlink:threadlinking} (3)) has to be introduced such that other 
 threads' operations can be modeled as input strategies to the layer interface. 
-Here, we introduced a new kind of environment context, $\oracle^{t}$, which contains the strategy the environmental threads and is the key to support  thread-local reasoning.
-Formally, let $T_c$ be the whole thread set running over CPU $c$.
-From a CPU-local layer  $\PLayer{L}{c}{}$,  we construct a 
- \emph{multithreaded} layer $\TLink{L}{c}{\threadset_a} := (\PLayer{L}{c}{},
- \Rely^t, \Guard^t)$,
+Here, we introduced a new kind of environment context, $\oracle_{\codeinmath{thrd}}$, which contains the strategy the environmental threads and is the key to support  thread-local reasoning.
+Formally, with a CPU-local layer  $\PLayer{L}{c}{\oracle_{\codeinmath{cpu}}}$,  we a multithreaded machine model 
+with  the whole thread set ($\fullthreadset$) running over CPU $c$.
+For this purpose, we introduce 
+ \emph{multithreaded} layer $\PLayer{\TLink}{\threadset}{{\oracle_{\codeinmath{thrd}}}} := (\Layer_{\TLink},
+ \Rely_{\TLink}, \Guard_{\TLink})$,
 which is 
-parameterized over an active thread set $\threadset_a \subseteq \fullthreadset$.
-The rely condition $\Rely^t$ defines a set of acceptable thread contexts
-$\oracle^t$ and the guarantee condition $\Guard^t$ specifies the events generated by active threads. 
+parameterized over an active thread set $\threadset \subseteq \fullthreadset$.
+The rely condition $\Rely_{\TLink}$ defines a set of acceptable thread contexts
+$\oracle_{\TLink}$ and the guarantee condition $\Guard_{\TLink}$ specifies the events generated by active threads. 
 Since our machine model does not allow
-preemption, $\oracle^t$ will only be queried during the execution of scheduling primitives, 
+preemption, $\oracle_{\codeinmath{thread}}$ will only be queried during the execution of scheduling primitives, 
 which have two kinds
 of behaviors  depending on whether the \emph{target
 thread} is active or not.
 
 Considering an execution in Fig.~\ref{fig:chapter:conlink:threadlinking} (3) with active thread set
 $\threadset = \{0\}$, whenever an execution switches (by $\yield$ or $\sleep$) 
-to a thread outside of $\threadset_a$ (\ie, the yellow $\yield$),
+to a thread outside of $\threadset$ (\ie, the yellow $\yield$),
 it takes environmental steps (\ie, notated as arrows), repeatedly appending the 
 events returned by the environment context $\oracle$ and the thread
-context $\oracle^t$ to the log until a $\yield$
+context $\oracle_{\codeinmath{thrd}}$ to the log until a $\yield$
 event indicates that control switches back to an active thread.
 
 

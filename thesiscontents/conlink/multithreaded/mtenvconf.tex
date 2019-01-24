@@ -11,7 +11,8 @@ auxiliary functions,
 and properties for those auxiliary definitions. 
 
 \subsubsection{Data Type} 
-The abstract data types for the multithreaded machine is defined as follows:
+To divide the CPU private state and the log into the proper set of private state and the shared log, we introduce 
+multiple abstract data types for the multithreaded machine, which are defined as follows:
 \begin{lstlisting}[language=C]
 Class SingleData :=
   {
@@ -35,6 +36,8 @@ and initialize the whole data structures for the whole  threads (for example, th
 in operating systems)
 On the other hand, the second is for the other threads, 
 who are usually children of main process. 
+
+
 
 \subsubsection{Thread Machine Memory Model}
 
@@ -76,6 +79,16 @@ Class ThreadsConfigurationOps := {
     current_thread: Z; // The thread we're looking at in high-level machines
     dev_handling_cid : Z; // specific thread for handling device drivers 
     vm_handling_cid : Z; // specific thread for handling this CPU's virtual machine 
+    non_current_thread_list: list Z;  // The other threads on this CPU 
+    full_thread_list := current_thread :: non_current_thread_list; // The full list
+    main_thread: Z; // The main thread on this CPU 
+    limit: nat // A log look-back limit used in TAsm  }.
+\end{lstlisting}
+
+\begin{lstlisting}[language=C]
+Class ThreadsConfigurationOps := {      
+    current_CPU_ID: Z; // The ID for the CPU we're looking at. (necessary?) 
+    current_thread: Z; // The thread we're looking at in high-level machines
     non_current_thread_list: list Z;  // The other threads on this CPU 
     full_thread_list := current_thread :: non_current_thread_list; // The full list
     main_thread: Z; // The main thread on this CPU 
@@ -157,15 +170,17 @@ the thread 2 has to cotain all those information in its initial log.
 \subsubsection{Auxiliary Functions}
 
 Based on the configurations, we provide multiple auxiliary functions 
-for thread local machines to calculate necessary information. 
-\begin{lstlisting}[language=C]
+for thread local machines to calculate necessary information (Figure~\ref{fig:chapter:conlink:multithreaded-linking-aux-functions}.)
+\begin{figure}
+\begin{lstlisting}[language=C, morekeywords={Class}]
   Class SingleOracle  `{single_data: SingleData} `{single_oracle_ops : SingleOracleOps}  
         `{threads_conf_ops : ThreadsConfigurationOps} := {
       update : dshare -> Log -> dshare;
       has_event: ident -> bool;      
       uRData (l: Log) : dshare := update (init_dshare) l;      
       choice_check: ident -> list lval -> dshare -> dproc -> Z;
-      sync_chpool_check: ident -> list lval -> dshare -> dproc -> option SyncChanPool;
+      sync_chpool_check: ident -> list lval -> dshare -> dproc ->
+        option SyncChanPool;
       snap_func : dproc -> privDataSnap;
       snap_rev_func : privDataSnap -> dproc; 
       thread_init_dproc : Z-> dproc;
@@ -175,15 +190,41 @@ for thread local machines to calculate necessary information.
           | Some pd => state_check name largs l pd
           | _ => True
         end;
-      PHThread2TCompose : option KContext -> dshare -> dproc -> RData;      
+      PHThread2TCompose : dshare -> dproc -> RData;      
       thread_init_rdata (tid: Z) :=
-        PHThread2TCompose
-          None
-          (uRData init_log)
-          (thread_init_dproc tid);
+        PHThread2TCompose (uRData init_log) (thread_init_dproc tid);
       prim_thread_init_pc {F V} (ge: Genv.t F V): ident -> list lval -> option val }.
 \end{lstlisting}
-update and uRData functions are  declarations of a replay function for the global log. 
+%\begin{lstlisting}[language=C]
+%  Class SingleOracle  `{single_data: SingleData} `{single_oracle_ops : SingleOracleOps}  
+%        `{threads_conf_ops : ThreadsConfigurationOps} := {
+%      update : dshare -> Log -> dshare;
+%      has_event: ident -> bool;      
+%      uRData (l: Log) : dshare := update (init_dshare) l;      
+%      choice_check: ident -> list lval -> dshare -> dproc -> Z;
+%      sync_chpool_check: ident -> list lval -> dshare -> dproc ->
+%        option SyncChanPool;
+%      snap_func : dproc -> privDataSnap;
+%      snap_rev_func : privDataSnap -> dproc; 
+%      thread_init_dproc : Z-> dproc;
+%      state_checks (name : ident) (largs: list lval) (l : Log) 
+%        (pdp: ZMap.t (option dproc)) :=
+%        match ZMap.get (proc_id (uRData l)) pdp with 
+%          | Some pd => state_check name largs l pd
+%          | _ => True
+%        end;
+%      PHThread2TCompose : option Kctxt -> dshare -> dproc -> RData;      
+%      thread_init_rdata (tid: Z) :=
+%        PHThread2TCompose
+%          None
+%          (uRData init_log)
+%          (thread_init_dproc tid);
+%      prim_thread_init_pc {F V} (ge: Genv.t F V): ident -> list lval -> option val }.
+%\end{lstlisting}
+\caption{Auxiliary Functions in Multithreaded Linking Framework}
+\label{fig:chapter:conlink:multithreaded-linking-aux-functions}
+\end{figure}
+Among them,  \lstinline$update$ and \lstinline$uRData$ functions are  declarations of a replay function for the global log. 
 The has event function is for check whether the primitive calls has to trigger the event or not. 
 we also requires the snapshot functions for the events as we have seen in the above.
 And two important abstract function declarations 
@@ -195,20 +236,35 @@ Later, when we want to link the concrete layer definitions using our multithread
 
 \subsubsection{Auxiliary Properties}
 
-\begin{lstlisting}[language=C]
+%\begin{lstlisting}[language=C]
+%Class ThreadsConfiguration `{s_oracle : SingleOracle}: Prop := {
+%  CPU_ID_valid: forall l, processor_id (uRData l) = current_CPU_ID;
+%  main_valid: In main_thread full_thread_list;
+%  null_log_proc_id: proc_id (uRData nil) = main_thread;
+%  main_thread_val: main_thread = current_CPU_ID + 1;
+%  current_CPU_ID_range: 0 <= current_CPU_ID < Constant.TOTAL_CPU;
+%  dev_handling_cid_constraint: dev_handling_cid = main_thread;
+%  init_log_proc_id: proc_id (uRData init_log) = current_thread;
+%  valid_thread_list: forall i, In i full_thread_list -> 
+%    Constant.TOTAL_CPU < i < Constant.num_proc \/ i = main_thread;
+%  all_cid_in_full_thread_list: forall l, In (proc_id (uRData l)) full_thread_list;
+%  full_thread_list_prop: NoDup full_thread_list }. 
+%\end{lstlisting}
+
+\begin{lstlisting}[language=C, morekeywords={Class}]
 Class ThreadsConfiguration `{s_oracle : SingleOracle}: Prop := {
   CPU_ID_valid: forall l, processor_id (uRData l) = current_CPU_ID;
   main_valid: In main_thread full_thread_list;
   null_log_proc_id: proc_id (uRData nil) = main_thread;
   main_thread_val: main_thread = current_CPU_ID + 1;
   current_CPU_ID_range: 0 <= current_CPU_ID < Constant.TOTAL_CPU;
-  dev_handling_cid_constraint: dev_handling_cid = main_thread;
   init_log_proc_id: proc_id (uRData init_log) = current_thread;
   valid_thread_list: forall i, In i full_thread_list -> 
     Constant.TOTAL_CPU < i < Constant.num_proc \/ i = main_thread;
   all_cid_in_full_thread_list: forall l, In (proc_id (uRData l)) full_thread_list;
   full_thread_list_prop: NoDup full_thread_list }. 
 \end{lstlisting}
+
 
 Those are the property about the auxiliary functions. 
 They are usually for the minimum conditions of 
@@ -264,7 +320,7 @@ Those properties also have to be instantiated later with the concrete definition
 %          prim_thread_init_pc ge2 f vargs = Some v
 %    }.
 %\end{lstlisting}
-\begin{lstlisting}
+\begin{lstlisting}[language=C, , morekeywords={Class}]
 Class SingleOracleProp `{thread_conf_prf: ThreadsConfiguration}:= {
   update_proc_id:
     forall d d' d'' l a, update d l =  d' ->
@@ -284,7 +340,10 @@ Class SingleOracleProp `{thread_conf_prf: ThreadsConfiguration}:= {
       (forall i, Genv.find_symbol ge1 i = Genv.find_symbol ge2 i) ->
       prim_thread_init_pc ge1 f vargs = Some v ->
       prim_thread_init_pc ge2 f vargs = Some v }.
+\end{lstlisting}
 
+
+\begin{lstlisting}[language=C, , morekeywords={Class}]
 Class SingleOracleLinkProp `{thread_conf_prf: ThreadsConfiguration}:= {
   Oracle_le_nb: 
   forall l, (last_nb l <= last_nb (Single_Oracle l :: l)) % positive;
