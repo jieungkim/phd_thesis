@@ -50,8 +50,9 @@ We first define the local view, which is the view from each core that consists o
 Based on the local view, 
 step relation rules for four commands 
 are defined in Figure~\ref{fig:chapter:conlink:hardware-local-step-transition-rules}, which 
-check the program counter first, then perform each steps. 
-Note that rules for acquiring shared and release shared first check the owner that is associated with the shared resource,
+check the program counter first, then perform each step. 
+Note that rules for acquiring shared and releasing shared resources 
+first check the ownership that is associated with the shared resource;
 but they do not have any safety condition to guarantee that the owner of that shared resource is in a valid status when they are invoked. 
 
 
@@ -105,13 +106,17 @@ The state definition in machine model is almost the same with the state definiti
 The state ($\hstatekwd$) is defined as a tuple with three elements, and it consists of a current CPU ID that owns the evaluation control,
 a partial map from a CPU ID to the private state ($\privatestatepoolkwd$ - which contains the whole private states for all CPUs in the system),
 and the shared state represented by the global log. 
-It, however, differs from the state definition in Section~\ref{chapter:ccal:subsec:multicore-machine-model} 
-in regards of not having shared memory and abstract state. 
-Those shared resources can be calculated by the global log, so we can safely assume that 
-there exist shared memory as well as abstract data in this state definition. 
+Among, 
+the private state pool, $\privatestatepoolkwd$, is parameterized by 
+the focused set, which specifies the valid domain of the set. 
+Since this multicore machine model contains private states for all cores,
+the private state pool is parameterized with the full core set, $\coreset$.
+The state definition, however, differs from the state definition in Section~\ref{chapter:ccal:subsec:multicore-machine-model} 
+in regards to not having shared memory and abstract state. 
+The global log can calculate those shared resources, so we can safely assume that there exist shared memory as well as abstract data in this state definition. 
 $\getpstkwd$ and $\setpstkwd$ are getter and setter operations for the partial map of private datum. 
 With that, 
-the step relation for non-deterministic multicore machine is defined in $\setpstkwd$. 
+the step relation for the non-deterministic multicore machine is defined in $\setpstkwd$. 
 The machine parameterized with a single CPU ID, which is a start CPU (that will be first evaluated in the system),
 but does not have any environmental context at all because it is a full machine model without any missing components. 
 The rule always start the evaluation 
@@ -121,5 +126,3 @@ Then,
 it updates the local view of the newly scheduled CPU via hardware local step relation. 
 The result will eventually update the shared log, the private state as well as the current CPU ID. 
 Note that choosing the next CPU ID that will be evaluated in this step relation is totally non-deterministic.
-
-

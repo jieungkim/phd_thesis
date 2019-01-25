@@ -12,7 +12,9 @@ concurrent linking for multicore need to solve multiple challenges;
 (1) hide non-determinism of multicore machine model (by using the strategy of hardware scheduler);
 (2) build environmental context for each CPU;
 (3) prove compositionality of multiple per-PCU machines;
-and (4) provide a simple environmental context for per-CPU machines. 
+(4) provide a simple environmental context for per-CPU machines;
+and (5) finally connect this multicore linking framework with the machine for our local layer interface,
+the machine model with $\compcertx$.
 %Section~\ref{chapter:ccal:sec:ccal-overview} provides the way to handle 
 \begin{figure}
 \begin{center}

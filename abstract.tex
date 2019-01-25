@@ -1,3 +1,162 @@
+%Concurrent programs are in common these days because 
+%multicore hardware and multithreaded programming become 
+%ubiquitous. 
+Concurrency is everywhere these days. 
+They are not only related to the local machines (\ie, multicore hardware or multithreaded programming)
+but also associated with external behaviors of the system (\ie, I/O device) and other nodes' behaviors in the cluster of multiple machines via a network.
+They, however, are known to be challenging to get right and debug because the behavior of the system contains the number (usually unbounded) of arbitrary interactions and interleaved executions among all components of the system. 
+In this sense, building high-assurance concurrent programs is still a challenging problem;
+thus a formal verification is desirable to the concurrent software since
+ it is the only known way of building bug-free programs.
+
+However, the formal verification still requires a considerable cost to adapt it to the large-scale system software even without considering concurrency, and it becomes worse with it. 
+The fundamental techniques that are common in building large-scale programs, modularization and composition,
+are also required for the program verification to reduces the cost of developing the verified software as well as the cost of proof maintenance for the software;
+but applying them to the verification is subtle due to the correlation 
+of sub-modules or/and instances in the system.
+Software system usually consists of multiple sub-modules which are highly related to others
+and they also form multiple concurrently interleaved instances (\ie, the mixture of heterogeneous and/or homogeneous instances depending on the system)
+that interact with others.
+In this sense, a novel modular and compositional verification approach to resolve them is required for concurrent programs
+which provides a way to maintain global invariants when building multiple sub-modules that can run with 
+other concurrent components in the full system.
+% Those features require the system to maintain global invariants when building multiple sub-modules as well as other components together. by providing modularity and compositionality approach for the verification.
+%Second, the verification also needs to decouple the complexity of concurrent interleaving from the verification 
+%without losing the generality of concurrency aspects;
+%thus it requires the proper compositional approach for the verification of multiple instances 
+%that run together on the concurrent system.
+%compositionality is the most promising approach to fight 
+%the case explosion due to interleavings.
+%To make it possible, 
+%the concurrent program verification should 
+%be divided as two parts;
+%1) the proof of a single instance of the program 
+% (\textit{i.e.} the instance runs on one CPU or one thread);
+% and 2) 
+% the linking proof of them to show 
+%that the composition of those proof instances and  
+%the composition correctly reflects 
+%the concurrent program running on the 
+%multicore and/or multithreaded environment.
+
+Modularity and compositionality are also necessary to reduce the maintenance cost of verified software.
+System software can be extended by adding more services based on the current existing modules, which increases the local stack of the system, or even by adding a new instance into the system, which increases the parallel stack of the system.
+When some parts of the system have been modified or extended, the proof also has to be re-built to reflect those changes. 
+The cost usually depends on the nature of the changes as well as the invariants that the change affects,
+but providing the verification approach for minimizing the impact of those changes are also necessary. 
+
+%Recent efforts have demonstrated the feasibility of building large
+%scale formal proofs of functional correctness for simple
+%general-purpose kernels, but the cost of such verification is still
+%prohibitive, and it is unclear how to use their verified kernels to
+%reason about user-level programs and other kernel
+%extensions. Furthermore, they have ignored the issues of concurrency,
+%which include not just user- and I/O concurrency on a single core, but
+%also multicore parallelism with fine-grained locking.
+%%
+%and 
+%compositionality is the most promising approach to fight 
+%the case explosion due to interleavings.
+%To make it possible, 
+%the concurrent program verification should 
+%be divided as two parts;
+%1) the proof of a single instance of the program 
+% (\textit{i.e.} the instance runs on one CPU or one thread);
+% and 2) 
+% the linking proof of them to show 
+%that the composition of those proof instances and  
+%the composition correctly reflects 
+%the concurrent program running on the 
+%multicore and/or multithreaded environment.
+%
+%Several previous works~\jieung{need cite} 
+%provides multiple kinds of approaches to handle 
+%one or both challenges 
+%and one recent work 
+%provides the idea 
+%to handle both problems.
+%They, however, 
+%do not provide 
+%how 
+%the machine checked proof object 
+%for large scaled concurrent program 
+%work. 
+
+One another challenge is providing an efficient executable code from verified programs without missing the robustness between them. 
+The real-world systems are usually written in the mixture of low-level languages including C and assembly.
+Verification on the real-world systems, thus, requires the tools to prove the correctness of both C and assembly functions, and 
+it also requires a proper linking between the proofs for C and Assembly codes.
+The obvious and an unavoidable step is to
+do the linking in an assembly level after the C code gets compiled into assembly,
+but this requires trusting the correctness of the compiler that supports modularity as well as compositionality.
+When the linking comes with the concurrency, 
+it also requires machine models that can support running multiple instances of the concurrent program on them. 
+
+As a promising approach to handle all the stated problems, 
+this dissertation provides a modular and compositional way to verify complicated concurrent system software written in C and assembly.
+It first provides a way to verify each instance of concurrent programs by following 
+abstraction layer approaches, a conventional technique in building large-scale software,
+with hiding the complexity of interleaving due to the concurrency.
+It also presents the framework to support the  linking between 
+multiple proofs instances to form full reasoning for concurrent programs.
+As a part of this linking work, we built multiple machine models that can be connected without losing generality as well as the robustness of our proofs. 
+As parts of our case studies, we verified $\certikos$, a concurrent operating system with supporting fine-grained locking,
+as well as $\wormspace$, an API that works as a basis of building multiple distributed systems, of which the implementation is a collection of multiple $\paxos$ instances.
+Within the verification of $\certikos$, we also provide the detailed work on MCS Lock, a small but complex piece of low-level software, is a standard algorithm for providing inter-CPU locks with FIFO ordering guarantee and scalability.
+
+\jieung{Do we need a separate paragraph for witness passing??? Is it ready for us to add the witness passing part into this dissertation?}
+
+%The MCS Lock, a small but complex piece of low-level software, is a standard algorithm for providing inter-CPU locks with FIFO ordering guarantee and scalability.
+%It is an interesting target for verification---short and subtle, involving both liveness and safety properties. 
+%We implemented and verified the MCS Lock algorithm as part of the CertiKOS kernel~\cite{certikos:osdi16}, showing that the C/assembly implementation
+% {\em contextually refines} atomic specifications of the acquire and release lock methods.
+%Our development follows the methodology of \emph{certified concurrent abstraction layers}~\cite{deepspec,concurrency}. 
+%By splitting the proof into layers, we can modularize it into separate parts for the low-level machine model, data abstraction, and reasoning about concurrent interleavings.  This separation of concerns makes the layered methodology suitable for verified programming in the large, and our MCS Lock can be composed with other shared objects in CertiKOS kernel.
+
+%
+%%
+%As parts of our case studies, 
+%we applied our approach 
+%to concurrent operating systems and distributed systems. 
+%
+% perating System (OS) kernels form the backbone of all system
+%%software. They have a significant impact on the resilience,
+%%extensibility, and security of today’s computing hosts. However,
+%modern OS kernels are complex and may consist of a multitude of
+%sequential or concurrent abstraction layers; unfortunately,
+%abstraction layers have almost never been formally specified or
+%verified. This makes it difficult to establish strong correctness
+%properties, and to scale program verification across multiple
+%abstraction layers.
+
+%
+%Thus, this paper focus on the realistic issue of 
+%providing composition in concurrent program verification. 
+%We define (sequential consistency) multicore machine model that are reusable for multiple 
+%machines (such as ARM and x86), 
+%and introduce several intermediate languages 
+%to connect them with the assembly machine of the variance of  $\compcert$.
+%We also provide unbounded multithreaded machine model and introduce the per-thread machine model 
+%based on it, which can use $\compcert$ compiler as well as be able to allocate 
+%dynamic private datum for all threads.
+%As far as we know, this is the first attempt to address composition of concurrent programs with s
+%machine checked proofs in detail. 
+%
+%
+%%
+%% concurrent 
+%
+%This paper aims to 
+%provide the proof 
+%
+%but does not shows 
+%how building the practical and feasible proof linking framework works. 
+%
+%Thus, 
+%this paper focus on how to practically connect 
+%the program running on concurrent environment 
+%to the collection of program instances with 
+%a partial subset of participants of the system. 
 
 
 
@@ -5,9 +164,128 @@
 
 
 
-%Concurrent programs are in common these days.
-%They are not only related to the local machine concurrency, such as multicore or multithreaded environment, 
-%but also  related to external behaviors of the machine (\textit{i.e.} IO devices) and other nodes' behaviors in the cluster of multiple machines. 
+
+
+
+
+
+
+
+%
+% to verify concurrent 
+%
+%
+%programs with 
+%focusing on a single instance of concurrent 
+%program (\textit{i.e.} the instance runs on one CPU or one thread)
+%and hiding the communication with other instances by 
+%providing proper assumptions. 
+%Some of them also provide 
+%how multiple proof instances can be linked with others. 
+%
+%Both of them are important parts of concurrent program verification 
+%and the recent work~\jieung{ccal cite}
+%provides the way 
+%to build a large-scaled certified concurrent program 
+%via layered structure. 
+%The program 
+%
+%However, 
+%providing the evidence that 
+%multiple instances in concurrent programs are also important to 
+%guarantee correctness of the concurrent program. 
+%
+%One recent work 
+%
+%
+%
+%hiding number of inte
+%
+%
+%
+%In this sense, 
+%verification is highly desirable to guarantee high-assurance
+%concurrent programs. 
+%Several previous works~\jieung{need cite} 
+%provides multiple kinds of approaches to verify concurrent 
+%programs. 
+%Some of them are focus on single instance of concurrent 
+%program with the proper assumptions of the environment,
+%others are focus on the whole concurrent program at once. \jieung{is it true?}
+%
+%To build the large-scaled verified concurrent program, 
+%the first method is required since it can hide details of interleaving.  
+%
+%
+%
+%For those programs, verification is desirable due to the difficulty of 
+%getting right and debugging. 
+%However,  verification of concurrent programs is known to be extremely difficult. 
+%Besides the challenges regards the sequential program verification, 
+%it adds the need to consider the environment of the program, 
+%which provides the number of interleavings. 
+%
+%To reduce the complexity due to interleavings, 
+%multiple methodologies~\jieung{need cites}  focus on a single instance of 
+%concurrent program (\textit{i.e.} one thread) with 
+%the proper modeling of other instances in the whole environment.
+%Among them, few works also provide a way to reason about the correctness of
+%a large scaled concurrent programs.
+%
+%The recent work~\jieung{ccal cite} 
+%shows that the verified practical sized concurrent program is feasible. 
+%It provides the way to build certified concurrent layers and also provides the high-level overview 
+%of combining multiple instances of concurrent programs. 
+%the paper, however, does not show how multiple instance of programs can be linked together.
+%
+%
+%\ignore{
+%The verification of concurrent programs contains two parts.
+%It first requires the program logic and the tool that can verify each instance of concurrent programs separately. 
+%For this purpose, several approaches~\jieung{need cites}  are proposed during several decades.
+%This certified single instance usually relies on a set of assumptions related to 
+%other instances of the whole concurrent environment. 
+%Thus the second part of the verification, which we focus on this paper, is 
+%providing the formal connection between the collection of the concurrent program instances and 
+%the single instance of the 
+%}
+
+%
+%This paper shows that how multiple instances of practical concurrent system can be linked together. 
+%
+%
+%
+%
+%
+%
+%In this paper, we present detailed machine model for 
+%This paper shows how the proofs in the single core machine can be combined 
+%sudo-x86 non deterministic machine model that uses the similar that of instructions in CompCert X86 assembly. 
+%
+%Similar to the multicore case, we present the machine model for multithreaded programs, and shows how we 
+%propose per-thread machine with providing formal linking proofs   
+
+
+
+%
+
+%Multiple previous works~\jieung{need cites} handle 
+
+
+
+
+%
+%
+%Providing the justification of the correctness for the program running on those concurrent environments are notoriously hard. 
+%In addition to that, providing that the single instance of object fields
+%	
+
+
+
+
+
+
+
 % They, however, are known to be difficult to get right 
 %and debug 
 %because multiple instances of 
@@ -55,9 +333,34 @@
 %
 %%%%% From MCSLock
 %
-%The MCS Lock, a small but complex piece of low-level software, is a standard algorithm for providing inter-CPU locks with FIFO ordering guarantee and scalability.
-%It is an interesting target for verification---short and subtle, involving both liveness and safety properties. 
-%We implemented and verified the MCS Lock algorithm as part of the CertiKOS kernel~\cite{certikos:osdi16}, showing that the C/assembly implementation
-% {\em contextually refines} atomic specifications of the acquire and release lock methods.
-%Our development follows the methodology of \emph{certified concurrent abstraction layers}~\cite{deepspec,concurrency}. 
-%By splitting the proof into layers, we can modularize it into separate parts for the low-level machine model, data abstraction, and reasoning about concurrent interleavings.  This separation of concerns makes the layered methodology suitable for verified programming in the large, and our MCS Lock can be composed with other shared objects in CertiKOS kernel.
+
+
+
+
+
+%This thesis presents CertiKOS, an extensible architecture for building
+%certified sequential and concurrent OS kernels. CertiKOS proposes a
+%new compositional framework showing how to formally specify, program,
+%verify, and compose concurrent abstraction layers. We present a novel
+%language-based account of abstraction layers and show that they
+%correspond to a strong form of abstraction over a particularly rich
+%class of specifications that we call deep specifications.  We show how
+%to instantiate the formal layer-based framework in realistic
+%programming languages such as C and assembly, and how to adapt the
+%CompCert verified compiler to compile certified C layers such that
+%they can be linked with assembly layers.  We can then build and
+%compose certified abstraction layers to construct various certified OS
+%kernels, each of which guarantees a strong contextual refinement
+%property for every kernel function, i.e., the implementation of each
+%such function will behave like its specification under any kernel/user
+%context with any valid interleaving.
+%
+%To demonstrate the effectiveness of our new framework, we have
+%successfully implemented and verified multiple practical sequential
+%and concurrent OS kernels. The most realistic sequential hypervisor
+%kernel is written in 6000 lines of C and x86 assembly, and can boot a
+%version of Linux as a guest. The general-purpose concurrent OS kernel
+%with fine-grained locking can boot on a quad-core hardware. For all
+%the certified kernels, their abstraction layers and (contextual)
+%functional correctness properties are specified and verified in the
+%Coq proof assistant.

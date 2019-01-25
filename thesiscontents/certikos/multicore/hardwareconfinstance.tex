@@ -37,7 +37,7 @@ As discussed in Section~\ref{chapter:linking:sec:multithreaded-linking}, t
 he state definition for a machine model of  $\compcertx$ ($\lasm$) is
 \begin{lstlisting}
 Inductive state <@$\cdots$@> : Type :=
-  | State: regset -> (mem: mwd LDATAOps)-> state.
+  | State: regset -> (mem: mwd LDADTOps)-> state.
 \end{lstlisting}
 which is a pair consists of  a register and a memory. 
 Thanks to the similarity between this state definition and the state definition of $\compcert$, 
@@ -45,10 +45,10 @@ $\compcertx$ facilitates many parts of verified compiler of $\compcert$ with som
 we built all layers based on our sequential-like layer interfaces.)
 The memory in the $\compcertx$ is also a pair of two elements, 
 a memory (a map from a identifier to a value) and an abstract data. 
-\begin{lstlisting}
-Definition <@$\pi$@>_mem {D}: mwd D -> mem := fst.
-Definition <@$\pi$@>_data {D}: mwd D -> ldata_type D := snd.
-\end{lstlisting}
+%\begin{lstlisting}
+%Definition <@$\pi$@>_mem {D}: mwd D -> mem := fst.
+%Definition <@$\pi$@>_data {D}: mwd D -> ldata_type D := snd.
+%\end{lstlisting}
 The memory is same with the memory in the $\compcert$~\cite{leroy08}, which is a map from its index (a pair of a block ID and an offset) to 
 the value alongside with its type information for the size of the value. 
 The abstract data gives us a huge freedom on the state definition by allowing us to add 
@@ -64,8 +64,8 @@ Thus, the \lstinline$(mem: mwd LDATAOps)$ can be interpreted as a tuple consists
 Definition mboot_passthrough : compatlayer (cdata RData) :=
   <@$\cdots$@>
   <@$\oplus$@> get_CPU_ID <@$\mapsto$@> gensem get_CPU_ID_spec
-  <@$\oplus$@>  acquire_shared <@$\mapsto$@> primcall_acquire_shared_compatsem acquire_shared0_spec0
-  <@$\oplus$@>  atomic_FAI <@$\mapsto$@> primcall_atomic_FAI_compatsem atomic_FAI_spec
+  <@$\oplus$@> acquire_shared <@$\mapsto$@> primcall_acquire_shared_compatsem acquire_shared0_spec0
+  <@$\oplus$@> atomic_FAI <@$\mapsto$@> primcall_atomic_FAI_compatsem atomic_FAI_spec
   <@$\cdots$@>
 \end{lstlisting}
 \caption{Bottom Layer Interface}
@@ -665,7 +665,7 @@ are defined
 by slightly modifying the step relation in $\compcertx$ 
 7and by the case analysis for the primitive identifiers. 
 For instance, the evaluation relation for get shared is
-\begin{lstlisting}[language=C]
+\begin{lstlisting}[language=C, deletekeywords={int, unsigned}]
  Inductive get_shared_sem (ge: genv) 
    : mstate -> list Integers.Byte.int -> mstate -> Prop:=
    | get_shared_intro: 

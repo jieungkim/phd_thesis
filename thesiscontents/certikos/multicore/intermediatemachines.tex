@@ -1,5 +1,5 @@
 
-\subsection{Intermediate Machine Instances}
+\subsection{Instantiating Machine Models for Multicore Linking}
 \label{chapter:certikos:subsec:intermediate-machine-instantiation}
 
 Our intermediate machine models are abstract languages, but 
@@ -224,157 +224,157 @@ Definition single_semantics (p: program) :=
     single_final_state (Genv.globalenv p).
 \end{lstlisting}
 
-\subsubsection{Big Step Machine}
-From here to Big 2 step semantics,
-our model requires fairness assumptions about hardware scheduler, which is notated as $\codeinmath{fair}$ in the semantics definitions.
-\begin{itemize}[leftmargin=*]
-\item Big step transition rule instance.
-\end{itemize}
-\begin{lstlisting}[language=C]
-Definition single_big_step_aux :=
-  @single_big_step zset_op hdseting op_general hdsem_instance 
-  fair current_CPU_ID single_oracle.
-
-Inductive single_big_step_aux_ge : genv -> single_state -> trace -> 
-  single_state -> Prop :=
-  | single_big_step_aux_ge_intro : 
-    forall s1 t s2, single_big_step_aux s1 t s2 -> single_big_step_aux_ge ge s1 t s2.
-\end{lstlisting}
-
-
-\begin{itemize}[leftmargin=*]
-\item Big step semantics definitions (including initial state definition)
-\end{itemize}
-\begin{lstlisting}[language=C]
-Inductive single_big_initial_state (p: AST.program fundef unit): 
-  (single_state (hdset := hdseting)) -> Prop :=
-  | initial_big_state_intro: 
-    forall (m0: mwd LDATAOps),
-      Genv.init_mem p = Some m0 ->
-      let ge := Genv.globalenv p in
-      let rs0 :=
-        (Pregmap.init Vundef)
-         # Asm.PC <- (symbol_offset ge p.(prog_main) Int.zero)
-         # ESP <- Vzero in
-      single_big_initial_state p (SState current_CPU_ID 
-        (LState (Asm.State rs0 m0) true) nil).
-      
-Definition single_big_semantics (p: program) :=
-  Smallstep.Semantics single_big_step_aux_ge (single_big_initial_state p) 
-    single_big_final_state (Genv.globalenv p).
-\end{lstlisting}
-
-\subsubsection{Big 2 Step Machine}
-\begin{itemize}[leftmargin=*]
-\item Big two step transition rule instance.
-\end{itemize}
-\begin{lstlisting}[language=C]
-Definition single_big2_step_aux :=
-  @single_big2_step zset_op hdseting op_general hdsem_instance 
-   fair current_CPU_ID single_oracle.
-
-Inductive single_big2_step_aux_ge : genv -> rstate -> trace -> rstate -> Prop :=
- | single_big2_step_aux_ge_intro : 
-   forall s1 t s2, single_big2_step_aux s1 t s2 -> single_big2_step_aux_ge ge s1 t s2.
-\end{lstlisting}
+%\subsubsection{Big Step Machine}
+%From here to Big 2 step semantics,
+%our model requires fairness assumptions about hardware scheduler, which is notated as $\codeinmath{fair}$ in the semantics definitions.
+%\begin{itemize}[leftmargin=*]
+%\item Big step transition rule instance.
+%\end{itemize}
+%\begin{lstlisting}[language=C]
+%Definition single_big_step_aux :=
+%  @single_big_step zset_op hdseting op_general hdsem_instance 
+%  fair current_CPU_ID single_oracle.
+%
+%Inductive single_big_step_aux_ge : genv -> single_state -> trace -> 
+%  single_state -> Prop :=
+%  | single_big_step_aux_ge_intro : 
+%    forall s1 t s2, single_big_step_aux s1 t s2 -> single_big_step_aux_ge ge s1 t s2.
+%\end{lstlisting}
 
 
-\begin{itemize}[leftmargin=*]
-\item Big two step semantics definitions (including initial state definition)
-\end{itemize}
-\begin{lstlisting}[language=C]
-Inductive single_big2_initial_state (p: AST.program fundef unit): 
-  (rstate (hdset := hdseting)) -> Prop :=
-  | initial_big2_state_intro: 
-    forall (m0: mwd LDATAOps),
-      Genv.init_mem p = Some m0 ->
-      let ge := Genv.globalenv p in
-      let rs0 :=
-        (Pregmap.init Vundef)
-        # Asm.PC <- (symbol_offset ge p.(prog_main) Int.zero)
-        # ESP <- Vzero in
-      single_big2_initial_state p (RState (Asm.State rs0 m0) nil).
-
-Definition single_big2_semantics (p: program) :=
-  Smallstep.Semantics single_big2_step_aux_ge (single_big2_initial_state p) 
-    single_big2_final_state (Genv.globalenv p).
-\end{lstlisting}
-
-\subsubsection{Split Step Machine}
-\begin{itemize}[leftmargin=*]
-\item Split step transition rule instance.
-\end{itemize}
-\begin{lstlisting}[language=C]
-Definition single_split_step_aux :=
-  @single_split_step zset_op hdseting op_general hdsem_instance 
-    fair current_CPU_ID single_oracle.
-
-Inductive single_split_step_aux_ge : genv -> srstate -> trace -> srstate -> Prop :=
-  | single_split_step_aux_ge_intro : 
-  forall s1 t s2, single_split_step_aux s1 t s2 -> single_split_step_aux_ge ge s1 t s2.
-\end{lstlisting}
-
-
-\begin{itemize}[leftmargin=*]
-\item Split step semantics definitions (including initial state definition)
-\end{itemize}
-\begin{lstlisting}[language=C]
-Inductive single_split_initial_state (p: AST.program fundef unit): 
-  (srstate (hdset := hdseting)) -> Prop :=
-  | initial_split_state_intro: 
-    forall (m0: mwd LDATAOps),
-      Genv.init_mem p = Some m0 ->
-      let ge := Genv.globalenv p in
-      let rs0 :=
-        (Pregmap.init Vundef)
-        # Asm.PC <- (symbol_offset ge p.(prog_main) Int.zero)
-        # ESP <- Vzero in
-     single_split_initial_state p (SRState (Asm.State rs0 m0) nil nil).
-          
-Definition single_split_semantics (p: program) :=
-  Smallstep.Semantics single_split_step_aux_ge (single_split_initial_state p) 
-    single_split_final_state (Genv.globalenv p).
-\end{lstlisting}
-
-\subsubsection{Reorder Step Machine}
-\begin{itemize}[leftmargin=*]
-\item Reorder step transition rule instance. Reorder step relies on different kinds of environmental context. In this sense, 
-it is parameterized by environmental contexts.
-\end{itemize}
-\begin{lstlisting}[language=C]
-Variable reorder_o : ReorderOracleType.
-
-Definition single_reorder_step_aux :=
-  @single_reorder_step zset_op hdseting op_reorder hdsem_instance 
-  current_CPU_ID reorder_o.
-  
-Inductive single_reorder_step_aux_ge : genv -> rstate -> trace -> rstate -> Prop :=
-  | single_reorder_step_aux_ge_intro : 
-    forall s1 t s2, single_reorder_step_aux s1 t s2 -> 
-      single_reorder_step_aux_ge ge s1 t s2.  
-\end{lstlisting}
+%\begin{itemize}[leftmargin=*]
+%\item Big step semantics definitions (including initial state definition)
+%\end{itemize}
+%\begin{lstlisting}[language=C]
+%Inductive single_big_initial_state (p: AST.program fundef unit): 
+%  (single_state (hdset := hdseting)) -> Prop :=
+%  | initial_big_state_intro: 
+%    forall (m0: mwd LDATAOps),
+%      Genv.init_mem p = Some m0 ->
+%      let ge := Genv.globalenv p in
+%      let rs0 :=
+%        (Pregmap.init Vundef)
+%         # Asm.PC <- (symbol_offset ge p.(prog_main) Int.zero)
+%         # ESP <- Vzero in
+%      single_big_initial_state p (SState current_CPU_ID 
+%        (LState (Asm.State rs0 m0) true) nil).
+%      
+%Definition single_big_semantics (p: program) :=
+%  Smallstep.Semantics single_big_step_aux_ge (single_big_initial_state p) 
+%    single_big_final_state (Genv.globalenv p).
+%\end{lstlisting}
+%
+%\subsubsection{Big 2 Step Machine}
+%\begin{itemize}[leftmargin=*]
+%\item Big two step transition rule instance.
+%\end{itemize}
+%\begin{lstlisting}[language=C]
+%Definition single_big2_step_aux :=
+%  @single_big2_step zset_op hdseting op_general hdsem_instance 
+%   fair current_CPU_ID single_oracle.
+%
+%Inductive single_big2_step_aux_ge : genv -> rstate -> trace -> rstate -> Prop :=
+% | single_big2_step_aux_ge_intro : 
+%   forall s1 t s2, single_big2_step_aux s1 t s2 -> single_big2_step_aux_ge ge s1 t s2.
+%\end{lstlisting}
 
 
-\begin{itemize}[leftmargin=*]
-\item Reorder step semantics definitions (including initial state definition)
-\end{itemize}
-\begin{lstlisting}[language=C]
-Inductive single_reorder_initial_state (p: AST.program fundef unit): 
-  (rstate (hdset := hdseting)) -> Prop :=
-  | initial_reorder_state_intro: 
-    forall (m0: mwd LDATAOps),
-      Genv.init_mem p = Some m0 ->
-      let ge := Genv.globalenv p in
-      let rs0 :=
-        (Pregmap.init Vundef)
-        # Asm.PC <- (symbol_offset ge p.(prog_main) Int.zero)
-        # ESP <- Vzero in
-      single_reorder_initial_state p (RState (Asm.State rs0 m0) nil).
+%\begin{itemize}[leftmargin=*]
+%\item Big two step semantics definitions (including initial state definition)
+%\end{itemize}
+%\begin{lstlisting}[language=C]
+%Inductive single_big2_initial_state (p: AST.program fundef unit): 
+%  (rstate (hdset := hdseting)) -> Prop :=
+%  | initial_big2_state_intro: 
+%    forall (m0: mwd LDATAOps),
+%      Genv.init_mem p = Some m0 ->
+%      let ge := Genv.globalenv p in
+%      let rs0 :=
+%        (Pregmap.init Vundef)
+%        # Asm.PC <- (symbol_offset ge p.(prog_main) Int.zero)
+%        # ESP <- Vzero in
+%      single_big2_initial_state p (RState (Asm.State rs0 m0) nil).
+%
+%Definition single_big2_semantics (p: program) :=
+%  Smallstep.Semantics single_big2_step_aux_ge (single_big2_initial_state p) 
+%    single_big2_final_state (Genv.globalenv p).
+%\end{lstlisting}
 
-Definition single_reorder_semantics (p: program) :=
-  Smallstep.Semantics single_reorder_step_aux_ge (single_reorder_initial_state p) 
-    single_reorder_final_state (Genv.globalenv p).
-\end{lstlisting}
+%\subsubsection{Split Step Machine}
+%\begin{itemize}[leftmargin=*]
+%\item Split step transition rule instance.
+%\end{itemize}
+%\begin{lstlisting}[language=C]
+%Definition single_split_step_aux :=
+%  @single_split_step zset_op hdseting op_general hdsem_instance 
+%    fair current_CPU_ID single_oracle.
+%
+%Inductive single_split_step_aux_ge : genv -> srstate -> trace -> srstate -> Prop :=
+%  | single_split_step_aux_ge_intro : 
+%  forall s1 t s2, single_split_step_aux s1 t s2 -> single_split_step_aux_ge ge s1 t s2.
+%\end{lstlisting}
+%
+%
+%\begin{itemize}[leftmargin=*]
+%\item Split step semantics definitions (including initial state definition)
+%\end{itemize}
+%\begin{lstlisting}[language=C]
+%Inductive single_split_initial_state (p: AST.program fundef unit): 
+%  (srstate (hdset := hdseting)) -> Prop :=
+%  | initial_split_state_intro: 
+%    forall (m0: mwd LDATAOps),
+%      Genv.init_mem p = Some m0 ->
+%      let ge := Genv.globalenv p in
+%      let rs0 :=
+%        (Pregmap.init Vundef)
+%        # Asm.PC <- (symbol_offset ge p.(prog_main) Int.zero)
+%        # ESP <- Vzero in
+%     single_split_initial_state p (SRState (Asm.State rs0 m0) nil nil).
+%          
+%Definition single_split_semantics (p: program) :=
+%  Smallstep.Semantics single_split_step_aux_ge (single_split_initial_state p) 
+%    single_split_final_state (Genv.globalenv p).
+%\end{lstlisting}
+%
+%\subsubsection{Reorder Step Machine}
+%\begin{itemize}[leftmargin=*]
+%\item Reorder step transition rule instance. Reorder step relies on different kinds of environmental context. In this sense, 
+%it is parameterized by environmental contexts.
+%\end{itemize}
+%\begin{lstlisting}[language=C]
+%Variable reorder_o : ReorderOracleType.
+%
+%Definition single_reorder_step_aux :=
+%  @single_reorder_step zset_op hdseting op_reorder hdsem_instance 
+%  current_CPU_ID reorder_o.
+%  
+%Inductive single_reorder_step_aux_ge : genv -> rstate -> trace -> rstate -> Prop :=
+%  | single_reorder_step_aux_ge_intro : 
+%    forall s1 t s2, single_reorder_step_aux s1 t s2 -> 
+%      single_reorder_step_aux_ge ge s1 t s2.  
+%\end{lstlisting}
+
+%
+%\begin{itemize}[leftmargin=*]
+%\item Reorder step semantics definitions (including initial state definition)
+%\end{itemize}
+%\begin{lstlisting}[language=C]
+%Inductive single_reorder_initial_state (p: AST.program fundef unit): 
+%  (rstate (hdset := hdseting)) -> Prop :=
+%  | initial_reorder_state_intro: 
+%    forall (m0: mwd LDATAOps),
+%      Genv.init_mem p = Some m0 ->
+%      let ge := Genv.globalenv p in
+%      let rs0 :=
+%        (Pregmap.init Vundef)
+%        # Asm.PC <- (symbol_offset ge p.(prog_main) Int.zero)
+%        # ESP <- Vzero in
+%      single_reorder_initial_state p (RState (Asm.State rs0 m0) nil).
+%
+%Definition single_reorder_semantics (p: program) :=
+%  Smallstep.Semantics single_reorder_step_aux_ge (single_reorder_initial_state p) 
+%    single_reorder_final_state (Genv.globalenv p).
+%\end{lstlisting}
 
 \subsubsection{Separate Step Machine}
 \begin{itemize}[leftmargin=*]

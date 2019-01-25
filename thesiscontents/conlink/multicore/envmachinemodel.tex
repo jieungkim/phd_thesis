@@ -3,12 +3,10 @@
 \subsection{Concurrent Machine Model}
 \label{chapter:linking:subsec:concurrent-machine-model}
 
-
 Concurrent machine model is a language that can run programs with partially focused set on it,
 and it is associated with the concurrent layer interface in Section~\ref{chapter:ccal:subsec:concurrent-layer-interface}. 
-This machine model does not provide the interface for us to build layers on top of it, but give the key connection between oracle machine model (thus multicore machine model) and the single CPU machine model.  
-
-
+This machine model does not provide the interface for us to build layers on top of it, but give the key connection between oracle machine model (thus multicore machine model) and a single CPU machine model
+by treating parts of the system as an environment of the currently focused system. 
 
 \begin{figure}
 
@@ -53,18 +51,18 @@ l' = \listconsoppo{\yieldev{curid'}}{l_0} \\
 \backid{curid}{e}{curid'}}
 {\envstep{A}{oracle}{(\envstate{A}{curid}{lsp}{l})}{\ccemptytrace}{(\envstate{A}{curid'}{lsp}{l'})}}
 \end{mathpar}
-\caption{Environmental Step Machine and Related Definitions for Multicore}
+\caption{Environmental Step Machine and Related Definitions for Multicore Linking}
 \label{fig:chapter:conlink:multicore-env-step-machine}
 \end{figure}
 
 Figure~\ref{fig:chapter:conlink:multicore-env-step-machine} contains the state definition, 
 auxiliary functions and step relations of the partial machine. 
 The state definition is almost same with the state definition in Figure~\ref{fig:chapter:conlink:multicore-machine-with-hardware-oracle},
-which is the state for the state for all cores.
-Differently with the previous state definition, however, the state definition is parameterized by a set of CPUs, which is a focused set for the machine. 
+which is the state for all cores.
+It, however, differs from the state definition in our oracle machine in a sense the local state pool can be parameterized by any sets of CPUs, which will be the focused set for the machine.
 Other CPUs outside of the focused set ($D - A$) and the hardware scheduler are treated as the environment of the machine. 
 To handle the steps by the environment of the machine, the step relation has \textsf{SKIP} rule, 
-when query the oracle to update the log when the currently running CPU is not in the set $A$. 
+which queries the oracle to update the global log when the currently running CPU is not in the set $A$.
 This rule is a key for connecting the full machine semantics with the local machine semantics. 
 
 \subsubsection{Concurrent Machine Model with the Full CPU Set}
@@ -72,28 +70,31 @@ This rule is a key for connecting the full machine semantics with the local mach
 
 Since the set for this concurrent machine model can be a set precisely same with the full CPU set, 
 we first show that the program runs with the oracle machine refines the concurrent machine model with full CPU set. 
-Formally speaking, 
-It is the parallel composition rule for all threads; thus we treat this proof is a linking proof (for parallel composition), which provide the full machine semantics can refine the collection of multiple instances in the concurrent program. 
+Informally, It is the parallel composition rule for all threads; thus we treat this proof is a linking proof (for parallel composition), which provide the transition on the full machine semantics can refine the transition on the collection of multiple instances in the concurrent program (Lemma~\ref{lemma:chapter:conlink:mc-oracle-env}) based on the 
+match relation between two states defined in Figure~\ref{fig:chapter:conlink:parallel-composition-for-multicore} (with the 
+environmental variable $start\_cpu$, a start CPU ID for the system's evaluation. 
+The relation is basically saying that all values in both states are identical with keeping the valid evaluation flag as well as the valid log condition. 
+With the definition, the proof for the lemma is straightforward, because evaluations of both machines are identical. 
 
 \begin{figure}
 
-\noindent\fbox{variables for match relation}
-
-$$
-\begin{array}{lllr}
-cpuid & : & \ztype & \mbox{(starting CPU of the system)}\\
-hw\_o & : & \mcoracle{\coreset}{\mclog}{\mcevent} &  \mbox{(hardware scheduler oracle)}\\
-\end{array}
-$$
-
-\noindent\fbox{match state : $\envstatekwd_{[\coreset]} \rightarrow \mcstatekwd \rightarrow \mcprop$}
+%\noindent\fbox{variables for match relation}
+%
+%$$
+%\begin{array}{lllr}
+%cpuid & : & \ztype & \mbox{(starting CPU of the system)}\\
+%hw\_o & : & \mcoracle{\coreset}{\mclog}{\mcevent} &  \mbox{(hardware scheduler oracle)}\\
+%\end{array}
+%$$
+%
+%\noindent\fbox{match state : $\envstatekwd_{[\coreset]} \rightarrow \mcstatekwd \rightarrow \mcprop$}
 
 \begin{mathpar}
 \inferrule[match state]
 {curid \in \coreset \\ 
-\validlog{cpuid}{l} \\
+\validlog{start\_cpu}{l} \\
 l \neq \listconsoppo{\yieldev{\_}}{\_}\\
-\getcuridfromlog{cpuid}{l}{curid}\\
+\getcuridfromlog{start\_cpu}{l}{curid}\\
 (\forall \ ps \ b \ tid  . \ tid \neq curid \rightarrow \getpstsome{\localstatekwd}{tid}{lsp}{(\localstate{ps}{b})} \rightarrow b = \bfalse)\\
 (\forall \ ps \ b  . \ \getpstsome{\localstatekwd}{curid}{lsp}{(\localstate{ps}{b})} \rightarrow b = \bfalse \rightarrow \\\\
 \exists \ e \ l' . \ l = \listconsoppo{e}{l'} \wedge e = \yieldbackev{curid})} 
@@ -118,18 +119,24 @@ l \neq \listconsoppo{\yieldev{\_}}{\_}\\
 %\end{array}
 %$
 %\end{enumerate}
-\caption{Parallel Composition Proof for Multicore}
+\caption{State Match Relation for Parallel Composition}
 \label{fig:chapter:conlink:parallel-composition-for-multicore}
 \end{figure}
-
-
-\begin{hypothesis}[valid$\_$oracle$\_$def]
-\begin{tabular}{P{0.95\textwidth}}
-$\validoraclenoeq{cpuid}{\coreset}{hw\_o }$\\
-\end{tabular}
-\end{hypothesis}
+%
+%
+%\begin{hypothesis}[valid$\_$oracle$\_$def]
+%\begin{tabular}{P{0.95\textwidth}}
+%$\validoraclenoeq{cpuid}{\coreset}{hw\_o }$\\
+%\end{tabular}
+%\end{hypothesis}
 
 \begin{lemma}[one$\_$step$\_$env$\_$refines$\_$oracle]
+\label{lemma:chapter:conlink:mc-oracle-env}
+Let's assume that there is a valid start CPU ID for the multicore machine model, 
+$start\_cpu$ ($start\_cpu \in \coreset$), and a hardware oracle $hw\_o$,  
+which is an environmental context for the oracle machine model that contains the full focused set ($\coreset$) in it.
+When the hardware oracle is valid ($ \validoraclenoeq{start\_cpu}{\coreset}{hw\_o}$) we assume the following fact:
+\begin{center}
 \begin{tabular}{P{0.95\textwidth}}
 $
 \begin{array}{l}
@@ -138,6 +145,7 @@ $
 \end{array}
 $\\
 \end{tabular}
+\end{center}
 \end{lemma}
 
 Figure~\ref{fig:chapter:conlink:parallel-composition-for-multicore} shows the full context of the proof. 
@@ -145,18 +153,20 @@ The proof is relatively easy after defining the proper refinement relation.
 
 \subsubsection{Concurrent Machine Model with a Single CPU}
 
-
-Now, we focus on a single CPU. 
-In this step, 
-the critical part that we have to prove is that the multiple shared steps in full CPU sets can
- refine environmental steps in a single CPU machine.
-This step is also a crucial part for our concurrent layer verification because
-it provides the local layer interface that is connected with the program with the full context (full CPUs).
-The proof, however, is complicated due to the mismatch of those two different states (even though they are 
-using the same concurrent machine model).
+When focusing on a single CPU, however, 
+multiple things to be considered to connect the environmental machine that uses the full CPU set  
+with the environmental machine that uses a single focused set.
+It works as a crucial role 
+for our multicore linking since it proves that the multiple concrete steps  in the machine with the full CPU set can
+ refine the evaluation of multiple environmental steps in the machine with a single CPU.
+The proof is sophisticated due to the mismatch of those two different states (even though they are 
+using the same concurrent machine model.)
 To prove this theorem, 
-we first introduce auxiliary function defined in Figure~\ref{fig:chapter:conlink:auxiliary-function-for-full-cpus-and-a-single-cpu}. 
-\jieung{Add a figure why we need measure}
+we first introduce auxiliary function defined in Figure~\ref{fig:chapter:conlink:auxiliary-function-for-full-cpus-and-a-single-cpu},
+
+
+
+
 When looking at the \textsf{SKIP} rule in the environmental step machine, 
 it only queries one event per one time even it returns $\yieldevkwd$ as its result;
 thus the machine with a single core sometimes require two steps to match its transition with the machine that contains the full CPU set as its context. 

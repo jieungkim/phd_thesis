@@ -1,3 +1,0 @@
-Inductive MultiOracleEventType :=
-    | ETICKET
-    | ESHARED.

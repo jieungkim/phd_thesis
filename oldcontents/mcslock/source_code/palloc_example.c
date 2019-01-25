@@ -1,6 +1,0 @@
-uint palloc (uint cid){
-  ...
-  acquire_lock_AT();
-  ...
-  release_lock_AT();
-  return palloc_free_index; }
