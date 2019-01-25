@@ -13,12 +13,15 @@ concurrent linking for multicore need to solve multiple challenges;
 (2) build environmental context for each CPU;
 (3) prove compositionality of multiple per-PCU machines;
 (4) provide a simple environmental context for per-CPU machines;
-and (5) finally connect this multicore linking framework with the machine for our local layer interface,
-the machine model with $\compcertx$.
+and (5) finally connect this multicore linking framework with the machine for the local layer interface
+The last piece of the multicore linking ((5) in Figure~\ref{fig:chapter:conlink:intermediate-languages-and-their-relationsihps-for-multicore-linking}) 
+has to be manually proven depending on the local layer interface and its underlying machine model. 
+In our case study in Chapter~\ref{chapter:certikos}, the machine model is the assembly machine of $\compcertx$, $\codeinmath{Mach}_{\lasm}$,
+and the bottom layer of the system ($\mmcsbootfull$), which is also slightly discussed in Chapter~\ref{chapter:mcs-lock}.
 %Section~\ref{chapter:ccal:sec:ccal-overview} provides the way to handle 
 \begin{figure}
 \begin{center}
-\includegraphics[width=\textwidth, page=16]{figs/conlink/concurrent_linking}
+\includegraphics[width=\textwidth, page=1]{figs/conlink/concurrent_linking}
 \end{center}
 \caption{Intermediate Languages and their relationships for Multicore Linking.}
 \label{fig:chapter:conlink:intermediate-languages-and-their-relationsihps-for-multicore-linking}

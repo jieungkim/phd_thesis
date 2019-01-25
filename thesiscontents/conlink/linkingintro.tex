@@ -107,32 +107,42 @@ as we have shown in Chapter~\ref{chapter:ccal} and Chapter~\ref{chapter:mcs-lock
 In MCS Lock verification, for example, provide 
 the theorem:
 \begin{center}
-$\ltyp{\PLayer{\mmcsbootfull}{cid}{\oracle_{mcs}}}{R_{mcs}}{\codeinmath{M}_{\codeinmath{mcslock}}}{\PLayer{L_{\mhmcslockopfull}}{cid}{\oracle_{lk}}}$,
+$\ltyp{\PLayer{\mmcsbootfull}{cid}{\oracle_{mcs}}}{R_{mcs}}{\codeinmath{M}_{\codeinmath{mcslock}}}{\PLayer{L_{\mhmcslockopfull}}{cid}{\oracle^{lk}_{cid}}}$,
 \end{center}
 which means that ``any context program plus the implementation of MCS Lock ($\codeinmath{M}_{\codeinmath{mcslock}}$) runs on top of 
-  layer $\mmcsbootfull$ with CPU ID $cid$ and the environmental context $\oracle_{mcs}$ \textit{contextually refines}
- the same context program runs on the of  layer $\mhmcslockopfull$ with CPU ID $cid$ and the environmental context $\oracle_{lk}$''. 
+  layer $\mmcsbootfull$ with CPU ID $cid$ and the environmental context $\oracle^{mcs}_{cid}$ \textit{contextually refines}
+ the same context program runs on the of  layer $\mhmcslockopfull$ with CPU ID $cid$ and the environmental context $\oracle^{lk}_{cid}$''. 
 The proof, however, does not consider the program that runs with the whole CPUs in the system, thus a partial correctness statement. 
 To guarantee the full correctness of the program,
 providing the judgment that handles the program with the whole CPU set in it, which is
 %In this purpose, 
 %We add the parallel composition rules in the layer calculus of $\ccalname$ in Section~\ref{chapter:ccal:subsec:local-layer-interface}, which is 
+\begin{definition}[Parallel Composition]
+\label{definition:conlink:parallel-composition}
+For any program $ \codeinmath{P}$, a full focused set for the system ($D$), a valid environmental context for the layer with the singleton focused set in $D$ ($\oracle^{\codeinmath{local}}_{i}$), and a layer $L_{\codeinmath{full}}$ and $L_{\codeinmath{local}}$ related with a certain 
+refinement relation $R_{comp}$, we define the parallel composition as follows:
 \begin{center}
-$\forall \codeinmath{P}. \ \semwmachine{L[D]}{\codeinmath{P}}{\codeinmath{mach}_{\codeinmath{full}}} \refines_{R_{comp}} \sum_{i \in D}\  (\semwmachine{L[i]}{\codeinmath{P}}{\codeinmath{mach}_{\codeinmath{local}}})$
+$\forall \codeinmath{P}. \ \semwmachine{L_{\codeinmath{full}}[D]}{\codeinmath{P}}{\machkwd_{\codeinmath{full}}} \refines_{R_{comp}} \sum_{i \in D}\  (\semwmachine{\PLayer{L_{\codeinmath{local}}}{i}{\oracle^{\codeinmath{local}}_i}}{\codeinmath{P}}{\machkwd_{\codeinmath{local}}})$
 \end{center}
-\jieung{In thread linking, $L$s are different.. but bi-similar!!}
-when $\codeinmath{mach}_{\codeinmath{full}}$ is a machine model that runs the layer with the full focused set (without any environmental contexts),
-$\codeinmath{mach}_{\codeinmath{local}}$ is a machine model that runs the layer with a singleton focused set (such as a machine model of $\compcertx$),
-$\codeinmath{P}$ is a context program, 
-and $R_{comp}$ is a refinement relation.
+when  $\codeinmath{mach}_{\codeinmath{full}}$ is a machine model that runs the layer with the full focused set (without any environmental contexts),
+$\codeinmath{mach}_{\codeinmath{local}}$ is a machine model that runs the layer with a singleton focused set (such as a machine model of $\compcertx$)
+\end{definition}
 Also, 
-providing the evidence about
-\begin{center}
-$\forall \codeinmath{P}. \ \semwmachine{L[D]}{\codeinmath{P}}{\codeinmath{mach}_{\codeinmath{full}}} \refines_{R_{link}} \semwmachine{L[i, \oracle_{\codeinmath{local}}]}{\codeinmath{P}}{\codeinmath{mach}_{\codeinmath{local}}}$
-\end{center}
-is necessary for us to provide the evidence that
+providing the evidence that shows the connection between a program runs with single local machine with a proper environmental context and a program runs on top of the concurrent machine with the full focused set in the system is required
+ for us to provide the evidence that
 the local layers built on top of our local layer interface $\codeinmath{mach}_{\codeinmath{local}}$ is 
-formally connected with the program without any environment contexts with the full machine model. 
+formally connected with the program without any environment contexts with the full machine model.
+The formal definition of it is
+\begin{definition}[Concurrent Linking]
+\label{definition:conlink:concurrent-linking}
+For any program $ \codeinmath{P}$, a full focused set for the system ($D$), a valid environmental context for the layer with the singleton focused set in $D$ ($\oracle^{\codeinmath{local}}_{i}$), and a layer $L_{\codeinmath{full}}$ and $L_{\codeinmath{local}}$ related with a certain 
+refinement relation $R_{comp}$, we define the concurrent linking as follows:
+\begin{center}
+$\forall \codeinmath{P}. \ \semwmachine{L_{\codeinmath{full}}[D]}{\codeinmath{P}}{\codeinmath{mach}_{\codeinmath{full}}} \refines_{R_{link}} \semwmachine{\PLayer{L_{\codeinmath{local}}}{i}{\oracle^{\codeinmath{local}}_{i}}}{\codeinmath{P}}{\codeinmath{mach}_{\codeinmath{local}}}$
+\end{center}
+$\codeinmath{mach}_{\codeinmath{local}}$ is a machine model that runs the layer with a singleton focused set (such as a machine model of $\compcertx$)
+\end{definition}
+which we call it concurrent linking.
 %\begin{mathpar}
 %\inferrule{L[i] }{\jieung{Need to add composition rule}\\
 %\jieung{the PCOMP rule in the ccal paper is not supported at all in our framework.}}

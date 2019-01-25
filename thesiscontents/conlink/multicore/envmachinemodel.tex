@@ -1,9 +1,9 @@
 
 
-\subsection{Concurrent Machine Model}
+\subsection{Concurrent (Environmental) Machine Model}
 \label{chapter:linking:subsec:concurrent-machine-model}
 
-Concurrent machine model is a language that can run programs with partially focused set on it,
+Concurrent (environmental) machine model is a language that can run programs with partially focused set on it,
 and it is associated with the concurrent layer interface in Section~\ref{chapter:ccal:subsec:concurrent-layer-interface}. 
 This machine model does not provide the interface for us to build layers on top of it, but give the key connection between oracle machine model (thus multicore machine model) and a single CPU machine model
 by treating parts of the system as an environment of the currently focused system. 
@@ -51,7 +51,7 @@ l' = \listconsoppo{\yieldev{curid'}}{l_0} \\
 \backid{curid}{e}{curid'}}
 {\envstep{A}{oracle}{(\envstate{A}{curid}{lsp}{l})}{\ccemptytrace}{(\envstate{A}{curid'}{lsp}{l'})}}
 \end{mathpar}
-\caption{Environmental Step Machine and Related Definitions for Multicore Linking}
+\caption{Environmental Machine Model Syntax and Semantics}
 \label{fig:chapter:conlink:multicore-env-step-machine}
 \end{figure}
 
@@ -119,7 +119,7 @@ l \neq \listconsoppo{\yieldev{\_}}{\_}\\
 %\end{array}
 %$
 %\end{enumerate}
-\caption{State Match Relation for Parallel Composition}
+\caption{State Match Relation: the relation between the state of the environmental  machine model (with a full CPU set) and the state of the oracle machine model}
 \label{fig:chapter:conlink:parallel-composition-for-multicore}
 \end{figure}
 %
@@ -163,9 +163,6 @@ The proof is sophisticated due to the mismatch of those two different states (ev
 using the same concurrent machine model.)
 To prove this theorem, 
 we first introduce auxiliary function defined in Figure~\ref{fig:chapter:conlink:auxiliary-function-for-full-cpus-and-a-single-cpu},
-
-
-
 
 When looking at the \textsf{SKIP} rule in the environmental step machine, 
 it only queries one event per one time even it returns $\yieldevkwd$ as its result;
@@ -212,7 +209,8 @@ $ \localstepevkwd (ev : \mcevent) : \optiondef\ \mclog :=
 %    | EYIELD _ => Some nil
 %    | _ => None
 %    end.
-\caption{Auxiliary Functions for the  Refinement Proof between the Machine with Full CPUs and a Single CPU}
+\caption{Auxiliary Functions:  auxiliary functions for the refinement proof between
+the enviornmental machine model with a single focused set and a full CPU set}
 \label{fig:chapter:conlink:auxiliary-function-for-full-cpus-and-a-single-cpu}
 \end{figure}
 
@@ -228,15 +226,6 @@ we match the previous state of a single core machine over an environmental machi
 with the current state of a full core machine over an environmental machine. 
 
 \begin{figure}
-\noindent\fbox{variables for match relation:}
-$$
-\begin{array}{lllr}
-cpuid & : & \ztype & \mbox{(starting and the focused CPU of the system)}\\
-hw\_o & : & \mcoracle{\coreset}{\mclog}{\mcevent} &  \mbox{(hardware scheduler oracle)}\\
-si\_o & : & \mcoracle{\set{cpuid}}{\mclog}{\mcevent} &  \mbox{(oracle for a single cpu)}\\
-\end{array}
-$$
-
 \noindent\fbox{match state : $\envstatekwd_{[\set{cpuid}]} \rightarrow  \envstatekwd_{[\coreset]}  \rightarrow \mcprop$}
 
 \begin{mathpar}
@@ -271,10 +260,18 @@ b = \bfalse \rightarrow  l = \listconsoppo{\yieldbackev{\_}}{\_})}
 {\matchestateestate{\set{cpuid}}{(\envstate{\set{cpuid}}{curid'}{lsp'}{l'})}{(\envstate{\coreset}{curid}{lsp}{l})}}
 
 \end{mathpar}
-\caption{Refinement Relation between the Machine with Full CPUs and a Single CPU}
+\caption{State Match Relation: the relation between two states between the environmental  machine model (with a single focused CPU and a full CPU set)}
 \label{fig:chapter:conlink:refinement-relation-for-full-cpus-and-a-single-cpu}
 \end{figure}
 
+\noindent\fbox{variables for match relation:}
+$$
+\begin{array}{lllr}
+cpuid & : & \ztype & \mbox{(starting and the focused CPU of the system)}\\
+hw\_o & : & \mcoracle{\coreset}{\mclog}{\mcevent} &  \mbox{(hardware scheduler oracle)}\\
+si\_o & : & \mcoracle{\set{cpuid}}{\mclog}{\mcevent} &  \mbox{(oracle for a single cpu)}\\
+\end{array}
+$$
 
 %\begin{figure}
 %\noindent\fbox{hypothesis}
@@ -350,19 +347,21 @@ $
 
 
 \begin{hypothesis}[relate$\_$single$\_$oracle$\_$concrete$\_$step$\_$def]
+Let's assume that
+\begin{center}
 \begin{tabular}{P{0.95\textwidth}}
 $
 \begin{array}{l}
-\forall \ curid' \ curid \ lsp' \ lsp \ l' \ l \ l\_res \ ps \ ev  . \\
-\ \ \ \matchestateestate{\set{cpuid}}{(\envstate{\set{cpuid}}{curid'}{lsp'}{l'})}{(\envstate{\coreset}{curid}{lsp}{l})} \rightarrow\\
-\ \ \ \getcuridfromlognoeq{cpuid}{l} \neq cpuid \rightarrow \\
-\ \ \ \getpstsome{\localstatekwd}{\getcuridfromlognoeq{cpuid}{l}}{lsp}{(\localstate{ps}{false})} \rightarrow \\
-\ \ \ \oget{\set{cpuid}}{\mclog}{\mcevent}{l}{si\_o}{ev} \rightarrow \\
-\ \ \ \localstepev{ev}{l\_res} \rightarrow l = \listconsoppo{\yieldbackev{\_}}{\_} \rightarrow \\
-\ \ \ \exists\ (ps' : \privatestate) . \ \hardwarelocalstep{(\getcuridfromlognoeq{cpuid}{l})}{(\localview{ps}{l})}{(\localview{ps'}{l\_res})} \\
+\forall \ curid' \ curid \ lsp' \ lsp \ l' \ l \ l\_res \ ps \ ev . \\
+\ \ \matchestateestate{\set{cpuid}}{(\envstate{\set{cpuid}}{curid'}{lsp'}{l'})}{(\envstate{\coreset}{curid}{lsp}{l})} \rightarrow\\
+\ \ \getcuridfromlognoeq{cpuid}{l} \neq cpuid \rightarrow \\
+\ \ \getpstsome{\localstatekwd}{\getcuridfromlognoeq{cpuid}{l}}{lsp}{(\localstate{ps}{false})} \rightarrow \\
+\ \ \oget{\set{cpuid}}{\mclog}{\mcevent}{l}{si\_o}{ev} \rightarrow \localstepev{ev}{l\_res} \rightarrow l = \listconsoppo{\yieldbackev{\_}}{\_} \rightarrow \\
+\ \ \exists\ (ps' : \privatestate) . \ \hardwarelocalstep{(\getcuridfromlognoeq{cpuid}{l})}{(\localview{ps}{l})}{(\localview{ps'}{l\_res})} \\
 \end{array}
 $
 \end{tabular}
+\end{center}
 \end{hypothesis}
 
 
@@ -372,8 +371,7 @@ $
 $
 \begin{array}{l}
 \forall \ s_h \ s_h' \ t \ s_l. \ \envstep{\set{cpuid}}{si\_o}{s_h}{t}{s_h'} \rightarrow  \matchestateestate{\set{cpuid}}{s_h}{s_l} \rightarrow \\
-\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ (\exists \ s_l' .\ (\ccplusstep{\envstep{\coreset}{hw\_o}{s_l}{t}{s_l'}} \wedge\\
-\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \  \matchestateestate{\set{cpuid}}{s_h'}{s_l'}) \vee \\ 
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ (\exists \ s_l' .\ (\ccplusstep{\envstep{\coreset}{hw\_o}{s_l}{t}{s_l'}} \wedge \matchestateestate{\set{cpuid}}{s_h'}{s_l'}) \vee \\ 
 \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ (\mcstatemeasurenoeq{\set{cpuid}}{s_h'} < \mcstatemeasurenoeq{\set{cpuid}}{s_h} \wedge t = \ccemptytrace \wedge \\ 
 \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \matchestateestate{\set{cpuid}}{s_h'}{s_l})\\
 \end{array}

@@ -34,7 +34,7 @@ l' = \listconsoppo{\yieldev{curid'}}{l_0} \\
 \oget{\coreset}{\mclog}{\mcevent}{l_0}{oracle}{{\yieldbackev{curid}}}}
 {\oraclestep{oracle}{(\mcstate{curid}{lsp}{l})}{\ccemptytrace}{(\mcstate{curid}{lsp'}{l'})}}
 \end{mathpar}
-\caption{Multicore Machine with Hardware Oracle}
+\caption{Oracle Machine Model Syntax and Semantics}
 \label{fig:chapter:conlink:multicore-machine-with-hardware-oracle}
 \end{figure}
 
@@ -93,7 +93,7 @@ Therefore, we directly need to prove the backward refinement proof in here to in
  {\matchstatehstate{(\mcstate{curid}{lsp}{l})}{(\hstate{curid}{psp}{l})}}
 \end{mathpar}
 
-\caption{Match Relation for the Refinement Proof between Multicore and Oracle Step Rules.}
+\caption{State Match Relation: the relation between the state of the oracle machine model and the state of the multicore machine model.}
 \label{fig:chapter:conlink:match-relation-multicore-oracle-steps}
 \end{figure}
 

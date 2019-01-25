@@ -159,7 +159,7 @@
 
 \newcommand{\ccalname}{\mathrm{CCAL}}
 \newcommand{\caspaxos}{\mathrm{CASPaxos}}
-\renewcommand{\coq}{\mathrm{Coq}}
+\newcommand{\coq}{\mathrm{Coq}}
 \newcommand{\paxos}{\mathrm{Paxos}}
 \newcommand{\multipaxos}{\mathrm{MultiPaxos}}
 \newcommand{\raft}{\mathrm{Raft}}
@@ -173,8 +173,20 @@
 
 \newcommand{\lasm}{\mathrm{LAsm}}
 \newcommand{\easm}{\mathrm{EAsm}}
+\newcommand{\ieasm}{\mathrm{IEAsm}}
+
 \newcommand{\tasm}{\mathrm{TAsm}}
 \newcommand{\hasm}{\mathrm{HAsm}}
+
+\newcommand{\machkwd}{\codeinmath{Mach}}
+\newcommand{\localmachkwd}{\codeinmath{LMach}}
+
+\newcommand{\lasmmach}{\machkwd_{\lasm}}
+\newcommand{\easmmach}{\machkwd_{\easm}}
+\newcommand{\tasmmach}{\machkwd_{\tasm}}
+\newcommand{\hasmmach}{\machkwd_{\hasm}}
+\newcommand{\ieasmmach}{\machkwd_{\ieasm}}
+
 
 \newcommand{\ignorechar}{\_}
 %%%%
@@ -705,7 +717,7 @@
 \newcommand{\calownerkwd}{{\codeinmath{CalOwner}}}
 \newcommand{\calowner}[3]{{\calownerkwd({#1},{#2})={#3}}}
 
-\newcommand{\hardwarelocalstep}[3]{{\codeinmath{LMach}_{{\codeinmath{CPU}}} \ {#1}\ {#2}\ {#3}}}
+\newcommand{\hardwarelocalstep}[3]{{{\localmachkwd}_{{\codeinmath{CPU}}} \ {#1}\ {#2}\ {#3}}}
 
 \newcommand{\getpstkwd}{{\codeinmath{getPST}}}
 \newcommand{\getpstnoeq}[3]{{\getpstkwd_{[{#1}]}~({#2},\ {#3})}}
@@ -717,7 +729,7 @@
 \newcommand{\setpst}[5]{{\setpstnoeq{#1}{#2}{#3}{#4} = {#5}}}
 
 
-\newcommand{\hardwarestepkwd}{{{\codeinmath{Mach}_\codeinmath{mc}}}}
+\newcommand{\hardwarestepkwd}{{{{\machkwd}_\codeinmath{mc}}}}
 \newcommand{\hardwarestep}[4]{{\hardwarestepkwd~{#1}~{#2}~{#3}~{#4}}}
 
 
@@ -740,7 +752,7 @@
 \newcommand{\mcstate}[3]{{\mcstateconkwd \ {#1} \ {#2}\ {#3}}}
 
 
-\newcommand{\oraclestepkwd}{{{\codeinmath{Mach}_{\codeinmath{hworacle}}}}}
+\newcommand{\oraclestepkwd}{{{{\machkwd}_{\codeinmath{hworacle}}}}}
 \newcommand{\oraclestep}[4]{{\oraclestepkwd~{#1}~{#2}~{#3}~{#4}}}
 
 
@@ -749,7 +761,7 @@
 \newcommand{\envstatekwd}{{\codeinmath{estate}}}
 \newcommand{\envstateconkwd}{{\codeinmath{EState}}}
 \newcommand{\envstate}[4]{{\envstateconkwd_{[{#1}]}~{#2}~{#3}~{#4}}}
-\newcommand{\envstepkwd}{{\codeinmath{Mach}_{\codeinmath{env}}}}
+\newcommand{\envstepkwd}{{{\machkwd}_{\codeinmath{env}}}}
 \newcommand{\envstep}[5]{{\envstepkwd_{[{#1}]}~{#2}~{#3}~{#4}~{#5}}}
 \newcommand{\backidkwd}{{\codeinmath{backID}}}
 \newcommand{\backid}[3]{{\backidkwd({#1}, {#2}) = {#3}}}
@@ -758,17 +770,17 @@
 \newcommand{\singlestatekwd}{{\codeinmath{state}_{\codeinmath{si}}}}
 \newcommand{\singlestateconkwd}{{\codeinmath{SState}}}
 \newcommand{\singlestate}[3]{{\singlestateconkwd~{#1}~{#2}~{#3}}}
-\newcommand{\singlestepkwd}{{{\codeinmath{Mach}_{\codeinmath{si}}}}}
+\newcommand{\singlestepkwd}{{{{\machkwd}_{\codeinmath{si}}}}}
 \newcommand{\singlestep}[5]{{\singlestepkwd_{[{#1}]}~{#2}~{#3}~{#4}~{#5}}}
 
-\newcommand{\singlebigstepkwd}{{\codeinmath{Mach}_{\codeinmath{si\_big}}}}
+\newcommand{\singlebigstepkwd}{{{\machkwd}_{\codeinmath{si\_big}}}}
 \newcommand{\singlebigstep}[5]{{\singlebigstepkwd_{[{#1}]}~{#2}~{#3}~{#4}~{#5}}}
 
 
 \newcommand{\rstatekwd}{{\codeinmath{rstate}}}
 \newcommand{\rstateconkwd}{{\codeinmath{RState}}}
 \newcommand{\rstate}[2]{{\rstateconkwd~{#1}~{#2}}}
-\newcommand{\singlebigtwostepkwd}{{\codeinmath{Mach}_{\codeinmath{si\_big}'}}}
+\newcommand{\singlebigtwostepkwd}{{{\machkwd}_{\codeinmath{si\_big}'}}}
 \newcommand{\singlebigtwostep}[5]{{\singlebigtwostepkwd_{[{#1}]}~{#2}~{#3}~{#4}~{#5}}}
 
 % split step and reorder step
@@ -776,19 +788,19 @@
 \newcommand{\singlelocalviewkwd}{{\codeinmath{view}_{\codeinmath{si}\_\codeinmath{l}}}}
 \newcommand{\singlelocalviewconskwd}{{\codeinmath{SView}}}
 \newcommand{\singlelocalview}[1]{{\singlelocalviewconskwd~{#1}}}
-\newcommand{\singlelocalstepkwd}{{\codeinmath{LMach}_{\codeinmath{si}_{\codeinmath{local}}}}}
+\newcommand{\singlelocalstepkwd}{{{\localmachkwd}_{\codeinmath{CPU}_{\codeinmath{local}}}}}
 \newcommand{\singlelocalstep}[3]{{\singlelocalstepkwd~{#1}~{#2}~{#3}}}
 
-\newcommand{\singlelogstepkwd}{{\codeinmath{LMach}_{\codeinmath{si}_{\codeinmath{log}}}}}
+\newcommand{\singlelogstepkwd}{{{\localmachkwd}_{\codeinmath{CPU}_{\codeinmath{log}}}}}
 \newcommand{\singlelogstep}[3]{{\singlelogstepkwd~{#1}~{#2}~{#3}}}
 
 \newcommand{\srstatekwd}{{\codeinmath{srstate}}}
 \newcommand{\srstateconkwd}{{\codeinmath{SRState}}}
 \newcommand{\srstate}[3]{{\srstateconkwd~{#1}~{#2}~{#3}}}
-\newcommand{\singlesplitstepkwd}{{\codeinmath{Mach}_{\mathrm{split}}}}
+\newcommand{\singlesplitstepkwd}{{{\machkwd}_{\mathrm{split}}}}
 \newcommand{\singlesplitstep}[5]{{\singlesplitstepkwd_{[{#1}]}~{#2}~{#3}~{#4}~{#5}}}
 
-\newcommand{\singlereorderstepkwd}{{\codeinmath{Mach}_{\codeinmath{reorder}}}}
+\newcommand{\singlereorderstepkwd}{{{\machkwd}_{\codeinmath{reorder}}}}
 \newcommand{\singlereorderstep}[5]{{\singlereorderstepkwd_{[{#1}]}~{#2}~{#3}~{#4}~{#5}}}
 
 
@@ -810,7 +822,7 @@
 \newcommand{\spstateconkwd}{{\codeinmath{SPState}}}
 \newcommand{\spstate}[2]{{\spstateconkwd~{#1}~{#2}}}
 
-\newcommand{\separatelogstepkwd}{{\codeinmath{LMach}_{\separatelogtypekwd}}}
+\newcommand{\separatelogstepkwd}{{{\localmachkwd}_{\separatelogtypekwd}}}
 \newcommand{\separatelogstep}[5]{{\separatelogstepkwd~{#1}~{#2}~{#3}~{#4}~{#5}}}
 
 \newcommand{\separateeventtwoeventkwd}{{{\codeinmath{Get}\mcevent}_{_{\separateeventkwd}}}}
@@ -838,7 +850,7 @@
 \newcommand{\setseplognoeq}[3]{{\setseplogkwd({#1},{#2},{#3})}}
 \newcommand{\getseplog}[4]{{\setseplognoeq{#1}{#2}{#3} = {#4}}}
 
-\newcommand{\singleseparatestepkwd}{{\codeinmath{Mach}_{\codeinmath{sep}}}}
+\newcommand{\singleseparatestepkwd}{{{\machkwd}_{\codeinmath{sep}}}}
 \newcommand{\singleseparatestep}[5]{{\singleseparatestepkwd_{[#1]}~{#2}~{#3}~{#4}~{#5}}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5

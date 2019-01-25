@@ -3,15 +3,15 @@
 %ubiquitous. 
 Concurrency is everywhere these days. 
 They are not only related to the local machines (\ie, multicore hardware or multithreaded programming)
-but also associated with external behaviors of the system (\ie, I/O device) and other nodes' behaviors in the cluster of multiple machines via a network.
+but also associated with external behaviors of the system (\ie, I/O device) and other nodes' behaviors in the cluster of multiple machines via network communications.
 They, however, are known to be challenging to get right and debug because the behavior of the system contains the number (usually unbounded) of arbitrary interactions and interleaved executions among all components of the system. 
 In this sense, building high-assurance concurrent programs is still a challenging problem;
 thus a formal verification is desirable to the concurrent software since
  it is the only known way of building bug-free programs.
 
 However, the formal verification still requires a considerable cost to adapt it to the large-scale system software even without considering concurrency, and it becomes worse with it. 
-The fundamental techniques that are common in building large-scale programs, modularization and composition,
-are also required for the program verification to reduces the cost of developing the verified software as well as the cost of proof maintenance for the software;
+Modularization and composition, the fundamental techniques that are common in building large-scale programs,
+are also required for the program verification to reduces the cost of developing the verified software;
 but applying them to the verification is subtle due to the correlation 
 of sub-modules or/and instances in the system.
 Software system usually consists of multiple sub-modules which are highly related to others
@@ -92,7 +92,7 @@ but this requires trusting the correctness of the compiler that supports modular
 When the linking comes with the concurrency, 
 it also requires machine models that can support running multiple instances of the concurrent program on them. 
 
-As a promising approach to handle all the stated problems, 
+To handle all discussed challenges,
 this dissertation provides a modular and compositional way to verify complicated concurrent system software written in C and assembly.
 It first provides a way to verify each instance of concurrent programs by following 
 abstraction layer approaches, a conventional technique in building large-scale software,
