@@ -195,9 +195,14 @@ The responsibility of those safety control does not rely on the hardware configu
 \end{figure}
 
 They, of course, requires few restrictions presented in Figure~\ref{fig:chapter:conlink:properties-of-abstract-hardware-semantics-for-multicore-linking}. 
-Most restrictions are for the deterministic behavior of each case.
+Most restrictions are for the deterministic and receptive behavior of each case.
 They are necessary for us to prove various refinement theorems, 
-and essential for us to use forward-to-backward simulation template in $\compcert$~\cite{leroy06}, because all languages have to be deterministic as well as receptive to use it.
+and essential for us to use forward-to-backward simulation template in $\compcert$~\cite{leroy06} which is
+\begin{quote}
+``A backward simulation can be constructed from a forward
+simulation if the source language is receptive and the target
+language is determinate.''
+\end{quote}
 In addition to that, the atomic operation, which only exists 
 in our framework 
 requires the validity check (\textsf{Atomic Valid})

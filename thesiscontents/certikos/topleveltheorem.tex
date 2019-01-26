@@ -5,28 +5,35 @@
 Using all results described in this chapter, 
 we finally show the top-level single theorem for the correctness of $\certikos$, 
 described in Theorem~\ref{theorem:chapter:certikos:contextual-refinement-theorem-for-certikos}. 
+
 \begin{theorem}[Contextual Refinement Theorem for $\certikos$]
 \label{theorem:chapter:certikos:contextual-refinement-theorem-for-certikos}
 Let's assume that $tid$ is a valid thread ID, $\oracle_{tid}$ is an
-environmental context for thread $tid$, and $\codeinmath{Ctxt}$ is a
- context program that runs on top of the $certikos$. 
+environmental context for thread $tid$, $\codeinmath{certikos}$ is a implementation of $\certikos$ with C and assembly, and $\codeinmath{Ctxt}$ is a
+ context program that runs on top of the $\certikos$. 
  Then, we want to prove that 
  \begin{center}
 \begin{tabular}{c}
 $\semwmachine{\codeinmath{MBoot}}{\codeinmath{CertiKOS} \oplus \codeinmath{Ctxt}}{\codeinmath{mach}_{\codeinmath{x86mc}}} \refines_{R_{\codeinmath{certikos}}} \semwmachine{\codeinmath{TSyscall}[tid, \oracle_{tid}]}{\codeinmath{Ctxt}}{{\codeinmath{mach}_{\codeinmath{x86thrd}}}}$\\
 \end{tabular}
 \end{center}
+when $R_{\codeinmath{certikos}}$ is a refinement relation between those two different layers on different machine models (\ie, connecting all refinement relations of multicore linking, per-CPU layers, multithreaded linking, and per-thread layers.)
 \end{theorem}
+
 The proof of this theorem is 
 straightforward with 
 the lemmas that we have stated in previous sections.
+The proof still requires multiple assumptions that we discussed 
+in Section~\ref{chapter:linking:sec:multicore-linking} and Section~\ref{chapter:linking:sec:multithreaded-linking}. 
+Providing a better framework than the current version has remained as our future work. 
+
 %
 %\begin{proof}
 %First, we assume that 
 %
 %\end{proof}
 
-In $\coq$, the theorem is stated as follows:
+%In $\coq$, the theorem is stated as follows:
 %
 %\begin{lstlisting}[language=C]
 %  Theorem CertiKOS_correct:
@@ -55,10 +62,10 @@ In $\coq$, the theorem is stated as follows:
 %\label{fig:chapter:certikos:layer-diagram-for-certikos}
 %\jieung{Let's slightly modify it}
 %\end{figure}
-
-
-With the all ingredients in this chapter, 
-connecting all proof pieces in $\certikos$ is available;
-thus we provide a single correctness theorem for $\certikos$
-as well as connecting proofs
-for the theorem.
+%
+%
+%With the all ingredients in this chapter, 
+%connecting all proof pieces in $\certikos$ is available;
+%thus we provide a single correctness theorem for $\certikos$
+%as well as connecting proofs
+%for the theorem.

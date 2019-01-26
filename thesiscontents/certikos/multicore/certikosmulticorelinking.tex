@@ -1,7 +1,7 @@
 \section{Multicore Linking for CertiKOS}
 \label{chapter:certikos:sec:multicore-linking-for-certikos}
 
-Similar to the multithreaded linking instances in Section~\ref{chapter:certikos:sec:multithreaded-linking-for-certikos}\jieung{Need to write that part}, a few steps are required us to provide the multicore linking for $\certikos$.
+Similar to the multithreaded linking instances in Section~\ref{chapter:certikos:sec:multithreaded-linking-for-certikos}, a few steps are required us to provide the multicore linking for $\certikos$.
 For the linking with $\certikos$
 our goal is facilitating all the intermediate languages
 and proofs in Section~\ref{chapter:linking:sec:multicore-linking},
@@ -21,7 +21,7 @@ is providing the evidence that any program on the $\codeinmath{MBoot}$ layer wit
 Without those two things, 
 providing the proof instances for other parts is straightforward with our library. 
 By connecting the configuration instances and our machine (and proof) libraries, 
-we are able to use  all refinement proofs in Section~\ref{chapter:linking:sec:multicore-linking}. 
+we can use all refinement proofs in Section~\ref{chapter:linking:sec:multicore-linking}. 
 This guarantees that ``any program on the $\codeinmath{MBoot}$ layer with $\singleseparatestepkwd$ contextually refines that program on the $\codeinmath{MBoot}$ layer with $\hardwarestepkwd$ (which is the non-deterministic $\intelmachine$ multicore semantics).''
 Thanks to our framework, most proofs in this step can be directly achieved by applying the existing refinement proofs in our library.
 %
