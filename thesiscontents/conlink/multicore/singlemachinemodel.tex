@@ -42,46 +42,57 @@ curid' \neq curid\\
 \label{fig:chapter:conlink:single-core-machine-model}
 \end{figure}
 
-\begin{figure}
-\noindent\fbox{variables for match relation}
-$$
-\begin{array}{lllr}
-cpuid & : & \ztype &  \mbox{(starting and the focused CPU of the system)}\\
-\end{array}
-$$
-
-\noindent\fbox{match state : $\singlestatekwd \rightarrow \envstatekwd_{[cpuid]} \rightarrow \mcprop$}
-\begin{mathpar}
-\inferrule[match state]
-{\getpstsome{\localstatekwd}{cpuid}{lsp}{ls}}{\matchsinglestatestate{\set{cpuid}}{(\singlestate{curid}{ls}{l})}{(\envstate{\set{cpuid}}{curid}{lsp}{l})}}
-\end{mathpar}
-
-%\noindent\fbox{top lemmas}
-%\begin{enumerate}
-%\item one$\_$step$\_$single$\_$refines$\_$env : \\
-%$
-%\begin{array}{l}
-%\forall \ si\_o \ s_h \ s_h' \ t \ s_l . \ \singlestep{cpuid}{si\_o}{s_h}{t}{s_h'} \rightarrow  \matchsinglestatestate{\set{cpuid}}{s_h}{s_l} \rightarrow \\
-%\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \exists\ s_l' . \  \ccplusstep{\envstep{\set{cpuid}}{si\_o}{s_l}{t}{s_l'}} \wedge  \matchsinglestatestate{\set{cpuid}}{s_h'}{s_l'}\\
-%\end{array}
-%$
-%\end{enumerate}
-\caption{Refinement Between a Single Core Machine and an Environmental Step Machine}
-\label{fig:chapter:conlink:cpu-single-to-env-theorem}
-\end{figure}
-
-
-Now, we are ready to build a local layer interface described in Section~\ref{chapter:ccal:subsec:local-layer-interface}. 
-The machine state for the single core machine contains 
+The environmental machine model 
+(in Section~\ref{chapter:linking:subsec:concurrent-machine-model})
+ with a single focused CPU provides the 
+basis for us to build a local layer interface described in Section~\ref{chapter:ccal:subsec:local-layer-interface},
+which still requires simplification on the state definition by 
+removing unnecessary private states for environments. 
+In this sense, the single core machine model has been introduced;
+of which the state definition is a tuple that contains 
 a CPU ID, the current running CPU, 
 a local state, which includes the private state of the current focused CPU,
 and a log that represents the shared state with other CPUs. 
-The step relation in this single core machine is same with the environmental step machine defined in Section~\ref{chapter:linking:subsec:concurrent-machine-model}. Figure~\ref{fig:chapter:conlink:single-core-machine-model} contains those definitions. 
-The refinement proof between the single core on the environmental step and the single core machine is straightforward since the similarity between
-those two states as well as the step relations.
-All those definitions are in Figure~\ref{fig:chapter:conlink:cpu-single-to-env-theorem}.
+The step relation in this single core machine model identically corresponds to that of our environmental machine model
+with the difference of not having the domain check for the focused set. 
+Instead of checking the domain in the private state pool in the environmental machine model, 
+the single core machine model only checks the equality between the currently running CPU ID with the focused CPU ID to determine whether the evaluation takes $\textsf{PROGRESS}$ or $\textsf{YIELD}$ steps or a $\textsf{SKIP}$ step. 
+All those definitions are in Figure~\ref{fig:chapter:conlink:single-core-machine-model}.
+The proof for the refinement lemma (in Lemma~\ref{lemma:chapter:conlink:one-step-single-refines-env}) between two machine models is straightforward due to the similarity of those two machine models, both state definitions and evaluation rules. 
+
+%\begin{figure}
+%\noindent\fbox{variables for match relation}
+%$$
+%\begin{array}{lllr}
+%cpuid & : & \ztype &  \mbox{(starting and the focused CPU of the system)}\\
+%\end{array}
+%$$
+%
+%\noindent\fbox{match state : $\singlestatekwd \rightarrow \envstatekwd_{[cpuid]} \rightarrow \mcprop$}
+%\begin{mathpar}
+%\inferrule[match state]
+%{\getpstsome{\localstatekwd}{cpuid}{lsp}{ls}}{\matchsinglestatestate{\set{cpuid}}{(\singlestate{curid}{ls}{l})}{(\envstate{\set{cpuid}}{curid}{lsp}{l})}}
+%\end{mathpar}
+%
+%%\noindent\fbox{top lemmas}
+%%\begin{enumerate}
+%%\item one$\_$step$\_$single$\_$refines$\_$env : \\
+%%$
+%%\begin{array}{l}
+%%\forall \ si\_o \ s_h \ s_h' \ t \ s_l . \ \singlestep{cpuid}{si\_o}{s_h}{t}{s_h'} \rightarrow  \matchsinglestatestate{\set{cpuid}}{s_h}{s_l} \rightarrow \\
+%%\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \exists\ s_l' . \  \ccplusstep{\envstep{\set{cpuid}}{si\_o}{s_l}{t}{s_l'}} \wedge  \matchsinglestatestate{\set{cpuid}}{s_h'}{s_l'}\\
+%%\end{array}
+%%$
+%%\end{enumerate}
+%\caption{Refinement Between a Single Core Machine and an Environmental Step Machine}
+%\label{fig:chapter:conlink:cpu-single-to-env-theorem}
+%\end{figure}
+
 
 \begin{lemma}[one$\_$step$\_$single$\_$refines$\_$env]
+\label{lemma:chapter:conlink:one-step-single-refines-env}
+Let's assume that there is a CPU ID that two machines are focused $cpuid$. With the CPU ID we can show that
+\begin{center}
 \begin{tabular}{P{0.95\textwidth}}
 $
 \begin{array}{l}
@@ -90,5 +101,11 @@ $
 \end{array}
 $
 \end{tabular}
+when the refinement relation between two states is defined as
+\end{center}
+\begin{mathpar}
+\inferrule[match state]
+{\getpstsome{\localstatekwd}{cpuid}{lsp}{ls}}{\matchsinglestatestate{\set{cpuid}}{(\singlestate{curid}{ls}{l})}{(\envstate{\set{cpuid}}{curid}{lsp}{l})}}
+\end{mathpar}
 \end{lemma}
 

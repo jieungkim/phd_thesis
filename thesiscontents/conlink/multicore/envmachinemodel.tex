@@ -132,10 +132,10 @@ l \neq \listconsoppo{\yieldev{\_}}{\_}\\
 
 \begin{lemma}[one$\_$step$\_$env$\_$refines$\_$oracle]
 \label{lemma:chapter:conlink:mc-oracle-env}
-Let's assume that there is a valid start CPU ID for the multicore machine model, 
-$start\_cpu$ ($start\_cpu \in \coreset$), and a hardware oracle $hw\_o$,  
+Let's assume that there is a valid start CPU ID
+($start\_cpu$ ($start\_cpu \in \coreset$), and a hardware oracle $hw\_o$,  
 which is an environmental context for the oracle machine model that contains the full focused set ($\coreset$) in it.
-When the hardware oracle is valid ($ \validoraclenoeq{start\_cpu}{\coreset}{hw\_o}$) we assume the following fact:
+When the hardware oracle is valid ($ \validoraclenoeq{start\_cpu}{\coreset}{hw\_o}$) we can show the following fact:
 \begin{center}
 \begin{tabular}{P{0.95\textwidth}}
 $
@@ -338,11 +338,10 @@ multiple evaluations in the environmental machine with a single focused CPU matc
 
 \begin{lemma}[one$\_$step$\_$env$\_$refines$\_$env]
 \label{lemma:chapter:conlink:one-env-refines-env}
-Let's assume that there is a valid CPU ID (\ie, a focused CPU as well as a start CPU of the system)
-in the multicore machine model, 
-$start\_cpu$ ($start\_cpu \in \coreset$),  a hardware oracle $hw\_o$ (\ie, an environmental context for the environmental machine model that contains the full focused set, $\coreset$, in it), 
+Let's assume that there is a valid CPU ID $start\_cpu$ (\ie, a focused CPU as well as a start CPU of the system
+$start\_cpu \in \coreset$),  a hardware oracle $hw\_o$ (\ie, an environmental context for the environmental machine model that contains the full focused set, $\coreset$, in it), 
 and a single core oracle $si\_o$ (\ie, an environmental context for the environmental machine model that contains a singleton CPU, $start\_cpu$ in it.)
-When the single oracle is valid ($ \validoraclenoeq{start\_cpu}{\set{start\_cpu}}{si\_o}$) we assume the following fact:
+When the single oracle is valid ($ \validoraclenoeq{start\_cpu}{\set{start\_cpu}}{si\_o}$) we can show the following fact:
 \begin{center}
 \begin{tabular}{P{0.95\textwidth}}
 $
@@ -366,9 +365,8 @@ will always succeed (will not get stuck) when we have a strategy for an environm
 
 \begin{hypothesis}[related$\_$single$\_$oracle$\_$hw$\_$oracle$\_$def]
 \label{hypothesis:chapter:conlink:related-single-oracle-hw-oracle}
-Let's assume that there is a valid CPU ID
-in the multicore machine model, 
-$start\_cpu$ ($start\_cpu \in \coreset$),  a hardware oracle $hw\_o$
+Let's assume that there is a valid CPU ID $start\_cpu$
+($start\_cpu \in \coreset$),  a hardware oracle $hw\_o$
 and a single core oracle $si\_o$.
 When the single oracle is valid ($ \validoraclenoeq{start\_cpu}{\set{start\_cpu}}{si\_o}$) we assume the following fact:
 \begin{center}
@@ -386,9 +384,7 @@ $
 
 \begin{hypothesis}[relate$\_$single$\_$oracle$\_$concrete$\_$step$\_$def]
 \label{hypothesis:chapter:conlink:related-single-oracle-concrete-step}
-Let's assume that there is a valid CPU ID
-in the multicore machine model, 
-$start\_cpu$ ($start\_cpu \in \coreset$),  a hardware oracle $hw\_o$
+Let's assume that there is a valid CPU ID $start\_cpu$ ($start\_cpu \in \coreset$),  a hardware oracle $hw\_o$
 and a single core oracle $si\_o$.
 When the single oracle is valid ($ \validoraclenoeq{start\_cpu}{\set{start\_cpu}}{si\_o}$) we assume the following fact:
 \begin{center}

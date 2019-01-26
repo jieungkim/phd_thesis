@@ -5,35 +5,20 @@
 We have defined the single core machine model from the multicore machine model with providing refinements between those machines. 
 The single core machine in Section~\ref{chapter:linking:subsec:single-core-machine-model} , however, 
 is not sufficient to work as a 
-basis of local layer interfaces in Section~\ref{chapter:ccal:subsec:local-layer-interface}.
-First, the state definition in machine model slightly differs from the machine that we used for building layers with the support for the compositional compilation, $\compcertx$. 
-In this sense, the optimization requires us to match the machine state for a single core machine with a state of $\compcertx$. 
+basis of local layer interfaces in Section~\ref{chapter:ccal:subsec:local-layer-interface}. 
+First, the state definition in machine model differs from the machine that we used for building layers with the support for the compositional compilation, $\compcertx$. 
+In this sense, optimization is required to match the machine state for a single core machine with a machine state of $\compcertx$, $\lasmmach$. 
 Second, the oracle query in the machine is operational step style, 
 which always query the oracle at each step of the evaluation.
-Adding this oracle query in between all steps in the $\compcertx$ machine model is not feasible because it needs to modify the compilation path too. 
+Adding this oracle query in between all steps in the $\compcertx$ machine model ($\lasmmach$) is not feasible because it requires the modification of the machine model itself as well as the compilation path of $\compcertx$. 
 Therefore, 
-optimization for the point of oracle query has to be adjusted. 
-Third, the global oracle contains multiple scheduling events in it, 
-so that it has to be removed.
-\jieung{Finally, Connect?}
-
-\subsubsection{Big Step Oracle Query}
+optimization on the point of oracle query has to be adjusted. 
+Third, the global oracle contains multiple scheduling events in it as well as not practical for us to build multiple disjoint shared object since it includes too many unnecessary events for other objects when we focus on a single shared object. 
+This section deals with intermediate machine models resolving those stated issues with brief explanations. 
 
 
 
-Querying the environmental context at each step is subtle in defining local layer interface. 
-In this sense, simplification is desirable. 
-We define two intermediate machine model for this optimization,
-which are presented in Figure~\ref{fig:chapter:conlink:single-core-big-step} and Figure~\ref{fig:chapter:conlink:single-core-big-two-step}.
-One important assumption in here is the fairness assumption ($\timebound$),
-which assumes that each core will always evaluate at least one step evaluation within $\timebound$, which is the maximum number
-of events in between the evaluation of the focused CPU. 
-Figure~\ref{fig:chapter:conlink:single-core-big-step} includes the function 
-that uses the bound number for the consecutive environmental context query 
-to merge it. 
-Using the function, we first remove the \textsf{SKIP} rule from the single core machine (Figure~\ref{fig:chapter:conlink:single-core-big-step}
-and merge two rules to simplify the machine (Figure~\ref{fig:chapter:conlink:single-core-big-two-step}).
-
+%%%%%%%
 \begin{figure}
 \noindent\fbox{fairness:}
 $$
@@ -76,11 +61,7 @@ ls' = \localstate{ps}{\bfalse} \\
 \yieldbackfunc{\timebound}{curid}{l_0}{\nulllist}{oracle}{l'}}
 {\singlebigstep{curid}{oracle}{(\singlestate{curid}{ls}{l})}{\ccemptytrace}{(\singlestate{curid'}{ls'}{l'})}}
 \end{mathpar}
-\caption{Single Core Big Step.}
-\label{fig:chapter:conlink:single-core-big-step}
-\end{figure}
 
-\begin{figure}
 \noindent\fbox{rstate:}
 $$
 \begin{array}{lll}
@@ -88,7 +69,7 @@ $$
 \end{array}
 $$
 
-\fbox{single big2 step:
+\fbox{single big' step:
 $
 {}_{[curid : \ztype]} (oracle : \mcoracle{\set{curid}}{\mclog}{\mcevent}) :  \rstatekwd \rightarrow \cctracekwd \rightarrow \rstatekwd \rightarrow \mcprop
 $}
@@ -99,38 +80,45 @@ $}
 \hardwarelocalstep{curid}{(\localview{ps}{(\listappoppo{l_1}{l_0})})}{(\localview{ps'}{l'})}}
 {\singlebigtwostep{curid}{oracle}{(\rstate{ps}{l})}{\ccemptytrace}{(\rstate{ps'}{(\listappoppo{l'}{\listappoppo{l_1}{l_0}})})}}
 \end{mathpar}
-\caption{Single Core Big Two Steps.}
-\label{fig:chapter:conlink:single-core-big-two-step}
+\caption{Single Core Machine Model with Big Step Style Oracle Query.}
+\label{fig:chapter:conlink:single-core-big-step}
 \end{figure}
 
+\subsubsection{Big Step Oracle Query}
+
+Querying the environmental context after each local step is subtle in defining local layer interface;
+thus, simplification is desirable. 
+We define two intermediate machine model for this optimization,
+which is presented in Figure~\ref{fig:chapter:conlink:single-core-big-step} based on the one, the fairness of the evaluation chance for each CPU, which is notated as $\timebound$. 
+The fairness assumes that each core will always evaluate at least one step evaluation within 
+$\timebound$,  the maximum number
+of events in between two evaluations of the CPU.
+With the fairness assumption, 
+the $\yieldbackfunckwd$ gives us the way to merge multiple oracles queries in
+the single core machine in Section~\ref{chapter:linking:subsec:single-core-machine-model} 
+into a single big-step style query,
+which is defined in the $\textsf{YIELD}$ rule in the $\singlebigstepkwd$.
+The $\singlebigtwostepkwd$ even merge the two rules in  $\singlebigstepkwd$ to simplify 
+the evaluation rule of the machine, which removes the boolean flag in the local view (as well as in  the definition of state $\rstatekwd$) 
+what we have added when introducing our hardware oracle (in Section~\ref{chapter:linking:subsec:multicore-machine-model-with-hardware-scheduler}) to indicate whether the current state is for the hardware scheduler or for the local evaluation.
+We, of course provides the refinement lemmas between those machines.
 Similar to the previous steps, 
-we show the refinement between those machine models,
-which are in 
-Figure~\ref{fig:chapter:conlink:big-refines-single} and Figure~\ref{fig:chapter:conlink:bigtwo-refines-big}. 
-Those steps are straightforward because of the similarity of step-relations as well as their state definitions. 
-One non-trivial lemma in those is the lemma about the multiple environmental steps. The ``start$\_$step$\_$get$\_$env$\_$log'' lemma shows that the numerous environmental steps via $\yieldbackfunckwd$ always have the corresponding 
-\textsf{SKIP} steps in the single core machine model. 
-
-\begin{figure}
-\noindent\fbox{variables for match relation}
-$$
-\begin{array}{lllr}
-cpuid & : & \ztype & \mbox{(starting CPU of the system)}\\
-si\_o & : & \mcoracle{\set{cpuid}}{\mclog}{\mcevent} &  \mbox{(oracle for a single cpu)}\\
-\end{array}
-$$
-
-\noindent\fbox{match state : $\envstatekwd_{[\coreset]} \rightarrow \mcstatekwd \rightarrow \mcprop$}
-\begin{mathpar}
-\inferrule[match state]
-{ s_h = s_l \\
-s_h = \singlestate{tid}{(\localstate{ps}{b})}{l} \\
-\validlog{cpuid}{l} \\
-l \neq \listconsoppo{\yieldev{\_}}{\_}\\
-\getcuridfromlog{cpuid}{l}{cpuid}\\
-(b = \bfalse \rightarrow \exists \ e \ l' . \ l = \listconsoppo{e}{l'} \wedge e = \yieldbackev{cpuid})}
-{\matchbsstatesstate{s_h}{s_l}}
-\end{mathpar}
+we show  refinement proofs between those machine models,
+which are stated in Lemma~\ref{lemma:chapter:linking:one-step-big-refines-single} and Lemma~\ref{lemma:chapter:linking:one-step-big-p-refines-big}.
+%
+%\begin{figure}
+%\noindent\fbox{variables for match relation}
+%$$
+%\begin{array}{lllr}
+%cpuid & : & \ztype & \mbox{(starting CPU of the system)}\\
+%si\_o & : & \mcoracle{\set{cpuid}}{\mclog}{\mcevent} &  \mbox{(oracle for a single cpu)}\\
+%\end{array}
+%$$
+%
+%\noindent\fbox{match state : $\envstatekwd_{[\coreset]} \rightarrow \mcstatekwd \rightarrow \mcprop$}
+%\begin{mathpar}
+%
+%\end{mathpar}
 
 %\noindent\fbox{hypothesis}
 %\begin{enumerate}
@@ -155,35 +143,28 @@ l \neq \listconsoppo{\yieldev{\_}}{\_}\\
 %\end{array}
 %$
 %\end{enumerate}
-\caption{Big Refines Single}
-\label{fig:chapter:conlink:big-refines-single}
-\end{figure}
-
-\begin{hypothesis}[valid$\_$cpuid]
-\begin{tabular}{P{0.95\textwidth}}
-$cpuid \in \coreset$
-\end{tabular}
-\end{hypothesis}
-
-\begin{hypothesis}[valid$\_$oracle$\_$def]
-\begin{tabular}{P{0.95\textwidth}}
-$\validoraclenoeq{cpuid}{\set{cpuid}}{si\_o }$
-\end{tabular}
-\end{hypothesis}
-
-
-\begin{lemma}[start$\_$step$\_$get$\_$env$\_$log]
-\begin{tabular}{P{0.95\textwidth}}
-$
-\begin{array}{l}
-\forall \ n \ l \ res \ l' \ ps \ curid . \ cpuid \neq curid \rightarrow \yieldbackfunc{n}{cpuid}{l}{res}{si\_o}{l'} \rightarrow\\
-\ccstarstep{\singlestep{cpuid}{si\_o}{(\singlestate{curid}{ps}{(\listappoppo{res}{l})})}{\ccemptytrace}{(\singlestate{cpuid}{ps}{(\listappoppo{l'}{l})})}}\\ 
-\end{array}
-$
-\end{tabular}
-\end{lemma}
+%\caption{Big Refines Single}
+%\label{fig:chapter:conlink:big-refines-single}
+%\end{figure}
+%
+%\begin{hypothesis}[valid$\_$cpuid]
+%\begin{tabular}{P{0.95\textwidth}}
+%$cpuid \in \coreset$
+%\end{tabular}
+%\end{hypothesis}
+%
+%\begin{hypothesis}[valid$\_$oracle$\_$def]
+%\begin{tabular}{P{0.95\textwidth}}
+%$\validoraclenoeq{cpuid}{\set{cpuid}}{si\_o }$
+%\end{tabular}
+%\end{hypothesis}
 
 \begin{lemma}[one$\_$step$\_$big$\_$refines$\_$single]
+\label{lemma:chapter:linking:one-step-big-refines-single}
+Let's assume that there is a valid CPU ID $start\_cpu$ ($start\_cpu \in \coreset$)
+and a single core oracle $si\_o$.
+When the single oracle is valid ($ \validoraclenoeq{start\_cpu}{\set{start\_cpu}}{si\_o}$) we assume the following fact:
+\begin{center}
 \begin{tabular}{P{0.95\textwidth}}
 $
 \begin{array}{l}
@@ -192,38 +173,54 @@ $
 \end{array}
 $
 \end{tabular}
-\end{lemma}
-
-
-\begin{figure}
-\noindent\fbox{match state : $\rstatekwd \rightarrow \singlestatekwd \rightarrow \mcprop$}
+\end{center}
+when the match relation for two states between those machine models is defined as 
 \begin{mathpar}
 \inferrule[match state]
-{\ }
-{\matchrstatesinglestate{cpuid}{(\rstate{ps}{l})}{(\singlestate{cpuid}{(\localstate{ps}{true})}{l}}}
+{ s_h = s_l \\
+s_h = \singlestate{tid}{(\localstate{ps}{b})}{l} \\
+\validlog{cpuid}{l} \\
+l \neq \listconsoppo{\yieldev{\_}}{\_}\\
+\getcuridfromlog{cpuid}{l}{cpuid}\\
+(b = \bfalse \rightarrow \exists \ e \ l' . \ l = \listconsoppo{e}{l'} \wedge e = \yieldbackev{cpuid})}
+{\matchbsstatesstate{s_h}{s_l}}
 \end{mathpar}
+\end{lemma}
+
 %
-%\noindent\fbox{hypothesis}
-%\begin{enumerate}
-%\item valid$\_$oracle$\_$def: $\validoraclenoeq{cpuid}{\coreset}{hw\_o }$
-%\end{enumerate}
+%\begin{figure}
+%\noindent\fbox{match state : $\rstatekwd \rightarrow \singlestatekwd \rightarrow \mcprop$}
+%\begin{mathpar}
+%\inferrule[match state]
+%{\ }
+%{\matchrstatesinglestate{cpuid}{(\rstate{ps}{l})}{(\singlestate{cpuid}{(\localstate{ps}{true})}{l}}}
+%\end{mathpar}
+%%
+%%\noindent\fbox{hypothesis}
+%%\begin{enumerate}
+%%\item valid$\_$oracle$\_$def: $\validoraclenoeq{cpuid}{\coreset}{hw\_o }$
+%%\end{enumerate}
+%
+%%\noindent\fbox{top lemmas}
+%%\begin{enumerate}
+%%\item one$\_$step$\_$big2$\_$refines$\_$big : \\
+%%$
+%%\begin{array}{l}
+%%\forall \ s_h \ s_h' \ t \ s_l . \ \singlebigtwostep{cpuid}{si\_o}{s_h}{t}{s_h'} \rightarrow  \matchrstatesinglestate{cpuid}{s_h}{s_l} \rightarrow \\
+%%\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \exists\ s\_l' . \  \ccplusstep{\singlebigstep{cpuid}{si\_o}{s_l}{t}{s_l'}} \wedge  \matchrstatesinglestate{cpuid}{s_h'}{s_l'}\\
+%%\end{array}
+%%$
+%%\end{enumerate}
+%\caption{Big2 Refines Big} 
+%\label{fig:chapter:conlink:bigtwo-refines-big}
+%\end{figure}
 
-%\noindent\fbox{top lemmas}
-%\begin{enumerate}
-%\item one$\_$step$\_$big2$\_$refines$\_$big : \\
-%$
-%\begin{array}{l}
-%\forall \ s_h \ s_h' \ t \ s_l . \ \singlebigtwostep{cpuid}{si\_o}{s_h}{t}{s_h'} \rightarrow  \matchrstatesinglestate{cpuid}{s_h}{s_l} \rightarrow \\
-%\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \exists\ s\_l' . \  \ccplusstep{\singlebigstep{cpuid}{si\_o}{s_l}{t}{s_l'}} \wedge  \matchrstatesinglestate{cpuid}{s_h'}{s_l'}\\
-%\end{array}
-%$
-%\end{enumerate}
-\caption{Big2 Refines Big} 
-\label{fig:chapter:conlink:bigtwo-refines-big}
-\end{figure}
-
-
-\begin{lemma}[one$\_$step$\_$big2$\_$refines$\_$big]
+\begin{lemma}[one$\_$step$\_$big'$\_$refines$\_$big]
+\label{lemma:chapter:linking:one-step-big-p-refines-big}
+Let's assume that there is a valid CPU ID $start\_cpu$ ($start\_cpu \in \coreset$)
+and a single core oracle $si\_o$.
+When the single oracle is valid ($ \validoraclenoeq{start\_cpu}{\set{start\_cpu}}{si\_o}$) we can show the following fact:
+\begin{center}
 \begin{tabular}{P{0.95\textwidth}}
 $
 \begin{array}{l}
@@ -232,7 +229,29 @@ $
 \end{array}
 $
 \end{tabular}
+\end{center}
+when the match relation for two states between those machine models is defined as 
+\begin{mathpar}
+\inferrule{\ }
+{\matchrstatesinglestate{cpuid}{(\rstate{ps}{l})}{(\singlestate{cpuid}{(\localstate{ps}{true})}{l}}}
+\end{mathpar}
 \end{lemma}
+
+%
+%
+%\begin{lemma}[start$\_$step$\_$get$\_$env$\_$log]
+%\begin{tabular}{P{0.95\textwidth}}
+%$
+%\begin{array}{l}
+%\forall \ n \ l \ res \ l' \ ps \ curid . \ cpuid \neq curid \rightarrow \yieldbackfunc{n}{cpuid}{l}{res}{si\_o}{l'} \rightarrow\\
+%\ccstarstep{\singlestep{cpuid}{si\_o}{(\singlestate{curid}{ps}{(\listappoppo{res}{l})})}{\ccemptytrace}{(\singlestate{cpuid}{ps}{(\listappoppo{l'}{l})})}}\\ 
+%\end{array}
+%$
+%\end{tabular}
+%\end{lemma}
+
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -278,22 +297,21 @@ $$
 
 \subsubsection{Reordering and  zipping}
 
-
-The next optimization is about reordering the point for the oracle query 
+Another optimization that is required  is  reordering the point that queries the environmental context 
 and zipping the multiple adjacent scheduling events into the single scheduling event (and finally remove them).
-To do that,
-we first separate hardware local step rules as two kinds of step rules, which is for the local silent steps and for the shared steps that trigger the step relation to add the event in the log. 
-They are defined in Figure~\ref{fig:chapter:conlink:single-local-and-log-step-rules}. 
-With this separation, 
-the newly defined machine in Figure~\ref{fig:chapter:conlink:single-split-step-rules} 
-slightly changes the log update. 
-The state of this machine contains three elements. 
-The first one is for the private data of the CPU,
-the second one is for the cached event that postpones the update of the log to the global log until 
-the current focused CPU perform the step that generates the event for the shared state.
-This delayed update for the global log does not change any behavior of the machine since the private state update via private step rule (single local step in Figure~\ref{fig:chapter:conlink:single-local-and-log-step-rules}). 
-by doing that, we are able to define the machine that can update the log only when the focused CPU perform its shared operation,
-which you can see in Figure~\ref{fig:chapter:conlink:single-split-step-rules}. 
+Those steps 
+first, require the separation on the local step rules as two folds;
+the step rules with visible behavior and the step rules with silent behavior and depending on
+whether the rules generate visible events or not during their evaluations. 
+Those newly defined local step rules are in Figure~\ref{fig:chapter:conlink:single-local-and-log-step-rules},
+and we define 
+the new machine model
+ in Figure~\ref{fig:chapter:conlink:single-split-step-rules}.
+ This new machine model defers the update on the global log based on the program counter. 
+If the current local step is a visible step, then it will update the cached log to the global log to update the view of the shared state. 
+It, however, only adds the cached log instead of propagating the result to the global log when the program counter points out the command that will perform a silent step. 
+By doing that, the machine updates the global log only when the focused CPU performs its shared operation,
+which corresponds to the second rule of the machine.
 %%%%%%%%%%%%%%%%
 \begin{figure}
 \noindent\fbox{srstate:}
@@ -303,7 +321,7 @@ $$
 \end{array}
 $$
 
-\noindent\fbox{single split step: ${}_{[curid : \ztype]} (oracle : \mcoracle{\set{curid}}{\mclog}{\mcevent}) :  \srstatekwd \rightarrow \cctracekwd \rightarrow \srstatekwd \rightarrow \mcprop$}
+\noindent\fbox{split step: ${}_{[curid : \ztype]} (oracle : \mcoracle{\set{curid}}{\mclog}{\mcevent}) :  \srstatekwd \rightarrow \cctracekwd \rightarrow \srstatekwd \rightarrow \mcprop$}
 \begin{mathpar}
 \inferrule
 {al_0 = \listconsoppo{\yieldev{curid}}{al}\\
@@ -318,20 +336,30 @@ l_0 = \listappoppo{al_0}{l}\\
 \singlelogstep{curid}{(\localview{ps}{(\listappoppo{l_1}{l_0})})}{(\localview{ps'}{l'})}}
 {\singlesplitstep{curid}{oracle}{(\srstate{ps}{l}{al})}{\ccemptytrace}{(\srstate{ps'}{(\listappoppo{l'}{\listappoppo{l_1}{l_0}})}{\nulllist})}}
 \end{mathpar}
-\caption{Split Step.}
+\caption{Split Machine Model.}
 \label{fig:chapter:conlink:single-split-step-rules}
 \end{figure}
-%%%%%%%%%%%%%%%%
-\begin{figure}
-\noindent\fbox{match state : $\srstatekwd \rightarrow \rstatekwd \rightarrow \mcprop$}
 
-\begin{mathpar}
-\inferrule[match state]
-{l' = \listappoppo{al}{l}}
-{\matchsrstaterstate{(\srstate{ps}{l}{al})}{(\rstate{ps}{l'})}}
-\end{mathpar}
 
-%\noindent\fbox{top lemmas}
+
+%\begin{mathpar}
+%\inferrule[match state]
+%{l' = \listappoppo{al}{l}}
+%{\matchsrstaterstate{(\srstate{ps}{l}{al})}{(\rstate{ps}{l'})}}
+%\end{mathpar}
+
+
+%%%%%%%%%%%%%%%%%
+%\begin{figure}
+%\noindent\fbox{match state : $\srstatekwd \rightarrow \rstatekwd \rightarrow \mcprop$}
+%
+%\begin{mathpar}
+%\inferrule[match state]
+%{l' = \listappoppo{al}{l}}
+%{\matchsrstaterstate{(\srstate{ps}{l}{al})}{(\rstate{ps}{l'})}}
+%\end{mathpar}
+%
+%%\noindent\fbox{top lemmas}
 %
 %\begin{enumerate}
 %\item single$\_$local$\_$imply$\_$env:\\
@@ -354,54 +382,43 @@ l_0 = \listappoppo{al_0}{l}\\
 %\forall \ cpuid \ si\_o \ s_h \ s_h' \ t \ s_l . \ \singlesplitstep{cpuid}{si\_o}{s_h}{t}{s_h'} \rightarrow  \matchsrstaterstate{s_h}{s_l} \rightarrow \\
 %\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \exists\ s_l' . \  \ccplusstep{\singlebigtwostep{cpuid}{si\_o}{s_l}{t}{s_l'}} \wedge  \matchsrstaterstate{s_h'}{s_l'}\\
 %\end{array}
-%$
-%\end{enumerate}
-\caption{Split Refines Big2}
-\label{fig:chapter:conlink:split-refines-bigtwo}
-\end{figure}
+%%$
+%%\end{enumerate}
+%\caption{Split Refines Big2}
+%\label{fig:chapter:conlink:split-refines-bigtwo}
+%\end{figure}
 %%%%%%%%%%%%%%%%
-The refinement between this model and the big step style single core machine requires the refinement between local step rules as shown in lemma 1 and lemma 2 in Figure~\ref{fig:chapter:conlink:split-refines-bigtwo}. 
-With those lemmas 
-the top-level proof, the lemma 3 in  Figure~\ref{fig:chapter:conlink:split-refines-bigtwo} is straightforward.
-
-
-
-\begin{lemma}[single$\_$local$\_$imply$\_$env]
-\begin{tabular}{P{0.95\textwidth}}
-$
-\begin{array}{l}
-\forall \ cpuid \ l \ ps \ ps' .\ \singlelocalstep{cpuid}{(\singlelocalview{ps})}{(\singlelocalview{ps'})} \rightarrow \\
-\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \hardwarelocalstep{cpuid}{(\localview{ps}{l})}{(\localview{ps'}{\nulllist})}\\
-\end{array}
-$
-\end{tabular}
-\end{lemma}
-
-
-\begin{lemma}[single$\_$log$\_$imply$\_$env]
-\begin{tabular}{P{0.95\textwidth}}
-$
-\begin{array}{l}
-\forall \ cpuid \ l \ l' \ ps \ ps' .\ \singlelogstep{cpuid}{(\localview{ps}{l})}{(\localview{ps'}{l'})} \rightarrow \\
-\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \hardwarelocalstep{cpuid}{(\localview{ps}{l})}{(\localview{ps'}{l'})}\\
-\end{array}
-$
-\end{tabular}
-\end{lemma}
-
-
-
-\begin{lemma}[one$\_$step$\_$split$\_$refines$\_$big2]
-\begin{tabular}{P{0.95\textwidth}}
-$
-\begin{array}{l}
-\forall \ cpuid \ si\_o \ s_h \ s_h' \ t \ s_l . \ \singlesplitstep{cpuid}{si\_o}{s_h}{t}{s_h'} \rightarrow  \matchsrstaterstate{s_h}{s_l} \rightarrow \\
-\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \exists\ s_l' . \  \ccplusstep{\singlebigtwostep{cpuid}{si\_o}{s_l}{t}{s_l'}} \wedge  \matchsrstaterstate{s_h'}{s_l'}\\
-\end{array}
-$
-\end{tabular}
-\end{lemma}
-
+%The refinmeent 
+%The refinement between this $\singlesplitstep
+% and the big step style single core machine requires the refinement between local step rules as shown in lemma 1 and lemma 2 in Figure~\ref{fig:chapter:conlink:split-refines-bigtwo}. 
+%With those lemmas 
+%the top-level proof, the lemma 3 in  Figure~\ref{fig:chapter:conlink:split-refines-bigtwo} is straightforward.
+%
+%%
+%
+%\begin{lemma}[single$\_$local$\_$imply$\_$env]
+%\begin{tabular}{P{0.95\textwidth}}
+%$
+%\begin{array}{l}
+%\forall \ cpuid \ l \ ps \ ps' .\ \singlelocalstep{cpuid}{(\singlelocalview{ps})}{(\singlelocalview{ps'})} \rightarrow \\
+%\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \hardwarelocalstep{cpuid}{(\localview{ps}{l})}{(\localview{ps'}{\nulllist})}\\
+%\end{array}
+%$
+%\end{tabular}
+%\end{lemma}
+%
+%
+%\begin{lemma}[single$\_$log$\_$imply$\_$env]
+%\begin{tabular}{P{0.95\textwidth}}
+%$
+%\begin{array}{l}
+%\forall \ cpuid \ l \ l' \ ps \ ps' .\ \singlelogstep{cpuid}{(\localview{ps}{l})}{(\localview{ps'}{l'})} \rightarrow \\
+%\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \hardwarelocalstep{cpuid}{(\localview{ps}{l})}{(\localview{ps'}{l'})}\\
+%\end{array}
+%$
+%\end{tabular}
+%\end{lemma}
+%
 
 
 \begin{figure}
@@ -421,9 +438,86 @@ $
 \label{fig:chapter:conlink:reorder-step-machine}
 \end{figure}
 %%%%%%%%%%%%%%%%
-The next optimization is defining different oracle that can replace the oracle query function $\yieldbackfunckwd$. 
-The machine model that merge those multiple events generated by $\yieldbackfunckwd$ 
-into the one single oracle query is defined in Figure~\ref{fig:chapter:conlink:reorder-step-machine}.
+The machine model in Figure~\ref{fig:chapter:conlink:single-split-step-rules}  queries the oracle as a big-step style (\ie, updating multiple events in a single oracle query),
+but it relies on the oracle query function $\yieldbackfunckwd$. 
+As a part of optimization, another model has been introduced to 
+remove the oracle query function as well as to replace the 
+oracle type with the proper type (which returns a log instead of an event) for a big step oracle query,
+and the machine model for this oracle query zipping is defined in Figure~\ref{fig:chapter:conlink:reorder-step-machine}.
+Similar to the previous steps, we 
+also provide refinement lemmas for both steps. 
+
+First, Lemma~\ref{lemma:chapter:conlink:split-refines-big-p} shows the refinement between 
+the machine model in Figure~\ref{fig:chapter:conlink:single-split-step-rules} and the machine model in Figure~\ref{fig:chapter:conlink:single-core-big-step}, which shows the connection between the evaluation with the delayed update on the global log  and the evaluation with the prompt update on the at each moment.
+\begin{lemma}[one$\_$step$\_$split$\_$refines$\_$big2]
+\label{lemma:chapter:conlink:split-refines-big-p}
+We says that 
+\begin{center}
+\begin{tabular}{P{0.95\textwidth}}
+$
+\begin{array}{l}
+\forall \ cpuid \ si\_o \ s_h \ s_h' \ t \ s_l . \ \singlesplitstep{cpuid}{si\_o}{s_h}{t}{s_h'} \rightarrow  \matchsrstaterstate{s_h}{s_l} \rightarrow \\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \exists\ s_l' . \  \ccplusstep{\singlebigtwostep{cpuid}{si\_o}{s_l}{t}{s_l'}} \wedge  \matchsrstaterstate{s_h'}{s_l'}\\
+\end{array}
+$ 
+\end{tabular}
+\end{center}
+when the match relation between machine states of those two models is defined as
+\begin{mathpar}
+\inferrule
+{l' = \listappoppo{al}{l}}
+{\matchsrstaterstate{(\srstate{ps}{l}{al})}{(\rstate{ps}{l'})}}
+\end{mathpar}
+\end{lemma}
+
+The other lemma (in Lemma ~ref{lemma:chapter:conlink:reorder-refines-split}) shows the connection between two machines 
+which use different type of environmental contexts, one of which has a type $\mcoracle{\set{cpuid}}{\mclog}{\mclog}$ and the other has a type $\mcoracle{\set{cpuid}}{\mclog}{\mcevent}$. 
+The lemma relies on the match relation between two different machine models in Figure~\ref{fig:chapter:conlink:reorder-refines-split}.
+Similar to the environmental context constructions in the previous parts, which are parts when we introduce
+environmental contexts for a hardware scheduler as well as all other components except one single focused core,
+the refinement proof has to rely on an assumption due to the current limitation on our proof style. 
+We can show the valid construction of the new environmental context, but connecting it with the refinement lemma that this framework provides has remained as future work. 
+
+\begin{lemma}[one$\_$step$\_$reorder$\_$refines$\_$split]
+\label{lemma:chapter:conlink:reorder-refines-split}
+%
+%\noindent\fbox{variables for match relation}
+%$$
+%\begin{array}{lllr}
+%cpuid & : & \ztype & \mbox{(starting CPU of the system)}\\
+%si\_o & : & \mcoracle{\set{cpuid}}{\mclog}{\mcevent} &  \mbox{(oracle for a single cpu)}\\
+%re\_o & : & \mcoracle{\set{cpuid}}{\mclog}{\mclog} &  \mbox{(oracle for a single cpu - reordered)}\\
+%\end{array}
+%$$
+Let's assume that there is a valid CPU ID $start\_cpu$ ($start\_cpu \in \coreset$),
+a single core oracle $si\_o$ with the type $ \mcoracle{\set{cpuid}}{\mclog}{\mcevent}$, and a reordered oracle $re\_o$ with the type $\mcoracle{\set{cpuid}}{\mclog}{\mclog}$.
+When the single oracle is valid ($ \validoraclenoeq{start\_cpu}{\set{start\_cpu}}{si\_o}$) we can show the following fact
+\begin{center}
+\begin{tabular}{P{0.95\textwidth}}
+$
+\begin{array}{l}
+\forall \ s_h \ s_h' \ t \ s_l . \ \singlereorderstep{cpuid}{re\_o}{s_h}{t}{s_h'} \rightarrow  \matchrstatesrstate{s_h}{s_l} \rightarrow \\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \exists\ s_l' .\ \singlesplitstep{cpuid}{si\_o}{s_l}{t}{s_l'} \wedge  \matchrstatesrstate{s_h'}{s_l'}\\
+\end{array}
+$
+\end{tabular}
+\end{center}
+with the assumption about those two oracles, which is stated as 
+\begin{center}
+\begin{tabular}{P{0.95\textwidth}}
+$
+\begin{array}{l}
+\forall \ ps_h \ l_h \ ps_l \ l_l \ al.\ \matchrstatesrstate{(\rstate{ps_h}{l_h})}{(\srstate{ps_l}{l_l}{al})} \rightarrow \\
+\ \ \ \ \ \ \ \ \ \ \validlog{cpuid}{(\listconsoppo{\yieldev{cpuid}}{\listappoppo{al}{l_l}})} \rightarrow \\
+\ \ \ \ \ \ \ \ \ \ \exists\ l_1. \ \yieldbackfunc{\timebound}{cpuid}{\listconsoppo{\yieldev{cpuid}}{\listappoppo{al}{l_l}}}{\nulllist}{si\_o}{l_1} \wedge \\ 
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \forall \ l_1' .\  \oget{\set{cpuid}}{\mclog}{\mclog}{l_h}{re\_o}{l_1'} \rightarrow  l_1' = \listappoppo{l_1}{\listconsoppo{\yieldev{cpuid}}{al}} \\
+\end{array}
+$
+\end{tabular}
+\end{center}
+
+\end{lemma}
+
 %%%%%%%%%%%%%%%%
 \begin{figure}
 \noindent\fbox{auxiliary function}
@@ -439,15 +533,15 @@ into the one single oracle query is defined in Figure~\ref{fig:chapter:conlink:r
 (\eventsourcefuncnoeq{ev} \neq cpuid \vee ev = \yieldev{\_})}
 {\validcachelogmembers{cpuid}{l}}
 \end{mathpar}
-
-\noindent\fbox{variables for match relation}
-$$
-\begin{array}{lllr}
-cpuid & : & \ztype & \mbox{(starting CPU of the system)}\\
-si\_o & : & \mcoracle{\set{cpuid}}{\mclog}{\mcevent} &  \mbox{(oracle for a single cpu)}\\
-re\_o & : & \mcoracle{\set{cpuid}}{\mclog}{\mclog} &  \mbox{(oracle for a single cpu - reordered)}\\
-\end{array}
-$$
+%
+%\noindent\fbox{variables for match relation}
+%$$
+%\begin{array}{lllr}
+%cpuid & : & \ztype & \mbox{(starting CPU of the system)}\\
+%si\_o & : & \mcoracle{\set{cpuid}}{\mclog}{\mcevent} &  \mbox{(oracle for a single cpu)}\\
+%re\_o & : & \mcoracle{\set{cpuid}}{\mclog}{\mclog} &  \mbox{(oracle for a single cpu - reordered)}\\
+%\end{array}
+%$$
 
 \noindent\fbox{match state : $\rstatekwd \rightarrow \srstatekwd \rightarrow \mcprop$}
 \begin{mathpar}
@@ -487,45 +581,34 @@ l_h \neq \listconsoppo{\yieldev{\_}}{\_} \\
 %\end{array}
 %$
 %\end{enumerate}
-\caption{Reorder Refines Split}
+\caption{State Match Relation: the relation between two states of the reorder  machine model and a split machine model}
 \label{fig:chapter:conlink:reorder-refines-split}
 \end{figure}
 %%%%%%%%%%%%%%%%
-The refinement proof between those different kinds of oracle queries needs an assumption about the relation between those two queries. 
-The hypothesis 2 in Figure~\ref{fig:chapter:conlink:reorder-refines-split} 
-states the hypothesis that is 
-required to prove the top level lemma (lemma 1) in Figure~\ref{fig:chapter:conlink:reorder-refines-split}.
+%The refinement proof between those different kinds of oracle queries needs an assumption about the relation between those two queries. 
+%The hypothesis 2 in Figure~\ref{fig:chapter:conlink:reorder-refines-split} 
+%states the hypothesis that is 
+%required to prove the top level lemma (lemma 1) in Figure~\ref{fig:chapter:conlink:reorder-refines-split}.
+%%
+%%\begin{hypothesis}[valid$\_$oracle$\_$def]
+%%\begin{tabular}{P{0.95\textwidth}}
+%%$\validoraclenoeq{cpuid}{\set{cpuid}}{si\_o }$
+%%\end{tabular}
+%\end{hypothesis}
 
-\begin{hypothesis}[valid$\_$oracle$\_$def]
-\begin{tabular}{P{0.95\textwidth}}
-$\validoraclenoeq{cpuid}{\set{cpuid}}{si\_o }$
-\end{tabular}
-\end{hypothesis}
-
-\begin{hypothesis}[YieldBack$\_$consistence$\_$with$\_$reorder$\_$o]
-\begin{tabular}{P{0.95\textwidth}}
-$
-\begin{array}{l}
-\forall \ ps_h \ l_h \ ps_l \ l_l \ al.\ \matchrstatesrstate{(\rstate{ps_h}{l_h})}{(\srstate{ps_l}{l_l}{al})} \rightarrow \\
-\ \ \ \ \ \ \ \ \ \ \validlog{cpuid}{(\listconsoppo{\yieldev{cpuid}}{\listappoppo{al}{l_l}})} \rightarrow \\
-\ \ \ \ \ \ \ \ \ \ \exists\ l_1. \ \yieldbackfunc{\timebound}{cpuid}{\listconsoppo{\yieldev{cpuid}}{\listappoppo{al}{l_l}}}{\nulllist}{si\_o}{l_1} \wedge \\ 
-\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \forall \ l_1' .\  \oget{\set{cpuid}}{\mclog}{\mclog}{l_h}{re\_o}{l_1'} \rightarrow \\ 
-\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \  \ \ \ \ \ \ l_1' = \listappoppo{l_1}{\listconsoppo{\yieldev{cpuid}}{al}} \\
-\end{array}
-$
-\end{tabular}
-\end{hypothesis}
-
-\begin{lemma}[one$\_$step$\_$reorder$\_$refines$\_$split]
-\begin{tabular}{P{0.95\textwidth}}
-$
-\begin{array}{l}
-\forall \ s_h \ s_h' \ t \ s_l . \ \singlereorderstep{cpuid}{re\_o}{s_h}{t}{s_h'} \rightarrow  \matchrstatesrstate{s_h}{s_l} \rightarrow \\
-\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \exists\ s_l' .\ \singlesplitstep{cpuid}{si\_o}{s_l}{t}{s_l'} \wedge  \matchrstatesrstate{s_h'}{s_l'}\\
-\end{array}
-$
-\end{tabular}
-\end{lemma}
+%\begin{hypothesis}[YieldBack$\_$consistence$\_$with$\_$reorder$\_$o]
+%\begin{tabular}{P{0.95\textwidth}}
+%$
+%\begin{array}{l}
+%\forall \ ps_h \ l_h \ ps_l \ l_l \ al.\ \matchrstatesrstate{(\rstate{ps_h}{l_h})}{(\srstate{ps_l}{l_l}{al})} \rightarrow \\
+%\ \ \ \ \ \ \ \ \ \ \validlog{cpuid}{(\listconsoppo{\yieldev{cpuid}}{\listappoppo{al}{l_l}})} \rightarrow \\
+%\ \ \ \ \ \ \ \ \ \ \exists\ l_1. \ \yieldbackfunc{\timebound}{cpuid}{\listconsoppo{\yieldev{cpuid}}{\listappoppo{al}{l_l}}}{\nulllist}{si\_o}{l_1} \wedge \\ 
+%\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \forall \ l_1' .\  \oget{\set{cpuid}}{\mclog}{\mclog}{l_h}{re\_o}{l_1'} \rightarrow \\ 
+%\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \  \ \ \ \ \ \ l_1' = \listappoppo{l_1}{\listconsoppo{\yieldev{cpuid}}{al}} \\
+%\end{array}
+%$
+%\end{tabular}
+%\end{hypothesis}
 
 
 \begin{figure}
@@ -551,14 +634,7 @@ l_r' & \text{for } l = \listconsoppo{ev}{l'} \wedge \mcreducelogfunc{l'}{l_r'}\\
 \end{array} \right.
 $$
 
-\noindent\fbox{variables for match relation}
-$$
-\begin{array}{lllr}
-cpuid & : & \ztype & \mbox{(starting CPU of the system)}\\
-hi\_re\_o & : & \mcoracle{\set{cpuid}}{\mclog}{\mclog} &  \mbox{(oracle for a single cpu - simplified)}\\
-lo\_re\_o & : & \mcoracle{\set{cpuid}}{\mclog}{\mclog} &  \mbox{(oracle for a single cpu - reordered)}\\
-\end{array}
-$$
+
 
 %\fbox{match state : $\rstatekwd \rightarrow \rstatekwd \rightarrow \mcprop$}
 \begin{mathpar}
@@ -589,24 +665,40 @@ $$
 %\end{array}
 %$
 %\end{enumerate}
-\caption{Reorder Refines Reorder}
+\caption{State Match Relation: the relation between two states of two reorder machines}
 \label{fig:chapter:conlink:reorder-refines-reorder}
 \end{figure}
 %%%%%%%%%%%%%%%%
-After that, 
-the machine does not need to keep the 
-all scheduling event at all because it does not necessary 
-for the oracle query 
-and it increases the complexity of the global oracle. 
-In this sense, 
-we also refine the machine 
-that contains multiple scheduling events with the global log without any scheduling event,
-which will be related with $\mcreducelogfunckwd$ in Figure~\ref{fig:chapter:conlink:reorder-refines-reorder}.
-It also shows that those two machines
-that are same but use different logs
-can be connected via the lemma 1 in  Figure~\ref{fig:chapter:conlink:reorder-refines-reorder}.
 
-\begin{hypothesis}[relate$\_$reorder$\_$oracle$\_$def]
+The reorder machine model also can be used for 
+the simplification of the global log.
+At this point, the machine is not changing the currently running CPU as well as only query the environmental context before it evaluates shared operations. 
+In this sense, keeping all scheduling events does not necessary, and it only increases the complexity. 
+Due to this reason, we facilitate the reorder machine model to remove scheduling events in the global log. 
+The refinement proof for this optimization, however, mostly relies on
+the relation between two oracles. 
+Connecting the proof about the relation between two environmental contexts with this refinement proof is a future work to provide a better multicore linking framework. 
+The match relation between two states is in Figure~\ref{fig:chapter:conlink:reorder-refines-reorder}, which basically
+says that two states are identical except the existence of scheduling events in the log.
+The refinement lemma is stated in Lemma~\ref{lemma:chapter:conlink:reorder-refines-reorder}
+
+\begin{lemma}[one$\_$step$\_$reorder$\_$refines$\_$reorder]
+\label{lemma:chapter:conlink:reorder-refines-reorder}
+Let's assume that there is a valid CPU ID $start\_cpu$ ($start\_cpu \in \coreset$),
+and two oracles $hi\_re\_o$ and $lo\_re\_o $ with the type
+$\mcoracle{\set{cpuid}}{\mclog}{\mclog}$. Then we can show the fact that
+\begin{center}
+\begin{tabular}{P{0.95\textwidth}}
+$
+\begin{array}{l}
+\forall \ s_h \ s_h' \ t \ s_l . \ \singlereorderstep{cpuid}{hi\_re\_o}{s_h}{t}{s\_h'} \rightarrow \matchrrstaterrstae{s_h}{s_l} \rightarrow \\
+\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \exists\ s_l' . \  \singlereorderstep{cpuid}{lo\_re\_o}{s_l}{t}{s\_l'} \wedge  \matchrrstaterrstae{s_h'}{s_l'}\\
+\end{array}
+$
+\end{tabular}
+\end{center}
+with the assumption about the two oracles, which can be stated as
+\begin{center}
 \begin{tabular}{P{0.95\textwidth}}
 $
 \begin{array}{l}
@@ -616,19 +708,8 @@ $
 \end{array}
 $
 \end{tabular}
-\end{hypothesis}
-
-\begin{lemma}[one$\_$step$\_$reorder$\_$refines$\_$reorder]
-\begin{tabular}{P{0.95\textwidth}}
-$
-\begin{array}{l}
-\forall \ s_h \ s_h' \ t \ s_l . \ \singlereorderstep{cpuid}{hi\_re\_o}{s_h}{t}{s\_h'} \rightarrow \matchrrstaterrstae{s_h}{s_l} \rightarrow \\
-\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \exists\ s_l' . \  \singlereorderstep{cpuid}{lo\_re\_o}{s_l}{t}{s\_l'} \wedge  \matchrrstaterrstae{s_h'}{s_l'}\\
-\end{array}
-$
-\end{tabular}
+\end{center}
 \end{lemma}
-
 
 \subsubsection{Divide the Global Log}
 
@@ -669,8 +750,21 @@ $$
 \label{fig:chapter:conlink:separate-state-definition}
 \end{figure}
 
+All previous machine models simplify the global log as well as the environmental context query 
+via collecting, reordering, as well as removing  the events in the log (as well as the environmental context.)
+It, however, still requires to keep the information of all shared objects in a single location, which is a single global log.
+It is bothersome when building a replay function, which constructs the shared state via interpreting a global log because it requires to consider all events for all shared objects at once. 
+To reduce the complexity due to this a single log,
+our last optimization divides one single global log into multiple logs by using shared object identifiers.
+
+It first requires the new definition regards the event and the log as well as 
+the local evaluation rules based on the new local state that uses the new representation about the log,
+and Figure~\ref{fig:chapter:conlink:separate-state-definition} presents them. 
+It basically says that the state, $\spstatekwd$, for this machine model contains a partial map (from an identifier of a shared object to the log related to the shared object) for a set of log to represent a bunch of shared objects.
+
+
 \begin{figure}
-\noindent\fbox{auxiliary functions for the differences of the logs:}
+\noindent\fbox{auxiliary functions to convert between two types of log:}
 \begin{center}
 \begin{tabular}{l}
 $
@@ -702,8 +796,8 @@ $\\
 \end{center}
 $$
 \begin{array}{lll}
-  \getseplogkwd (id :\ztype)(spp : \separatelogkwd)  &:= & slog \hfill{\text{for } (id, slog) \in spp}\\
-   \setseplogkwd (id :\ztype) (slog : \separatelogtypekwd) (spp: \separatelogkwd) &:= &(spp - \set{(id, \_)})  \cup \set{(id, slog)}\\
+  \getseplogkwd (id :\ztype)(spp : \separatelogkwd)  &:= & slog\ \ \ \ \ \ \ \  \ \ \ \ \  \hfill{\text{for } (id, slog) \in spp}\\
+   \setseplogkwd (id :\ztype) (slog : \separatelogtypekwd) (spp: \separatelogkwd) &:= &spp/[id := slog]\\
 \end{array}
 $$
 \caption{Auxiliary Functions for Single Separate Machine.}
@@ -729,12 +823,25 @@ ${}_{[curid : \ztype]} (oracle : \mcoracle{\set{curid}}{\separateoraclelogtypekw
 }
 {\singleseparatestep{curid}{oracle}{(\spstate{ps}{gl})}{\ccemptytrace}{(\spstate{ps'}{gl'})}}
 \end{mathpar}
-\caption{Separate Step Rules.}
+\caption{Separate Step Machine Model.}
 \label{fig:chapter:conlink:separate-step-rules}
 \end{figure}
+
+With the new state definition and multiple auxiliary functions regarding the state definition in Figure~\ref{fig:chapter:conlink:auxiliary-funcitons-for-single-separate-machine},
+we presents the single separate step machine model in Figure~\ref{fig:chapter:conlink:separate-step-rules}, 
+the last piece of our multicore linking framework 
+as well as an abstract but expressive machine model that can be connected with 
+the machine model for the local layer interface.
+Again, the machine model the local layer interface is $\lasmmach$ in our case, but it is not restricted to  $\lasmmach$, but can be applied to other machines that satisfy specific properties, mostly the properties about hardware configurations. 
+The machine model contains two rules; the first is for the local private evaluation
+and the other is for the shared operation that updates the proper log that is associated with the shared object 
+identifier and remains other logs for other shared objects as same.
+
+
+
 %%%%%%%%%%5
 \begin{figure}
-\noindent\fbox{auxiliary function}
+\noindent\fbox{auxiliary function, valid log, and valid oracle for global log:}
 %
 %  Fixpoint remove_cache_event (l: Log) (tid: Z) :=
 %    match l with
@@ -745,16 +852,16 @@ ${}_{[curid : \ztype]} (oracle : \mcoracle{\set{curid}}{\separateoraclelogtypekw
 %    end
 %
 
-$
+$$
 \removecacheeventkwd (l : \mclog) (cpuid : \ztype): \mclog := 
  \left\{\begin{array}{lr}
 \nulllist & \text{for } l = \nulllist \\
-\listcons{ev}{l_r'} & \text{for } l = \listcons{ev}{l'}  \wedge \eventsourcefunc{e}{cpuid}\\
+\listconsoppo{ev}{l_r'} & \text{for } l = \listcons{ev}{l'}  \wedge \eventsourcefunc{e}{cpuid}\\
     &  \wedge \removecacheevent{l'}{cpuid}{l_r'}\\
-l_r' & \text{for } l = \listcons{ev}{l'}  \wedge \eventsourcefuncnoeq{e}\neq {cpuid}\\
+l_r' & \text{for } l = \listconsoppo{ev}{l'}  \wedge \eventsourcefuncnoeq{e}\neq {cpuid}\\
     &  \wedge \removecacheevent{l'}{cpuid}{l_r'}\\
 \end{array} \right.
-$
+$$
 
 \begin{mathpar}
 \inferrule[valid log']
@@ -762,39 +869,22 @@ $
 {\validlogprim{l}}
 \end{mathpar}
 %
-%  Definition valid_log' (l : Log) : Prop :=
-%    l = reduce_log l.
-%
-%  Definition valid_oracle' (tid: Z) (o : Oracle (OracleProp := re_op)) :=
-%    forall l l', 
-%      valid_log' l ->
-%      oget (s_set tid) l o = Some l' ->
-%      (forall e, In e l' -> event_source e <> tid) /\
-%      valid_log' l'.
-%  
-%
+%\noindent\fbox{variables for match relation}
 
-$
+$$
 \begin{array}{l}
 \validoracleprimkwd (cpuid: \ztype) (o : \mcoracle{\set{cpuid}}{\mclog}{\mclog}) := \\
 \ \ \ \ \forall \ l \ l' . \ \validlogprim{l} \rightarrow \oget{\set{cpuid}}{\mclog}{\mclog}{l}{o}{l'} \rightarrow\\
 \ \ \ \ \ \ \ \ (\forall \ e . e \in l' \rightarrow \eventsourcefuncnoeq{e} \neq cpuid) \wedge \validlogprim{l'}\\
 \end{array}
-$
-\caption{Auxiliary Functions for Separate Refines Reorder.}
-\label{fig:chapter:conlink:auxiliary-functions-separate-refines-reorder}
-\end{figure}
-%%%%%%%%%%%%
-\begin{figure}
-\noindent\fbox{variables for match relation}
-
 $$
-\begin{array}{lllr}
-cpuid & : & \ztype & \mbox{(starting CPU of the system)}\\
-sep\_o & : & \mcoracle{\set{cpuid}}{\separateoraclelogtypekwd}{\separatelogtypekwd} &  \mbox{(separate log type oracle)}\\
-re\_o & : & \mcoracle{\set{cpuid}}{\mclog}{\mclog} &  \mbox{(reordered log oracle)}\\
-\end{array}
-$$
+%$$
+%\begin{array}{lllr}
+%cpuid & : & \ztype & \mbox{(starting CPU of the system)}\\
+%sep\_o & : & \mcoracle{\set{cpuid}}{\separateoraclelogtypekwd}{\separatelogtypekwd} &  \mbox{(separate log type oracle)}\\
+%re\_o & : & \mcoracle{\set{cpuid}}{\mclog}{\mclog} &  \mbox{(reordered log oracle)}\\
+%\end{array}
+%$$
 
 \noindent\fbox{match logs : $\ztype \rightarrow \separatelogkwd \rightarrow \mclog \rightarrow \mcprop$}
 \begin{mathpar}
@@ -838,54 +928,43 @@ $$
 %\end{array}
 %$
 %\end{enumerate}
-\caption{Separate Refines Reorder}
+\caption{Auxiliary Functions and State Match Relation: for the refinement between the separate machine model and the reorder machine model}
 \label{fig:chapter:conlink:separate-refines-reorder}
 \end{figure}
-The last piece of optimization is dividing the global log into the multiple logs to simplify the oracle query for each shared resources. 
-That is only for the easy and scalable layer building in the local layer interface, 
-but it requires multiple works to do. 
-First, 
-the modification on the event type is necessary. 
-the separate event type defined in Figure~\ref{fig:chapter:conlink:separate-state-definition}
-shows the definition for them. The separate event definition is quite similar to the previous definition, 
-but the separate log ($separatelogkwd$) has the different type,
- which is the map from its log identifier to the log only for the identifier. 
-All identifiers also have the corresponding primitive ID ($\primitiveid$), which is defined as $\separateoraclelogtypekwd$.
-There are also several auxiliary functions, 
-that are mostly for translating the single-stream global log into the separate log type defined in Figure~\ref{fig:chapter:conlink:separate-state-definition}.
-Figure~\ref{fig:chapter:conlink:auxiliary-funcitons-for-single-separate-machine} contains those auxiliary functions.
 
-By using them, we finally prove the separate step rules in Figure~\ref{fig:chapter:conlink:separate-step-rules}. 
-It is same with the reorder step rules concerning
-having two rules, local rules for private steps and log rules for the operations on shared states. 
+Proving the refinement between the evaluation on single separate machine model and the 
+evaluation on the reordered machine model 
+requires a few definitions and auxiliary  functions and also a math relation between states of two machines,
+and Figure~\ref{fig:chapter:conlink:separate-refines-reorder} provides those definitions. 
+Among them, $\removecacheeventkwd$ is a key function that maps two different types of log,
+ a single global log and a set of logs. 
+With those definitions, 
+Lemma~\ref{lemma:chapter:conlink:separate-refines-reorder} states 
+the refinement lemma between evaluations on two different machines.
 
-Similar to the previous steps, 
-we also provide the refinement proof that can be further used for the $\compcert$ style simulation proof. 
-Figure~\ref{fig:chapter:conlink:auxiliary-functions-separate-refines-reorder} and 
-Figure~\ref{fig:chapter:conlink:separate-refines-reorder} shows 
-the related auxiliary functions, match relations, hypothesis, and proofs for them.
+%By using them, we finally prove the separate step rules in Figure~\ref{fig:chapter:conlink:separate-step-rules}. 
+%It is same with the reorder step rules concerning
+%having two rules, local rules for private steps and log rules for the operations on shared states. 
+%
+%
+%Figure~\ref{fig:chapter:conlink:auxiliary-functions-separate-refines-reorder} and 
+%Figure~\ref{fig:chapter:conlink:separate-refines-reorder} shows 
+%the related auxiliary functions, match relations, hypothesis, and proofs for them.
 
-\begin{hypothesis}[valid$\_$oracle$'\_$def]
-\begin{tabular}{P{0.95\textwidth}}
-$\validoracleprim{cpuid}{re\_o }$
-\end{tabular}
-\end{hypothesis}
+%\begin{hypothesis}[valid$\_$oracle$'\_$def]
+%\begin{tabular}{P{0.95\textwidth}}
+%$\validoracleprim{cpuid}{re\_o }$
+%\end{tabular}
+%\end{hypothesis}
 
-\begin{hypothesis}[relate$\_$separate$\_$oracle$\_$reorder$\_$oracle$\_$def]
-\begin{tabular}{P{0.95\textwidth}}
-$
-\begin{array}{l}
-\forall \ ps \ l_{sep} \ l_{glob} \ id  \ l_{id} \ l_{id}' \ e .\ \matchspstaterstate{curid}{(\spstate{ps}{l_{sep}})}{(\rstate{ps}{l_{glob}})} \rightarrow \\
-\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \getseparatelog{id}{l_{sep}}{l_{id}} \rightarrow \\
-\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \  \oget{\set{cpuid}}{\separateoraclelogtypekwd}{\separatelogtypekwd}{(id, l_{id}, e)}{sep\_o}{l_{id}'} \\
-\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \   \exists \ l_{glob}' .\ \oget{\set{cpuid}}{\mclog}{\mclog}{l_{glob}}{re\_o}{l_{glob}'} \wedge \\
-\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \  \ \ \ \ \ \ \loggetatom{\listapp{l_{glob}'}{l_{glob}}}{id}{\separatelogtwolognoeq{\listapp{l_{id}'}{l_{id}}}{id}} \\
-\end{array}
-$
-\end{tabular}
-\end{hypothesis}
 
 \begin{lemma}[one$\_$step$\_$separate$\_$refines$\_$reorder]
+\label{lemma:chapter:conlink:separate-refines-reorder}
+Let's assume that there is a valid CPU ID $start\_cpu$ ($start\_cpu \in \coreset$),
+an oracle $re\_o$ for a global log with the type $\mcoracle{\set{cpuid}}{\mclog}{\mclog}$, and a oracle for a set of logs 
+$sep\_o$ with the type $\mcoracle{\set{cpuid}}{\separateoraclelogtypekwd}{\separatelogtypekwd}$.
+When the oracle for a global logis valid ($\validoracleprim{cpuid}{re\_o }$) we can show the following fact
+\begin{center}
 \begin{tabular}{P{0.95\textwidth}}
 $
 \begin{array}{l}
@@ -894,4 +973,48 @@ $
 \end{array}
 $
 \end{tabular}
+\end{center}
+with the assumption about two different oracles as follows:
+\begin{center}
+\begin{tabular}{P{0.95\textwidth}}
+$
+\begin{array}{l}
+\forall \ ps \ l_{sep} \ l_{glob} \ id  \ l_{id} \ l_{id}' \ e .\ \matchspstaterstate{curid}{(\spstate{ps}{l_{sep}})}{(\rstate{ps}{l_{glob}})} \rightarrow \\
+ \ \ \ \ \ \getseparatelog{id}{l_{sep}}{l_{id}} \rightarrow   \oget{\set{cpuid}}{\separateoraclelogtypekwd}{\separatelogtypekwd}{(id, l_{id}, e)}{sep\_o}{l_{id}'} \rightarrow \\
+ \ \ \ \ \  \exists \ l_{glob}' .\ \oget{\set{cpuid}}{\mclog}{\mclog}{l_{glob}}{re\_o}{l_{glob}'} \wedge \\
+ \ \ \ \ \ \ \ \ \ \  \ \ \ \ \loggetatom{\listapp{l_{glob}'}{l_{glob}}}{id}{\separatelogtwolognoeq{\listapp{l_{id}'}{l_{id}}}{id}} \\
+\end{array}
+$
+\end{tabular}
+\end{center}
 \end{lemma}
+
+
+%$$
+%\begin{array}{lllr}
+%cpuid & : & \ztype & \mbox{(starting CPU of the system)}\\
+%sep\_o & : & \mcoracle{\set{cpuid}}{\separateoraclelogtypekwd}{\separatelogtypekwd} &  \mbox{(separate log type oracle)}\\
+%re\_o & : & \mcoracle{\set{cpuid}}{\mclog}{\mclog} &  \mbox{(reordered log oracle)}\\
+%\end{array}
+%$$
+
+
+
+%
+%
+%
+%\begin{hypothesis}[relate$\_$separate$\_$oracle$\_$reorder$\_$oracle$\_$def]
+%\begin{tabular}{P{0.95\textwidth}}
+%$
+%\begin{array}{l}
+%\forall \ ps \ l_{sep} \ l_{glob} \ id  \ l_{id} \ l_{id}' \ e .\ \matchspstaterstate{curid}{(\spstate{ps}{l_{sep}})}{(\rstate{ps}{l_{glob}})} \rightarrow \\
+%\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \getseparatelog{id}{l_{sep}}{l_{id}} \rightarrow \\
+%\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \  \oget{\set{cpuid}}{\separateoraclelogtypekwd}{\separatelogtypekwd}{(id, l_{id}, e)}{sep\_o}{l_{id}'} \\
+%\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \   \exists \ l_{glob}' .\ \oget{\set{cpuid}}{\mclog}{\mclog}{l_{glob}}{re\_o}{l_{glob}'} \wedge \\
+%\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \  \ \ \ \ \ \ \loggetatom{\listapp{l_{glob}'}{l_{glob}}}{id}{\separatelogtwolognoeq{\listapp{l_{id}'}{l_{id}}}{id}} \\
+%\end{array}
+%$
+%\end{tabular}
+%\end{hypothesis}
+
+
