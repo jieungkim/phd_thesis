@@ -61,6 +61,7 @@ Definition single_semantics (p: program) :=
 \label{fig:chapter:certikos:multicore-machine-model-instances}
 \end{figure}
 
+
 Our intermediate machine models in Section~\ref{chapter:linking:sec:multicore-linking} are abstract languages, but our ultimate is connecting them with per-CPU local layers. 
 It requires us to connect those abstract machine models with $\lasmmach$, the machine model of $\compcertx$,
 by using backward simulation proofs in $\compcert$~\cite{leroy06} (\ie, it is also used in layer linking of local layer interfaces  with $\compcertx$.)
@@ -69,28 +70,42 @@ we provide  full concrete definitions for those abstract languages
 by following the \lstinline$Smallstep$ library of $\compcert$.
 Figure~\ref{fig:chapter:certikos:multicore-machine-model-instances}
 shows two instances, which is the concrete definition 
-of two machine models among the machine models in Section~\ref{chapter:linking:sec:multicore-linking},
-multicore machine model, which is $\hardwarestepkwd$ in Section~\ref{chapter:linking:subsec:multicore-machine-model}, and 
-single core machine model, which is $\singlestepkwd$ in Section~\ref{chapter:linking:subsec:single-core-machine-model}.
+of two machine models among the machine models in Section~\ref{chapter:linking:sec:multicore-linking}.
+The first example is the base of our multicore linking, $\intelmachine$ multicore machine model that corresponds to $\hardwarestepkwd$ in Section~\ref{chapter:linking:subsec:multicore-machine-model}.
 Providing the concrete definition first requires 
 us to connect the abstract machine definition in Figure~\ref{fig:chapter:conlink:multicore-machine-syntax-and-semantics}
-with concrete definitions for hardware setting and the hardware semantics in Figure~\ref{fig:chapter:conlinkg:abstract-hardware-configuration-and-semantics}, \lstinline$hdseting$ and \lstinline$hdsem$.
-This example is presented in Figure~\ref{fig:chapter:certikos:multicore-machine-model-instances} (a),
-and we define the full semantics by using the  \lstinline$Smallstep$ library of $\compcert$ in Figure~\ref{fig:chapter:certikos:multicore-machine-model-instances} (b).
-Defining the initial state and the final state is necessary, and (b) in the figure also provides the definitions for them. 
+with concrete definitions for hardware setting and the hardware semantics in Figure~\ref{fig:chapter:conlinkg:abstract-hardware-configuration-and-semantics}, \lstinline$hdseting$ (see Figure~\ref{fig:chapter:ceritkos:instances-of-abstract-hardware-setting}) and \lstinline$hdsem$ (see Figure~\ref{fig:chapter:certikos:hardware-local-step-transition-rules}). 
+Figure~\ref{fig:chapter:certikos:multicore-machine-model-instances} (a) shows 
+the code that defines how we combine them together.
+Figure~\ref{fig:chapter:certikos:multicore-machine-model-instances} (b) 
+also shows how we define the full semantics by using the  definition in Figure~\ref{fig:chapter:certikos:multicore-machine-model-instances} (a) as well as the \lstinline$Smallstep$ library of $\compcert$  for $\intelmachine$ multicore machine model, the machine model that we run $\certikos$. 
+Defining initial and final states is necessary to use the library, and Figure~\ref{fig:chapter:certikos:multicore-machine-model-instances} (b)  also provides those definitions.
 For simplicity, we assume that the program does not have a final state, which we think it is not a big assumption 
 on the verification of operating systems.
 
-Figure~\ref{fig:chapter:certikos:multicore-machine-model-instances} (c) and (d) provides how 
+Figure~\ref{fig:chapter:certikos:multicore-machine-model-instances} (c) and (d) provides an another exampel, 
+how 
 we instantiate single core semantics, which corresponds to the abstract machine in Section~\ref{chapter:linking:subsec:single-core-machine-model}.
 We omit the details, but they are defined with the similar manner that we have done in Figure~\ref{fig:chapter:certikos:multicore-machine-model-instances} (a) and (b). 
 Other abstract machine models 
 in Section~\ref{chapter:linking:sec:multicore-linking} also can be defined 
 in the same way. 
 We also prove that all machine models 
-are receptive as well as deterministic, 
+are receptive, producing at most a single event per one evaluation, as well as deterministic, 
 except for the multicore machine model because it is non-deterministic machine model in its nature.
+For example, 
+we shows that
+our single core machine model satisfies the following three properties:
+\begin{lstlisting}[language=C]
+Lemma si_sem_single_events  (pl: program): single_events (single_semantics pl).
+Lemma si_sem_receptive (pl: program): receptive (single_semantics pl).
+Lemma si_sem_determinate (pl: program): determinate (single_semantics pl).
+\end{lstlisting}
+which are also defined in  the \lstinline$Smallstep$ library of $\compcert$ as well as 
+necessary for us to use 
+the forward-to-backward simulation template in $\compcert$. 
 
+\jieung{I can always add more texts in here}
 %
 % hdseting hdsem current_CPU_ID.
 %

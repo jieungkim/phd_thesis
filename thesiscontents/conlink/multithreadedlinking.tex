@@ -2,184 +2,522 @@
 \label{chapter:linking:sec:multithreaded-linking}
 
 
-The purpose of building a framework for multithreaded linking is similar to 
-the that of our multicore part,
-provide the thread-local interface 
-by hiding other threads' behavior. 
-It, however, differs from multicore linking part, of which the  context and the configuration 
-are simpler than those of multithreaded linking part. 
-When looking at the multithreaded linking, 
-systems already has to provide 
+The purpose of building a framework for multithreaded linking is similar to  that of our multicore part,
+provide the thread-local interface by hiding other threads' behavior. 
+It, however, differs from our multicore linking framework, of which the  context and the configuration 
+are simpler than those of multithreaded linking part due to multiple reasons.
+First, when looking at the multithreaded linking, 
+systems already have to provide 
 scheduling related primitives (\ie, yield, sleep, create)
 as well as other system services 
 that are necessary to implement those primitives. 
 For example, 
 thread (process) creation usually related to the 
 resource management,
-such as the maximum number of memories.
-In addition, 
-some memory areas for multiple threads should be 
-mutually exclusive from others. 
+such as designating the maximum capability of the memory usage 
+for the newly created thread. 
+Also, 
+local memory areas for multiple threads should be 
+mutually exclusive from others even though 
+they are not distinguished from others before the system introduces the notion of threads.
 In addition to that, 
-several private state,
-which is hidden from other threads,
-has to be properly initialized 
-according to other thread.
-Those initialized values
- are usually determined by their parents, 
- and they are dynamically allocated.
+several parts of the thread's private state,
+which are hidden from other threads,
+have to be initialized appropriately when the thread starts its evaluation.
+The problem with this initialization is other threads cannot modify the thread's private state even though these initializations are dynamically triggered by
+other threads, usually the thread's parent. 
 
-To sum up, 
-Multithreaded linking poses 
-multiple challenges based on the environment for the multithreaded programs.
-We assume that 
-there are arbitrary active or available thread set on the CPU, 
-Which does not need to be a sequence of consecutive numbers.
-For example, when the maximum range of
-the thread number in the system i from 0 to 1023, 
-then, CPU 1 may be able to run threads associated the numbers that can be divided by 8. 
-Each thread associated with the 
-designated thread ID. 
-It is possible for threads to use the same identifier again, but 
-we avoid this re-usage of the same number because it increase complexity without a huge benefits. 
-We, however, assume that the thread set is set of non-consecutive unbounded numbers,
-which gives a huge freedom. 
+Multithreaded linking is also related to 
+multiple challenges based on the environment of the system.
+We assume a simple but generic environment. 
+Our system contains a full thread set per one CPU,
+which contains arbitrary active or available threads in it.
+Those threads are associated with their identifiers, and they do not need to be a sequence of consecutive numbers.
+For example, when the range of
+the thread identifier in the system is from 0 to 1023, 
+then, CPU 1 may be able to run threads that have thread IDs divided by 8 (8, 16, \etc). 
+%Each thread associated with the 
+%designated thread ID. 
+It is possible for threads to use the same identifier again, but we avoid this re-usage of the same number because it increases complexity without any remarkable benefits. 
+We, however, assume that the thread set contains non-consecutive unbounded numbers,
+which gives freedom of mapping any newly created thread with a new thread identifier. 
 In addition to that, 
 we allow dynamic initial states for each thread. 
-For example, each thread has maximum capacity of page numbers that they have get is 
-assigned by its parent. 
+For example, each thread has a maximum capacity of page numbers based on the argument that its parent 
+provides.
 Simpler systems may not allow this dynamic allocation for each thread,
-but many systems assign appropriate initial state for each thread 
+but many systems assign an appropriate initial state for each thread 
 according to the information when the thread has been spawned.
 
-Using those environment, 
-our purpose multthreaded linking is listed as follows:
-1) hide context switching between threads; 
-2) construct the environmental context for each thread and show the relationship between the 
-CPU-local machine evaluation with the each thread's evaluation based on the environmental context;
-3) prove compositionalilty of multiple per-thread machines; and 
-4) provide the same (almost similar) interface for per-thread layers 
-for users to build layers on top of thread local machines. 
-\jieung{need to explain more about those challenge}
-\jieung{Expecially about context switching - page 20 of concurrent linking slide}
+Using those assumptions on the environment,
+our purpose of  multithreaded linking is providing a thread local layer interface that hides 
+the local behavior of other threads in the system by resolving the following for 
+main challenges:
+(1) hide context switching between threads; 
+(2) construct the environmental context for each thread and show the relationship between the CPU-local machine evaluation with each thread's evaluation based on the environmental context;
+(3) prove compositionality of multiple per-thread machines; and 
+(4) provide the same (almost similar) interface for per-thread layers 
+for users to build layers on top of per-thread machines. 
+Similar to the multicore linking, 
+we propose a framework for multithreaded linking by introducing multiple intermediate languages to 
+solve those challenges easily.
+
+
+
+\subsection{Multithreaded Linking Overview}
+\label{chapter:linking:subsec:multithreaded-linking-overview}
+
+
+
+%\jieung{need to explain more about those challenge}
+%\jieung{Expecially about context switching - page 20 of concurrent linking slide}
 \begin{figure}
 \begin{center}
 \includegraphics[width=\textwidth, page=2]{figs/conlink/concurrent_linking}
-\jieung{Need to redraw this figure to add only one env-context for thread local layers}
+%\jieung{Need to redraw this figure to add only one env-context for thread local layers}
 \caption{Multithreaded Linking Structures.}
 \label{fig:chapter:linking:multithreaded-linking-structure}
 \end{center}
 \end{figure}
-Similar to the multicore linking, 
-those challenges are hard for us to solve within a single step. 
-In this sense, 
-we also introduce multiple intermediate languages
-in Figure~\ref{fig:chapter:linking:multithreaded-linking-structure}. 
 
+Figure~\ref{fig:chapter:linking:multithreaded-linking-structure} shows the overall structure and the abstract definitions that the structure relies on, and the number shows the places that we deal with the challenges we have mentioned above.
 
-The bottom level of mulithreaded linking is 
-a layer that contains scheduling primitives, thread sleep and yield.
+\subsubsection{$\CSched$ layer with $\lasmmach$} 
+
+The figure shows that the bottom level of mulithreaded linking is 
+a layer $\CSched$ associated with the focused CPU $cid$ and the relevant environmental context $\oracle_{cpuid}$, 
+which uses the machine model $\lasmmach$, 
+the machine model for $\compcertx$. 
+The minimum restriction on the layer $\CSched$ is necessary, 
+which is that the layer has to contain scheduling primitives to support software scheduler, thread sleep and yield.
 Formally, 
-when the layer $\CSched[cpuid, \oracle_{cpuid}] = (\Layer_{\CSched}, \ignorechar, \ignorechar)$, which is parameterized by the focused CPU ID ($cpuid$) and the proper environmental context ($\oracle_{cpuid}$), 
-the layer should satisfies 
+when the layer $\CSched[cid, \oracle_{cid}] = (\Layer_{\CSched}, \ignorechar, \ignorechar)$,
+we relies on the assumption about $\Layer_{\CSched}$, 
 $(\threadyieldfunc, \ignorechar) \in \Layer_{\CSched}$ as well as 
 $(\threadsleepfunc, \ignorechar) \in \Layer_{\CSched}$. 
-This is the minimum requirement for the multithreaded linking proofs. 
-Consequently, 
-the top-most layer in the thread local machine
-has to include those two primitives. 
-Formally, 
-when the layer $\TSched[thrd, \oracle_{thrd}] = (\Layer_{\TSched}, \ignorechar, \ignorechar)$, which is parameterized by the focused thread identifier ($thrd$) and the proper environmental context ($\oracle_{thrd}$), 
-the layer should satisfies 
-$(\threadyieldfunc, \ignorechar) \in \Layer_{\TSched}$ as well as 
-$(\threadsleepfunc, \ignorechar) \in \Layer_{\TSched}$. 
-They, however, differs from 
-the same primitives 
-in  $\CSched$ in terms of their behavior. 
-The CPU local machine that uses $\CSched[cpuid, \oracle_{cpuid}]$  as its parameter 
-uses the state which is defined as
-a tuple, 
-$(rs, m, a, l)$,
-which represents 
-a register set, a memory, an abstract state, and a log.
-Among them, a register set, a memory, and an abstract state are private datum for CPU local machines. 
-In this sense, scheduling primitives, including $\threadyieldfunc$ and $\threadsleepfunc$,
-modifies them during their transitions. 
-Especially, they requires the change in the register values,  context switching,
-which stores the current thread's register value 
-and restore the register values for the next scheduled thread. 
 
-To introduce a thread local interface while keeping a capability of 
-using the same compiler with the CPU local interface ($\compcertx$, 
-thread local layers also has to use the same state definition and the machine model 
-with the CPU local interface, which is $(rs, m, a, l)$.
-The private state of it, however, 
-is only related to the thread. 
+
+%The bottom level of multithreaded linking, a cpu local layer has a similar state definition with $\compcert$. 
+%They follows the definition of $\compcertx$, 
+%which is an extension of $\compcert$ and is defined as
+%\begin{lstlisting}[language=C]
+%Inductive state `{memory_model_ops: Mem.MemoryModelOps mem}: Type :=
+%  | State: regset -> (mem :mwd AbsData) -> state.
+%\end{lstlisting}
+The state definition of the bottom layer interface follows that of $\lasmmach$ is
+\begin{lstlisting}[language=C]
+Inductive state `{memory_model_ops: Mem.MemoryModelOps mem}: Type :=
+  | State: regset -> (mem :mwd LATAOps) -> state.
+\end{lstlisting}
+that is a slightly extended state definition from $\compcert$ by modifying the memory 
+into the memory that can be parameterized by an abstract data (\ie, $(mem :mwd LATAOps)$).
+The abstract data also contains the global log in it, which shows the sequence of all operations on shared objects in the system. 
+The purpose of using this state definition for per-CPU local layer interface is reusability of $\compcertx$, which could be used to verify sequential programs. 
+With the underlying components of the state definition, 
+it's easy for us to translate the definition into a simple form, $state_{\lasm} = (lst, l)$,
+when  first element ($lst$) is a local state for the CPU, which contains 
+the register values ($\regs$), local copy of the memory ($mem$), as well as a private abstract data ($abs$),
+and the second one is a global log for  shared objects.
+%
+%With those definitions, the evaluation transition relation has a type
+%% hide GE
+%%\begin{lstlisting}[language=C]
+%%  Inductive step (ge: genv): state -> trace -> state -> Prop :=
+%%\end{lstlisting}
+%\begin{lstlisting}[language=C]
+%  Inductive step: state -> trace -> state -> Prop :=
+%\end{lstlisting}
+%which change the state by the transition with recording $\compcert$ style trace,
+%which is 
+%\begin{center}
+%$\codeinmath{Mach}_{\lasm}: st_{\lasm} \rightarrow \cctracekwd \rightarrow st_{\lasm} \rightarrow \mcprop$
+%\end{center}
+%
+The transition rule of the machine is then a relation on two states, the initial state to the result state, 
+and each primitive n the layer defines (including $\CSched$) its transition n by providing its specifications as follows:
+
+\begin{center}
+$\PLayer{\CSched}{cid}{\oracle_{\codeinmath{cid}}}(\Layer)(id)
+ \vdash_{\lasm}  \sstepr{\spec_{id}}{args}{lst, l}{\textit{res}\cup \{\}}{lst', l'}$
+\end{center}
+
+{\noindent}when $\spec_{id}$ is a specification for primitive $id$,
+$args$ is the list of arguments for the primitive call, and $\textit{res}\cup \{\}$ defines the 
+return type of the primitive call.
+
+Specifications for scheduling primitives in the layer also follows the same form.
+For example, the key parts of the specification for the $\yield$ primitives is
+\begin{mathpar}
+\inferrule[Yield Rule]
+{ lst = (\regs, m, adt)\\
+lst' = (\regs', m', adt')\\
+m = m' \\
+get\_curid(l) = cid\\
+l' = \listcons{\listapp{l}{(\oracle_{\codeinmath{cid}}\ cid\  l)}}{(cid \ YIELD)}\\
+get\_curid(l') = cid'\\
+adt.kctxt[curid'] = \regs'\\
+adt' = adt/[adt.kctxt := adt.kctxt/[cid = \regs]]}
+{\PLayer{\CSched}{cid}{\oracle_{\codeinmath{cid}}}(\Layer)(\yield)
+ \vdash_{\lasm}  \sstepr{\spec_{\yield}}{\{\}}{lst, l}{\{\}}{lst',  l'}}
+\end{mathpar}
+which modifies the shared state by first querying the environmental context to update the global information 
+regarding scheduling and adding an $yield$ event.
+It, on the other hand, also modifies the local state of the CPU, 
+which saves the old register values (kernel context - $\regs$ into the kernel context pool - 
+$adt' = adt/[adt.kctxt := adt.kctxt/[cid = \regs]]$) 
+and restores the kernel context ($\regs'$) for the next thread on the CPU that will start its evaluation.
+
+\subsubsection{$\TLink$ layer with intermediate machines}
+
+Introducing the $\TLink$ with intermediate state machine models for multithreaded linking requires multiple steps. 
+The first step is
+dividing a single CPU state into a set of thread states as well as a shared state among threads.
+Simply, the state of $\lasmmach$ ($state_{\lasm} = (lst, l)$) need to be divided into 
+a set of thread states as well as a shared log, such as ($(\set{lst_{thread}}, l)$).
+Since intermediate machine models in our multithreaded linking framework possibly use a different data type definition from that of a per-CPU machine, 
+directly using the specification in  $\CSched$ is not possible. 
 In this sense, 
-behaviors of scheduling primitives remain those thread local states as they are in their machines. 
-The only element that can be changed  in the thread local machine during the scheduling primitives 
-is the shared log $l$. 
+we requires a layer definition $\TLink$ (\ie, $\PLayer{\TLink}{\ignorechar}{\ignorechar} = (\Layer_{\TLink}, \ignorechar, \ignorechar)$) which has the same domain on the primitive set with that of the $\CSched$ layer.
+Primitive specifications in the $\TLink$ layer are similar to hardware local semantics in our multicore linking framework,
+which defines how the primitive call modifies a thread's state that performs the evaluation,
+a \textit{single} thread state and a log as follows:
+\begin{center}
+$\PLayer{\TLink}{\ignorechar}{\ignorechar}(\Layer)(id)
+ \vdash_{\ignorechar}  \sstepr{\spec_{id}}{args}{lst_{thread}, l}{\textit{res}\cup \{\}}{lst_{thread}', l'}$
+\end{center}
+Scheduling primitives, however, cannot be specified in this manner because it involves changes on multiple thread local states. 
+ In this sense, it models those rules directly on our intermediate machine models 
+ instead of the layer definition.
+ Formally, the relation on the primitive domain between two $\TLink$ and $\CSched$ layers 
+ is 
+$$\forall id,\ id \neq \threadyieldfunc \wedge id \neq \threadsleepfunc \rightarrow 
+ \ (id, \ignorechar) \in \Layer_{\CSched} \leftrightarrow (id, \ignorechar) \in  \Layer_{\TLink}.$$
 
-To hide them, 
-we introduced multiple intermediate languages 
-that has a transition rules of those primitives explicitly, and the 
-the layer that are used as an argument of 
-intermediate languages ($\TLink$) is introduced which does not contain those scheduling primitives in it. 
+Multithreaded linking with the newly defined state also 
+requires machine models that facilitate the state as well as the layer definition ($\TLink$) with the state.
 
-These differences are also applied to 
-other primitives in $\CSched$ and $\TSched$.
-Some primitives in $\CSched$ accesses CPU-local data, but some of them 
-are not always easy to divide them clearly for each thread. 
-Pages in the memory, for example, 
-can be dynamicaly allocated, thus 
-each thread does not know exactly 
-which pages are associated with the thread statically
-(\ie, it is possible for us to assume that each thread statically 
-reserve the number of pages as well as 
-the actual page number, but this is far from usual design principal.)
-With the given concrete layer definitions for 
-all $\CSched$, $\TLink$, as well as $\TSched$,
-providing the detailed 
-way to divide the CPU-local private states into multiple thread local private states 
-may be possible. 
-We, however, divide this process 
-as two parts, the connection between machine models based on the configurations and abstract relations, 
-and introduce the instances of them to link the concrete CPU local machine with 
-the thread local machine. 
-To make it general as much as possible, 
-we have defined two abstract relations, 
-which is $AbsRelC$ and $AbsRelT$ in the figure with will work 
-with the arbitrary layers for each machines as well as the thread configuration $C$. 
+\begin{figure}
+\begin{center}
+\includegraphics[width=0.9\textwidth, page=3]{figs/conlink/concurrent_linking}
+\end{center}
+\begin{center}
+(a) Introduce Multithreaded Machine Model: divide local states
+\end{center}
+\begin{center}
+\includegraphics[width=0.9\textwidth, page=4]{figs/conlink/concurrent_linking}
+\end{center}
+\begin{center}
+(b) Introduce Multithreaded Machine Model: introduce the environmental context
+\end{center}
+\begin{center}
+\includegraphics[width=0.9\textwidth, page=5]{figs/conlink/concurrent_linking}
+\end{center}
+\begin{center}
+(c) Introduce Multithreaded Machine Model: add thread state ($\codeinmath{TS}$)
+\end{center}
+\caption{Introduce Multithreaded Machine Model: $\easmmach$}
+\label{fig:chapter:conlink:multithreaded-machine-model-easm}
+\end{figure}
+
+Figure~\ref{fig:chapter:conlink:multithreaded-machine-model-easm} shows
+the first step of our multithreaded linking by providing 
+a $\easmmach$, a multithreaded machine model.
+Figur~\ref{fig:chapter:conlink:multithreaded-machine-model-easm} (a)
+shows a simple overview how we divide a single state for $\lasmmach$ 
+into a multiple thread states.
+In this machine model, 
+a set of 
+A set of thread private states ($lst_{ti}$) is a partial map from a thread id to its private state designed as a tuple that contain
+a register set, as well as an abstract state that may have a different type of an abstract state of $state_{\lasm}$. 
+We, however, do not explicitly divide the a per-CPU memory into the multiple set of memories since 
+it adds the complexity in the machine definition as well as providing the 
+refinement theorem between machine models. 
+Instead of it, the framework sues the memory model 
+that guarantees the composition if we shows the mutual exclusion of each thread's memory usage, which is an algebraic memory model.
+\jieung{I can copy and paste the related part of CCAL paper, but I do not know whether I will do or not. I'll live the explanation about this part before deciding it}
+With this the new state definition, 
+we could match the evaluation of the program with $\CSched$ on $\lasmmach$ (Figure~\ref{fig:chapter:conlink:multithreaded-machine-model-easm} (a) (1)) with  the evaluation of the program with $\TLink$ on $\easmmach$
+(Figure~\ref{fig:chapter:conlink:multithreaded-machine-model-easm} (a) (2)) 
+by replacing the scheduling evaluation that performs context switching in the local state $\codeinmath{state}_{\lasmmach}$
+into  the scheduling evaluation that simply change the currently running thread ID and 
+adds the proper log to memorize it in the state, $\codeinmath{state}_{\easmmach}$.
+Building a 
+
+
+
+
+
+
 
 
 %
-%The multithreaded-layer-building files are located in the ccal/ccalmtlib/ directory. They contain: multiple machine models used to build a per-thread layer interface; abstract definitions to build the proper context necessary for the per-thread layer interface; the memory model for per-thread layers; proofs (including refinement) connecting those machine models; and proofs of compositionality of our machine models. The directory contains three intermediate machine models and the per-thread machine model, described as follows:
+%To hide them, 
+%we introduced multiple intermediate languages 
+%that has a transition rules of those primitives explicitly, and the 
+%the layer that are used as an argument of 
+%intermediate languages ($\TLink$) is introduced which does not contain those scheduling primitives in it. 
+%
+%These differences are also applied to 
+%other primitives in $\CSched$ and $\TSched$.
+%Some primitives in $\CSched$ accesses CPU-local data, but some of them 
+%are not always easy to divide them clearly for each thread. 
+%Pages in the memory, for example, 
+%can be dynamicaly allocated, thus 
+%each thread does not know exactly 
+%which pages are associated with the thread statically
+%(\ie, it is possible for us to assume that each thread statically 
+%reserve the number of pages as well as 
+%the actual page number, but this is far from usual design principal.)
+%With the given concrete layer definitions for 
+%all $\CSched$, $\TLink$, as well as $\TSched$,
+%providing the detailed 
+%way to divide the CPU-local private states into multiple thread local private states 
+%may be possible. 
+%We, however, divide this process 
+%as two parts, the connection between machine models based on the configurations and abstract relations, 
+%and introduce the instances of them to link the concrete CPU local machine with 
+%the thread local machine. 
+%To make it general as much as possible, 
+%we have defined two abstract relations, 
+%which is $AbsRelC$ and $AbsRelT$ in the figure with will work 
+%with the arbitrary layers for each machines as well as the thread configuration $C$. 
+%
+%
+%
 
-%EAsmCommon.v 	Common definitions for EAsm and IIEAsm in the below.
-%EAsm.v 	Multithreaded machine model with environmental context and a single global memory for all threads (Section 5.2 in the submission). This is the lowest-level machine model in our multi-threaded linking library. This machine model in the view of multithreaded linking is related to env_step in Concurrent_Linking_Def.v in the multicore linking.
-%IIEAsm.v 	Multithreaded machine model with environmental context and divided memories (related to Section 5.2 in the submission), separating the current thread from other threads. This machine model makes it easy to prove the refinement between the single threaded machine model (TAsm) and the multithreaded machine model with a single global memory (EAsm).
-%TAsm.v 	Single threaded machine model with an explicit environment step in its evaluation rule (related to Section 5.3 in the submission). This machine model is already a thread-local machine model, but we cannot use our thread-safe CompCertX with this model due to the difference between the underlying machine model of CompCert (and its extensions) and this TAsm. Therefore, we add one more machine model, HAsm, to fully facilitate the power of CompCert.
-%HAsm.v 	Single threaded machine model for thread-safe CompCertX. This one is quite similar to LAsm (the machine model of CompCertX), but it can dynamically allocate the initial state for each thread (related to Section 5.3 in the submission).
-%HAsmLinkTemplate.v 	Vertical and horizontal linking template for per-thread layers.
+\begin{figure}
+\begin{center}
+\includegraphics[width=0.9\textwidth, page=6]{figs/conlink/concurrent_linking}
+\end{center}
+\caption{Parallel Composition in Multithreaded Linking Framework}
+\label{fig:chapter:conlink:parallel-composition-in-easm}
+
+\end{figure}
+
+%This section illustrates each step of this framework, by providing 
+%the relevant $\coq$ definitions with highlighting the necessary parts.
+%Since the all our definitions are already highly related to the definitions in $\compcertx$, 
+%providing the detailed formal rule for the whole intermediate machines is obsolete,
+%which differs from machine models in our multicore linking framework. 
+
+
+
 %
-%Building certified multithreaded layers also requires us to define the proper memory model, as described in Section 5.5 of our submission. There are three files in our artifact that are related to this memory extension.
-%File 	Description
-%AlgebraicMem.v 	Algebraic memory model for multithreaded layer interface.
-%AlgebraicMemImpl.v 	Algebraic memory model implementation.
-%LAsmAbsDataProperty.v 	LAsm properties for Algebraic memory model.
+%This model is corresponding to the machine in Figure~\ref{fig:chapter:conlink:threadlinking} (1). 
+%The machine only contains only one register set and one private abstract data in its state.
+%The layer definitely captures the execution of the whole thread set of CPU $c$ 
+%and does not support thread-local reasoning.
+
+
+
+
+\begin{figure}
+\begin{center}
+\includegraphics[width=0.9\textwidth, page=7]{figs/conlink/concurrent_linking}
+\end{center}
+\end{figure}
+
+
+
+\begin{figure}
+\begin{center}
+\includegraphics[width=0.9\textwidth, page=8]{figs/conlink/concurrent_linking}
+\end{center}
+\end{figure}
+
+
+
+\subsubsection{$\TSched$ layer with $\hasmmach$} 
+
+
+
+\begin{figure}
+\begin{center}
+\includegraphics[width=0.9\textwidth, page=9]{figs/conlink/concurrent_linking}
+\end{center}
+\caption{Per-thread Machine Model ($\hasmmach$).}
+\label{fig:chapter:conlink:per-thread-machine-model}
+\end{figure}
+
+
+
+\begin{definition}[Same Domain]
+$\CSched[\_, \_] = (\Layer_{\CSched}, \_ , \_) \rightarrow \TSched[\_, \_] = (\Layer_{\TSched}, \_ , \_) \rightarrow 
+\forall id.\ (id, \_) \in \Layer_{\CSched}  \leftrightarrow (id, \_) \in \Layer_{\TSched} $
+\end{definition}
+
+
+\begin{mathpar}
+\inferrule[Yield Rule]
+{
+l' = (\oracle_{\codeinmath{thrd}} tid (tid YIELD::l)))
+l' = (tid YIELDBACK)::(\oracle_{\codeinmath{thrd}} tid (tid YIELD::l)))}
+{\PLayer{\TSched}{cid}{\oracle_{\codeinmath{cpu}}}(\Layer)(\yield)
+ \vdash_{\hasm}  \sstepr{\spec_{\yield}}{args}{\regs, m, adt, l}{\textit{res}\cup \{\}}{\regs,  m, adt, l'}}
+\end{mathpar}
+
+By following all those steps, 
+we provide per-thread interface and  Figure~\ref{fig:chapter:conlink:per-thread-machine-model} shows 
+the key feature of our per-thread machine model.
+The machine state of the per-thread machine model $\codeinmath{state}_{\hasmmach}$ is identical
+ to the machine state of the per-CPU machine model, $\codeinmath{state}_{\hasmmach}$ 
+
+During the remaining parts of this section, 
+we provides the definitions that we presented in this section with the associated $\coq$ code. 
+
+
+
 %
-%Building the thread local layer interface also requires providing the proper context for the interface. For this purpose, we provide multiple abstract definitions and functions, as well as properties of those definitions/functions, that must be instantiated when one uses our toolkit to verify an actual program. The following table shows the files that are related to those abstract definitions. We also provide an example illustrating how to use them in our example section (see Section 5-4 (3) in this document).
-%File 	Description
-%SingleAbstractDataType.v 	Abstract data definitions for intermediate machine models (EAsm, IIEAsm, and TAsm) in multithreaded linking library.
-%RegsetLessdef.v 	Properties related to register values.
-%SingleOracleDef.v 	Event definitions for multithreaded program linking.
-%SingleOracle.v 	Properties of the global log, an environmental context, and other definitions that are required to build the proper context for the per-thread layer interface as well as for multithreaded linking.
-%SingleConfiguration.v 	Top-level configuration definitions for multithreaded linking. This includes the definitions in SingleOracle.v and other definitions that are related to building the per-thread layer interface and multithreaded linking (e.g., variables for current thread id, main thread of the CPU, active thread set in the CPU, etc).
+%The top-most component in our 
 %
-%Similar to the multicore library in our CCAL, the multithreaded library also provides several proofs that can be generically applied to programs; these proofs can be used with any layer definitions and programs as long as they can fulfill the requirements of our toolkit. There are six files relating to these proofs:
+%also has to include those two primitives. 
+%Formally, 
+%when the layer $\TSched[tid, \oracle_{tid}] = (\Layer_{\TSched}, \ignorechar, \ignorechar)$, which is parameterized by the focused thread identifier ($tid$) and the proper environmental context ($\oracle_{tid}$), 
+%$\Layer_{\TSched}$ has to satisfy
+%$(\threadyieldfunc, \ignorechar) \in \Layer_{\TSched}$ as well as 
+%$(\threadsleepfunc, \ignorechar) \in \Layer_{\TSched}$. 
+%However one of purpose of our framework is building a different behavior for those 
+%primitives in those two layers, which gives 
+%the no-op like scheduling primitives for the top level layer with this thread linking framework,
+%$\TSched[tid, \oracle_{tid}]$, by hiding other threads' state changes in the CPU while 
+%those transitions manipulate the associated values for other threads in the CPU private state
+%in $\CSched[cid, \oracle_{cid}]$.
+%The $\TLink$ layer is for the intermediate machine models. 
 %
-%EAsmPropLib.v 	Basic properties related to EAsm, used in the refinement theorems for those machine models as well as in the proofs of compositionality of EAsm.
-%AsmIIE2E.v 	Refinement theorem between IIEAsm and EAsm. Both are multithreaded layers with a full active thread set, but their memory models are slightly different.
-%AsmIIE2IIE.v 	Refinement theorem between IIEAsm with one single thread and IIEAsm with a full active thread set on the CPU.
-%AsmT2IIE.v 	Refinement theorem between TAsm (single threaded machine) and IIEAsm with one single thread.
-%{EAsmCompose.v, EAsmComposeRefinement.v} 	Compositionality of EAsm (not used in mC2 example).
+%We first explain the process of multithreaded linking without detailed implementation in Section~\ref{chapter:linking:subsec:multithreaded-linking-overview}.
+%The later sections show the detailed information about our
+%implementation, which involves lots of 
+%
+
+%
+%This multithreaded linking has similarities with the multicore linking.  
+%The CPU local machine (parameterized by the layer - $\CSched$ - that contains the proper software schedulers for our mulitthreaded linking framework)
+%can be viewed  as a deterministic multithreaded machine with one CPU (behavior of other threads on other CPUs are already described in the environmental context for other CPUs.)
+%Since the environmental context for CPUs already hides the non-determinism, 
+%this multithreaded machine is analogous to the oracle machine for multicore linking in Section~\ref{chapter:linking:subsec:multicore-machine-model-with-hardware-scheduler}. 
+%It however does not have the clearly divided private states for each thread,
+%since it is the machine model for us to build multiple local layer interfaces on it.
+%The CPU local machine that uses $\CSched[cid, \oracle_{cid}]$  as its parameter 
+%is working with the state that is a pair of CPU local state (but shared by all threads on the CPU) and 
+%a global log;
+%%
+%%uses the state which is defined as
+%%a tuple, 
+%%$(rs, m, a, l)$,
+%%which represents 
+%%a register set, a memory, an abstract state, and a log.
+%%Among them, a register set, a memory, and an abstract state are private datum for CPU local machines. 
+%thus scheduling primitives, including $\threadyieldfunc$ and $\threadsleepfunc$,
+%modifies the contents in the CPU local state during their transitions. 
+%Especially, they requires the change in the register values,  kernel contexts,
+%by saving the current thread's register value 
+%and restoring the register values for the next scheduled thread. 
+%
+%In this sense, introducing the new machine model that decouples a single CPU local state into
+%the collection of thread local states, while providing the same behaviors for all transitions 
+%including context switching, which is $\easmmach$ in Figure~\ref{fig:chapter:linking:multithreaded-linking-structure}.
+%
+%
+%%In this sense, the first step to introduced the per-thread layer machine, 
+%%is dividing a single CPU machine into multithreaded machine models,
+%which implies that the state of the machine is 
+%a set of private states a single shared log
+%A set of private states is a partial map from a thread id to its private state designed as a tuple that contains 
+%a register set, a memory, as well as an abstract state. 
+%Since the layer contains multiple private datum, we also add the flag for currently-running thread $curid$ in the state. 
+%By doing this, we can also resolve one challenge in our thread-local machine, which is to replace an assembly style 
+%context switch with no-op like operation (challenge number (1) in the previuos section)
+%The layer contains per-thread register sets and, thus, the register values do not need to update along the change of the currently-running thread id. By changing the thread id alone, the layer knows which thread-local private data should be 
+%used during the current evaluation.
+%Now each thread can use its own private data for its evaluation, but that is not sufficient at all. 
+%In fact, scheduling switches in this layer has a similar meaning with the ones in the lower layer, 
+%$\CSched$ (\ie, the $\yield$) but with different context switching styles.
+%Ideally, we would like to reason about each thread execution 
+%independently, and later formally combine the reasoning to obtain a global
+%property for the full set of threads on the same CPU.
+%So, we need a machine model that gives semantics to
+%a partially-composed set of threads to support this.
+
+
+
+%
+%
+%
+%
+%To introduce a thread local interface while keeping a capability of 
+%using the same compiler with the CPU local interface ($\compcertx$, 
+%thread local layers also has to use the same state definition and the machine model 
+%with the CPU local interface, which is $(rs, m, a, l)$.
+%The private state of it, however, 
+%is only related to the thread. 
+%In this sense, 
+%behaviors of scheduling primitives remain those thread local states as they are in their machines. 
+%The only element that can be changed  in the thread local machine during the scheduling primitives 
+%is the shared log $l$. 
+
+
+
+
+
+
+
+
+%
+%
+%
+%Therefore,  a new layer (\cf Figure~\ref{fig:chapter:conlink:threadlinking} (3)) has to be introduced such that other 
+%threads' operations can be modeled as input strategies to the layer interface. 
+%Here, we introduced a new kind of environment context, $\oracle_{\codeinmath{thrd}}$, which contains the strategy the environmental threads and is the key to support  thread-local reasoning.
+%Formally, with a CPU-local layer  $\PLayer{L}{c}{\oracle_{\codeinmath{cpu}}}$,  we a multithreaded machine model 
+%with  the whole thread set ($\fullthreadset$) running over CPU $c$.
+%For this purpose, we introduce 
+% \emph{multithreaded} layer $\PLayer{\TLink}{\threadset}{{\oracle_{\codeinmath{thrd}}}} := (\Layer_{\TLink},
+% \Rely_{\TLink}, \Guard_{\TLink})$,
+%which is 
+%parameterized over an active thread set $\threadset \subseteq \fullthreadset$.
+%The rely condition $\Rely_{\TLink}$ defines a set of acceptable thread contexts
+%$\oracle_{\TLink}$ and the guarantee condition $\Guard_{\TLink}$ specifies the events generated by active threads. 
+%Since our machine model does not allow
+%preemption, $\oracle_{\codeinmath{thread}}$ will only be queried during the execution of scheduling primitives, 
+%which have two kinds
+%of behaviors  depending on whether the \emph{target
+%thread} is active or not.
+%
+%Considering an execution in Fig.~\ref{fig:chapter:conlink:threadlinking} (3) with active thread set
+%$\threadset = \{0\}$, whenever an execution switches (by $\yield$ or $\sleep$) 
+%to a thread outside of $\threadset$ (\ie, the yellow $\yield$),
+%it takes environmental steps (\ie, notated as arrows), repeatedly appending the 
+%events returned by the environment context $\oracle$ and the thread
+%context $\oracle_{\codeinmath{thrd}}$ to the log until a $\yield$
+%event indicates that control switches back to an active thread.
+%
+%%
+%%This layer is already a thread local because it only captures the behavior of one thread.
+%However, the strategy query in this layer follows small-step style, and this is insufficient to build thread-local layer interface because we do not want to query multiple times for a single yield call. 
+%Therefore, we introduce another  layer to merge those multiple strategy queries into a single big-query (\cf Figure~\ref{fig:chapter:conlink:threadlinking} (4)). 
+%Finally, the last thing to do is to connect the machine state of thread-local layers to our general concurrent layer interface, which has the form of $(\regs, m, a, l)$.
+%Therefore, we introduced the last layer (Figure~\ref{fig:chapter:conlink:threadlinking} (5)) that will become a base to build our multithreaded layers.
+%
+%
+%
+
+
+
+
+
+%Since the layer contains multiple private datum, we also add the flag for currently-running thread $curid$ in the state. 
+%By doing this, we can also resolve one challenge in our thread-local machine, which is to replace an assembly style 
+%context switch with no-op like operation (challenge number (1) in the previuos section)
+%The layer contains per-thread register sets and, thus, the register values do not need to update along the change of the currently-running thread id. By changing the thread id alone, the layer knows which thread-local private data should be 
+%used during the current evaluation.
+%Now each thread can use its own private data for its evaluation, but that is not sufficient at all. 
+%In fact, scheduling switches in this layer has a similar meaning with the ones in the lower layer, 
+%$\CSched$ (\ie, the $\yield$) but with different context switching styles.
+%Ideally, we would like to reason about each thread execution 
+%independently, and later formally combine the reasoning to obtain a global
+%property for the full set of threads on the same CPU.
+%So, we need a machine model that gives semantics to
+%a partially-composed set of threads to support this.
+
+
+

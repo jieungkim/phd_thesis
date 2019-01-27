@@ -1,101 +1,52 @@
 
 \subsection{Single-threaded Machine Model}
 \label{chapter:linking:subsec:single-threaded-machine-model}
-When the focused thread set in $\easm$ is a single thread, then the machien itself is 
-already a single threaded machine model. 
-It, however, has a huge differences between the model that we want to introduce ($\compcertx$ like model).
+Like what we have discussed in Section~\ref{chapter:linking:subsec:multithreaded-linking-overview},
+a few optimization is available 
+before connecting multithreaded machine model,  $\ieasmmach$, with a single thread 
+and our per-thread layer interface, $\hasmmach$, to minimize the complexity of our multithreaded linking. 
+They are similar to the work what we did in  Section~\ref{chapter:linking:subsec:single-core-machine-model} and
+Section~\ref{chapter:linking:subsec:global-log-optimization},
+which simplify the machine state definition as 
+well as merging multiple operational style environmental context queries into a single big-step style 
+environmental context query.  
+%
+%
+%When the focused thread set in $\ieasmmach$ is a single thread, then the machien itself is 
+%already a single threaded machine model. 
+%It, however, has a huge differences between the model that we want to introduce ($\compcertx$ like model).
 
+
+The simplified state definition for our intermediate machine model ($\tasmmach$) is  defined as
 \begin{lstlisting}[language=C]
-  Fixpoint get_env_log (n: nat) (curid: Z) (l: Log) :=
-    match n with
-      | O => None
-      | S n =>
-        if zeq (proc_id (uRData l)) curid then
-          Some l
-        else
-          get_env_log n curid (Single_Oracle l:: l)
-    end.
+Inductive tstate: Type := | TState: Z -> regset -> mem -> dproc -> Log -> tstate.
 \end{lstlisting}
-
+which is a tuple of five elements. 
+Those elements represent a current thread ID, 
+a register value for the thread, a local memory, a private abstract state, and a global log for shared objects. 
+The state definition is basically 
+identical to the each thread's view of the global state 
+in $\ieasmmach$ an $\easmmach$ in the previous section. 
+In this sense, 
+this machine also can use the same abstract layer definition, $\TLink$, 
+as well as similar but simplified transition rules with those of two multithreaded machine model.
+The machine, however,
+ collects the environmental context queries 
+ to form a big-step style transition for scheduling primitives. 
+ For example, 
+ the transition rule for $\yield$ is defined in Figure~\ref{fig:chapter:conlink:yield-rule-in-tasm},
+ which always returns the same thread ID as the result of the rule 
+ by using 
+ a \lstinline$get_env_log$ which merges multiple environmental context queries into a single step,
+ which is defined as
+ \begin{figure}
 \begin{lstlisting}[language=C]
-  Inductive tstate: Type := | TState: Z -> regset -> mem -> dproc -> Log -> tstate.
-\end{lstlisting}
-
-
-\begin{lstlisting}[language=C]
-  Inductive tstep (ge: genv) : tstate -> trace -> tstate -> Prop :=
-\end{lstlisting}
-
-\begin{lstlisting}[language=C]
-    | texec_step_internal:
-        forall b ofs f i (rs: regset) m m' d d' ds' rs' curid l,
-          proc_id (uRData l) = curid ->
-          rs PC = Vptr b ofs ->
-          Genv.find_funct_ptr ge b = Some (Internal f) ->
-          find_instr (Int.unsigned ofs) f.(fn_code) = Some i ->
-          lastEvType l <> Some LogYieldTy ->
-          exec_instr ge f i rs (m, (uRData l,d)) = Next rs' (m', (ds',d')) ->
-          tstep ge (TState curid rs m d l) E0
-                  (TState curid rs' m' d' l)
-\end{lstlisting}
-
-\begin{lstlisting}[language=C]
-  | texec_step_external:
-      forall b ef args res (rs: regset) m m' d d' ds' t rs' curid  l l',
-        proc_id (uRData l) = curid ->
-        rs PC = Vptr b Int.zero ->
-        Genv.find_funct_ptr ge b = Some (External ef) ->
-        extcall_arguments rs m (ef_sig ef) args ->
-        lastEvType l <> Some LogYieldTy ->
-        external_call' (mem:= mwd (cdata PData)) (fun _ => True) ef ge args (m, (uRData l, d)) t res (m', (ds',d')) ->
-        rs' = (set_regs (loc_external_result (ef_sig ef)) res 
-                        (undef_regs (CR ZF :: CR CF :: CR PF :: CR SF :: CR OF :: nil)
-                                    (undef_regs (map preg_of destroyed_at_call) rs))) 
-                #PC <- (rs RA) #RA <- Vundef ->
-        forall NON_YIELD: match ef with
-                            | EF_external id _ => 
-                              if peq id thread_yield then False
-                              else if peq id thread_sleep then False
-                                   else
-                                     if has_event id then
-                                       exists largs choice,
-                                         val2Lval_list args largs  /\
-                                         choice_check id largs (uRData l) d = choice /\ 
-                                         l' = (LEvent curid (LogPrim id largs choice (snap_func d)) :: l) 
-                                     else
-                                       l' = l
-                            | _ => l' = l
-                          end,
-                          forall STACK:
-                          forall b o, rs ESP = Vptr b o ->
-                                      (Ple (Genv.genv_next ge) b /\ Plt b (Mem.nextblock m)),
-                          forall SP_NOT_VUNDEF: rs ESP <> Vundef,
-                          forall RA_NOT_VUNDEF: rs RA <> Vundef,
-                            tstep ge (TState curid rs m d l) t 
-                                  (TState curid rs' m' d' l')
-\end{lstlisting}
-
-\begin{lstlisting}[language=C]
-    | texec_step_prim_call:
-        forall b ef (rs: regset) m m' d d' ds' t rs' curid l l',
-          proc_id (uRData l) = curid ->
-          rs PC = Vptr b Int.zero ->
-          Genv.find_funct_ptr ge b = Some (External ef) ->
-          lastEvType l <> Some LogYieldTy ->
-          primitive_call (mem:= mwd (cdata PData)) ef ge rs (m, (uRData l, d)) t rs' (m', (ds', d')) ->
-          forall NON_YIELD: match ef with
-                              | EF_external id _ => 
-                                if peq id thread_yield then False
-                                else if peq id thread_sleep then False
-                                     else
-                                       if has_event id then
-                                         l' = (LEvent curid (LogPrim id nil 0 (snap_func d)) :: l)
-                                       else
-                                         l' = l
-                              | _ => l' = l
-                            end,
-          tstep ge (TState curid rs m d l) t 
-                (TState curid rs' m' d' l')
+Fixpoint get_env_log (n: nat) (curid: Z) (l: Log) :=
+  match n with
+  | O => None
+  | S n => if zeq (proc_id (uRData l)) curid then Some l
+                else get_env_log n curid (Single_Oracle l:: l)
+  end.
 \end{lstlisting}
 
 \begin{lstlisting}[language=C]
@@ -119,97 +70,186 @@ It, however, has a huge differences between the model that we want to introduce 
             (NON_YIELD: match ef with
                                | EF_external id _ => 
                                  if peq id thread_yield then True
-                                else False
+%                                else False
                                | _ => False
                              end)
                  (LIFT_NEXTBLOCK: mem_lift_nextblock m (Pos.to_nat (nb) - Pos.to_nat(Mem.nextblock m) % nat) = m'),
             tstep ge (TState curid rs0 m d l) E0
                   (TState curid rs' m' d l''')
 \end{lstlisting}
+\caption{The Transition Rule for $\yield$ in $\tasmmach$}
+\label{fig:chapter:conlink:yield-rule-in-tasm}
+\end{figure}
 
-\begin{lstlisting}[language=C]
-    | texec_step_external_sleep:
-        forall b ef (rs0 rs': regset) (m m': mem) curid s l l' l'' l''' nb d e i,
-          proc_id (uRData l) = curid ->
-          rs0 PC = Vptr b Int.zero ->
-          Genv.find_funct_ptr ge b = Some (External ef) ->
-          stencil_matches s ge ->
-          l' = LEvent curid (LogSleep (Int.unsigned i) (Mem.nextblock m)
-                                      (sync_chpool_check thread_sleep ((Lint i)::nil) (uRData l) d))::l ->
-          lastEvType l <> Some LogYieldTy ->
-          get_env_log limit curid l' = Some l'' ->
-          last_op l'' = Some e ->
-          state_check thread_sleep (Lint i::nil) l d ->
-          l''' = LEvent curid LogYieldBack::l'' ->
-          rs' = (undef_regs (CR ZF :: CR CF :: CR PF :: CR SF :: CR OF :: nil)
-                            (undef_regs (map preg_of destroyed_at_call) rs0)) 
-                  # EAX <- Vundef #PC <- (rs0 RA) #RA <- Vundef ->
-          forall
-            (Hnextblock: getLogEventNB (e) = Some nb)
-            (Hargs: extcall_arguments rs0 m (mksignature (Tint:: nil) None cc_default) (Vint i:: nil))
-            (NON_YIELD: match ef with
-                          | EF_external id _ => 
-                            if peq id thread_sleep then True
-                            else False
-                          | _ => False
-                        end)
-            (LIFT_NEXTBLOCK: mem_lift_nextblock m (Pos.to_nat (nb) - Pos.to_nat (Mem.nextblock m) % nat) = m'),
-            tstep ge (TState curid rs0 m d l) E0
-                  (TState curid rs' m' d l''').
-\end{lstlisting}
+We also provide 
+the theorem to connect the program evaluation on this machine model  
+with the program evaluation on our multithreaded machine model,
+which users can freely use without any additional cost.
 
-\begin{lstlisting}[language=C]
-   Definition tfinal_state : tstate -> int -> Prop :=
-     fun _ _ => False.
-   
-   Definition init_dproc  :=
-     if zeq main_thread current_thread then main_init_dproc else nomain_init_dproc.
+\begin{lemma}
 
-   Inductive tinitial_state {F V} (p: AST.program F V): tstate -> Prop :=
-   | tinitial_state_intro: 
-       forall m0 m1 rs0,
-         Genv.init_mem p = Some m0 ->
-         init_mem_lift_nextblock m0 = m1 ->
-         initial_thread_state (Genv.globalenv p) current_thread init_log = Some rs0 ->
-         tinitial_state p (TState current_thread rs0 m1 (thread_init_dproc current_thread) init_log).
-\end{lstlisting}
+\end{lemma}
 
-\begin{lstlisting}[language=C]
-  Lemma star_step_get_env_log:
-    forall ge rs d m curid l l',
-      get_env_log limit curid l = Some l' ->
-      star iestep ge
-           (IEState (proc_id (uRData l))
-                    (ZMap.set curid (Running rs) (ZMap.init Environment))
-                    m
-                    (ZMap.set curid (Some d) (ZMap.init None)) l) E0
-           (IEState curid
-                    (ZMap.set curid (Running rs) (ZMap.init Environment))
-                    m
-                    (ZMap.set curid (Some d) (ZMap.init None)) l').
-  Proof.
-\end{lstlisting}
+%
+%\begin{lstlisting}[language=C]
+%  Inductive tstep (ge: genv) : tstate -> trace -> tstate -> Prop :=
+%\end{lstlisting}
 
-\begin{lstlisting}[language=C]
-  Inductive match_tstate_iestate: (ZMap.t ThreadState) -> (mem * mem) -> (ZMap.t (option dproc)) ->
-                                 regset -> mem -> dproc -> Log -> Z -> Prop :=
-  | MATCH_TSTATE_IESTATE:
-      forall (rs: regset) rsm (m: mem) (mp : mem * mem) (d: dproc) (dp : ZMap.t (option dproc)) curid l
-             (RSM: rsm = ZMap.set curid (Running rs) (ZMap.init Environment))
-             (Hcurid: proc_id (uRData l) = current_thread)
-             (MP: m = fst mp)
-             (DP: dp = ZMap.set curid (Some d) (ZMap.init None)),        
-        match_tstate_iestate rsm mp dp rs m d l curid.
+%\begin{lstlisting}[language=C]
+%    | texec_step_internal:
+%        forall b ofs f i (rs: regset) m m' d d' ds' rs' curid l,
+%          proc_id (uRData l) = curid ->
+%          rs PC = Vptr b ofs ->
+%          Genv.find_funct_ptr ge b = Some (Internal f) ->
+%          find_instr (Int.unsigned ofs) f.(fn_code) = Some i ->
+%          lastEvType l <> Some LogYieldTy ->
+%          exec_instr ge f i rs (m, (uRData l,d)) = Next rs' (m', (ds',d')) ->
+%          tstep ge (TState curid rs m d l) E0
+%                  (TState curid rs' m' d' l)
+%\end{lstlisting}
+%
+%\begin{lstlisting}[language=C]
+%  | texec_step_external:
+%      forall b ef args res (rs: regset) m m' d d' ds' t rs' curid  l l',
+%        proc_id (uRData l) = curid ->
+%        rs PC = Vptr b Int.zero ->
+%        Genv.find_funct_ptr ge b = Some (External ef) ->
+%        extcall_arguments rs m (ef_sig ef) args ->
+%        lastEvType l <> Some LogYieldTy ->
+%        external_call' (mem:= mwd (cdata PData)) (fun _ => True) ef ge args (m, (uRData l, d)) t res (m', (ds',d')) ->
+%        rs' = (set_regs (loc_external_result (ef_sig ef)) res 
+%                        (undef_regs (CR ZF :: CR CF :: CR PF :: CR SF :: CR OF :: nil)
+%                                    (undef_regs (map preg_of destroyed_at_call) rs))) 
+%                #PC <- (rs RA) #RA <- Vundef ->
+%        forall NON_YIELD: match ef with
+%                            | EF_external id _ => 
+%                              if peq id thread_yield then False
+%                              else if peq id thread_sleep then False
+%                                   else
+%                                     if has_event id then
+%                                       exists largs choice,
+%                                         val2Lval_list args largs  /\
+%                                         choice_check id largs (uRData l) d = choice /\ 
+%                                         l' = (LEvent curid (LogPrim id largs choice (snap_func d)) :: l) 
+%                                     else
+%                                       l' = l
+%                            | _ => l' = l
+%                          end,
+%                          forall STACK:
+%                          forall b o, rs ESP = Vptr b o ->
+%                                      (Ple (Genv.genv_next ge) b /\ Plt b (Mem.nextblock m)),
+%                          forall SP_NOT_VUNDEF: rs ESP <> Vundef,
+%                          forall RA_NOT_VUNDEF: rs RA <> Vundef,
+%                            tstep ge (TState curid rs m d l) t 
+%                                  (TState curid rs' m' d' l')
+%\end{lstlisting}
 
-  Theorem one_step_Asm_T2E:
-    forall ge mp m m' curid curid' rsm rs rs' l l' dp d d' t
-           (TStep: TAsm.tstep ge (TState curid rs m d l) t (TState curid' rs' m' d' l'))
-           (Match: match_tstate_iestate rsm mp dp rs m d l curid),
-    exists rsm' mp' dp',
-      plus IIEAsm.iestep ge (IEState curid rsm mp dp l) t
-           (IEState curid' rsm' mp' dp' l')
-      /\ match_tstate_iestate rsm' mp' dp' rs' m' d' l' curid'.
-\end{lstlisting}
+%\begin{lstlisting}[language=C]
+%    | texec_step_prim_call:
+%        forall b ef (rs: regset) m m' d d' ds' t rs' curid l l',
+%          proc_id (uRData l) = curid ->
+%          rs PC = Vptr b Int.zero ->
+%          Genv.find_funct_ptr ge b = Some (External ef) ->
+%          lastEvType l <> Some LogYieldTy ->
+%          primitive_call (mem:= mwd (cdata PData)) ef ge rs (m, (uRData l, d)) t rs' (m', (ds', d')) ->
+%          forall NON_YIELD: match ef with
+%                              | EF_external id _ => 
+%                                if peq id thread_yield then False
+%                                else if peq id thread_sleep then False
+%                                     else
+%                                       if has_event id then
+%                                         l' = (LEvent curid (LogPrim id nil 0 (snap_func d)) :: l)
+%                                       else
+%                                         l' = l
+%                              | _ => l' = l
+%                            end,
+%          tstep ge (TState curid rs m d l) t 
+%                (TState curid rs' m' d' l')
+%\end{lstlisting}
+%
+
+%\begin{lstlisting}[language=C]
+%    | texec_step_external_sleep:
+%        forall b ef (rs0 rs': regset) (m m': mem) curid s l l' l'' l''' nb d e i,
+%          proc_id (uRData l) = curid ->
+%          rs0 PC = Vptr b Int.zero ->
+%          Genv.find_funct_ptr ge b = Some (External ef) ->
+%          stencil_matches s ge ->
+%          l' = LEvent curid (LogSleep (Int.unsigned i) (Mem.nextblock m)
+%                                      (sync_chpool_check thread_sleep ((Lint i)::nil) (uRData l) d))::l ->
+%          lastEvType l <> Some LogYieldTy ->
+%          get_env_log limit curid l' = Some l'' ->
+%          last_op l'' = Some e ->
+%          state_check thread_sleep (Lint i::nil) l d ->
+%          l''' = LEvent curid LogYieldBack::l'' ->
+%          rs' = (undef_regs (CR ZF :: CR CF :: CR PF :: CR SF :: CR OF :: nil)
+%                            (undef_regs (map preg_of destroyed_at_call) rs0)) 
+%                  # EAX <- Vundef #PC <- (rs0 RA) #RA <- Vundef ->
+%          forall
+%%            (Hnextblock: getLogEventNB (e) = Some nb)
+%%            (Hargs: extcall_arguments rs0 m (mksignature (Tint:: nil) None cc_default) (Vint i:: nil))
+%%            (NON_YIELD: match ef with
+%%                          | EF_external id _ => 
+%                            if peq id thread_sleep then True
+%                            else False
+%                          | _ => False
+%%                        end)
+%%%            (LIFT_NEXTBLOCK: mem_lift_nextblock m (Pos.to_nat (nb) - Pos.to_nat (Mem.nextblock m) % nat) = m'),
+%%%            tstep ge (TState curid rs0 m d l) E0
+%                  (TState curid rs' m' d l''').
+%\end{lstlisting}
+
+%   Definition tfinal_state : tstate -> int -> Prop :=
+%     fun _ _ => False.
+%   
+%   Definition init_dproc  :=
+%     if zeq main_thread current_thread then main_init_dproc else nomain_init_dproc.
+%
+%   Inductive tinitial_state {F V} (p: AST.program F V): tstate -> Prop :=
+%   | tinitial_state_intro: 
+%       forall m0 m1 rs0,
+%         Genv.init_mem p = Some m0 ->
+%         init_mem_lift_nextblock m0 = m1 ->
+%         initial_thread_state (Genv.globalenv p) current_thread init_log = Some rs0 ->
+%         tinitial_state p (TState current_thread rs0 m1 (thread_init_dproc current_thread) init_log).
+%\end{lstlisting}
+%
+%\begin{lstlisting}[language=C]
+%%  Lemma star_step_get_env_log:
+%%    forall ge rs d m curid l l',
+%%      get_env_log limit curid l = Some l' ->
+%%      star iestep ge
+%%           (IEState (proc_id (uRData l))
+%%                    (ZMap.set curid (Running rs) (ZMap.init Environment))
+%%                    m
+%%                    (ZMap.set curid (Some d) (ZMap.init None)) l) E0
+%%           (IEState curid
+%%                    (ZMap.set curid (Running rs) (ZMap.init Environment))
+%%                    m
+%%                    (ZMap.set curid (Some d) (ZMap.init None)) l').
+%%%  Proof.
+%%\end{lstlisting}
+%%
+%%\begin{lstlisting}[language=C]
+%  Inductive match_tstate_iestate: (ZMap.t ThreadState) -> (mem * mem) -> (ZMap.t (option dproc)) ->
+%                                 regset -> mem -> dproc -> Log -> Z -> Prop :=
+%  | MATCH_TSTATE_IESTATE:
+%      forall (rs: regset) rsm (m: mem) (mp : mem * mem) (d: dproc) (dp : ZMap.t (option dproc)) curid l
+%             (RSM: rsm = ZMap.set curid (Running rs) (ZMap.init Environment))
+%             (Hcurid: proc_id (uRData l) = current_thread)
+%             (MP: m = fst mp)
+%             (DP: dp = ZMap.set curid (Some d) (ZMap.init None)),        
+%        match_tstate_iestate rsm mp dp rs m d l curid.
+%
+%  Theorem one_step_Asm_T2E:
+%    forall ge mp m m' curid curid' rsm rs rs' l l' dp d d' t
+%           (TStep: TAsm.tstep ge (TState curid rs m d l) t (TState curid' rs' m' d' l'))
+%           (Match: match_tstate_iestate rsm mp dp rs m d l curid),
+%    exists rsm' mp' dp',
+%      plus IIEAsm.iestep ge (IEState curid rsm mp dp l) t
+%           (IEState curid' rsm' mp' dp' l')
+%      /\ match_tstate_iestate rsm' mp' dp' rs' m' d' l' curid'.
+%\end{lstlisting}
 
 %\subsection{Intermediate Thread-Local Machine Model}\label{subsec:tasm}
 %

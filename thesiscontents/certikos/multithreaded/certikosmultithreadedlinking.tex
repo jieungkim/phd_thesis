@@ -2,26 +2,38 @@
 \label{chapter:certikos:sec:multithreaded-linking-for-certikos}
 
 
+Multithreaded linking in $\certikos$ is connecting the top layer in the per-CPU layer interface with
+the corresponding bottom layer in the per-thread layer interface. 
+In that purpose, multithreaded linking framework~\ref{chapter:linking:sec:multithreaded-linking} 
+has been applied to the $\certikos$ to prove the contextual refinement proof between the program running on the layers associated with different machine models.
+Using the framework requires us to define concrete instances 
+of the abstract definitions that the framework relies on (in Figure~\ref{fig:chapter:linking:multithreaded-linking-structure});
+the thread configuration ($C$), the concrete instance of three layers ($\CSched$, $\TLink$, and $\TSched$), 
+as well as the two abstract relations between those layers ($\codeinmath{AbsRelC}$ and $\codeinmath{AbsRelT}$). 
 
-Multithreaded linking for $\certikos$ is connecting the top-most layer of CPU layer
- interface with
-the corresponding bottom-most layer in the thread layer interface. 
-The biggest difference between those two layers is 
-the way to handle scheduling primitive. 
+This section first show the concrete definition of $\CSched$ in $\certikos$, which we name it $\codeinmath{PHThrd}$. 
+While explaining the layer interface by providing a small subset of the layer's definition as well as the machine model ($\lasmmach$)
+alongside the layer.
 
-\jieung{XXX: Will add text in here}
+We then show how we instantiate thread configurations as well as several abstract definitions provided by our multithreaded linking framework, and we have proved that these abstract definitions satisfy the requirements of our toolkit.
+Using them, we also define an intermediate layer interface (we call it $\codeinmath{PHBThrd}$) that will be used as a layer instance of $\TLink$ and is a layer that is associated with $\tasmmach$, $\ieasmmach$, as well as $\easmmach$.
+It also includes  the explanation of the proof between the program with  $\codeinmath{PHThrd}$ on $\lasmmach$ 
+with $\codeinmath{PHBThrd}$ on $\easmmach$. 
+This work consists of two part:  (1) define the refinement relation based on the implementation, which is an instance of $\codeinmath{AbsRelC}$ between two states of two different machine models,
+$\lasmmach(\PLayer{\codeinmath{PHThrd}}{cid}{\oracle_{cid}})$ and 
+$\easmmach(\parallel tid \in T_{[cid]} \PLayer{\codeinmath{PHBThrd}}{tid}{\oracle_{cid}}$); and 
+(2) show that all transition rules (\ie, instructions and primitive calls) preserve the refinement relation. 
 
-%
-%Using the multithreaded linking library, we can freely achieve the contextual refinement proof between the program (with any layer interface that satisfies the constraints of our toolkit) running on TAsm with the exact same program running on EAsm. To link such generic proofs with mC2, the following three steps are required:
-%
-%    Introduce an intermediate layer interface (we call it phbthread) that will be used as a layer instance on TAsm, IIEAsm, and EAsm (see files in the "mc2/mcertikos/multithread/phbthread/" directory). We have instantiated several abstract definitions provided by our multithreaded linking library, and we have proved that these abstract definitions satisfy the requirements of our toolkit.
-%
-%    Link phbthread with the bottom-most layer interface of per-thread layers (phthread). This work consists of two parts: (1) showing that any program on phthread with HAsm contextually refines any program on a certain layer interface with TAsm, when all primitives and memory accessors in phthread and the given layer for TAsm satisfy desired conditions; and (2) showing that the definition of phbthread can become the proper layer in the previous proof context by proving that those desired conditions in the previous step are valid with both phthread and phbthread.
-%        mc2/mcertikos/multithread/highrefins/AsmPHThrad2T.v contains the proofs for the first step, but the proof relies on one big abstract context, AbstractRelT. This context allows us to avoid using the concrete definition of phbthread in this contextual refinement proof. In this sense, most proofs in this file are quite generic and can be reused. Even though we use them in a general way, we do not include this file as a toolkit file because it heavily relies on the definition of phthread.
-%        Other files in mc2/mcertikos/multithread/highrefins/ show that all primitives in phthread and phbthread satisfy the condition in our previous step, AbstractRelT.
-%
-%    Link phbthread with the top-most layer interface of per-CPU layers (pbthread). Similar to the linking with per-thread layers, this work consists of two parts: (1) showing that any program on a certain layer interface with EAsm contextually refines any program on pbthread with LAsm, when all primitives and memory accessors in the given layer for EAsm and pbthread satisfy desired conditions; and (2) showing that the definition of phbthread can become the proper layer in the previous proof context by proving that those desired conditions in the previous step are valid with both phbthread and pbthread.
-%        mc2/mcertikos/multithread/lowrefins/AsmE2L.v contains the proofs for the first step, but the proof relies on one big abstract context, AbstractRel. Similar to the proofs in AsmPHThread2T.v, this context allows us to avoid using the concrete definition of phbthread in this contextual refinement proof.
-%        Other files in mc2/mcertikos/multithread/lowrefins/ show that all primitives in phbthread and pbthread satisfy the condition in our previous step, AbstractRel.
-%
-%After separating these three components, proving the main theorem for multithreaded-linking, "any context program CTXT running on the phthread layer (with HAsm) contextually refines the context program CTXT running on the pbthread layer (with LAsm)", is straightforward by using our multithreaded linking library.
+The next part is how the concrete definition of  $\TSched$ in $\certikos$, which we name it $\codeinmath{PBThrd}$. 
+While explaining the layer interface by providing a small subset of the layer's definition as well as the machine model ($\hasmmach$)
+alongside the layer.
+Similar to the previous case, 
+It also includes  the explanation of the proof between the program with  $\codeinmath{PHBThrd}$ on $\tasmmach$ 
+with $\codeinmath{PHThrd}$ on $\hasmmach$. 
+This work consists of two part:  (1) define the refinement relation based on the implementation, which is an instance of $\codeinmath{AbsRelT}$ between two states of two different machine models,
+$\tasmmach(\PLayer{\codeinmath{PHBThrd}}{tid}{\oracle^{MTLink}_{tid}})$ and 
+$\hasmmach(\PLayer{\codeinmath{PHThrd}}{tid}{\oracle_{tid}})$; and 
+(2) show that all transition rules (\ie, instructions and primitive calls) preserve the refinement relation. 
+
+After separating these three components, proving the main theorem for multithreaded-linking is straightforward by connecting 
+them with our multithreaded lining framework.

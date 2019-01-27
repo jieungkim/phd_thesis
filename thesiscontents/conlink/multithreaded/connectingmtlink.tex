@@ -1,6 +1,22 @@
-%
-%\subsection{Connecting with Thread Local Machine Model}
-%\label{chapter:linking:subsec:connecting-with-thread-local-machine-model}
+\subsection{Connecting with Thread Local Machine Model}
+\label{chapter:linking:subsec:connecting-with-thread-local-machine-model}
+
+
+We define multiple intermediate languages for multithreaded linking during this section.
+We have also provided the refinement proofs between those intermediate languages which can be further used to link those languages and proofs with the local layer interface that users want to use 
+it to build abstraction layers, which is described in the grey box in Figure~\ref{fig:chapter:conlink:concurrent-linking-structure} (a) as well as in Figure~\ref{fig:chapter:conlink:intermediate-languages-and-their-relationsihps-for-multicore-linking}.
+It is out of our scope in our multicore linking framework,
+because this process heavily relies on the hardware configurations as well as the machine model that they are using. 
+The local layer interface is the machine model for $\compcertx$ in our case. 
+Due to the dependencies of it with the instance of concurrent program verification, 
+we discuss it in the next chapter, which shows the verification for concurrent $\certikos$ in our case. 
+However, connecting all the previous machine models via
+all our refinement lemmas 
+easy task when adequately providing the instance for all hardware configurations.
+That is because all those proofs follow the refinement proof that can apply to the proof for the backward simulation property in $\compcert$ with a small effort. 
+We explain with providing our $\coq$ implementation in the next chapter.
+
+
 %%
 %The thread local machine is same with 
 %the cpu local machine that is described in Section~\ref{chapter:linking:subsec:cpu-local-layer-interface}

@@ -1,8 +1,185 @@
-
-\subsection{Bottom-most Layer of Thread Layer Interface}
+\subsection{Bottom-most Layer of per-thread Layer Interface}
 \label{chapter:certikos:subsec:phthread}
 
-The bottom most layer definition has the exactly same set of primitives with those in 
-the top-most layer definition of CPU-local layers. 
 
-\jieung{Need to mention about few specs - sleep spawn }
+%
+%The bottom most layer definition has the exactly same set of primitives with those in 
+%the top-most layer definition of CPU-local layers. 
+%
+%\jieung{Need to mention about few specs - sleep spawn }
+
+
+
+
+\subsubsection{Instance of $\codeinmath{AbsRelT}$}
+
+
+
+\subsubsection{Refinement between $\codeinmath{PHBThrd}$ on $\tasmmach$ and 
+ $\codeinmath{PBThrd}$ on $\hasmmach$}
+
+
+
+%\subsubsection{AbstractRelT}
+%
+%This provides the relation bewteen PHThread layer runs with Hasm and PHBThread layer runs with TAsm. 
+%
+%\begin{lstlisting}[language=C]
+%
+%    Definition combine_data (kctxtOpt : option KContext) (sd : sharedData) (pd: privData) : AbstractDataType.RData :=
+%      {|
+%        AbstractDataType.CPU_ID:= CPU_ID sd;
+%        AbstractDataType.MM:= MM sd;
+%        AbstractDataType.MMSize:= MMSize sd;
+%        AbstractDataType.vmxinfo:= vmxinfo sd;
+%
+%        AbstractDataType.CR3:= CR3 sd;
+%
+%        AbstractDataType.ti:= ti pd;
+%
+%        AbstractDataType.pg := pg sd;
+%        AbstractDataType.ikern:= ikern pd;
+%        AbstractDataType.ihost:= ihost pd;
+%
+%        AbstractDataType.HP:= HP pd;
+%
+%        AbstractDataType.cid := cid sd;
+%        AbstractDataType.multi_log:= ZMap.init MultiUndef;
+%        AbstractDataType.multi_oracle:= multi_oracle_init8;
+%        AbstractDataType.lock:= lock sd;
+%        
+%        AbstractDataType.AC:= ZMap.set (ZMap.get (CPU_ID sd) (cid sd)) (AC pd) (ZMap.init Container_unused); 
+%
+%        AbstractDataType.AT:= (ZMap.init ATUndef);
+%        AbstractDataType.ATC:=  (ZMap.init ATCUndef);
+%        AbstractDataType.nps:= nps sd;
+%        AbstractDataType.init:= init sd;
+%        AbstractDataType.pperm:= pperm pd;
+%
+%        AbstractDataType.PT:= PT pd;
+%        AbstractDataType.ptpool:= ptpool pd;
+%        AbstractDataType.idpde:= idpde sd;
+%        AbstractDataType.ipt:= ipt pd;
+%        AbstractDataType.LAT:= ZMap.init LATCUndef;
+%        AbstractDataType.smspool:=  ZMap.init (ZMap.init SHRDUndef);
+%
+%        (* special treatment for kctxt *)
+%        AbstractDataType.kctxt:= match kctxtOpt with 
+%                                 | Some kctxt_val =>  ZMap.set (ZMap.get (CPU_ID sd) (cid sd)) kctxt_val 
+%                                                               (ZMap.init (Pregmap.init Vundef))
+%                                 | _ => (ZMap.init (Pregmap.init Vundef))
+%                                 end;
+%        
+%        AbstractDataType.sleeper:= init_sleeper;
+%        AbstractDataType.tcb:= ZMap.init TCBUndef;
+%        AbstractDataType.tdq:= ZMap.init TDQUndef;
+%        AbstractDataType.abtcb:= ZMap.init AbTCBUndef;
+%        AbstractDataType.abq:=  ZMap.init AbQUndef;
+%        AbstractDataType.syncchpool:= syncchpool pd;
+%        AbstractDataType.buffer:= buffer pd;
+%        
+%        AbstractDataType.big_log:= big_log sd;
+%        AbstractDataType.big_oracle:= big_oracle sd;
+%        
+%        AbstractDataType.uctxt:= (ZMap.set (ZMap.get (CPU_ID sd) (cid sd)) (uctxt pd)  (ZMap.init (ZMap.init Vundef)));
+%        
+%        AbstractDataType.ept:= (ZMap.set (CPU_ID sd) (ept pd) (ZMap.init (ZMap.init EPML4EUndef)));
+%        
+%        AbstractDataType.vmcs := (ZMap.set (CPU_ID sd) (vmcs pd) 
+%                                           (ZMap.init (VMCSValid Vzero Vzero (ZMap.init Vundef))));
+%        
+%        AbstractDataType.vmx := (ZMap.set (CPU_ID sd) (vmx pd) (ZMap.init (ZMap.init Vundef)));
+%
+%        AbstractDataType.ts:= 0;
+%
+%        AbstractDataType.com1:= com1 pd;
+%        AbstractDataType.drv_serial:= drv_serial pd;
+%        AbstractDataType.console_concrete:= console_concrete pd;
+%        AbstractDataType.console:= console pd;
+%        
+%        AbstractDataType.ioapic:= ioapic pd;
+%        AbstractDataType.lapic:= lapic pd; 
+%        AbstractDataType.tf:= tf pd;
+%        AbstractDataType.tf_reg:= tf_reg pd;
+%        AbstractDataType.curr_intr_num:= curr_intr_num pd;
+%        AbstractDataType.intr_flag:= intr_flag pd;
+%        AbstractDataType.saved_intr_flags:= saved_intr_flags pd;
+%
+%        AbstractDataType.in_intr:= in_intr pd;
+%        AbstractDataType.i_dev_serial:= i_dev_serial pd;
+%
+%        AbstractDataType.kbd:= kbd_init;
+%        AbstractDataType.kbd_drv:= kbd_drv_init
+%      |}.
+%\end{lstlisting}
+%
+%\begin{lstlisting}[language=C]
+%
+%  Section MATCH.
+%    Set Printing All.
+%
+%    Record PHThread2TGenInv (kctxt_val : KContext) (hadt : AbstractDataType.RData) (l : Log) (pd : dproc) :=
+%      { 
+%        CPU_ID_inv: (AbstractDataType.CPU_ID hadt) = GlobalOracle.current_CPU_ID /\
+%                    CPU_ID (update init_shared_adt l) = GlobalOracle.current_CPU_ID;
+%        
+%        valid_big_oracle_inv: valid_big_oracle (AbstractDataType.big_oracle hadt) /\
+%                              valid_big_oracle (big_oracle (update init_shared_adt l))
+%      }.
+%    
+%    Record relate_RData (kctxt_val : KContext) (hadt : AbstractDataType.RData) (l : Log) (pd : dproc) :=
+%        mkrelate_RData {
+%            flatmem_re: (AbstractDataType.HP hadt) = (HP pd);
+%            vmxinfo_re: AbstractDataType.vmxinfo hadt = vmxinfo (update init_shared_adt l);
+%            CR3_re:  AbstractDataType.CR3 hadt = CR3 (update init_shared_adt l);
+%            ikern_re: AbstractDataType.ikern hadt = ikern pd;
+%            pg_re: AbstractDataType.pg hadt = pg (update init_shared_adt l);
+%            ihost_re: AbstractDataType.ihost hadt = ihost pd;
+%            AC_re: ZMap.get (ZMap.get (AbstractDataType.CPU_ID hadt) (AbstractDataType.cid hadt))
+%                            (AbstractDataType.AC hadt) = AC pd;
+%            ti_re: AbstractDataType.ti hadt = ti pd;
+%            
+%            nps_re: AbstractDataType.nps hadt = nps (update init_shared_adt l);
+%            init_re: AbstractDataType.init hadt = init (update init_shared_adt l);
+%
+%            pperm_re: AbstractDataType.pperm hadt = pperm pd;
+%            PT_re: AbstractDataType.PT hadt = PT pd;
+%            ptp_re: AbstractDataType.ptpool hadt = ptpool pd;
+%            idpde_re: AbstractDataType.idpde hadt = idpde (update init_shared_adt l);
+%            ipt_re: AbstractDataType.ipt hadt = ipt pd;
+%
+%            CPU_ID_re: AbstractDataType.CPU_ID hadt = CPU_ID (update init_shared_adt l);
+%            cid_re: ZMap.get (AbstractDataType.CPU_ID hadt) (AbstractDataType.cid hadt)
+%                    = ZMap.get (CPU_ID (update init_shared_adt l)) (cid (update init_shared_adt l));
+%            lock_re: AbstractDataType.lock hadt = lock (update init_shared_adt l);
+%
+%            com1_re: AbstractDataType.com1 hadt = com1 pd;
+%            console_re: AbstractDataType.console hadt = console pd;
+%            console_concrete_re: AbstractDataType.console_concrete hadt = console_concrete pd;
+%            ioapic_re: AbstractDataType.ioapic hadt = ioapic pd;
+%            lapic_re: AbstractDataType.lapic hadt = lapic pd;
+%            intr_flag_re: AbstractDataType.intr_flag hadt = intr_flag pd;
+%            curr_intr_num_re: AbstractDataType.curr_intr_num hadt = curr_intr_num pd;
+%            in_intr_re: AbstractDataType.in_intr hadt = in_intr pd;
+%            drv_serial_re: AbstractDataType.drv_serial hadt = drv_serial pd;
+%
+%            kctxt_re: ZMap.get (ZMap.get (AbstractDataType.CPU_ID hadt) (AbstractDataType.cid hadt)) 
+%                               (AbstractDataType.kctxt hadt) = kctxt_val;
+%            uctxt_re: ZMap.get (ZMap.get (AbstractDataType.CPU_ID hadt) (AbstractDataType.cid hadt))
+%                               (AbstractDataType.uctxt hadt) = uctxt pd;
+%
+%            syncchpool_re: AbstractDataType.syncchpool hadt = syncchpool pd;
+%
+%            big_log_re: AbstractDataType.big_log hadt = big_log (update init_shared_adt l);
+%            big_oracle_re: AbstractDataType.big_oracle hadt = big_oracle (update init_shared_adt l);
+%            
+%            ept_re: ZMap.get (AbstractDataType.CPU_ID hadt) (AbstractDataType.ept hadt) = ept pd;
+%            vmcs_re: ZMap.get (AbstractDataType.CPU_ID hadt) (AbstractDataType.vmcs hadt) = vmcs pd;
+%            vmx_re: ZMap.get (AbstractDataType.CPU_ID hadt) (AbstractDataType.vmx hadt) = vmx pd;
+%            
+%            inv_re: PHThread2TGenInv kctxt_val hadt l pd
+%          }.
+%                                                       
+%  End MATCH.
+%
+%\end{lstlisting}
