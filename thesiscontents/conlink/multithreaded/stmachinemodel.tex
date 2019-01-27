@@ -1,44 +1,33 @@
-
-\subsection{Single-threaded Machine Model}
+\subsection{Single Threaded Machine Model}
 \label{chapter:linking:subsec:single-threaded-machine-model}
-Like what we have discussed in Section~\ref{chapter:linking:subsec:multithreaded-linking-overview},
-a few optimization is available 
-before connecting multithreaded machine model,  $\ieasmmach$, with a single thread 
-and our per-thread layer interface, $\hasmmach$, to minimize the complexity of our multithreaded linking. 
-They are similar to the work what we did in  Section~\ref{chapter:linking:subsec:single-core-machine-model} and
-Section~\ref{chapter:linking:subsec:global-log-optimization},
-which simplify the machine state definition as 
-well as merging multiple operational style environmental context queries into a single big-step style 
+
+Like what we have shown in Figure~\ref{fig:chapter:conlink:introduce-single-threaded-machine-model-with-tasm}, 
+another optimization is available and necessary 
+to connect the program runs on the $\ieasmmach$ with having a single focused set to
+the program runs with the per-thread machine model, $\hasmmach$, which shares the 
+same state definition and transition rules with $\lasmmach$. 
+In this manner,
+we introduce $\tasmmach$, a machine model
+which simplify the machine state definition as  well as
+merging multiple operational style environmental context queries into a single big-step style 
 environmental context query.  
+This part has a similarity with the corresponding part of our multicore linking framework, 
+that introduces $\singlebigstepkwd$ and $\singlebigtwostepkwd$ in Section~\ref{chapter:linking:subsec:global-log-optimization}.
+
+
+
 %
+%
+%before connecting multithreaded machine model,  $\ieasmmach$, with a single thread 
+%and our per-thread layer interface, $\hasmmach$, to minimize the complexity of our multithreaded linking. 
+%They are similar to the work what we did in  Section~\ref{chapter:linking:subsec:single-core-machine-model} and
+%Section~\ref{chapter:linking:subsec:global-log-optimization},
+%%
 %
 %When the focused thread set in $\ieasmmach$ is a single thread, then the machien itself is 
 %already a single threaded machine model. 
 %It, however, has a huge differences between the model that we want to introduce ($\compcertx$ like model).
 
-
-The simplified state definition for our intermediate machine model ($\tasmmach$) is  defined as
-\begin{lstlisting}[language=C]
-Inductive tstate: Type := | TState: Z -> regset -> mem -> dproc -> Log -> tstate.
-\end{lstlisting}
-which is a tuple of five elements. 
-Those elements represent a current thread ID, 
-a register value for the thread, a local memory, a private abstract state, and a global log for shared objects. 
-The state definition is basically 
-identical to the each thread's view of the global state 
-in $\ieasmmach$ an $\easmmach$ in the previous section. 
-In this sense, 
-this machine also can use the same abstract layer definition, $\TLink$, 
-as well as similar but simplified transition rules with those of two multithreaded machine model.
-The machine, however,
- collects the environmental context queries 
- to form a big-step style transition for scheduling primitives. 
- For example, 
- the transition rule for $\yield$ is defined in Figure~\ref{fig:chapter:conlink:yield-rule-in-tasm},
- which always returns the same thread ID as the result of the rule 
- by using 
- a \lstinline$get_env_log$ which merges multiple environmental context queries into a single step,
- which is defined as
 
 \begin{figure}
 \begin{lstlisting}[language=C]
@@ -49,6 +38,9 @@ Fixpoint get_env_log (n: nat) (curid: Z) (l: Log) :=
                 else get_env_log n curid (Single_Oracle l:: l)
   end.
 \end{lstlisting}
+\begin{center}
+Auxiliary Function for Big-step Oracle Query in $\tasmmach$.
+\end{center}
 
 \begin{lstlisting}[language=C]
 | texec_step_external_yield:
@@ -59,7 +51,7 @@ Fixpoint get_env_log (n: nat) (curid: Z) (l: Log) :=
     rs0 PC = Vptr b Int.zero ->
     Genv.find_funct_ptr ge b = Some (External ef) ->
     <@$\cdots$@>
-    // update the log using [get_env_log]
+    // update the log using [get_env_log]. limit is for a fairness assumption
     l<@$'$@> = LEvent curid (LogYield (Mem.nextblock m))::l ->
     get_env_log limit curid l<@$'$@> = Some l<@$''$@> ->
     l<@$'''$@> = LEvent curid LogYieldBack::l<@$''$@> ->
@@ -71,18 +63,60 @@ Fixpoint get_env_log (n: nat) (curid: Z) (l: Log) :=
 	  <@$\cdots$@>
       tstep ge (TState curid rs0 m d l) E0 (TState curid rs<@$'$@> m<@$'$@> d l<@$'''$@>)
 \end{lstlisting}
-\caption{The Transition Rule for $\yield$ in $\tasmmach$}
+\begin{center}
+Evaluation Rule for Yield in  $\tasmmach$.
+\end{center}
+\caption{Evaluation Rule (Yield) in $\tasmmach$.}
 \label{fig:chapter:conlink:yield-rule-in-tasm}
 \end{figure}
 
+
+The simplified state definition for our intermediate machine model ($\tasmmach$) is
+\begin{lstlisting}[language=C]
+Inductive tstate: Type := | TState: Z -> regset -> mem -> dproc -> Log -> tstate.
+\end{lstlisting}
+which is a tuple of five elements. 
+Those elements represent a current thread ID, 
+a register value for the thread, a local memory, a private abstract state, and a global log for shared objects. 
+The state definition is identical to the each thread's view of the global state in $\ieasmmach$ an $\easmmach$ in the previous section. 
+In this manner,
+this machine also can use the same abstract layer definition, $\TLink$, 
+as well as similar but simplified transition rules with those of two multithreaded machine model.
+The machine, however,
+ collects the environmental context queries to form a big-step style transition for scheduling primitives. 
+ For example, 
+ the transition rule for $\yield$ is defined in Figure~\ref{fig:chapter:conlink:yield-rule-in-tasm} (b),
+ which always returns the same thread ID as the result of the rule 
+ by using 
+ an auxiliary function, \lstinline$get_env_log$, in  Figure~\ref{fig:chapter:conlink:yield-rule-in-tasm} (a).
+ The funciton   merges multiple environmental context queries into a single step with a fairness assumption
+ of threads' evaluation, which is stated as \lstinline$limit$ in line 11 of  Figure~\ref{fig:chapter:conlink:yield-rule-in-tasm} (b).
+
 We also provide 
-the theorem to connect the program evaluation on this machine model  
-with the program evaluation on our multithreaded machine model,
+the theorem to connect the program evaluation on $\tasmmach$
+with the program evaluation on $\ieasmmach$,
 which users can freely use without any additional cost.
 
-\begin{lemma}
-
+\begin{lemma}[Refinement Between $\ieasm$ and $\tasm$]
+\label{lemma:chapter:conlink:ieasm-refines-tasm}
+Suppose that $C$ is a multithreaded linking environment that contains thread configurations, auxiliary functions, as well as properties for them. 
+Additionaly, let's assume that 
+ $tid$ is a valid thread ID in a certain CPU,
+and 
+ $\oracle^{\TLink}_{tid}$ is a valid
+environmental context for a thread $tid$, 
+and $\codeinmath{Ctxt}$ is a
+ context program that runs on top of layer $\TLink$
+ Then, we can state that
+ \begin{center}
+\begin{tabular}{c}
+$\semwmachine{C, \PLayer{\TLink}{tid}{\oracle^{\TLink}_{cid}}}{\codeinmath{Ctxt}}{\codeinmath{mach}_{\ieasm}} \refines_{R_{\mathcal{M}{[\tasm, \ieasm]}}} \semwmachine{C, \PLayer{\TLink}{tid}{\oracle^{\TLink}_{tid}}}{\codeinmath{Ctxt}}{{\codeinmath{mach}_{\tasm}}}$\\
+\end{tabular}
+\end{center}
+when $R_{\mathcal{M}{[\tasm, \ieasm]}}$ is a refinement relation between two machine models with the  $\TLink$ layer.
 \end{lemma}
+
+
 
 %
 %\begin{lstlisting}[language=C]

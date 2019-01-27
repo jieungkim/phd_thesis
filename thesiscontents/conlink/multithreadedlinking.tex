@@ -75,7 +75,7 @@ solve those challenges easily.
 \begin{center}
 \includegraphics[width=\textwidth, page=2]{figs/conlink/concurrent_linking}
 %\jieung{Need to redraw this figure to add only one env-context for thread local layers}
-\caption{Multithreaded Linking Structures.}
+\caption{Intermediate Languages and Their Relations in Multithreaded Linking Framework.}
 \label{fig:chapter:linking:multithreaded-linking-structure}
 \end{center}
 \end{figure}
@@ -189,32 +189,30 @@ Scheduling primitives, however, cannot be specified in this manner because it in
  In this sense, it models those rules directly on our intermediate machine models 
  instead of the layer definition.
  Formally, the relation on the primitive domain between two $\TLink$ and $\CSched$ layers 
- is 
-$$\forall id,\ id \neq \threadyieldfunc \wedge id \neq \threadsleepfunc \rightarrow 
- \ (id, \ignorechar) \in \Layer_{\CSched} \leftrightarrow (id, \ignorechar) \in  \Layer_{\TLink}.$$
-
-Multithreaded linking with the newly defined state also 
+ is in Definition~\ref{definition:chapter:conlink:same-domain-sched-tlink}
+ Multithreaded linking with the newly defined state also 
 requires machine models that facilitate the state as well as the layer definition ($\TLink$) with the state.
 
+\begin{definition}[Primitive Domain in $\TLink$ and $\CSched$]
+\label{definition:chapter:conlink:same-domain-sched-tlink}
+\begin{tabular}{P{0.95\textwidth}}
+$\forall id,\ id \neq \threadyieldfunc \wedge id \neq \threadsleepfunc \rightarrow 
+ \ (id, \ignorechar) \in \Layer_{\CSched} \leftrightarrow (id, \ignorechar) \in  \Layer_{\TLink}.$\\
+\end{tabular}
+\end{definition}
+
+
 \begin{figure}
-\begin{center}
-\includegraphics[width=0.9\textwidth, page=3]{figs/conlink/concurrent_linking}
-\end{center}
-\begin{center}
-(a) Introduce Multithreaded Machine Model: divide local states
-\end{center}
-\begin{center}
-\includegraphics[width=0.9\textwidth, page=4]{figs/conlink/concurrent_linking}
-\end{center}
-\begin{center}
-(b) Introduce Multithreaded Machine Model: introduce the environmental context
-\end{center}
-\begin{center}
-\includegraphics[width=0.9\textwidth, page=5]{figs/conlink/concurrent_linking}
-\end{center}
-\begin{center}
+\begin{tabular}{P{0.95\textwidth}}
+\includegraphics[width=0.9\textwidth, page=3]{figs/conlink/concurrent_linking}\\
+(a) Introduce Multithreaded Machine Model: divide local states\\
+\\
+\includegraphics[width=0.9\textwidth, page=4]{figs/conlink/concurrent_linking}\\
+(b) Introduce Multithreaded Machine Model: introduce the environmental context\\
+\\
+\includegraphics[width=0.9\textwidth, page=5]{figs/conlink/concurrent_linking}\\
 (c) Introduce Multithreaded Machine Model: add thread state ($\codeinmath{TS}$)
-\end{center}
+\end{tabular}
 \caption{Introduce Multithreaded Machine Model: $\easmmach$}
 \label{fig:chapter:conlink:multithreaded-machine-model-easm}
 \end{figure}
@@ -222,28 +220,55 @@ requires machine models that facilitate the state as well as the layer definitio
 Figure~\ref{fig:chapter:conlink:multithreaded-machine-model-easm} shows
 the first step of our multithreaded linking by providing 
 a $\easmmach$, a multithreaded machine model.
-Figur~\ref{fig:chapter:conlink:multithreaded-machine-model-easm} (a)
-shows a simple overview how we divide a single state for $\lasmmach$ 
-into a multiple thread states.
-In this machine model, 
-a set of 
-A set of thread private states ($lst_{ti}$) is a partial map from a thread id to its private state designed as a tuple that contain
-a register set, as well as an abstract state that may have a different type of an abstract state of $state_{\lasm}$. 
-We, however, do not explicitly divide the a per-CPU memory into the multiple set of memories since 
-it adds the complexity in the machine definition as well as providing the 
-refinement theorem between machine models. 
-Instead of it, the framework sues the memory model 
-that guarantees the composition if we shows the mutual exclusion of each thread's memory usage, which is an algebraic memory model.
+Figure~\ref{fig:chapter:conlink:multithreaded-machine-model-easm} (a)
+shows a simple overview how we divide a single state for $\lasmmach$  ($\codeinmath{state}_{\lasm} := (lst_{\codeinmath{cpu}}, log)$)
+into a state, ($\codeinmath{state}_{\easm[{\codeinmath{T}_{[1]}}]} := (tid, mem, \set{ti \mapsto lst_{ti}}, log)$),
+that contains a global state for the CPU ($tid$, $mem$, and $log$) as well as 
+multiple thread private states ($\set{ti \mapsto lst_{ti}}$).
+A set of thread private states is a partial map from a thread id to its private states designed as a tuple that contains
+a register set, as well as an abstract state that may have a different type of an abstract state in $state_{\lasm}$. 
+We, however, do not explicitly divide a per-CPU memory into the multiple sets of memories since 
+it adds the complexity of the machine definition as well as providing the 
+refinement theorem between machine models.
+Physically divides the memory also elements the future possibility of our work, which provides fancy ownership resolutions
+for the memory operations.
+Instead of it, the framework provides the memory model 
+that guarantees the mutual exclusion if we shows the mutual exclusion of each thread's memory usage, which we name it an algebraic memory model.
 \jieung{I can copy and paste the related part of CCAL paper, but I do not know whether I will do or not. I'll live the explanation about this part before deciding it}
-With this the new state definition, 
+With this new state definition, 
 we could match the evaluation of the program with $\CSched$ on $\lasmmach$ (Figure~\ref{fig:chapter:conlink:multithreaded-machine-model-easm} (a) (1)) with  the evaluation of the program with $\TLink$ on $\easmmach$
 (Figure~\ref{fig:chapter:conlink:multithreaded-machine-model-easm} (a) (2)) 
 by replacing the scheduling evaluation that performs context switching in the local state $\codeinmath{state}_{\lasmmach}$
 into  the scheduling evaluation that simply change the currently running thread ID and 
 adds the proper log to memorize it in the state, $\codeinmath{state}_{\easmmach}$.
-Building a 
+Building a per-thread machine model t for each thread 
+is replacing the strategy of other threads with the proper environmental context as show in Figure~\ref{fig:chapter:conlink:multithreaded-machine-model-easm} (b).
+Thread linking, however, requires a little bit more fancy resolution to solve an another challenge which differs from the case of multicore linking, building a dynamic initial state for each thread.
+Figure~\ref{fig:chapter:conlink:multithreaded-machine-model-easm} (c) 
+shows the case, which illustrates 
+why we need a 
+Each thread many have  
 
 
+
+
+
+
+
+\begin{figure}
+\begin{center}
+\includegraphics[width=0.9\textwidth, page=6]{figs/conlink/concurrent_linking}
+\end{center}
+\caption{Parallel Composition in Multithreaded Linking Framework}
+\label{fig:chapter:conlink:parallel-composition-in-easm}
+\end{figure}
+
+With this model, 
+providing the correctness of parallel composition is in Figure~\ref{fig:chapter:conlink:parallel-composition-in-easm},
+which shows that 
+
+
+showing that the program evaluation on a per-CPU machine 
 
 
 
@@ -285,14 +310,7 @@ Building a
 %
 %
 
-\begin{figure}
-\begin{center}
-\includegraphics[width=0.9\textwidth, page=6]{figs/conlink/concurrent_linking}
-\end{center}
-\caption{Parallel Composition in Multithreaded Linking Framework}
-\label{fig:chapter:conlink:parallel-composition-in-easm}
 
-\end{figure}
 
 %This section illustrates each step of this framework, by providing 
 %the relevant $\coq$ definitions with highlighting the necessary parts.
@@ -315,6 +333,8 @@ Building a
 \begin{center}
 \includegraphics[width=0.9\textwidth, page=7]{figs/conlink/concurrent_linking}
 \end{center}
+\caption{Introduce Single Threaded Machine Model.}
+\label{fig:chapter:conlink:introduce-single-threaded-machine-model-with-iiasm}
 \end{figure}
 
 
@@ -323,6 +343,8 @@ Building a
 \begin{center}
 \includegraphics[width=0.9\textwidth, page=8]{figs/conlink/concurrent_linking}
 \end{center}
+\caption{Introduce Single Threaded Machine Model with Environmental Context Query Optimization.}
+\label{fig:chapter:conlink:introduce-single-threaded-machine-model-with-tasm}
 \end{figure}
 
 
@@ -341,7 +363,7 @@ Building a
 
 
 
-\begin{definition}[Same Domain]
+\begin{definition}[Primitive Domain of $\CSched$ and $\TSched$]
 $\CSched[\_, \_] = (\Layer_{\CSched}, \_ , \_) \rightarrow \TSched[\_, \_] = (\Layer_{\TSched}, \_ , \_) \rightarrow 
 \forall id.\ (id, \_) \in \Layer_{\CSched}  \leftrightarrow (id, \_) \in \Layer_{\TSched} $
 \end{definition}

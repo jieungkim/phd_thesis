@@ -1,13 +1,15 @@
-\subsection{Single core machine model}
+\subsection{Machine Model for Per-CPU Layer Interface}
 \label{chapter:linking:subsec:cpu-local-layer-interface}
 
 %The formal definition about the state 
-
-$\lasmmach$ contains five rules, 
-but we explain only two rules in this section, which are the rules 
-that are sufficient for us to explain our thread-linking framework.
+The machine model for per-CPU local layer interfaces,
+$\lasmmach$, contains five rules, 
+but we explain only two rules in this section; the rules 
+that are sufficient for us to explain core parts of our thread-linking framework.
 The first evaluation rule is 
-about the rule for assembly instructions
+about the rule for assembly instructions in Figure~\ref{fig:chapter:linking:eval-rule-in-lasm} (a), 
+which basically evaluates the corresponding execution 
+rule for the assembly instruction that the current program counter points out. 
 \begin{figure}
 \begin{lstlisting}[language=C, deletekeywords={unsigned, struct}]
 | exec_step_internal:
@@ -21,7 +23,7 @@ about the rule for assembly instructions
     step ge (State rs m) E0 (State rs_res m_res)
 \end{lstlisting}
 \begin{center}
-(a) Evaluation Rule for Internal Instructions
+(a) Evaluation Rule for Internal Instructions in $\lasmmach$
 \end{center}
 \begin{lstlisting}[language=C]
 | exec_step_external:
@@ -37,13 +39,22 @@ about the rule for assembly instructions
     step ge (State rs m) t (State rs<@$'$@> m<@$'$@>)
 \end{lstlisting}
 \begin{center}
-(b) Evaluation Rule for External Calls
+(b) Evaluation Rule for External Calls in $\lasmmach$
 \end{center}
 \caption{Evaluation Rules in $\lasmmach$}
 \label{fig:chapter:linking:eval-rule-in-lasm}
 \end{figure}
-which basically evaluates the corresponding 
-rule for the instruction. 
+
+One another rule that is necessary to explain our framework is the rule for external function calls in Figure~\ref{fig:chapter:linking:eval-rule-in-lasm} (b),
+which is the rule for primitive calls that are defined in $\CSched$ including $\yield$ and $\sleep$ primitives.
+It basically says that it uses 
+the specification of the primitive by calling \lstinline$external_call<@$'$@>$,
+which implies the same meaning with $\sigma_{id}$ in our formal definition shown in the previous section.
+For other machine models in our multithreaded linking,
+we presents the rules that correspond to those two rules in the machine model for per-CPU local layer interfaces.
+
+
+
 %The first rule is for internal instruction revaluation rules, 
 %that defines the rules for bunch of possible instructions including 
 %memory load and stores. 
@@ -65,15 +76,6 @@ rule for the instruction.
 %        forall RA_NOT_VUNDEF: rs RA <> Vundef,
 %        step ge (State rs m) t (State rs_res m_res)
 %\end{lstlisting}
-One another rule that is necessary to explain our framework is the rule for external function calls,
-which is the rule for primitive calls that are defined in $\CSched$ including $\yield$ and $\sleep$ primitives.
-
-It basically says that it uses 
-the specification of the primitive by calling \lstinline$external_call<@$'$@>$,
-which is identical to $\sigma_{id}$ in our formal definitions.  
-For other machine models in our multithreaded linking,
-we presents the rules that correspond to those two rules in this section. 
-
 
 %
 %%\begin{lstlisting}[language=C]

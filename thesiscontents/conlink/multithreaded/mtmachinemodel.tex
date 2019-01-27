@@ -3,7 +3,7 @@
 
 This section presents the definition of our multithreaded machine model,
 $\easmmach$.
-It first requires to define the thread state definition, which distinguishes
+It first requires us to define the thread state definition, which distinguishes
 the thread that is running, available (waiting  for the initial run), 
 and environment (out of our focused set) by extending the register set definition in the $\lasmmach$ state.
 \begin{lstlisting}[language=C]
@@ -25,20 +25,21 @@ Inductive ThreadState := | Environment | Available | Running (rs: regset).
 %  if zeq main_thread i then main_init_dproc else nomain_init_dproc.
 %\end{lstlisting}
 It first need to remember whether the thread is currently running (which implies that it has been initialized properly),
-or waiting until its first run (Available), or not in the current focused thread set (Environment)
+or waiting until its first run (Available), or not in the current focused thread set (Environment).
 %The initial map for the thread state is parameterized by a focused set ($tid$). 
 %For example, with the given full thread set ($\fullthreadset$), which is a total multithreaded machine over a CPU, 
 %all threads in the $\fullthreadset$ should be initialized as available at the beginning with the exception about the main thread, 
 %which has to be initialized as a initial state of the CPU.  
 
-With the thread state, as well as a set of private states  \lstinline$EData$, the state of $\easmmach$ is defined as
+With the thread state,  the state of $\easmmach$ is
 \begin{lstlisting}[language=C]
   Inductive estate: Type :=
     | EState: Z -> ZMap.t ThreadState -> mem -> EData -> Log -> estate.
 \end{lstlisting}
 which is a tuple that contains five elements,
-a currently running thread ID, a set of thread states, a memeory, a set of private staets, and a log. 
-The memory in here is logically a collection of private memories for each thread as mentioned. 
+a currently running thread ID, a set of thread states, a memory, a set of private staets (notated as \lstinline$EData$), and a log. 
+The memory in here is logically a collection of private memories via our algebraic memory model for each thread as mentioned. 
+
 %but we have used a merged one memory in here for simplicity.
 %The mutual exclusion property (that we will provide) and 
 %the algebraic memory model gives the sufficient assumptions about the memory.  
@@ -47,7 +48,6 @@ The memory in here is logically a collection of private memories for each thread
 %  Inductive estep (ge: genv) : estate -> trace -> estate -> Prop :=
 %\end{lstlisting}
 
-With this state definition, the state transition rule for instructions in $\easmmach$ is similar to that in $\lasmmach$.
 
 \begin{figure}
 \begin{lstlisting}[language=C, deletekeywords={unsigned}]
@@ -71,7 +71,7 @@ With this state definition, the state transition rule for instructions in $\easm
           (ZMap.set curid (Some d<@$'$@>) dp) l)
 \end{lstlisting}
 \begin{center}
-(a) Evaluation Rule for Internal Instructions
+(a) Evaluation Rule for Internal Instructions in $\easmmach$.
 \end{center}
 \begin{lstlisting}[language=C]
 | eexec_step_external:
@@ -99,17 +99,93 @@ With this state definition, the state transition rule for instructions in $\easm
         (ZMap.set curid (Some d<@$'$@>) dp) l<@$'$@>)
 \end{lstlisting}
 \begin{center}
-(b) Evaluation Rule for External Calls
+(b) Evaluation Rule for External Calls in $\easmmach$.
 \end{center}
 \caption{Evaluation Rules (Internal Instructions and External Calls) in $\easmmach$.}
 \label{fig:chapter:linking:eval-rule-in-easm-normal}
 \end{figure}
 
+With this state definition, $\easmmach$ defines its transition rules that changes its state. 
+Two transition rules that corresponds to the two rules in $\lasmmach$ in Figure~\ref{fig:chapter:linking:eval-rule-in-lasm}
+are presented in Figure~\ref{fig:chapter:linking:eval-rule-in-easm-normal}.
+When compared to the rules in $\lasmmach$,
+the rules in $\easmmach$ look up the thread state pool and the thread private state pool 
+to extract the proper state for the evaluation.
+In addition to that, the evaluation rule for external calls check the primitive ID to ensure that 
+the primitive ID is neither $\yield$ nor $\sleep$. 
+With excluding those scheduling primitives in the rules for external calls, 
+$\easmmach$ can provide the designated rules for them, and 
+Figure~\ref{fig:chapter:linking:eval-rule-in-easm-yield} (a) shows
+the key part of the evaluation rule for $\yield$. 
+It updates the log by adding the proper yield event, then 
+change the currently running thread ID in the state. 
+
+The updated thread ID via the $\yield$ call may be in the focused set or not. 
+When it is in the focused set, 
+then the machine performs the second phase of the scheduling, 
+which is the yield back rule in Figure~\ref{fig:chapter:linking:eval-rule-in-easm-yield} (c).
+This rule takes the responsibility of context switching 
+and building the proper initial context (when the thread starts its initial evaluation),
+which was involved with the context switching that affects the state shared by all threads in $\lasmmach$, the machine model for per-CPU layer interfaces. 
+Instead of that,
+the yield back rule in $\easmmach$ only touches the thread private state which is not visible to other threads.
+In the case of having the state associated with thread ID that is in the environment,
+$\easmmach$ queries the environmental context, which is similar to the \textsf{SKIP} rule in our environmental machine model of our multicore linking framework in Figure~\ref{fig:chapter:conlink:multicore-env-step-machine}. 
+The rule is defined in Figure~\ref{fig:chapter:linking:eval-rule-in-easm-yield} (b).
 
 
-Especially for the internal steps, 
-the step relation is almost same with the step relation in $\lasm$, and 
-it is actually using the same evaluation rule for them (\lstinline$exec_instr$). 
+\begin{figure}
+\begin{lstlisting}[language=C]
+| eexec_step_external_yield:
+  <@$\cdots$@>
+  // add yield event with the proper information for the memory 
+  l<@$'$@> = (LEvent curid (LogYield (Mem.nextblock m))::l) ->
+  // check the primitive ID (it should be [thread_yield])  
+  forall (NON_YIELD: match ef with
+  | EF_external id _ => if peq id thread_yield then True else False
+  | _ => False 
+  end),
+  // update the current thread ID and the log
+ estep ge (EState curid rsm m dp l) E0 (EState curid<@$'$@> rsm m dp l<@$'$@>)
+\end{lstlisting}
+\begin{center}
+(a) Evaluation Rule for Yield in $\easmmach$.
+\end{center}
+\begin{lstlisting}[language=C]
+| eexec_step_external_empty:
+  forall m curid curid<@$'$@> rsm dp l l<@$'$@>,
+    // check the treat state and the private state pool (to make sure the current
+    //  thread  is not a member of our focused set)
+    ZMap.get curid rsm = Environment -> ZMap.get curid dp = None ->
+    proc_id (uRData l) = curid ->
+    // query the environmental context using the current log 
+    // and calculate the new thread ID
+    l<@$'$@> = (Single_Oracle l::l) -> curid<@$'$@> = proc_id (uRData l<@$'$@>) ->
+    // update the log by using the result (as well as the current thread ID)
+    estep ge (EState curid rsm m dp l) E0
+      (EState curid<@$'$@> rsm m dp l<@$'$@>)
+\end{lstlisting}
+\begin{center}
+(b) Evaluation Rule for Environmental Steps in $\easmmach$.
+\end{center}
+\begin{lstlisting}[language=C]
+| eexec_step_external_yield_back:
+  forall (rs<@$'$@> rs0: regset) (m m<@$'$@>: mem) curid rsm l l<@$'$@> nb dp d e,
+    // check the thread state (whether is already running or not) and
+    // assign the proper kernel context value for the thread when the thread
+    // starts its evaluation at this moment
+    (ZMap.get curid rsm = Available /\ initial_thread_kctxt ge curid l = Some rs0) \/
+      ZMap.get curid rsm = Running rs0 -> <@$\cdots$@>),
+    // update the current thread ID, register value (if it is required), and the log
+    estep ge (EState curid rsm m dp l) E
+      (EState curid (ZMap.set curid (Running rs<@$'$@>) rsm) m<@$'$@> dp l<@$'$@>).
+\end{lstlisting}
+\begin{center}
+(c) Evaluation Rule for YieldBack in $\easmmach$.
+\end{center}
+\caption{Evaluation Rules (Yield and YieldBack) in $\easmmach$.}
+\label{fig:chapter:linking:eval-rule-in-easm-yield}
+\end{figure}
 
 
 %
@@ -139,39 +215,6 @@ it is actually using the same evaluation rule for them (\lstinline$exec_instr$).
 %\end{lstlisting}
 
 
-\begin{figure}
-\begin{lstlisting}[language=C]
-| eexec_step_external_yield:
-  <@$\cdots$@>
-  // check the primitive ID (it should be [thread_yield])
-  forall (NON_YIELD: match ef with
-  | EF_external id _ => if peq id thread_yield then True else False
-  | _ => False 
-  end),
-  // update the current thread ID and the log
- estep ge (EState curid rsm m dp l) E0 (EState curid<@$'$@> rsm m dp l<@$'$@>)
-\end{lstlisting}
-\begin{center}
-(a) Evaluation Rule for Yield
-\end{center}
-\begin{lstlisting}[language=C]
-| eexec_step_external_yield_back:
-  forall (rs<@$'$@> rs0: regset) (m m<@$'$@>: mem) curid rsm l l<@$'$@> nb dp d e,
-    // check the thread statue (whether is already running or not) and
-    // assign the proper kernel context value for the thread when the thread
-    // starts its evaluation at this moment
-    (ZMap.get curid rsm = Available /\ initial_thread_kctxt ge curid l = Some rs0) \/
-      ZMap.get curid rsm = Running rs0 -> <@$\cdots$@>),
-    // update the current thread ID, register value (if it is required), and the log
-    estep ge (EState curid rsm m dp l) E
-      (EState curid (ZMap.set curid (Running rs<@$'$@>) rsm) m<@$'$@> dp l<@$'$@>).
-\end{lstlisting}
-\begin{center}
-(b) Evaluation Rule for YieldBack
-\end{center}
-\caption{Evaluation Rules (Yield and YieldBack) in $\easmmach$.}
-\label{fig:chapter:linking:eval-rule-in-easm-yield}
-\end{figure}
 
 %\begin{figure}
 %\begin{lstlisting}[language=C]
@@ -240,27 +283,8 @@ it is actually using the same evaluation rule for them (\lstinline$exec_instr$).
 %Using them, we are able to provide the generic multithreaded machine mode, $\easm$
 
 
-\subsubsection{Refinement between EAsm and LAsm}
+\subsubsection{Connecting $\lasmmach$ and $\easmmach$}
 
-Refinement between this mulitthreaded machine model and the CPU local machine heavily relies on
-the context that they are using, 
-which includes  layer definitions as well as  abstract data types.
-In this sense, providing the refinement proofs with 
-those contexts
-also requires us to 
-state the relation between two machine models 
-with the abstract definitions that will can fill out later.
-
-To enable them, 
-we first provide the abstract relation, \lstinline$match_EData_RData$,
-which has a type \lstinline$EData -> Log -> RData -> Prop$ and 
-basically says the 
-relation between the abstract state of our mulitthreaded machine model and 
-that of our per-CPU machine model.
-Using that, we also provides $\codeinmath{AbsRelC}$,
-which states the relation between two machine models based on the layers that they are relying on.
-Figure~\ref{fig:chapter:conlink:two-cases-of-abs-rel-c} shows one case in $\codeinmath{AbsRelC}$,
-the case for the primitive call that triggers an event.  
 
 \begin{figure}
 \begin{lstlisting}[language=C]     
@@ -294,6 +318,110 @@ external_call_match_has_event:
 \caption{The External Call Case in $\codeinmath{AbsRelC}$ (with Generating an Event.)}
 \label{fig:chapter:conlink:two-cases-of-abs-rel-c}
 \end{figure}
+
+Providing the refinement proof for the program with $\CSched$ on $\lasmmach$ and the program with $\TLink$ on $\easmmach$ (Figure~\ref{fig:chapter:conlink:parallel-composition-in-easm})
+should have to rely on the detailed information of those two layer definitions.
+A straightforward condition is about the domain of the primitive of those two layers; we described in Definition~\ref{definition:chapter:conlink:same-domain-sched-tlink}. 
+In addition to that, 
+users specify the specifications of those primitives when providing the concrete layer definitions. 
+In this sense, defining the form that the users have to follow when they specify those layers
+are useful for the users as well as for proving the refinement theorem without thoroughly depending on the concrete layer definitions that users can fill out.  
+In this purpose, we define an abstract relation, $\codeinmath{AbsRelC}$,
+which describes the minimum criteria that users have to follow for each primitive that users will provide in their layers.
+The relation is based on the relation on two abstract sates (\lstinline$match_EData_RData$) in two different machines with has a
+type \lstinline$EData -> Log -> RData -> Prop$ and show be specified later by users with  concrete definitions for those abstract data types too. Figure~\ref{fig:chapter:conlink:two-cases-of-abs-rel-c} shows 
+one case in  $\codeinmath{AbsRelC}$, which is the case 
+for the external call with generating an event. 
+With that, we shows the parallel composition in our multithreaded linking framework, which is in Lemma~\ref{lemma:chapter:conlink:parallel-composition}. 
+
+\begin{lemma}[Parallel Composition: Contextual Refinement Between $\lasmmach$ and $\easmmach$]
+\label{lemma:chapter:conlink:parallel-composition}
+Suppose that $C$ is a multithreaded linking environment that contains thread configurations, auxiliary functions, as well as properties for them. 
+Additionaly, let's assume that  $T_{[cid]}$ is full set that contains all threads in CPU $cid$, 
+ $\oracle_{cid}$ is a valid
+environmental context for CPU $cid$ (associated with $\CSched$ on $\lasmmach$),
+and $\codeinmath{Ctxt}$ is a
+context program that runs on top of layer $\CSched$ (as well as $\TLink$)
+ Then, we can state that
+ \begin{center}
+\begin{tabular}{c}
+$\semwmachine{C, \PLayer{\CSched}{cid}{\oracle_{cid}}}{\codeinmath{Ctxt}}{\codeinmath{mach}_{\lasm}} \refines_{R_{\mathcal{M}{[\easm, \lasm]}}}$\\ 
+$\semwmachine{C, \parallel tid \in T_{[cid]} \  \PLayer{\TLink}{tid}{\oracle_{cid}}}{\codeinmath{Ctxt}}{{\codeinmath{mach}_{\easm}}}$\\
+\end{tabular}
+\end{center}
+when $R_{\mathcal{M}{[\lasm, \easm]}}$ is a refinement relation between two machine models with the associated layer definitions,
+ two environmental contexts,
+as well as contains $\codeinmath{AbsRelC}$ as parts of it.
+\end{lemma}
+
+
+\subsubsection{Multithreaded Linking: Providing a Single Threaded Machine}
+
+Our multithreaded linking framework also connects the multithreaded machine model with the full focused thread set 
+and that with a singleton focused thread set. 
+As shown in Figure~\ref{fig:chapter:conlink:introduce-single-threaded-machine-model-with-iiasm},
+we introduce an another level of intermediate machine model ($\ieasmmach$) with
+simple optimization on the memory definition.
+The definition of machine state for this $\ieasmmach$ is 
+\begin{lstlisting}[language=C]
+  (* fst mem : mine / snd mem : others *)
+  Inductive iestate: Type :=
+    | IEState: Z -> ZMap.t ThreadState -> (mem * mem) -> EData -> Log -> iestate.
+\end{lstlisting}
+which is similar to the machine state of $\easmmach$, but 
+contains two explicit memories, which are for the focused thread ID and 
+and for other threads in the environment.
+To due to the similarity of other parts of state definitions in between this model and $\easmmach$, 
+all evaluation rules are almost identical except having a check to decide which memory that the rule will use. 
+We also provide generic lemmas to connect $\easmmach$ and $\ieasmmach$ together. 
+Differently with the Lemma~\ref{lemma:chapter:conlink:parallel-composition},
+those two lemmas
+do not require any abstract relations that
+users have to fill out later. 
+Our multithreaded linking framework provides those theorems without any additional costs. 
+
+\begin{lemma}[Contextual Refinement Between $\easmmach$ and $\ieasmmach$]
+\label{lemma:chapter:conlink:easm-refines-iieasm}
+Suppose that $C$ is a multithreaded linking environment that contains thread configurations, auxiliary functions, as well as properties for them. 
+Additionaly, let's assume that  $T_{[cid]}$ is full set that contains all threads in CPU $cid$, 
+ $\oracle_{cid}$ is a valid
+environmental context for CPU $cid$,
+and $\codeinmath{Ctxt}$ is a
+context program that runs on top of layer $\TLink$
+ Then, we can state that
+ \begin{center}
+\begin{tabular}{c}
+$\semwmachine{C, \parallel tid \in T_{[cid]} \  \PLayer{\TLink}{tid}{\oracle_{cid}}}{\codeinmath{Ctxt}}{{\codeinmath{mach}_{\easm}}} \refines_{R_{\mathcal{M}{[\ieasm, \easm]}}}$\\ 
+$\semwmachine{C, \parallel tid \in T_{[cid]} \  \PLayer{\TLink}{tid}{\oracle_{cid}}}{\codeinmath{Ctxt}}{{\codeinmath{mach}_{\ieasm}}}$\\
+\end{tabular}
+\end{center}
+when $R_{\mathcal{M}{[\ieasm, \easm]}}$ is a refinement relation between two machine models with the $\TLink$ layer.
+\end{lemma}
+
+
+\begin{lemma}[Multithreaded Linking: Providing a Single Threaded Machine]
+\label{lemma:chapter:conlink:easm-refines-single-ieasm}
+Suppose that $C$ is a multithreaded linking environment that contains thread configurations, auxiliary functions, as well as properties for them.
+Additionaly, let's assume that  $T_{[cid]}$ is full set that contains all threads in CPU $cid$, 
+ $\oracle_{cid}$ is a valid
+environmental context for CPU $cid$,
+$tid$ is a member of $T_{[cid]}$,
+ $\oracle^{\TLink}_{tid}$ is a valid
+environmental context for CPU $tid$,
+and $\codeinmath{Ctxt}$ is a
+context program that runs on top of layer $\TLink$
+ Then, we can show the following statement
+ with the assumption that each thread generate at least one event within finite steps:
+ \begin{center}
+\begin{tabular}{c}
+$\semwmachine{C, \parallel tid \in T_{[cid]} \  \PLayer{\TLink}{tid}{\oracle_{cid}}}{\codeinmath{Ctxt}}{{\codeinmath{mach}_{\easm}}} \refines_{R_{\mathcal{M}{[\ieasm, \easm]}}}$\\ 
+$\semwmachine{C, \PLayer{\TLink}{tid}{\oracle^{\TLink}_{tid}}}{\codeinmath{Ctxt}}{{\codeinmath{mach}_{\ieasm}}}$\\
+\end{tabular}
+\end{center}
+when $R_{\mathcal{M}{[\ieasm, \ieasm]}}$ is a refinement relation for two different focused set with $\TLink$ layer on
+$\ieasmmach$ which includes the refinement relation for two different environmental contexts.
+\end{lemma}
+
 
 
 
@@ -387,14 +515,6 @@ external_call_match_has_event:
 %         t = E0 /\
 %         match_estate_state ge cst' (State rs m)).
 %\end{lstlisting}
-
-With them, 
-we can finally prove the reifnment theorem based on the relation between 
-two states.  
-
-\begin{lemma}
-
-\end{lemma}
 
 % 
 %\begin{lstlisting}[language=C]     
@@ -619,42 +739,6 @@ two states.
 %1) n-ary relations; 2) commutativity very well. 
 %Thus, providing the refinement theorem is a little bit tricky. 
 
-
-\subsubsection{Single Thread EAsm refines Full Thread EAsm}
-
-Connecting the machine with a single thread in
-the 
-
-The definition of machine state for this $\ieasmmach$ is 
-\subsubsection{IIEAsm}
-\begin{lstlisting}[language=C]
-  (* fst mem : mine / snd mem : others *)
-  Inductive iestate: Type :=
-    | IEState: Z -> ZMap.t ThreadState -> (mem * mem) -> EData -> Log -> iestate.
-\end{lstlisting}
-which is similar to the machine state of $\easmmach$, but 
-contains two explicit memories, which are for the focused thread ID and 
-and for other threads in the environment.
-We also provide generic theorems 
-to connect those machines together. 
-Differently with the 
-Theorem \jieung{need to cite},
-those two theorems
-do not require any abstract relations that
-users have to fill out later. 
-Our multithreaded linking framework 
-provides those theorems without any additional costs. 
-
-
-
-\begin{lemma}
-
-\end{lemma}
-
-
-\begin{lemma}[Multithreaded Linking]
-
-\end{lemma}
 
 
 %

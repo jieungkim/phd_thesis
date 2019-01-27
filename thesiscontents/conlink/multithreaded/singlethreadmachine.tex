@@ -1,9 +1,13 @@
-\subsection{Machine model for Single Threaded}
+\subsection{Machine model for Per-thread Local Layer Interfaces}
 \label{chapter:linking:subsec:machine-model-for-single-threaded}
 
-Now we introduce the single threaded machine model that has a capability of
- using the same compiler with the $\lasmmach$. 
- The $\coq$ definition of this machine model is 
+Now we introduce a machine model for our per-threaded layer interfaces, $\hasmmach$.
+This machine resolves all the issues that we have illustrated when providing the machine model for per-thread local layers. 
+The model can be connect with the compiler in $\compcertx$ by matching the state definition of it with that of $\lasmmach$. 
+The model also is able to calculate the proper initial state for each focused thread,
+as well as provide the no-op like software scheduling behavior by hiding the context switching 
+between threads on the same CPU with the proper environmental context. 
+The $\coq$ definition of this machine model is 
 \begin{lstlisting}[language=C]
   Definition semantics <@$\cdots$@>:=
     // use the transition rules that are same with the rules of <@$\color{red} \lasmmach$@>,
@@ -11,15 +15,7 @@ Now we introduce the single threaded machine model that has a capability of
     // - stated with [hasm_init_state] in here
     LAsm.semantics (asm_init := hasm_init_state) (lcfg_ops := LC L).
 \end{lstlisting}
-which
-
- We name this model $\hasmmach$, 
- and the state definition, the evaluation rules in the machine model are 
- exactly same with the $\lasm$. 
- It, however, contains the different specifications for scheduling primitives. 
-\jieung{Need to show the spec for them} 
-
-
+which shows that it actually uses the same semantics with that of  $\lasmmach$,  stated as \lstinline$LAsm.semantics$ in it.
 
 %\begin{lstliting}[language=C]
 %  Inductive initial_state {F V} p: state (mem := mwd (cdata RData)) -> Prop :=
@@ -50,20 +46,31 @@ Inductive initial_state {F V} p: state (mem := mwd (cdata RData)) -> Prop :=
 \caption{Initial State of $\hasmmach$}
 \label{fig:chapter:linking:initial-state-of-hasm}
 \end{figure}
- In addition to that, 
- the initial state is slightly different from that of $\lasm$ 
- due to the dynamically allocated values for each thread.
 
-Instead of having a fixed value for PC and abstract data, 
-we have used the calculated value 
-for them. 
+The machine model, however, contains the initial state (\lstinline$\hasm_init_state$ in the code) 
+which is slightly different from that of $\lasm$ due to the dynamically allocated values for each thread.
+Figure~\ref{fig:chapter:linking:initial-state-of-hasm} provides 
+the initial state definition for $\hasmmach$;
+it uses the auxiliary functions in Section~\ref{chapter:linking:subsec:multicore-machine-model} to
+initiate the proper register values (including the value for the initial program counter) and the state of the thread private abstract data  instead of having a fixed value for registers and thread private abstract data.
  
- \subsubsection{Refinement Between HAsm and TAsm}
-
-Similar to the proof between the $\lasm$ and $\easm$,
-we provides the proof template about 
-
-\lstinline$match_dproc_RData: dproc -> Log -> RData -> Prop;$
+\subsubsection{Contextual Refinement Between $\tasmmach$ and $\hasmmach$}
+ 
+ 
+Similar to the proof in Lemma~\ref{lemma:chapter:conlink:parallel-composition}, 
+we provides the proof for the program with $\TLink$ on $\tasmmach$ and the program with $\TSched$ on $\hasmmach$.
+which should have to rely on the detailed information of those two layer definitions as well. 
+Again, a trivial condition is about the domain of the primitive of those two layers; that is similar to the condition in Definition~\ref{definition:chapter:conlink:same-domain-sched-tlink}
+(\ie, the domain for the set of primitives in $\TSched$ and $\TLink$ are equal except for the scheduling primitives, $\yield$ and $\sleep$.),
+but other conditions that rely on the users' concrete definitions
+should be necessary to provide the refinement proofs.
+Therefore, we also define an abstract relation, $\codeinmath{AbsRelT}$,
+which describes the minimum criteria that users have to follow for each primitive that users will provide in their layers.
+The relation is based on the relation on two abstract sates (\lstinline$match_dproc_RData$) in two different machines with has a
+type \lstinline$dproc -> Log -> RData -> Prop$ and show be specified later by users with  concrete definitions for those abstract data types too. Figure~\ref{fig:chapter:conlink:two-cases-of-abs-rel-t} shows 
+one case in  $\codeinmath{AbsRelC}$, which is the case 
+for the external call with generating an event. 
+With that, we shows the contextual refinement between the program runs with $\TLink$ on $\tasmmach$ and the program runs with $\TSched$ on $\hasmmach$ , which is in Lemma~\ref{lemma:chapter:conlink:parallel-composition}. 
 
 \begin{figure}
 \begin{lstlisting}[language=C]
@@ -84,7 +91,7 @@ external_call_match_has_event:
      if peq id thread_yield then False
         else if peq id thread_sleep then False
                    else if has_event id then True else False
-  | _ => Fals end -> 
+  | _ => False end -> 
   exists (largs : list lval) ae<@$'$@> (l<@$'$@> : Log),
     // the external call semantics using the specification defined in TLink layer
     external_call<@$'$@> (mem := mwd (cdata PData)) 
@@ -104,8 +111,26 @@ external_call_match_has_event:
 \end{figure}
 
 
-\begin{lemma}
-
+\begin{lemma}[Contextual Refinement Between $\tasmmach$ and $\hasmmach$]
+\label{lemma:chapter:conlink:tasm-refines-hasm}
+Suppose that $C$ is a multithreaded linking environment that contains thread configurations, auxiliary functions, as well as properties for them. 
+Additionaly, let's assume that 
+$tid$ is a valid thread ID in a certain CPU,
+  $\oracle^{\TLink}_{tid}$ is a valid
+environmental context for a thread $tid$ with $\tasmmach$,
+ $\oracle_{tid}$ is a valid
+environmental context for a thread $tid$ with $\hasmmach$,
+and $\codeinmath{Ctxt}$ is a
+context program that runs on top of layer $\TSched$ (as well as $\TLink$)
+ Then, we can state that
+ \begin{center}
+\begin{tabular}{c}
+$\semwmachine{C, \PLayer{\TLink}{tid}{\oracle^{\TLink}_{cid}}}{\codeinmath{Ctxt}}{\codeinmath{mach}_{\tasm}} \refines_{R_{\mathcal{M}{[\hasm, \tasm]}}} \semwmachine{C, \PLayer{\TSched}{tid}{\oracle_{tid}}}{\codeinmath{Ctxt}}{{\codeinmath{mach}_{\hasm}}}$\\
+\end{tabular}
+\end{center}
+when $R_{\mathcal{M}{[\hasm, \tasm]}}$ is a refinement relation between two machine models with the associated layer definitions,
+ two environmental contexts,
+as well as contains $\codeinmath{AbsRelT}$ as parts of it.
 \end{lemma}
 
 %
