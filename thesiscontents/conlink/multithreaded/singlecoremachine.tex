@@ -9,30 +9,38 @@ that are sufficient for us to explain our thread-linking framework.
 The first evaluation rule is 
 about the rule for assembly instructions
 \begin{figure}
-\begin{lstlisting}[language=C, deletekeywords={unsigned}]
-    | exec_step_internal:
-        forall b ofs f i rs m rs_res m_res,
-        rs PC = Vptr b ofs ->
-        Genv.find_funct_ptr ge b = Some (Internal f) ->
-        find_instr (Int.unsigned ofs) f.(fn_code) = Some i ->
-        // evaluate the current assembly intstruction         
-        exec_instr ge f i rs m = Next rs_res m_res ->
-        step ge (State rs m) E0 (State rs_res m_res)
+\begin{lstlisting}[language=C, deletekeywords={unsigned, struct}]
+| exec_step_internal:
+    forall b ofs f i rs m rs_res m_res,
+    // check the program counter
+    rs PC = Vptr b ofs ->
+    Genv.find_funct_ptr ge b = Some (Internal f) ->
+    find_instr (Int.unsigned ofs) f.(fn_code) = Some i ->
+    // evaluate the current assembly instr.         
+    exec_instr ge f i rs m = Next rs_res m_res ->
+    step ge (State rs m) E0 (State rs_res m_res)
 \end{lstlisting}
-
+\begin{center}
+(a) Evaluation Rule for Internal Instructions
+\end{center}
 \begin{lstlisting}[language=C]
-    | exec_step_external:
-        forall b ef args res rs m t rs_res m_res,
-        rs PC = Vptr b Int.zero ->
-        Genv.find_funct_ptr ge b = Some (External ef) ->
-        // extract the argument information
-        extcall_arguments rs m (ef_sig ef) args ->
-        // calling <@\color{red} $\sigma_{id}$@>
-        external_call<@$'$@> (fun _ => True) ef ge args m t res m_res ->
-        rs_res = <@$\cdots$@> // flush the values in the registers and set the new PC value
-        step ge (State rs m) t (State rs_res m_res)
+| exec_step_external:
+  forall b ef args res rs m t rs<@$'$@> m<@$'$@>,
+    // check the program counter  
+    rs PC = Vptr b Int.zero ->
+    Genv.find_funct_ptr ge b = Some (External ef) ->
+    // extract the argument information
+    extcall_arguments rs m (ef_sig ef) args ->
+    // calling <@\color{red} $\sigma_{id}$@> defined in CSched
+    external_call<@$'$@> (fun _ => True) ef ge args m t res m<@$'$@> ->
+    rs<@$'$@> = <@$\cdots$@> // flush the values in the registers and set the new PC value
+    step ge (State rs m) t (State rs<@$'$@> m<@$'$@>)
 \end{lstlisting}
-
+\begin{center}
+(b) Evaluation Rule for External Calls
+\end{center}
+\caption{Evaluation Rules in $\lasmmach$}
+\label{fig:chapter:linking:eval-rule-in-lasm}
 \end{figure}
 which basically evaluates the corresponding 
 rule for the instruction. 

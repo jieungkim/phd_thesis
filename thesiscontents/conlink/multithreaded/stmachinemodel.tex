@@ -39,7 +39,8 @@ The machine, however,
  by using 
  a \lstinline$get_env_log$ which merges multiple environmental context queries into a single step,
  which is defined as
- \begin{figure}
+
+\begin{figure}
 \begin{lstlisting}[language=C]
 Fixpoint get_env_log (n: nat) (curid: Z) (l: Log) :=
   match n with
@@ -50,32 +51,25 @@ Fixpoint get_env_log (n: nat) (curid: Z) (l: Log) :=
 \end{lstlisting}
 
 \begin{lstlisting}[language=C]
-    | texec_step_external_yield:
-        forall b ef (rs0 rs': regset) (m m': mem) curid s l l' l'' l''' nb d e,
-          proc_id (uRData l) = curid ->
-          rs0 PC = Vptr b Int.zero ->
-          Genv.find_funct_ptr ge b = Some (External ef) ->
-          stencil_matches s ge ->
-          l' = LEvent curid (LogYield (Mem.nextblock m))::l ->
-          lastEvType l <> Some LogYieldTy ->
-          get_env_log limit curid l' = Some l'' ->
-          last_op l'' = Some e ->
-          state_check thread_yield nil l d ->
-          l''' = LEvent curid LogYieldBack::l'' ->
-          rs' = (undef_regs (CR ZF :: CR CF :: CR PF :: CR SF :: CR OF :: nil)
-                            (undef_regs (map preg_of destroyed_at_call) rs0)) 
-                  # EAX <- Vundef #PC <- (rs0 RA) #RA <- Vundef ->
-          forall
-            (Hnextblock: getLogEventNB (e) = Some nb)
-            (NON_YIELD: match ef with
-                               | EF_external id _ => 
-                                 if peq id thread_yield then True
-%                                else False
-                               | _ => False
-                             end)
-                 (LIFT_NEXTBLOCK: mem_lift_nextblock m (Pos.to_nat (nb) - Pos.to_nat(Mem.nextblock m) % nat) = m'),
-            tstep ge (TState curid rs0 m d l) E0
-                  (TState curid rs' m' d l''')
+| texec_step_external_yield:
+  forall b ef (rs0 rs<@$'$@>: regset) (m m<@$'$@>: mem) curid s l l<@$'$@> l<@$''$@> l<@$'''$@> nb d e,
+   // check the current thread ID
+    proc_id (uRData l) = curid ->
+    // check the program counter
+    rs0 PC = Vptr b Int.zero ->
+    Genv.find_funct_ptr ge b = Some (External ef) ->
+    <@$\cdots$@>
+    // update the log using [get_env_log]
+    l<@$'$@> = LEvent curid (LogYield (Mem.nextblock m))::l ->
+    get_env_log limit curid l<@$'$@> = Some l<@$''$@> ->
+    l<@$'''$@> = LEvent curid LogYieldBack::l<@$''$@> ->
+    rs<@$'$@> = <@$\cdots$@> // flush the values in the registers and set the new PC value
+    // check the primitive ID (it should be [thread_yield])
+    match ef with 
+      | EF_external id _ => if peq id thread_yield then True else False
+      | _ => False end ->
+	  <@$\cdots$@>
+      tstep ge (TState curid rs0 m d l) E0 (TState curid rs<@$'$@> m<@$'$@> d l<@$'''$@>)
 \end{lstlisting}
 \caption{The Transition Rule for $\yield$ in $\tasmmach$}
 \label{fig:chapter:conlink:yield-rule-in-tasm}

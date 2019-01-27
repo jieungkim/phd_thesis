@@ -47,52 +47,71 @@ The memory in here is logically a collection of private memories for each thread
 %  Inductive estep (ge: genv) : estate -> trace -> estate -> Prop :=
 %\end{lstlisting}
 
-With this state definition, the state transition rule for instructions in $\easmmach$ is similar to that
+With this state definition, the state transition rule for instructions in $\easmmach$ is similar to that in $\lasmmach$.
+
 \begin{figure}
-in $\lasmmach$.
-\begin{lstlisting}[language=C]
-    | eexec_step_internal:
-        forall b ofs f i (rs: regset) m m<@$'$@> dp d d<@$'$@> ds<@$'$@> rs<@$'$@> curid rsm l,
-          ZMap.get curid rsm = Running rs ->
-          proc_id (uRData l) = curid ->
-          rs PC = Vptr b ofs ->
-          Genv.find_funct_ptr ge b = Some (Internal f) ->
-          find_instr (Int.unsigned ofs) f.(fn_code) = Some i ->
-          lastEvType l <> Some LogYieldTy ->
-          exec_instr ge f i rs (m, (uRData l,d)) = Next rs<@$'$@> (m<@$'$@>, (ds<@$'$@>,d<@$'$@>)) ->
-          forall (Hget_dp: ZMap.get curid dp = Some d),
-            estep ge (EState curid rsm m dp l) E0
-                  (EState curid (ZMap.set curid (Running rs<@$'$@>) rsm) m<@$'$@> (ZMap.set curid (Some d<@$'$@>) dp) l)
+\begin{lstlisting}[language=C, deletekeywords={unsigned}]
+| eexec_step_internal:
+  forall b ofs f i (rs: regset) m m<@$'$@> dp d d<@$'$@> ds<@$'$@> rs<@$'$@> curid rsm l,
+    // check the current thread id and thread status
+    ZMap.get curid rsm = Running rs ->
+    proc_id (uRData l) = curid ->
+    // check the program counter
+    rs PC = Vptr b ofs ->
+    Genv.find_funct_ptr ge b = Some (Internal f) ->
+    find_instr (Int.unsigned ofs) f.(fn_code) = Some i ->
+    // make sure that the state is not in the middle of scheduling
+    lastEvType l <> Some LogYieldTy ->
+    // evaluate the current assembly instr.
+    exec_instr ge f i rs (m, (uRData l,d)) = Next rs<@$'$@> (m<@$'$@>, (ds<@$'$@>,d<@$'$@>)) ->
+    // update the private state of the current thread
+    forall (Hget_dp: ZMap.get curid dp = Some d),
+    estep ge (EState curid rsm m dp l) E0
+      (EState curid (ZMap.set curid (Running rs<@$'$@>) rsm) m<@$'$@> 
+          (ZMap.set curid (Some d<@$'$@>) dp) l)
 \end{lstlisting}
+\begin{center}
+(a) Evaluation Rule for Internal Instructions
+\end{center}
+\begin{lstlisting}[language=C]
+| eexec_step_external:
+  forall b ef args res (rs: regset) m m<@$'$@> dp d d<@$'$@> ds<@$'$@> t rs<@$'$@> curid rsm l l<@$'$@>,
+    // check the current thread id and thread status  
+    ZMap.get curid rsm = Running rs ->
+    proc_id (uRData l) = curid ->
+    // check the program counter
+    rs PC = Vptr b Int.zero ->
+    <@$\cdots$@>
+    // calling <@$\color{red} \spec_{id}$@> defined in TLink
+    externall_call<@$'$@> (mem:= mwd (cdata PData)) (fun _ => True) ef ge args 
+      (m, (uRData l, d)) t res (m<@$'$@>, (ds<@$'$@>,d<@$'$@>)) ->
+    rs<@$'$@> = <@$\cdots$@>
+    // check the primitive id, to make sure it is neither of scheduling primitives
+    forall NON_YIELD: match ef with
+    | EF_external id _ => 
+       if peq id thread_yield then False
+       else if peq id thread_sleep then False
+               else if has_event id then
+       <@$\cdots$@>
+    // update the state
+    estep ge (EState curid rsm m dp l) t 
+      (EState curid (ZMap.set curid (Running rs<@$'$@>) rsm) m<@$'$@> 
+        (ZMap.set curid (Some d<@$'$@>) dp) l<@$'$@>)
+\end{lstlisting}
+\begin{center}
+(b) Evaluation Rule for External Calls
+\end{center}
+\caption{Evaluation Rules (Internal Instructions and External Calls) in $\easmmach$.}
+\label{fig:chapter:linking:eval-rule-in-easm-normal}
 \end{figure}
+
 
 
 Especially for the internal steps, 
 the step relation is almost same with the step relation in $\lasm$, and 
 it is actually using the same evaluation rule for them (\lstinline$exec_instr$). 
 
-\begin{figure}
-\begin{lstlisting}[language=C]
-  | eexec_step_external:
-      forall b ef args res (rs: regset) m m<@$'$@> dp d d<@$'$@> ds<@$'$@> t rs<@$'$@> curid rsm l l<@$'$@>,
-        ZMap.get curid rsm = Running rs ->
-        proc_id (uRData l) = curid ->
-        rs PC = Vptr b Int.zero ->
-       <@$\cdots$@>
-        externall_call<@$'$@> (mem:= mwd (cdata PData)) (fun _ => True) ef ge args (m, (uRData l, d)) t 
-                                                res (m<@$'$@>, (ds<@$'$@>,d<@$'$@>)) ->
-        rs<@$'$@> = <@$\cdots$@>
-        forall NON_YIELD: match ef with
-          | EF_external id _ => 
-            if peq id thread_yield then False
-            else if peq id thread_sleep then False
-            else if has_event id then
-             <@$\cdots$@>
-                            estep ge (EState curid rsm m dp l) t 
-                                  (EState curid (ZMap.set curid (Running rs<@$'$@>) rsm) m<@$'$@> 
-                                  (ZMap.set curid (Some d<@$'$@>) dp) l<@$'$@>)
-\end{lstlisting}
-\end{figure}
+
 %
 %\begin{lstlisting}[language=C]
 %    | eexec_step_prim_call:
@@ -118,28 +137,40 @@ it is actually using the same evaluation rule for them (\lstinline$exec_instr$).
 %          estep ge (EState curid rsm m dp l) t 
 %                (EState curid (ZMap.set curid (Running rs<@$'$@>) rsm) m<@$'$@> (ZMap.set curid (Some d<@$'$@>) dp) l<@$'$@>)
 %\end{lstlisting}
+
+
 \begin{figure}
 \begin{lstlisting}[language=C]
-  | eexec_step_external_yield:
-    <@$\cdots$@>
-    forall (NON_YIELD: match ef with
-    | EF_external id _ => if peq id thread_yield then True else False
-    | _ => False 
-    end),
-   estep ge (EState curid rsm m dp l) E0
-     (EState curid<@$'$@> rsm m dp l<@$'$@>)
+| eexec_step_external_yield:
+  <@$\cdots$@>
+  // check the primitive ID (it should be [thread_yield])
+  forall (NON_YIELD: match ef with
+  | EF_external id _ => if peq id thread_yield then True else False
+  | _ => False 
+  end),
+  // update the current thread ID and the log
+ estep ge (EState curid rsm m dp l) E0 (EState curid<@$'$@> rsm m dp l<@$'$@>)
 \end{lstlisting}
-
-
+\begin{center}
+(a) Evaluation Rule for Yield
+\end{center}
 \begin{lstlisting}[language=C]
-    | eexec_step_external_yield_back:
-        forall (rs<@$'$@> rs0: regset) (m m<@$'$@>: mem) curid rsm l l<@$'$@> nb dp d e,
-          (ZMap.get curid rsm = Available /\ initial_thread_kctxt ge curid l = Some rs0) \/
-          ZMap.get curid rsm = Running rs0 ->
-          <@$\cdots$@>),
-            estep ge (EState curid rsm m dp l) E0
-                  (EState curid (ZMap.set curid (Running rs<@$'$@>) rsm) m<@$'$@> dp l<@$'$@>).
+| eexec_step_external_yield_back:
+  forall (rs<@$'$@> rs0: regset) (m m<@$'$@>: mem) curid rsm l l<@$'$@> nb dp d e,
+    // check the thread statue (whether is already running or not) and
+    // assign the proper kernel context value for the thread when the thread
+    // starts its evaluation at this moment
+    (ZMap.get curid rsm = Available /\ initial_thread_kctxt ge curid l = Some rs0) \/
+      ZMap.get curid rsm = Running rs0 -> <@$\cdots$@>),
+    // update the current thread ID, register value (if it is required), and the log
+    estep ge (EState curid rsm m dp l) E
+      (EState curid (ZMap.set curid (Running rs<@$'$@>) rsm) m<@$'$@> dp l<@$'$@>).
 \end{lstlisting}
+\begin{center}
+(b) Evaluation Rule for YieldBack
+\end{center}
+\caption{Evaluation Rules (Yield and YieldBack) in $\easmmach$.}
+\label{fig:chapter:linking:eval-rule-in-easm-yield}
 \end{figure}
 
 %\begin{figure}
@@ -252,15 +283,15 @@ external_call_match_has_event:
   exists (a<@$'$@>: RData),
     // the external call semantics using the specification defined in CSched layer  
     externall_call<@$'$@> (mem := mwd (cdata RData)) 
-         (external_calls_ops :=  compatlayer_extcall_ops (CSched  <@$\oplus$@>  L64))
-             WB ef ge args (m, a) t res (m<@$'$@>, a<@$'$@>) /\
-             ds<@$'$@> = uRData l<@$'$@> /\
-             // use the abstract match relation to match the 
-             // final state of the evaluation
-           match_EData_RData (ZMap.set (proc_id (uRData l)) (Some d<@$'$@>) dp) l<@$'$@> a' /\
-           <@$\cdots$@>
+      (external_calls_ops :=  compatlayer_extcall_ops (CSched  <@$\oplus$@>  L64))
+      WB ef ge args (m, a) t res (m<@$'$@>, a<@$'$@>) /\
+      ds<@$'$@> = uRData l<@$'$@> /\
+      // use the abstract match relation to match the 
+      // final state of the evaluation
+      match_EData_RData (ZMap.set (proc_id (uRData l)) (Some d<@$'$@>) dp) l<@$'$@> a' /\
+      <@$\cdots$@>
 \end{lstlisting}
-\caption{The External Call Case in $\codeinmath{AbsRelC}$}
+\caption{The External Call Case in $\codeinmath{AbsRelC}$ (with Generating an Event.)}
 \label{fig:chapter:conlink:two-cases-of-abs-rel-c}
 \end{figure}
 

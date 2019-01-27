@@ -9,32 +9,17 @@ we provide the multithreaded environment definitions that we briefly explained i
 %for mutlithreaded linking.
 
 \subsubsection{Data Type} 
-%
-%\begin{figure}
-%$$
-%\begin{array}{llll llll}
-%(\textit{SharedData}) & \dshare & : & \toptype &
-%(\textit{PrivateData}) &  \dproc & : & \toptype \\
-%(\textit{InitSharedData}) & \dshare_{init} & : & \dshare &
-%(\textit{ProcessorID}) & \cpuid & : & \dshare \rightarrow \ztype\\
-%(\textit{ThreadID}) & \procid & : & \dshare \rightarrow \ztype&
-%(\textit{BlockNum}) & \blocknum & : & \nattype\\
-%(\textit{Mem}) & m & : & loc \rightarrow val &
-%(\textit{NextBlock}) & \nextblockfun & : & m \rightarrow  \nattype \\
-%\end{array}
-%$$
-%\caption{Data Types and Auxiliary Functions Related to Data Types}
-%\end{figure}
+
 To divide the CPU private state and the log into the proper set of private state and the shared log, we introduce 
 new abstract data types, which are defined as follows:
 \begin{figure}
 \begin{lstlisting}[language=C, morekeywords={Class}]
 Class SingleData := {
-    dshare: Type; // shared data    
-    processor_id : dshare -> Z;  // a CPU ID is a part of shared data
-    proc_id: dshare -> Z; // the current thread ID is is a part of shared data
-    dproc: Type; // private data for each thread
-    <@$\cdots$@>}.
+  dshare: Type; // shared data    
+  processor_id : dshare -> Z;  // a CPU ID is a part of shared data
+  proc_id: dshare -> Z; // the current thread ID is is a part of shared data
+  dproc: Type; // private data for each thread
+  <@$\cdots$@>}.
 \end{lstlisting} 
 \end{figure}
 there are two abstract data types, $\codeinmath{dshare}$ and $\codeinmath{dproc}$, 
@@ -55,8 +40,8 @@ Based on the assumption,
 we have built the algebraic memory model, the extended version of the memory model by adding two key relations from $\compcertx$'s memory model.
 Those two key relations are 
 \begin{lstlisting}[language=C]
-      mem_disjoint_union : mem -> mem -> mem -> Prop;
-      mem_lift_nextblock : mem -> nat -> mem;
+mem_disjoint_union : mem -> mem -> mem -> Prop;
+mem_lift_nextblock : mem -> nat -> mem;
 \end{lstlisting}
 The memory in $\compcertx$ is distinguished by its block identifier and an offset for each block. 
 The type of block identifier is a natural number,
@@ -70,43 +55,19 @@ provides the operation that makes the adjustment on the memory possible.
 
 
 \subsubsection{Thread Configuration}
-%\begin{figure}
-%\[
-%\begin{array}{llll llll}
-%(\textit{ThreadSet}) & \threadset & \in & \{Z\} &
-%(\textit{FullThreadSet}) & \fullthreadset & \in & \threadset \\
-%(\textit{InitLog}) & \SLog_{init} & \in & \SLog &
-%(\textit{InitNb}) & \blocknum_{init} & \in & \blocknum \\
-%(\textit{EnvContext}) & \oracle^{t} & \in & \threadset \rightarrow \varphi^{\threadset} &
-%(\textit{Strategy}) & \varphi^{\threadset} & \in & \SLog \rightarrow \Sevent \\
-%\end{array}
-%\]
-%\caption{Thread Configurations }
-%\end{figure}
-
-%\begin{lstlisting}[language=C]
-%Class ThreadsConfigurationOps := {      
-%    current_CPU_ID: Z; // The ID for the CPU we're looking at. (necessary?) 
-%    current_thread: Z; // The thread we're looking at in high-level machines
-%    dev_handling_cid : Z; // specific thread for handling device drivers 
-%    vm_handling_cid : Z; // specific thread for handling this CPU's virtual machine 
-%    non_current_thread_list: list Z;  // The other threads on this CPU 
-%    full_thread_list := current_thread :: non_current_thread_list; // The full list
-%    main_thread: Z; // The main thread on this CPU 
-%    limit: nat // A log look-back limit used in TAsm  }.
-%\end{lstlisting}
-
 Thread linking also requires multiple configurations about the environment of the system as defined in \lstinline$ThreadConfigurationOps$.
 \begin{figure}
 \begin{lstlisting}[language=C, morekeywords={Class}]
 Class ThreadsConfigurationOps := {      
-    current_CPU_ID: Z; // The ID for the CPU we're looking at. (necessary?) 
-    current_thread: Z; // The thread we're looking at in high-level machines
-    non_current_thread_list: list Z;  // The other threads on this CPU 
-    full_thread_list := current_thread :: non_current_thread_list; // The full list
-    main_thread: Z; // The main thread on this CPU 
-    limit: nat // A log look-back limit used in TAsm  }.
+  current_CPU_ID: Z; // The ID for the CPU we're looking at. (necessary?) 
+  current_thread: Z; // The thread we're looking at in high-level machines
+  non_current_thread_list: list Z;  // The other threads on this CPU 
+  full_thread_list := current_thread :: non_current_thread_list; // The full list
+  main_thread: Z; // The main thread on this CPU 
+  limit: nat // A log look-back limit used in TAsm  }.
 \end{lstlisting}
+\caption{Thread Configurations}
+\label{fig:chapter:linking:thread-configurations}
 \end{figure}
 For example, \lstinline$current_CPU_ID$ is the CPU ID that is 
 associated with the current local layer.
@@ -123,29 +84,6 @@ differently with the full CPU set in multicore linking configuration.
 The \lstinline$main_thread$ represents the main thread (which initializes the system) of the CPU. 
 This main thread may differ from the current thread identifier or same with the current thread identifier.
 
-%
-%\begin{figure}
-%\[
-%\begin{array}{llllllll}
-%(\textit{Lval}) & \lval & \in & Int \cup Ptr  &
-%(\textit{Largs}) & \largs & \in & list \ \lval  \\
-%(\textit{Ident}) & \threadfunid & \in & \{\yield,\ \sleep,\ \cdots\}&
-%(\textit{SnapShot}) & \dsnap & \in & Type  \\
-%(\textit{SnapShotFun}) & \snapfun & \in &  \dproc \rightarrow \dsnap &
-%(\textit{SleepEventUnit}) & \primevunit{sleep} & \in & Int \times \blocknum \times \dsnap \\
-%(\textit{YieldEventUnit}) & \primevunit{yield} & \in & \blocknum \times \dsnap &
-%(\textit{PrimEventUnit}) & \primevunit{\threadfunid} & \in & \threadfunid \times \largs \times \dsnap \\
-%(\textit{EventUnit}) &  \primevunit{} & \in &
-%\multicolumn{5}{l}{
-% \{\primevunit{sleep},\ \primevunit{sleep},\  \primevunit{ident},\  \yieldbackunit \} 
-% }
-% \\
-%(\textit{Event}) &  \Sevent & \in & tid \times \primevunit{} &
-%(\textit{Log}) &  \SLog & \in & list\ \Sevent \\
-%\end{array}
-%\]
-%\caption{Event and Log for Mutlithreaded Linking Framework.}
-%\end{figure}
 
 Similar to the multicore linking case, 
 shared resources are represented as a log,  a list of event,
@@ -154,13 +92,26 @@ The definition for the log is defined as follows:
 \begin{figure}
 \begin{lstlisting}[language=C]
 Inductive LogEventUnit :=
-| LogYield (n: positive)
-| LogSleep (i: Z) (n: positive) <@$\cdots$@>
-| LogPrim (id: ident) (args: list lval) (choice : Z) (dprocSnap : privDataSnap) 
-| LogYieldBack.
-
+  | LogYield (n: positive)
+  | LogSleep (i: Z) (n: positive) <@$\cdots$@>
+  | LogPrim (id: ident) (args: list lval) (choice : Z) (dprocSnap : privDataSnap) 
+  | LogYieldBack.
 Inductive LogEvent :=| LEvent : Z -> LogEventUnit -> LogEvent.
 \end{lstlisting}
+\begin{center}
+(a) Event and Log Definitions for Machine Models in Multithreaded Linking Framework.
+\end{center}
+\begin{lstlisting}[language=C, morekeywords={Class}]
+Class SingleOracleOps := {
+  init_log: Log; // initial log for each thread
+  Single_Oracle : Log -> LogEvent; // environmental context for multithreaded linking
+  <@$\cdots$@> }.
+\end{lstlisting}
+\begin{center}
+(b) Initial Log and Environmental Context Definitions.
+\end{center}
+\caption{Event, Log, and Environmental Context Definitions for Multithreaded Linking}
+\label{fig:chapter:linking:event-and-log-for-multithreaded-linking}
 \end{figure}
 Our framework allows two scheduling primitives, 
 yield and sleep. 
@@ -178,12 +129,7 @@ For example, the acquire lock and the release lock primitives have to memorize t
 The last event, \lstinline$LogYieldBack$ is the memorize the moment to figure out when each thread re-achieve the evaluation control. 
 
 There are also a few definitions that depends on event and log definitions as bellows.
-\begin{lstlisting}[language=C, morekeywords={Class}]
-Class SingleOracleOps := {
-  init_log: Log; // initial log for each thread
-  Single_Oracle : Log -> LogEvent; // environmental context for multithreaded linking
-  <@$\cdots$@> }.
-\end{lstlisting}
+
 The environmental context \lstinline$Single_Oracle$  for our multithreaded linking
 then can be defined as a function that gets the current log and returns the event. 
 In addition to that, 
@@ -196,26 +142,6 @@ the initial log of thread 2 has to include the proper spawn event as well as yie
 
 Based on those definitions, we provide multiple auxiliary functions 
 for thread local machines to calculate necessary information in Figure~\ref{fig:chapter:conlink:multithreaded-linking-aux-functions}.
-%\begin{figure}
-%$$
-%\begin{array}{llllllll}
-%(\textit{Update}) & \updatefun & \in & \dshare \rightarrow \SLog \rightarrow \dshare &
-%(\textit{Construct}) & \updatefun_{init} \ l& := & \updatefun\ \dshare_{init} \ l  \ \ \ \ (l \in \SLog) \\
-%(\textit{StateCheck}) & \statecheck & \in &
-%\multicolumn{5}{l}{
-% \threadfunid \rightarrow \largs \rightarrow \dshare \rightarrow \dsnap \rightarrow \mathrm{Prop}
-% }
-% \\
-% (\textit{EventCheck}) & \haseventfun & \in & \threadfunid \rightarrow bool  &
-%(\textit{Reg})  &\regs & ::= & \mathsf{EIP} \ | \ \mathsf{EAX} \ | \  \cdots \\
-%(\textit{ThreadState}) & \threadstate & \in &
-%\multicolumn{5}{l}{
-% \{\mathrm{Environment}, \ \mathrm{Available}, \ \mathrm{Running}\ \regs \} 
-%  }
-%\end{array}
-%$$
-%\caption{Auxiliary Definitions for multithreaded linking}
-%\end{figure}
 
 \begin{figure}
 \begin{lstlisting}[language=C, morekeywords={Class}]
@@ -233,33 +159,7 @@ for thread local machines to calculate necessary information in Figure~\ref{fig:
       // calculate each thread's initial register value
       prim_thread_init_pc {F V} (ge: Genv.t F V): ident -> list lval -> option val }.
 \end{lstlisting}
-%\begin{lstlisting}[language=C]
-%  Class SingleOracle  `{single_data: SingleData} `{single_oracle_ops : SingleOracleOps}  
-%        `{threads_conf_ops : ThreadsConfigurationOps} := {
-%      update : dshare -> Log -> dshare;
-%      has_event: ident -> bool;      
-%      uRData (l: Log) : dshare := update (init_dshare) l;      
-%      choice_check: ident -> list lval -> dshare -> dproc -> Z;
-%      sync_chpool_check: ident -> list lval -> dshare -> dproc ->
-%        option SyncChanPool;
-%      snap_func : dproc -> privDataSnap;
-%      snap_rev_func : privDataSnap -> dproc; 
-%      thread_init_dproc : Z-> dproc;
-%      state_checks (name : ident) (largs: list lval) (l : Log) 
-%        (pdp: ZMap.t (option dproc)) :=
-%        match ZMap.get (proc_id (uRData l)) pdp with 
-%          | Some pd => state_check name largs l pd
-%          | _ => True
-%        end;
-%      PHThread2TCompose : option Kctxt -> dshare -> dproc -> RData;      
-%      thread_init_rdata (tid: Z) :=
-%        PHThread2TCompose
-%          None
-%          (uRData init_log)
-%          (thread_init_dproc tid);
-%      prim_thread_init_pc {F V} (ge: Genv.t F V): ident -> list lval -> option val }.
-%\end{lstlisting}
-\caption{Auxiliary Functions in Multithreaded Linking Framework}
+\caption{Auxiliary Functions in Multithreaded Linking Framework.}
 \label{fig:chapter:conlink:multithreaded-linking-aux-functions}
 \end{figure}
 Among them,  \lstinline$update$ and \lstinline$uRData$ functions are  declarations of a replay function for the global log. 
@@ -272,20 +172,6 @@ for the thread.
 
 \subsubsection{Auxiliary Properties}
 
-%\begin{lstlisting}[language=C]
-%Class ThreadsConfiguration `{s_oracle : SingleOracle}: Prop := {
-%  CPU_ID_valid: forall l, processor_id (uRData l) = current_CPU_ID;
-%  main_valid: In main_thread full_thread_list;
-%  null_log_proc_id: proc_id (uRData nil) = main_thread;
-%  main_thread_val: main_thread = current_CPU_ID + 1;
-%  current_CPU_ID_range: 0 <= current_CPU_ID < Constant.TOTAL_CPU;
-%  dev_handling_cid_constraint: dev_handling_cid = main_thread;
-%  init_log_proc_id: proc_id (uRData init_log) = current_thread;
-%  valid_thread_list: forall i, In i full_thread_list -> 
-%    Constant.TOTAL_CPU < i < Constant.num_proc \/ i = main_thread;
-%  all_cid_in_full_thread_list: forall l, In (proc_id (uRData l)) full_thread_list;
-%  full_thread_list_prop: NoDup full_thread_list }. 
-%\end{lstlisting}
 
 \begin{figure}
 \begin{lstlisting}[language=C, , morekeywords={Class}]
@@ -309,7 +195,7 @@ Class SingleOracleP <@$\cdots$@> := {
  }.
 \end{lstlisting}
 \begin{center}
-(a) Properties of Auxiliary Functions
+(a) Properties of Auxiliary Functions.
 \end{center}
 
 \begin{lstlisting}[language=C, , morekeywords={Class}]
@@ -348,6 +234,31 @@ that are necessary for us to provide the
 refinement between the intermediate machines. 
 Most of them can be instantiated with our concrete definition of the configurations, auxiliary functions,
 as well as abstract thread definitions. 
+
+
+%\begin{figure}
+%$$
+%\begin{array}{llllllll}
+%(\textit{Update}) & \updatefun & \in & \dshare \rightarrow \SLog \rightarrow \dshare &
+%(\textit{Construct}) & \updatefun_{init} \ l& := & \updatefun\ \dshare_{init} \ l  \ \ \ \ (l \in \SLog) \\
+%(\textit{StateCheck}) & \statecheck & \in &
+%\multicolumn{5}{l}{
+% \threadfunid \rightarrow \largs \rightarrow \dshare \rightarrow \dsnap \rightarrow \mathrm{Prop}
+% }
+% \\
+% (\textit{EventCheck}) & \haseventfun & \in & \threadfunid \rightarrow bool  &
+%(\textit{Reg})  &\regs & ::= & \mathsf{EIP} \ | \ \mathsf{EAX} \ | \  \cdots \\
+%(\textit{ThreadState}) & \threadstate & \in &
+%\multicolumn{5}{l}{
+% \{\mathrm{Environment}, \ \mathrm{Available}, \ \mathrm{Running}\ \regs \} 
+%  }
+%\end{array}
+%$$
+%\caption{Auxiliary Definitions for multithreaded linking}
+%\end{figure}
+
+
+
 %
 %Some 
 %We also requires the restrictions about the form of the initial log (and the log) 
@@ -401,3 +312,111 @@ as well as abstract thread definitions.
 %          prim_thread_init_pc ge2 f vargs = Some v
 %    }.
 %\end{lstlisting}
+
+%\begin{lstlisting}[language=C]
+%Class ThreadsConfiguration `{s_oracle : SingleOracle}: Prop := {
+%  CPU_ID_valid: forall l, processor_id (uRData l) = current_CPU_ID;
+%  main_valid: In main_thread full_thread_list;
+%  null_log_proc_id: proc_id (uRData nil) = main_thread;
+%  main_thread_val: main_thread = current_CPU_ID + 1;
+%  current_CPU_ID_range: 0 <= current_CPU_ID < Constant.TOTAL_CPU;
+%  dev_handling_cid_constraint: dev_handling_cid = main_thread;
+%  init_log_proc_id: proc_id (uRData init_log) = current_thread;
+%  valid_thread_list: forall i, In i full_thread_list -> 
+%    Constant.TOTAL_CPU < i < Constant.num_proc \/ i = main_thread;
+%  all_cid_in_full_thread_list: forall l, In (proc_id (uRData l)) full_thread_list;
+%  full_thread_list_prop: NoDup full_thread_list }. 
+%\end{lstlisting}
+%\begin{lstlisting}[language=C]
+%  Class SingleOracle  `{single_data: SingleData} `{single_oracle_ops : SingleOracleOps}  
+%        `{threads_conf_ops : ThreadsConfigurationOps} := {
+%      update : dshare -> Log -> dshare;
+%      has_event: ident -> bool;      
+%      uRData (l: Log) : dshare := update (init_dshare) l;      
+%      choice_check: ident -> list lval -> dshare -> dproc -> Z;
+%      sync_chpool_check: ident -> list lval -> dshare -> dproc ->
+%        option SyncChanPool;
+%      snap_func : dproc -> privDataSnap;
+%      snap_rev_func : privDataSnap -> dproc; 
+%      thread_init_dproc : Z-> dproc;
+%      state_checks (name : ident) (largs: list lval) (l : Log) 
+%        (pdp: ZMap.t (option dproc)) :=
+%        match ZMap.get (proc_id (uRData l)) pdp with 
+%          | Some pd => state_check name largs l pd
+%          | _ => True
+%        end;
+%      PHThread2TCompose : option Kctxt -> dshare -> dproc -> RData;      
+%      thread_init_rdata (tid: Z) :=
+%        PHThread2TCompose
+%          None
+%          (uRData init_log)
+%          (thread_init_dproc tid);
+%      prim_thread_init_pc {F V} (ge: Genv.t F V): ident -> list lval -> option val }.
+%\end{lstlisting}
+
+
+%\begin{figure}
+%\[
+%\begin{array}{llll llll}
+%(\textit{ThreadSet}) & \threadset & \in & \{Z\} &
+%(\textit{FullThreadSet}) & \fullthreadset & \in & \threadset \\
+%(\textit{InitLog}) & \SLog_{init} & \in & \SLog &
+%(\textit{InitNb}) & \blocknum_{init} & \in & \blocknum \\
+%(\textit{EnvContext}) & \oracle^{t} & \in & \threadset \rightarrow \varphi^{\threadset} &
+%(\textit{Strategy}) & \varphi^{\threadset} & \in & \SLog \rightarrow \Sevent \\
+%\end{array}
+%\]
+%\caption{Thread Configurations }
+%\end{figure}
+
+%\begin{lstlisting}[language=C]
+%Class ThreadsConfigurationOps := {      
+%    current_CPU_ID: Z; // The ID for the CPU we're looking at. (necessary?) 
+%    current_thread: Z; // The thread we're looking at in high-level machines
+%    dev_handling_cid : Z; // specific thread for handling device drivers 
+%    vm_handling_cid : Z; // specific thread for handling this CPU's virtual machine 
+%    non_current_thread_list: list Z;  // The other threads on this CPU 
+%    full_thread_list := current_thread :: non_current_thread_list; // The full list
+%    main_thread: Z; // The main thread on this CPU 
+%    limit: nat // A log look-back limit used in TAsm  }.
+%\end{lstlisting}
+
+%
+%\begin{figure}
+%$$
+%\begin{array}{llll llll}
+%(\textit{SharedData}) & \dshare & : & \toptype &
+%(\textit{PrivateData}) &  \dproc & : & \toptype \\
+%(\textit{InitSharedData}) & \dshare_{init} & : & \dshare &
+%(\textit{ProcessorID}) & \cpuid & : & \dshare \rightarrow \ztype\\
+%(\textit{ThreadID}) & \procid & : & \dshare \rightarrow \ztype&
+%(\textit{BlockNum}) & \blocknum & : & \nattype\\
+%(\textit{Mem}) & m & : & loc \rightarrow val &
+%(\textit{NextBlock}) & \nextblockfun & : & m \rightarrow  \nattype \\
+%\end{array}
+%$$
+%\caption{Data Types and Auxiliary Functions Related to Data Types}
+%\end{figure}
+%
+%\begin{figure}
+%\[
+%\begin{array}{llllllll}
+%(\textit{Lval}) & \lval & \in & Int \cup Ptr  &
+%(\textit{Largs}) & \largs & \in & list \ \lval  \\
+%(\textit{Ident}) & \threadfunid & \in & \{\yield,\ \sleep,\ \cdots\}&
+%(\textit{SnapShot}) & \dsnap & \in & Type  \\
+%(\textit{SnapShotFun}) & \snapfun & \in &  \dproc \rightarrow \dsnap &
+%(\textit{SleepEventUnit}) & \primevunit{sleep} & \in & Int \times \blocknum \times \dsnap \\
+%(\textit{YieldEventUnit}) & \primevunit{yield} & \in & \blocknum \times \dsnap &
+%(\textit{PrimEventUnit}) & \primevunit{\threadfunid} & \in & \threadfunid \times \largs \times \dsnap \\
+%(\textit{EventUnit}) &  \primevunit{} & \in &
+%\multicolumn{5}{l}{
+% \{\primevunit{sleep},\ \primevunit{sleep},\  \primevunit{ident},\  \yieldbackunit \} 
+% }
+% \\
+%(\textit{Event}) &  \Sevent & \in & tid \times \primevunit{} &
+%(\textit{Log}) &  \SLog & \in & list\ \Sevent \\
+%\end{array}
+%\]
+%\caption{Event and Log for Mutlithreaded Linking Framework.}
+%\end{figure}
