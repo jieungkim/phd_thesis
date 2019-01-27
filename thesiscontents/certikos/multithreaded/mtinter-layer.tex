@@ -1,10 +1,177 @@
-\subsection{Building Intermediate Layer for Multithreaded Linking Machine Models}
+\subsection{Concrete Instance for Abstract Definitions in Multithreaded Linking Framework}
 \label{chapter:certikos:phbthread}
 
-
+Building intermediate layers to facilitates our multithreaded linking framework 
+for $\certikos$ first requires the concrete definitions 
+that the layer relies on, 
+thread configurations as well as auxiliary functions in Section~\ref{chapter:linking:subsec:multithreaded-machine-model}.
 
 \subsubsection{Thread Configurations and Auxiliary Functions}
 
+\begin{lstlisting}[language=C]
+  Record sharedData :=
+    mk_sharedData {
+        CPU_ID: Z; (**r current CPU_ID *)
+        MM: MMTable; (**r table of the physical memory's information*)
+        MMSize: Z; (**r size of MMTable*)
+        vmxinfo: VMXInfo; (**r information of vmx*)
+        CR3: globalpointer; (**r abstract of CR3, stores the pointer to page table*)
+        pg: bool; (**r abstract of CR0, indicates whether the paging is enabled or not*)
+        cid: ZMap.t Z; (**r current thread id*)
+        nps: Z; (**r number of the pages*)
+        init: bool; (**r pure logic flag, show whether the initialization at this layer has been called or not*)
+        idpde: IDPDE; (**r shared identity maps *)
+        big_log: BigLogType;
+        big_oracle: BigOracle
+      }.
+\end{lstlisting}
+
+
+\begin{lstlisting}[language=C]
+  Record privData :=
+    mk_privData {
+
+
+        AC : Container; (**r container tree for all agents *)
+        
+        uctxt : UContext; (**r user context pool*)
+
+        pperm: PPermT; (**r physical page permission table *) (* need fancy merging *)
+
+        PT: Z; (**r the current page table index*) 
+        ptpool: PMapPool; (**r page table pool*)
+
+        syncchpool : SyncChanPool; (**r the channel pool for synchronous IPC*)
+       
+      }.
+\end{lstlisting}
+
+%\begin{lstlisting}[language=C]
+%  Record sharedData :=
+%    mk_sharedData {
+%        CPU_ID: Z; (**r current CPU_ID *)
+%        MM: MMTable; (**r table of the physical memory's information*)
+%        MMSize: Z; (**r size of MMTable*)
+%        vmxinfo: VMXInfo; (**r information of vmx*)
+%        CR3: globalpointer; (**r abstract of CR3, stores the pointer to page table*)
+%        pg: bool; (**r abstract of CR0, indicates whether the paging is enabled or not*)
+%        cid: ZMap.t Z; (**r current thread id*)
+%        nps: Z; (**r number of the pages*)
+%        init: bool; (**r pure logic flag, show whether the initialization at this layer has been called or not*)
+%        idpde: IDPDE; (**r shared identity maps *)
+%        big_log: BigLogType;
+%        big_oracle: BigOracle
+%      }.
+%\end{lstlisting}
+%
+%\begin{lstlisting}[language=C]
+%  Record privData :=
+%    mk_privData {
+%        ti: trapinfo; (**r abstract of CR2, stores the address where page fault happens*)
+%
+%        ikern: bool; (**r pure logic flag, shows whether it's in kernel mode or not*)
+%        ihost: bool; (**r logic flag, shows whether it's in the host mode or not*)         
+%
+%
+%        HP: flatmem; (**r we model the memory from 1G to 3G as heap*)
+%
+%        AC : Container; (**r container tree for all agents *)
+%        
+%        uctxt : UContext; (**r user context pool*)
+%
+%        pperm: PPermT; (**r physical page permission table *) (* need fancy merging *)
+%
+%        PT: Z; (**r the current page table index*) 
+%        ptpool: PMapPool; (**r page table pool*)
+%        ipt: bool; (**r pure logic flag, shows whether the current page map is the kernel's page map*)
+%        
+%        syncchpool : SyncChanPool; (**r the channel pool for synchronous IPC*)
+%        buffer: PageBufferPool; (**r page buffer in the IPC module*)
+%
+%        ept: EPT; (**r nested page table for guest mode*)
+%        vmcs: VMCS; (**r virtual machine control structure for current VM *)
+%        vmx: VMX;  (**r VMX structure to store the extra registers of host *) 
+%
+%        com1: SerialData; (**r serial port COM1*)
+%        drv_serial: SerialDriver; (**r serial driver states*)
+%        console_concrete: ConsoleDriverConcrete; (**r console driver states concrete implementation*)
+%        console: ConsoleDriver; (**r console driver states*)
+%
+%        ioapic: IoApicData; (**r I/O Advanced Programmable Interrupt Controller *)
+%        lapic: LApicData; (**r Local Advanced Programmable Interrupt Controller *)
+%        tf: TrapFrames; (**r Trap frame automatically pushed by CPU *)
+%        tf_reg: val; (** temporary place to save an intermediate tf regiter *) 
+%        curr_intr_num: Z; (**r current interrupt vector number *)
+%        intr_flag: bool; 
+%        saved_intr_flags: list bool;
+%
+%        in_intr: bool; (**r in the interrupt handler *)
+%        i_dev_serial: bool (**r in the critical section of operating serial *)
+%      }.
+%\end{lstlisting}
+
+\begin{lstlisting}[language=C]
+    Definition prim_thread_init_pc {F V} (ge : Genv.t F V) (name : ident) (args : list lval): option val :=
+      if peq name proc_create
+      then match Genv.find_symbol ge START_USER_FUN_LOC with
+           | Some b' => Some (Vptr b' Int.zero)
+           | _ => None
+           end
+      else None.
+
+    Definition cal_init_dproc (pv_adt : dproc) (parent: Z) (q: Z) (buc : block) (uc_ofs : int): dproc:= 
+      let uctx0 := uctxt pv_adt in
+      let uctx1 := ZMap.set U_SS CPU_GDT_UDATA
+                            (ZMap.set U_CS CPU_GDT_UCODE 
+                                      (ZMap.set U_DS CPU_GDT_UDATA
+                                                (ZMap.set U_ES CPU_GDT_UDATA uctx0))) in
+      (* U_EIP will be setted as zero for initial low level invariant proofs  
+        - To enable this one, I changed proc start and exit semantic rules 
+          we can optimize it later (after we port our version into the new layer framework *)
+      let uctx2 := ZMap.set U_EIP Vzero
+                            (ZMap.set U_EFLAGS FL_IF 
+                                      (ZMap.set U_ESP (Vint STACK_TOP) uctx1)) in
+      (pv_adt {pv_AC: (mkContainer q 0 parent nil true)} {pv_uctxt: uctx2}).
+\end{lstlisting}
+
+\begin{lstlisting}[language=C]
+Definition has_event (name : ident) :=
+  if peq name palloc then true else 
+    if peq name pt_resv then true else
+      if peq name proc_create then true else
+        if peq name thread_wakeup then true else
+          <@$\cdots$@>
+\end{lstlisting}
+
+
+\begin{lstlisting}[language=C]
+  Global Instance single_data : SingleData :=
+      {
+        dshare := sharedData;
+        init_dshare := init_shared_adt;
+        proc_id s :=  ZMap.get (CPU_ID s) (cid s);
+        processor_id s := CPU_ID s;
+        dproc := privData;
+        main_init_dproc:= main_init_priv_adt;
+        nomain_init_dproc:= nomain_init_priv_adt
+      }.
+
+    Program Instance s_oracle_prf : SingleOracle (single_data := AuxSingleAbstractDataType.single_data) 
+                                                 (single_oracle_ops := s_oracle_ops) 
+                                                 (threads_conf_ops := s_threads_ops):=
+      { 
+        has_event := has_event;
+        update := update;
+        thread_init_dproc := thread_init_dproc;
+        state_check := state_check;
+        sync_chpool_check := ObjPHBThreadReplayFunction.sync_chpool_check;
+        snap_func := snap_func;
+        snap_rev_func := snap_rev_func;
+        choice_check := ObjPHBThreadReplayFunction.choice_check;
+        PHThread2TCompose := PHThread2TComposeData.combine_data;
+        prim_thread_init_pc := @prim_thread_init_pc
+      }.
+\end{lstlisting}
 
 %\label{chapter:certikos:subsec:multithreaded-configuration-instance}
 %
@@ -315,25 +482,90 @@
 
 \subsubsection{$\codeinmath{PHBThread}$ Definition}
 
+Our intermediate layer definition has a different state definition (not only for the memory and registers, but also for the abstract data); thus we also provide the 
+layer that can be used for those intermediate machine models. 
+In addition to that, our intermediate machine models has explicit 
+transition rules for yield ans sleep. 
+They are defined in the lanuage level 
 
 
-%\label{chapter:certikos:subsec:layer-on-intermediate-languages-in-multithreaded-linking}
-%
-%Our intermediate layer definition has a different state definition (not only for the memory and registers, but also for the abstract data); thus we also provide the 
-%layer that can be used for those intermediate machine models. 
-%In addition to that, our intermediate machine models has explicit 
-%transition rules for yield ans sleep. 
-%They are defined in the lanuage level 
-%
-%\jieung{Need to mention about few specs - spawn}
+We redefine all specifications for the primitives in $\codeinmath{PBThread}$ (thus as well as $\codeinmath{PHThread}$ 
+via using the new abstract data type (a pair of ? and ?).
+
 
 
 \subsubsection{Instance of $\codeinmath{AbsRelC}$}
 
+Providing the refinement 
 
+\begin{figure}
+\begin{lstlisting}
+
+   Definition relate_AC_per_pd (id : Z) (sd : sharedData) (pd: privData) (ladt : AbstractDataType.RData) :=
+      if init sd then if B_GetContainerUsed' id (CPU_ID sd) (big_log sd) then 
+                        (* the following cases are necessary to reflects the correct behaviour of the initialization *)
+                        (* I can use the precise definition which I commented out instead of the version 
+                                      that contains the True value. But, if I do that, I have to redefine init_dproc
+                                      related definitions in SingleAbstractDataType and init_dproc in EAsm and TAsm.
+                                      So, for the simplicity, I will use the current version *)
+                        if zeq id main_thread 
+                        then AC pd =  ZMap.get id (AbstractDataType.AC ladt)
+                        else if zlt_lt TOTAL_CPU id num_proc then AC pd = ZMap.get id (AbstractDataType.AC ladt) 
+                             else True
+                      (* The following things are for thread spawn related_RData.
+                                    I can put dummy True in this 'else' case, and prove the case for thread_spawn. 
+                                    However, instead of using dummy True, I decided to add the precise value 
+                                    to handle the case. This should be much better then the dummy True *)
+                      else if zlt_lt TOTAL_CPU id num_proc then AC pd = AC (thread_init_dproc id) else True
+      (* the following cases are necessary to reflects the correct behaviour of the initialization *)
+      (* I can use the precise definition which I commented out instead of the version that contains the True value.
+                    But, if I do that, I have to redefine init_dproc related definitions in SingleAbstractDataType 
+                    and init_dproc in EAsm and TAsm.
+                    So, for the simplicity, I will use the current version *)
+      else if zeq id main_thread 
+           then (AC pd) = ZMap.get id (AbstractDataType.AC ladt) 
+           else if zlt_lt TOTAL_CPU id num_proc then AC pd =  AC (thread_init_dproc id) else True.
+           
+    Record relate_RData_per_pd  (id : Z) (kctxt_val : KContext) (sd : sharedData) (pd : privData)
+           (ladt : AbstractDataType.RData) :=
+          AC_re: relate_AC_per_pd  id sd pd ladt;
+          
+    Record relate_RData (kctxt_pool : KContextPool)  (sd : sharedData)  (pdpool: ZMap.t (option privData))
+           (ladt : AbstractDataType.RData) :=
+      mkrelate_RData {
+      
+                CPU_ID_re: CPU_ID sd = AbstractDataType.CPU_ID ladt;
+          cid_re: if init sd
+                  then (ZMap.get (CPU_ID sd) (cid sd)) = (ZMap.get (AbstractDataType.CPU_ID ladt) (AbstractDataType.cid ladt))
+                  else (ZMap.get (AbstractDataType.CPU_ID ladt) (AbstractDataType.cid ladt)) = 0 /\
+                       (if zle_lt 0 (CPU_ID sd) TOTAL_CPU
+                        then (ZMap.get (CPU_ID sd) (cid sd)) = ((CPU_ID sd) + 1)
+                        else (ZMap.get (CPU_ID sd) (cid sd)) = 0);
+
+          per_data_re: forall i,
+                         match ZMap.get i pdpool with 
+                           | Some pd => relate_RData_per_pd i (ZMap.get i kctxt_pool) sd pd ladt
+                           | _ => E2PBThreadGenEmptyPerDInv i (ZMap.get i kctxt_pool)  sd ladt
+                         end;          
+
+          pperm_disjoint: 
+            forall i j pd pd',
+              i <> j ->
+              ZMap.get i pdpool = Some pd ->
+              ZMap.get j pdpool = Some pd' ->
+              (forall j, ZMap.get j (pperm pd) <> PGUndef ->
+                         ZMap.get j (pperm pd')= PGUndef)
+           
+           
+\end{lstlisting}
+\end{figure}
 
 \subsubsection{Refinement between $\codeinmath{PHThrd}$ on $\lasmmach$ and 
  $\codeinmath{PBHThrd}$ on $\easmmach$}
+ 
+ 
+With the instance of $\codeinmath{AbsRelT}$,
+we freely use the refinement theorem in 
 
 %
 %
@@ -681,4 +913,238 @@
 %          sh_mem_inv_re: E2PBThreadGenSharedMemInv pdpool 
 %                                                    
 %        }.
+%\end{lstlisting}
+
+
+
+\subsubsection{Instance of $\codeinmath{AbsRelT}$}
+
+Providing the instance of $\codeinmath{AbsRelT}$ first requires us 
+to provide 
+the refinement relation between two states, the satem for 
+
+\subsubsection{Refinement between $\codeinmath{PHBThrd}$ on $\tasmmach$ and 
+ $\codeinmath{PBThrd}$ on $\hasmmach$}
+
+With the instance of $\codeinmath{AbsRelT}$,
+we freely use the refinement theorem in 
+
+\begin{lstlisting}
+    Record relate_RData (kctxt_val : KContext) (hadt : AbstractDataType.RData) (l : Log) (pd : dproc) :=
+        mkrelate_RData {
+            flatmem_re: (AbstractDataType.HP hadt) = (HP pd);
+            vmxinfo_re: AbstractDataType.vmxinfo hadt = vmxinfo (update init_shared_adt l);
+            CR3_re:  AbstractDataType.CR3 hadt = CR3 (update init_shared_adt l);
+            ikern_re: AbstractDataType.ikern hadt = ikern pd;
+            pg_re: AbstractDataType.pg hadt = pg (update init_shared_adt l);
+            ihost_re: AbstractDataType.ihost hadt = ihost pd;
+            AC_re: ZMap.get (ZMap.get (AbstractDataType.CPU_ID hadt) (AbstractDataType.cid hadt))
+                            (AbstractDataType.AC hadt) = AC pd;
+            ti_re: AbstractDataType.ti hadt = ti pd;
+            
+            nps_re: AbstractDataType.nps hadt = nps (update init_shared_adt l);
+            init_re: AbstractDataType.init hadt = init (update init_shared_adt l);
+
+            pperm_re: AbstractDataType.pperm hadt = pperm pd;
+            PT_re: AbstractDataType.PT hadt = PT pd;
+            ptp_re: AbstractDataType.ptpool hadt = ptpool pd;
+            idpde_re: AbstractDataType.idpde hadt = idpde (update init_shared_adt l);
+            ipt_re: AbstractDataType.ipt hadt = ipt pd;
+
+            CPU_ID_re: AbstractDataType.CPU_ID hadt = CPU_ID (update init_shared_adt l);
+            cid_re: ZMap.get (AbstractDataType.CPU_ID hadt) (AbstractDataType.cid hadt)
+                    = ZMap.get (CPU_ID (update init_shared_adt l)) (cid (update init_shared_adt l));
+            lock_re: AbstractDataType.lock hadt = lock (update init_shared_adt l);
+
+            com1_re: AbstractDataType.com1 hadt = com1 pd;
+            console_re: AbstractDataType.console hadt = console pd;
+            console_concrete_re: AbstractDataType.console_concrete hadt = console_concrete pd;
+            ioapic_re: AbstractDataType.ioapic hadt = ioapic pd;
+            lapic_re: AbstractDataType.lapic hadt = lapic pd;
+            intr_flag_re: AbstractDataType.intr_flag hadt = intr_flag pd;
+            curr_intr_num_re: AbstractDataType.curr_intr_num hadt = curr_intr_num pd;
+            in_intr_re: AbstractDataType.in_intr hadt = in_intr pd;
+            drv_serial_re: AbstractDataType.drv_serial hadt = drv_serial pd;
+
+            kctxt_re: ZMap.get (ZMap.get (AbstractDataType.CPU_ID hadt) (AbstractDataType.cid hadt)) 
+                               (AbstractDataType.kctxt hadt) = kctxt_val;
+            uctxt_re: ZMap.get (ZMap.get (AbstractDataType.CPU_ID hadt) (AbstractDataType.cid hadt))
+                               (AbstractDataType.uctxt hadt) = uctxt pd;
+
+            syncchpool_re: AbstractDataType.syncchpool hadt = syncchpool pd;
+
+            big_log_re: AbstractDataType.big_log hadt = big_log (update init_shared_adt l);
+            big_oracle_re: AbstractDataType.big_oracle hadt = big_oracle (update init_shared_adt l);
+            
+            ept_re: ZMap.get (AbstractDataType.CPU_ID hadt) (AbstractDataType.ept hadt) = ept pd;
+            vmcs_re: ZMap.get (AbstractDataType.CPU_ID hadt) (AbstractDataType.vmcs hadt) = vmcs pd;
+            vmx_re: ZMap.get (AbstractDataType.CPU_ID hadt) (AbstractDataType.vmx hadt) = vmx pd;
+            
+            inv_re: PHThread2TGenInv kctxt_val hadt l pd
+
+\end{lstlisting}
+
+
+%\subsubsection{AbstractRelT}
+%
+%This provides the relation bewteen PHThread layer runs with Hasm and PHBThread layer runs with TAsm. 
+%
+%\begin{lstlisting}[language=C]
+%
+%    Definition combine_data (kctxtOpt : option KContext) (sd : sharedData) (pd: privData) : AbstractDataType.RData :=
+%      {|
+%        AbstractDataType.CPU_ID:= CPU_ID sd;
+%        AbstractDataType.MM:= MM sd;
+%        AbstractDataType.MMSize:= MMSize sd;
+%        AbstractDataType.vmxinfo:= vmxinfo sd;
+%
+%        AbstractDataType.CR3:= CR3 sd;
+%
+%        AbstractDataType.ti:= ti pd;
+%
+%        AbstractDataType.pg := pg sd;
+%        AbstractDataType.ikern:= ikern pd;
+%        AbstractDataType.ihost:= ihost pd;
+%
+%        AbstractDataType.HP:= HP pd;
+%
+%        AbstractDataType.cid := cid sd;
+%        AbstractDataType.multi_log:= ZMap.init MultiUndef;
+%        AbstractDataType.multi_oracle:= multi_oracle_init8;
+%        AbstractDataType.lock:= lock sd;
+%        
+%        AbstractDataType.AC:= ZMap.set (ZMap.get (CPU_ID sd) (cid sd)) (AC pd) (ZMap.init Container_unused); 
+%
+%        AbstractDataType.AT:= (ZMap.init ATUndef);
+%        AbstractDataType.ATC:=  (ZMap.init ATCUndef);
+%        AbstractDataType.nps:= nps sd;
+%        AbstractDataType.init:= init sd;
+%        AbstractDataType.pperm:= pperm pd;
+%
+%        AbstractDataType.PT:= PT pd;
+%        AbstractDataType.ptpool:= ptpool pd;
+%        AbstractDataType.idpde:= idpde sd;
+%        AbstractDataType.ipt:= ipt pd;
+%        AbstractDataType.LAT:= ZMap.init LATCUndef;
+%        AbstractDataType.smspool:=  ZMap.init (ZMap.init SHRDUndef);
+%
+%        (* special treatment for kctxt *)
+%        AbstractDataType.kctxt:= match kctxtOpt with 
+%                                 | Some kctxt_val =>  ZMap.set (ZMap.get (CPU_ID sd) (cid sd)) kctxt_val 
+%                                                               (ZMap.init (Pregmap.init Vundef))
+%                                 | _ => (ZMap.init (Pregmap.init Vundef))
+%                                 end;
+%        
+%        AbstractDataType.sleeper:= init_sleeper;
+%        AbstractDataType.tcb:= ZMap.init TCBUndef;
+%        AbstractDataType.tdq:= ZMap.init TDQUndef;
+%        AbstractDataType.abtcb:= ZMap.init AbTCBUndef;
+%        AbstractDataType.abq:=  ZMap.init AbQUndef;
+%        AbstractDataType.syncchpool:= syncchpool pd;
+%        AbstractDataType.buffer:= buffer pd;
+%        
+%        AbstractDataType.big_log:= big_log sd;
+%        AbstractDataType.big_oracle:= big_oracle sd;
+%        
+%        AbstractDataType.uctxt:= (ZMap.set (ZMap.get (CPU_ID sd) (cid sd)) (uctxt pd)  (ZMap.init (ZMap.init Vundef)));
+%        
+%        AbstractDataType.ept:= (ZMap.set (CPU_ID sd) (ept pd) (ZMap.init (ZMap.init EPML4EUndef)));
+%        
+%        AbstractDataType.vmcs := (ZMap.set (CPU_ID sd) (vmcs pd) 
+%                                           (ZMap.init (VMCSValid Vzero Vzero (ZMap.init Vundef))));
+%        
+%        AbstractDataType.vmx := (ZMap.set (CPU_ID sd) (vmx pd) (ZMap.init (ZMap.init Vundef)));
+%
+%        AbstractDataType.ts:= 0;
+%
+%        AbstractDataType.com1:= com1 pd;
+%        AbstractDataType.drv_serial:= drv_serial pd;
+%        AbstractDataType.console_concrete:= console_concrete pd;
+%        AbstractDataType.console:= console pd;
+%        
+%        AbstractDataType.ioapic:= ioapic pd;
+%        AbstractDataType.lapic:= lapic pd; 
+%        AbstractDataType.tf:= tf pd;
+%        AbstractDataType.tf_reg:= tf_reg pd;
+%        AbstractDataType.curr_intr_num:= curr_intr_num pd;
+%        AbstractDataType.intr_flag:= intr_flag pd;
+%        AbstractDataType.saved_intr_flags:= saved_intr_flags pd;
+%
+%        AbstractDataType.in_intr:= in_intr pd;
+%        AbstractDataType.i_dev_serial:= i_dev_serial pd;
+%
+%        AbstractDataType.kbd:= kbd_init;
+%        AbstractDataType.kbd_drv:= kbd_drv_init
+%      |}.
+%\end{lstlisting}
+%
+%\begin{lstlisting}[language=C]
+%
+%  Section MATCH.
+%    Set Printing All.
+%
+%    Record PHThread2TGenInv (kctxt_val : KContext) (hadt : AbstractDataType.RData) (l : Log) (pd : dproc) :=
+%      { 
+%        CPU_ID_inv: (AbstractDataType.CPU_ID hadt) = GlobalOracle.current_CPU_ID /\
+%                    CPU_ID (update init_shared_adt l) = GlobalOracle.current_CPU_ID;
+%        
+%        valid_big_oracle_inv: valid_big_oracle (AbstractDataType.big_oracle hadt) /\
+%                              valid_big_oracle (big_oracle (update init_shared_adt l))
+%      }.
+%    
+%    Record relate_RData (kctxt_val : KContext) (hadt : AbstractDataType.RData) (l : Log) (pd : dproc) :=
+%        mkrelate_RData {
+%            flatmem_re: (AbstractDataType.HP hadt) = (HP pd);
+%            vmxinfo_re: AbstractDataType.vmxinfo hadt = vmxinfo (update init_shared_adt l);
+%            CR3_re:  AbstractDataType.CR3 hadt = CR3 (update init_shared_adt l);
+%            ikern_re: AbstractDataType.ikern hadt = ikern pd;
+%            pg_re: AbstractDataType.pg hadt = pg (update init_shared_adt l);
+%            ihost_re: AbstractDataType.ihost hadt = ihost pd;
+%            AC_re: ZMap.get (ZMap.get (AbstractDataType.CPU_ID hadt) (AbstractDataType.cid hadt))
+%                            (AbstractDataType.AC hadt) = AC pd;
+%            ti_re: AbstractDataType.ti hadt = ti pd;
+%            
+%            nps_re: AbstractDataType.nps hadt = nps (update init_shared_adt l);
+%            init_re: AbstractDataType.init hadt = init (update init_shared_adt l);
+%
+%            pperm_re: AbstractDataType.pperm hadt = pperm pd;
+%            PT_re: AbstractDataType.PT hadt = PT pd;
+%            ptp_re: AbstractDataType.ptpool hadt = ptpool pd;
+%            idpde_re: AbstractDataType.idpde hadt = idpde (update init_shared_adt l);
+%            ipt_re: AbstractDataType.ipt hadt = ipt pd;
+%
+%            CPU_ID_re: AbstractDataType.CPU_ID hadt = CPU_ID (update init_shared_adt l);
+%            cid_re: ZMap.get (AbstractDataType.CPU_ID hadt) (AbstractDataType.cid hadt)
+%                    = ZMap.get (CPU_ID (update init_shared_adt l)) (cid (update init_shared_adt l));
+%            lock_re: AbstractDataType.lock hadt = lock (update init_shared_adt l);
+%
+%            com1_re: AbstractDataType.com1 hadt = com1 pd;
+%            console_re: AbstractDataType.console hadt = console pd;
+%            console_concrete_re: AbstractDataType.console_concrete hadt = console_concrete pd;
+%            ioapic_re: AbstractDataType.ioapic hadt = ioapic pd;
+%            lapic_re: AbstractDataType.lapic hadt = lapic pd;
+%            intr_flag_re: AbstractDataType.intr_flag hadt = intr_flag pd;
+%            curr_intr_num_re: AbstractDataType.curr_intr_num hadt = curr_intr_num pd;
+%            in_intr_re: AbstractDataType.in_intr hadt = in_intr pd;
+%            drv_serial_re: AbstractDataType.drv_serial hadt = drv_serial pd;
+%
+%            kctxt_re: ZMap.get (ZMap.get (AbstractDataType.CPU_ID hadt) (AbstractDataType.cid hadt)) 
+%                               (AbstractDataType.kctxt hadt) = kctxt_val;
+%            uctxt_re: ZMap.get (ZMap.get (AbstractDataType.CPU_ID hadt) (AbstractDataType.cid hadt))
+%                               (AbstractDataType.uctxt hadt) = uctxt pd;
+%
+%            syncchpool_re: AbstractDataType.syncchpool hadt = syncchpool pd;
+%
+%            big_log_re: AbstractDataType.big_log hadt = big_log (update init_shared_adt l);
+%            big_oracle_re: AbstractDataType.big_oracle hadt = big_oracle (update init_shared_adt l);
+%            
+%            ept_re: ZMap.get (AbstractDataType.CPU_ID hadt) (AbstractDataType.ept hadt) = ept pd;
+%            vmcs_re: ZMap.get (AbstractDataType.CPU_ID hadt) (AbstractDataType.vmcs hadt) = vmcs pd;
+%            vmx_re: ZMap.get (AbstractDataType.CPU_ID hadt) (AbstractDataType.vmx hadt) = vmx pd;
+%            
+%            inv_re: PHThread2TGenInv kctxt_val hadt l pd
+%          }.
+%                                                       
+%  End MATCH.
+%
 %\end{lstlisting}
