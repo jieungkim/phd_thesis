@@ -168,9 +168,12 @@ and restores the kernel context ($\regs'$) for the next thread on the CPU that w
 
 \subsubsection{$\TLink$ layer with intermediate machines}
 
-Introducing $\TLink$ with intermediate state machine models for multithreaded linking requires multiple steps. 
+Introducing a per-thread layer interface with addressing all challenges requires multiple steps. 
 The first step is
-dividing a single CPU state into a set of thread states as well as a shared state among threads.
+dividing a single CPU state into a set of thread states as well as a shared state among threads,
+and also providing 
+the transition rules as well as the layer definition ($\TLink$) that uses the new state definition with capturing 
+the same behavior of the connected per-CPU layer interface (\ie, $\CSched$ associated with $\lasmmach$.)
 Simply, the state of $\lasmmach$ ($state_{\lasm} = (lst, l)$) need to be divided into 
 a set of thread states as well as a shared log, such as ($(\set{lst_{thread}}, l)$).
 Since intermediate machine models in our multithreaded linking framework possibly use a different data type definition from that of a per-CPU machine, 
@@ -184,13 +187,19 @@ a \textit{single} thread state and a log as follows:
 $\PLayer{\TLink}{\ignorechar}{\ignorechar}(\Layer)(id)
  \vdash_{\ignorechar}  \sstepr{\spec_{id}}{args}{lst_{thread}, l}{\textit{res}\cup \{\}}{lst_{thread}', l'}$
 \end{center}
+which gets the argument ($args$), the local state of the thread ($lst_{thread}$), and the global state ($l$), then 
+returns the result of the evaluation ($\textit{res}\cup \{\}$) as well as the updated state ($(lst_{thread}', l')$.)
 Scheduling primitives, however, cannot be specified in this manner because it involves changes on multiple thread local states. 
  In this sense, it models those rules directly on our intermediate machine models 
  instead of the layer definition.
- Formally, the relation on the primitive domain between two $\TLink$ and $\CSched$ layers 
- is in Definition~\ref{definition:chapter:conlink:same-domain-sched-tlink}
- Multithreaded linking with the newly defined state also 
-requires machine models that facilitate the state as well as the layer definition ($\TLink$) with the state.
+In this sense, 
+the relation between the primitive domain on two layers follows
+Definition~\ref{definition:chapter:conlink:same-domain-sched-tlink}.
+
+
+%
+% Multithreaded linking with the newly defined state also 
+%requires machine models that facilitate the state as well as the layer definition ($\TLink$) with the state.
 
 \begin{definition}[Primitive Domain in $\TLink$ and $\CSched$]
 \label{definition:chapter:conlink:same-domain-sched-tlink}
@@ -216,10 +225,10 @@ $\forall id,\ id \neq \threadyieldfunc \wedge id \neq \threadsleepfunc \rightarr
 \label{fig:chapter:conlink:multithreaded-machine-model-easm}
 \end{figure}
 
-
+With the relation, 
 Figure~\ref{fig:chapter:conlink:multithreaded-machine-model-easm} shows
 the first step of our multithreaded linking by providing 
-a $\easmmach$, a multithreaded machine model.
+a $\easmmach$, a multithreaded machine model that uses the $\TLink$ layer.
 Figure~\ref{fig:chapter:conlink:multithreaded-machine-model-easm} (a)
 shows a simple overview how we divide a single state for $\lasmmach$  ($\codeinmath{state}_{\lasm} := (lst_{\codeinmath{cpu}}, log)$)
 into a state, ($\codeinmath{state}_{\easm[{\codeinmath{T}_{[1]}}]} := (tid, mem, \set{ti \mapsto lst_{ti}}, log)$),
@@ -238,18 +247,28 @@ With this new state definition,
 we could match the evaluation of the program with $\CSched$ on $\lasmmach$ (Figure~\ref{fig:chapter:conlink:multithreaded-machine-model-easm} (a) (1)) with  the evaluation of the program with $\TLink$ on $\easmmach$
 (Figure~\ref{fig:chapter:conlink:multithreaded-machine-model-easm} (a) (2)) 
 by replacing the scheduling evaluation that performs context switching in the local state $\codeinmath{state}_{\lasmmach}$
-into  the scheduling evaluation that simply changes the currently running thread ID and 
+into  the scheduling evaluation that changes the currently running thread ID and 
 adds the proper log to memorize it in the state, $\codeinmath{state}_{\easmmach}$.
 Building a per-thread machine model t for each thread 
 is replacing the strategy of other threads with the proper environmental context as shown in Figure~\ref{fig:chapter:conlink:multithreaded-machine-model-easm} (b).
+
 Thread linking, however, requires a little bit more fancy resolution to solve another challenge which differs from the case of multicore linking, building a dynamic initial state for each thread.
 Figure~\ref{fig:chapter:conlink:multithreaded-machine-model-easm} (c) 
-shows the case, which illustrates why we need to distinguish the thread state in a fine-grained way. 
-
-
-
-
-
+shows the case, which illustrates why we need to distinguish the thread state in a fine-grained way by adding more information. 
+Thread 2, for example, initially runs after thread 1 spawns the thread as well as thread 1 gives the control to the thread. 
+While spawning, thread 1 initiates the private state information (\eg, user context, kernel context, \etc) which affects the local state of thread 2. 
+Providing this behavior is available with the specification on per-CPU layer interfaces because all those threads private sates are parts of the local state of the CPU (\ie, when assuming that each cannot spawn threads on other CPUs.)
+In multithreaded machine models that each thread only accesses each private state, however, 
+parents (thread 1 in this case) cannot modify the local state of their children (thread 2 in this case); thus thread 1 cannot correctly initiate thread 2.
+In this sense,
+each thread (thread 2 in this case) initiates itself when it first starts its run with the initial log,
+which contains a sequence of a spawn event and a yield event generated by thread 1 in the figure. 
+To initiate its one private state with the initial log, 
+the machine also requires the distinction between the state that is running and the state that is not started its run for each thread.
+In this send, we extend the thread state by adding a simple, but sufficient flag to indicates whether the thread is available or not ($\codeinmath{Active}$ and $\codeinmath{Inactive}$ in the figure.)
+Changing that state information of each thread is also a responsibility of the thread,
+so we also made a logical event, $\codeinmath{yback}$, which indicates the point when we change the thread state.
+Section~\ref{chapter:linking:subsec:multithreaded-machine-model} shows formal definitions of them. 
 
 \begin{figure}
 \begin{center}
@@ -259,21 +278,18 @@ shows the case, which illustrates why we need to distinguish the thread state in
 \label{fig:chapter:conlink:parallel-composition-in-easm}
 \end{figure}
 
-With this model, 
-providing the correctness of parallel composition is in Figure~\ref{fig:chapter:conlink:parallel-composition-in-easm},
-which shows that 
-It requires the match 
-
-
-showing that the program evaluation on a per-CPU machine 
-
-
-
-
-
-
-
-
+Our framework also provides 
+the formal connect (contextual refinement) between two interfaces, 
+$\CSched$ with $\lasmmach$ and $\TLink$ with $\easmmach$.
+The connection requires the parallel composition of each thread's run on $\TLink$ with $\easmmach$,
+which implies that showing each thread's evaluation is compatible with the strategy in the environmental context with others.
+Figure~\ref{fig:chapter:conlink:parallel-composition-in-easm} shows the proof model for this step, 
+but the proof needs the formal connection, the relation between two layer interfaces too. 
+To define the relation based on two abstract layers, 
+we define another abstract relation, $\codeinmath{AbsRelC}$,
+that specifies how primitive calls in $\TLink$ with $\easmmach$ 
+should be associated with the calls in $\CSched$ with $\lasmmach$ in a generic way. 
+Section~\ref{chapter:linking:subsec:multithreaded-machine-model} also shows more details about it. 
 
 \begin{figure}
 \begin{center}
@@ -283,7 +299,30 @@ showing that the program evaluation on a per-CPU machine
 \label{fig:chapter:conlink:introduce-single-threaded-machine-model-with-iiasm}
 \end{figure}
 
-
+Another fundamental property that our multithreaded linking framework has to provide is multithreaded linking property, that is the formal connection 
+between the layer interface parameterized with a single thread and 
+the layer interface parameterized with the full thread set on the CPU.
+Figure~\ref{fig:chapter:conlink:introduce-single-threaded-machine-model-with-iiasm} shows the overall structure
+of it.
+We first define another level of intermediate machine model, $\ieasmmach$, that uses the same layer definition ($\TLink$) with $\easmmach$.
+The difference between  $\ieasmmach$ and  $\easmmach$ is only about the memory in their states. 
+The first, $\ieasmmach$, uses two memories, the one is for the focused thread, and the other is for other threads in the full thread set; while the second, $\easmmach$, only contains one memory in it. 
+This difference between them eases our refinement proof and also shows the clear distinction between the memory of each focused thread from the memory from others. 
+The first step is providing the evidence
+the behavior of the $\TLink$ with $\easmmach$ layer interface is identical
+to the   behavior of the $\TLink$ with $\ieasmmach$ layer interface when they are associated with the full thread set on the CPU
+(Figure~\ref{fig:chapter:conlink:introduce-single-threaded-machine-model-with-iiasm}  (1) and 
+Figure~\ref{fig:chapter:conlink:introduce-single-threaded-machine-model-with-iiasm}  (2).)
+The next step is 
+providing the evidence that 
+the behavior of the $\TLink$ with $\ieasmmach$ layer interface associated with the full thread set on the CPU
+contextually refines
+the behavior of the $\TLink$ with $\ieasmmach$ layer interface associated with a single focused thread.
+This requires the match between the environmental step in Figure~\ref{fig:chapter:conlink:introduce-single-threaded-machine-model-with-iiasm}  (3) and concrete step evaluations in  Figure~\ref{fig:chapter:conlink:introduce-single-threaded-machine-model-with-iiasm}  (2)
+based on the assumption on the progress of each thread. 
+The assumption says that 
+every thread will generate at least one event within finite steps,
+to machine the one single environmental step in Figure~\ref{fig:chapter:conlink:introduce-single-threaded-machine-model-with-iiasm}  (3)  with multiple private steps plus a single step that generates an event in  Figure~\ref{fig:chapter:conlink:introduce-single-threaded-machine-model-with-iiasm}  (2).
 
 \begin{figure}
 \begin{center}
@@ -293,6 +332,26 @@ showing that the program evaluation on a per-CPU machine
 \label{fig:chapter:conlink:introduce-single-threaded-machine-model-with-tasm}
 \end{figure}
 
+The $\ieasmmach$ machine model  (in Figure~\ref{fig:chapter:conlink:introduce-single-threaded-machine-model-with-iiasm}  (3)) still requires a check to figure out whether the currently running thread is in the focused set or int the environment at each step; thus it follows an operational step style environmental context query.
+Thus the $\yield$ call in the layer interface associated with $\ieasmmach$ requires multiple steps of evaluation which is 
+far from the atomic operation that we want to provide as specifications of scheduling primitives on per-thread layer interfaces.
+The operational style environmental context query also possibly changes 
+the current thread ID in the state, that is far from the thread local layer interface, which has to keep the thread ID as a focused thread during the whole evaluation.
+To make the connection easy,
+our multithreaded linking framework introduce one another machine model, $\tasmmach$, 
+that combines multiple environmental context query into one single step query (\ie, see Figure~\ref{fig:chapter:conlink:introduce-single-threaded-machine-model-with-tasm} (2).)
+Providing the contextual refinement between the behaviors of them also a part of
+our framework, but it needs 
+another assumption on the behavior of the system,
+which is that every thread will be eventually scheduled with a limited number of 
+environmental steps to guarantee the progress of the focused thread when it calls scheduling primitives. 
+When associated with the assumption in Figure~\ref{fig:chapter:conlink:introduce-single-threaded-machine-model-with-iiasm},
+the assumption implies that every thread will be eventually scheduled within limit $\times$ progress steps.
+With the assumption, 
+we formalize 
+that the behavior of  the $\TLink$ with $\ieasmmach$ layer interface  contextually refines
+the behavior of  the $\TLink$ with $\tasmmach$, and 
+we show them in Section~\ref{chapter:linking:subsec:single-threaded-machine-model} with more details.
 
 
 \subsubsection{$\TSched$ layer with $\hasmmach$} 
@@ -329,8 +388,7 @@ $\forall id.\ (id, \_) \in \Layer_{\CSched}  \leftrightarrow (id, \_) \in \Layer
 \end{definition}
 
 With the stated constraint and the refinement theorems that we have provided,
-thy $\TSched$  layer on $\hasmmach$ provides the same functionality with 
-the $\CSched$  layer on $\lasmmach$ but hides
+thy $\TSched$  layer on $\hasmmach$ provides the same functionality with the $\CSched$  layer on $\lasmmach$ but hides
 the transitions for other threads that run on the same CPU. 
 For example, the evaluation rule for $\yield$ is
 \begin{mathpar}
@@ -346,7 +404,13 @@ the thread, $\oracle_{\codeinmath{tid}}$.
 The rule, however, modifies any parts of its private (local) state at all, 
 which differs from the $\yield$ rule in the program with layer $\CSched$ on $\lasmmach$ (\ie, the rule performs context switching between the threads on the same CPU.)
 
-\jieung{AbsRelT??}
+Similar to the case between 
+$\CSched$  layer on $\lasmmach$ and  $\TLink$ on $\easmmach$, 
+with providing the formal connection (contextual refinement)
+between those two layer interfaces with the abstract relation, $\codeinmath{AbsRelT}$,
+the relation specifies how primitive calls in $\TSched$ with $\hasmmach$ 
+should be associated with the calls in $\TLink$ with $\tasmmach$ in a generic way. 
+Section~\ref{chapter:linking:subsec:machine-model-for-single-threaded} shows more details about it. 
 
 
 %
