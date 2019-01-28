@@ -1,7 +1,4 @@
 
-TO BE ADDED
-
-\ignore{
 The goal of this dissertation is to build formal methods for concurrent program verification and apply the methods to multiple concurrent programs,
 in such a way that we can guarantee to users that these systems are reliable and trustworthy not only for the functional correctness but also for 
 other high-level progress properties or the protocol correctness of them. 
@@ -34,19 +31,18 @@ In theory, this would allow us to add certified kernel plug-ins as long as they 
 In practice, however, if we are unable to decompose kernel invariants into small independent pieces, even modifying an existing (or adding a new) verified component may force us to rewrite the proofs for the entire kernel.
 
 Hence, OS kernel and hypervisor verification needs a novel compositional approach that can handle all of the above challenges successfully. 
-Previous work~\cite{dscal15} in our group presents a verified OS kernel and hypervisor with solving those problems. 
-However, there are still limitations in two verified kernels~\cite{dscal15, klein2009sel4}.
+Previous work~\cite{deepspec} in our group presents a verified OS kernel and hypervisor with solving those problems. 
+However, there are still limitations in two verified kernels~\cite{deepspec, klein2009sel4}.
 For example, both of them only support single processor systems.
 %
 
 
 
 \begin{itemize}
-\item It provides a concrete example of CertiKOS-style verification; in particular we can see how to customize the machine model (Sec.~\ref{subsec:lowestmachinemodel}) and how to split the verification effort into CPU-local reasoning (Sec.~\ref{subsec:eventlogandoracle} and \ref{subsec:abstractoperationlayer}).
+\item It provides a concrete example of CertiKOS-style verification; in particular we can see how to customize the machine model    and how to split the verification effort into CPU-local reasoning (Sec. and 
   
-\item We show a way to prove that an atomic specification refines a concurrent implementation, while still using downward rather than upward simulations. The trick is to provide a \emph{function} from low-level to high-level logs of events. (Sec.~\ref{sec:liveness-atomicity}--\ref{sec:downwards-to-upwards}.)
-
-\item We propose a new way to specify the desired---atomic---behavior of the lock/unlock methods. To ensure liveness, the specification of the lock method itself includes a promise to later call unlock; we do this using a bounding counter. (Sec.~\ref{sec:liveness-atomicity}.)
+\item We show a way to prove that an atomic specification refines a concurrent implementation, while still using downward rather than upward simulations. The trick is to provide a \emph{function} from low-level to high-level logs of events. 
+\item We propose a new way to specify the desired---atomic---behavior of the lock/unlock methods. To ensure liveness, the specification of the lock method itself includes a promise to later call unlock; we do this using a bounding counter. (Sec.~
 
 \item And of course, we provide the first implementation of the MCS algorithm that has been both rigorously verified (with a mechanized proof) and at the same time realized (as part of a running kernel).
 \end{itemize}
@@ -78,19 +74,19 @@ Although the program is short, the proof is challenging.
 First, the implementation of a lock algorithm can not itself use locks, so it has to rely solely on atomic memory instructions and be robust against any possible interleavings between CPUs. This is the most challenging type of concurrency, so-called lock-free programming.
 Second, unlike algorithms which only promise mutual exclusion, the MCS algorithm also aims for fairness among CPUs. To check that it got it right, our correctness theorem needs to guarantee not only mutual exclusion (a safety property) but also bounded waiting time (a liveness property).
 
-Previous work~\cite{liang:lili,ogata:mcs-lock} has studied the
+Previous work~\cite{lili16,ogata:mcs-lock} has studied the
 correctness of the algorithm itself, but those verification efforts
 did not produce executable code, and did not explore how to integrate
 the proof of the algorithm into a larger system. We have created a
 fully verified implementation and added it as part of the CertiKOS
-kernel~\cite{certikos16}, which consists of 6500 lines of C and
+kernel  which consists of 6500 lines of C and
 assembly implementation and 135K lines of Coq proofs.
 
-In order to manage such a large verification effort, the CertiKOS team developed a methodology known as \emph{certified (concurrent) abstraction layers}, as well as a set of libraries and theorems to support it. Previous papers~\cite{dscal15,ccal16}
+In order to manage such a large verification effort, the CertiKOS team developed a methodology known as \emph{certified (concurrent) abstraction layers}, as well as a set of libraries and theorems to support it. Previous papers~\cite{deepspec}
 described this framework, but many readers found them  dense and hard to follow because they immediately present the formalism at its most abstract and general.
 This paper aims to be a complement: by zooming in on the implementation of one small part of the kernel (the MCS Lock module), we illustrate  what it is like to \emph{use} the framework, how to write specifications in the ``layers'' style, and what the corresponding proof obligations are. We hope this paper will be an easier entry point for understanding our verification framework.
 
-As we will see, CertiKOS-style verification has several distinctive features which stem from the requirements of a large kernel. First, it is suitable for {\bf dealing with low-level code}. To make the proofs tractable we mainly work at the C level (relying on the CompCert verified compiler~\cite{Leroy-Compcert-CACM}), but sometimes we need to go lower. For example the MCS algorithm needs to use atomic CPU instructions ({\em fetch-and-store} and {\em compare-and-swap}), so we need a way to  mix C and assembly code, while stating precisely what semantics we assume that the assembly code has. At the same time, C itself is too low-level to conveniently reason about, so we need {\bf data abstraction} to hide the details about representation in memory.
+As we will see, CertiKOS-style verification has several distinctive features which stem from the requirements of a large kernel. First, it is suitable for {\bf dealing with low-level code}. To make the proofs tractable we mainly work at the C level (relying on the CompCert verified compiler~\cite{compcert}, but sometimes we need to go lower. For example the MCS algorithm needs to use atomic CPU instructions ({\em fetch-and-store} and {\em compare-and-swap}), so we need a way to  mix C and assembly code, while stating precisely what semantics we assume that the assembly code has. At the same time, C itself is too low-level to conveniently reason about, so we need {\bf data abstraction} to hide the details about representation in memory.
 
 Second, in order to handle large developments we need {\bf separation of responsibilities}. In a small proof of an algorithm in isolation, you can state the specification as a single pre- and post-condition which specifies the shape and ownership of the data structure, the invariants (e.g. mutual exclusion), the liveness conditions, and even the behavior of the lock's client code (the critical section code). But such a proof is not modular and not re-usable. In our development, these are done as separate refinement steps, in separate modules with explicit interfaces, and can even be the responsibility of different software developers. 
 
@@ -101,8 +97,8 @@ is simple, mostly the same as for sequential code and with a notion of logs of e
 Unlike working in a special-purpose program logic, we 
 did not have to add any features to show a liveness property, because we can directly reason in Coq about \textbf{how long} an execution will take. 
 
-In the remaining parts of the paper, we first explain the C code that we will be verifying (Sec.~\ref{sec:overview}).
-Then in the bulk of the paper, we explain our proof strategy by going through each abstraction layer in turn, concluding with the safety and starvation freedom properties (Sec.~\ref{sec:verification}). Finally we explain how our proofs fit as a part of the larger CertiKOS development (Sec.~\ref{sec:evaluation}) and discuss related and future work (Sec.~\ref{sec:related}).
+In the remaining parts of the paper, we first explain the C code that we will be verifying 
+Then in the bulk of the paper, we explain our proof strategy by going through each abstraction layer in turn, concluding with the safety and starvation freedom properties Finally we explain how our proofs fit as a part of the larger CertiKOS development and discuss related and future work
 
 
 
@@ -191,7 +187,7 @@ template to elect a leader and execute operations over the entire system.
 $\tplldrfunction$ and $\tplopfunction$ take the term number $\termnum$ as an identifier
 and corresponding state update functions $\gldrfunction$ or
 $\gopfunction$ that specify how a system modeled under \sysname{}
-actually elects a leader or reaches a new state, respectively (Figure~\ref{fig:process-flow}).
+actually elects a leader or reaches a new state, respectively 
 $\tplfunction$ is designed to be generic enough to host most
 leader-based distributed system and $\tplfunction$ and $\protocolfunction$
 constitute the full specification of a leader-based distributed system.
@@ -236,7 +232,7 @@ verifying a distributed system while leaving the verification for linearizabilit
 and soundness of the leader. However, modeling and verifying different systems
 under the same template allows a deeper understanding of subtle differences among systems.
 A comparison of commonalities and differences in state update functions
-and proofs yields such insight which we outline in Section~\ref{sec:examples}.
+and proofs yields such insight which we outline in Section
 
 
 
@@ -257,4 +253,3 @@ and proofs yields such insight which we outline in Section~\ref{sec:examples}.
 %
 %\item Similarly, we show how the same type of refinement can be used to gradually add ghost state to a specification while hiding un-needed details. (Sec.~\ref{sec:representation-ghost}.)
 %
-}
