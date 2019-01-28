@@ -80,16 +80,17 @@ solve those challenges easily.
 \end{center}
 \end{figure}
 
-Figure~\ref{fig:chapter:linking:multithreaded-linking-structure} shows the overall structure and the abstract definitions that the structure relies on, and the number shows the places that we deal with the challenges we have mentioned above.
+Figure~\ref{fig:chapter:linking:multithreaded-linking-structure} shows the overall structure of our multithreaded linking framework and the abstract definitions that the framework relies on them.
+Numbers in the figure indicate the places that we deal with the challenges we have mentioned above.
 
 \subsubsection{$\CSched$ layer with $\lasmmach$} 
 
-The figure shows that the bottom level of mulithreaded linking is 
-a layer $\CSched$ associated with the focused CPU $cid$ and the relevant environmental context $\oracle_{cpuid}$, 
+
+The figure shows that the bottom level of multithreaded linking is a layer $\CSched$ associated with the focused CPU $cid$ and the relevant environmental context $\oracle_{cid}$, 
 which uses the machine model $\lasmmach$, 
-the machine model for $\compcertx$. 
+the machine model of $\compcertx$. 
 The minimum restriction on the layer $\CSched$ is necessary, 
-which is that the layer has to contain scheduling primitives to support software scheduler, thread sleep and yield.
+which is that the layer has to contain scheduling primitives to support software scheduler, yield and sleep.
 Formally, 
 when the layer $\CSched[cid, \oracle_{cid}] = (\Layer_{\CSched}, \ignorechar, \ignorechar)$,
 we relies on the assumption about $\Layer_{\CSched}$, 
@@ -115,10 +116,9 @@ The abstract data also contains the global log in it, which shows the sequence o
 The purpose of using this state definition for per-CPU local layer interface is reusability of $\compcertx$, which could be used to verify sequential programs. 
 With the underlying components of the state definition, 
 it's easy for us to translate the definition into a simple form, $state_{\lasm} = (lst, l)$,
-when  first element ($lst$) is a local state for the CPU, which contains 
-the register values ($\regs$), local copy of the memory ($mem$), as well as a private abstract data ($abs$),
-and the second one is a global log for  shared objects.
-%
+when the first element ($lst$) is a local state for the CPU, which contains 
+the register values ($\regs$), a local copy of the memory ($mem$), as well as a private abstract data ($abs$),
+and the second one is a global log for shared objects.
 %With those definitions, the evaluation transition relation has a type
 %% hide GE
 %%\begin{lstlisting}[language=C]
@@ -134,16 +134,15 @@ and the second one is a global log for  shared objects.
 %\end{center}
 %
 The transition rule of the machine is then a relation on two states, the initial state to the result state, 
-and each primitive n the layer defines (including $\CSched$) its transition n by providing its specifications as follows:
-
+and each primitive in the layer defines (including $\CSched$) its transition by providing its specifications as follows:
 \begin{center}
-$\PLayer{\CSched}{cid}{\oracle_{\codeinmath{cid}}}(\Layer)(id)
+$\PLayer{\CSched}{cid}{\oracle_{cid}}(\Layer)(id)
  \vdash_{\lasm}  \sstepr{\spec_{id}}{args}{lst, l}{\textit{res}\cup \{\}}{lst', l'}$
 \end{center}
-
 {\noindent}when $\spec_{id}$ is a specification for primitive $id$,
 $args$ is the list of arguments for the primitive call, and $\textit{res}\cup \{\}$ defines the 
 return type of the primitive call.
+
 
 Specifications for scheduling primitives in the layer also follows the same form.
 For example, the key parts of the specification for the $\yield$ primitives is
@@ -153,15 +152,15 @@ For example, the key parts of the specification for the $\yield$ primitives is
 lst' = (\regs', m', adt')\\
 m = m' \\
 get\_curid(l) = cid\\
-l' = \listcons{\listapp{l}{(\oracle_{\codeinmath{cid}}\ cid\  l)}}{(cid \ YIELD)}\\
+l' = \listcons{\listapp{l}{(\oracle_{cid}\ cid\  l)}}{(cid \ YIELD)}\\
 get\_curid(l') = cid'\\
 adt.kctxt[curid'] = \regs'\\
 adt' = adt/[adt.kctxt := adt.kctxt/[cid = \regs]]}
-{\PLayer{\CSched}{cid}{\oracle_{\codeinmath{cid}}}(\Layer)(\yield)
+{\PLayer{\CSched}{cid}{\oracle_{cid}}(\Layer)(\yield)
  \vdash_{\lasm}  \sstepr{\spec_{\yield}}{\{\}}{lst, l}{\{\}}{lst',  l'}}
 \end{mathpar}
 which modifies the shared state by first querying the environmental context to update the global information 
-regarding scheduling and adding an $yield$ event.
+regarding scheduling and adding an $\codeinmath{yield}$ event.
 It, on the other hand, also modifies the local state of the CPU, 
 which saves the old register values (kernel context - $\regs$ into the kernel context pool - 
 $adt' = adt/[adt.kctxt := adt.kctxt/[cid = \regs]]$) 
@@ -169,7 +168,7 @@ and restores the kernel context ($\regs'$) for the next thread on the CPU that w
 
 \subsubsection{$\TLink$ layer with intermediate machines}
 
-Introducing the $\TLink$ with intermediate state machine models for multithreaded linking requires multiple steps. 
+Introducing $\TLink$ with intermediate state machine models for multithreaded linking requires multiple steps. 
 The first step is
 dividing a single CPU state into a set of thread states as well as a shared state among threads.
 Simply, the state of $\lasmmach$ ($state_{\lasm} = (lst, l)$) need to be divided into 
@@ -217,6 +216,7 @@ $\forall id,\ id \neq \threadyieldfunc \wedge id \neq \threadsleepfunc \rightarr
 \label{fig:chapter:conlink:multithreaded-machine-model-easm}
 \end{figure}
 
+
 Figure~\ref{fig:chapter:conlink:multithreaded-machine-model-easm} shows
 the first step of our multithreaded linking by providing 
 a $\easmmach$, a multithreaded machine model.
@@ -230,25 +230,21 @@ a register set, as well as an abstract state that may have a different type of a
 We, however, do not explicitly divide a per-CPU memory into the multiple sets of memories since 
 it adds the complexity of the machine definition as well as providing the 
 refinement theorem between machine models.
-Physically divides the memory also elements the future possibility of our work, which provides fancy ownership resolutions
+Physically dividing the memory also elements the future possibility of our work, which provides fancy ownership resolutions
 for the memory operations.
 Instead of it, the framework provides the memory model 
-that guarantees the mutual exclusion if we shows the mutual exclusion of each thread's memory usage, which we name it an algebraic memory model.
-\jieung{I can copy and paste the related part of CCAL paper, but I do not know whether I will do or not. I'll live the explanation about this part before deciding it}
+that guarantees the mutual exclusion if we show the mutual exclusion of each thread's memory usage, which we name it an algebraic memory model (more details for this memory model is in Section~\ref{chapter:linking:subsec:multithreaded-env-configuration}.)
 With this new state definition, 
 we could match the evaluation of the program with $\CSched$ on $\lasmmach$ (Figure~\ref{fig:chapter:conlink:multithreaded-machine-model-easm} (a) (1)) with  the evaluation of the program with $\TLink$ on $\easmmach$
 (Figure~\ref{fig:chapter:conlink:multithreaded-machine-model-easm} (a) (2)) 
 by replacing the scheduling evaluation that performs context switching in the local state $\codeinmath{state}_{\lasmmach}$
-into  the scheduling evaluation that simply change the currently running thread ID and 
+into  the scheduling evaluation that simply changes the currently running thread ID and 
 adds the proper log to memorize it in the state, $\codeinmath{state}_{\easmmach}$.
 Building a per-thread machine model t for each thread 
-is replacing the strategy of other threads with the proper environmental context as show in Figure~\ref{fig:chapter:conlink:multithreaded-machine-model-easm} (b).
-Thread linking, however, requires a little bit more fancy resolution to solve an another challenge which differs from the case of multicore linking, building a dynamic initial state for each thread.
+is replacing the strategy of other threads with the proper environmental context as shown in Figure~\ref{fig:chapter:conlink:multithreaded-machine-model-easm} (b).
+Thread linking, however, requires a little bit more fancy resolution to solve another challenge which differs from the case of multicore linking, building a dynamic initial state for each thread.
 Figure~\ref{fig:chapter:conlink:multithreaded-machine-model-easm} (c) 
-shows the case, which illustrates 
-why we need a 
-Each thread many have  
-
+shows the case, which illustrates why we need to distinguish the thread state in a fine-grained way. 
 
 
 
@@ -266,6 +262,7 @@ Each thread many have
 With this model, 
 providing the correctness of parallel composition is in Figure~\ref{fig:chapter:conlink:parallel-composition-in-easm},
 which shows that 
+It requires the match 
 
 
 showing that the program evaluation on a per-CPU machine 
@@ -273,6 +270,83 @@ showing that the program evaluation on a per-CPU machine
 
 
 
+
+
+
+
+
+\begin{figure}
+\begin{center}
+\includegraphics[width=0.9\textwidth, page=7]{figs/conlink/concurrent_linking}
+\end{center}
+\caption{Introduce Single Threaded Machine Model.}
+\label{fig:chapter:conlink:introduce-single-threaded-machine-model-with-iiasm}
+\end{figure}
+
+
+
+\begin{figure}
+\begin{center}
+\includegraphics[width=0.9\textwidth, page=8]{figs/conlink/concurrent_linking}
+\end{center}
+\caption{Introduce Single Threaded Machine Model with Environmental Context Query Optimization.}
+\label{fig:chapter:conlink:introduce-single-threaded-machine-model-with-tasm}
+\end{figure}
+
+
+
+\subsubsection{$\TSched$ layer with $\hasmmach$} 
+
+
+
+\begin{figure}
+\begin{center}
+\includegraphics[width=0.9\textwidth, page=9]{figs/conlink/concurrent_linking}
+\end{center}
+\caption{Per-thread Machine Model ($\hasmmach$).}
+\label{fig:chapter:conlink:per-thread-machine-model}
+\end{figure}
+
+By following all those steps, 
+we provide the machine model for per-thread layer interfaces
+and  Figure~\ref{fig:chapter:conlink:per-thread-machine-model} shows 
+the key feature of the machine model.
+The machine state of the per-thread machine model $\codeinmath{state}_{\hasmmach}$ is identical
+ to the machine state of the per-CPU machine model, $\codeinmath{state}_{\hasmmach}$.
+This similarity gives us a huge benefit, the reusability of the compiler ($\compcertx$) 
+that we have used in our per-CPU layer interfaces. 
+
+The program in the bottom level of our per-thread local layer interfaces also relies on 
+the abstract layer definition $\TSched$,
+which contains the same domain on the primitive set with that of $\CSched$ (\ie, see Definition~\ref{definition:chapter:conlink:domain-csched-tsched}.)
+
+\begin{definition}[Primitive Domain of $\CSched$ and $\TSched$]
+\label{definition:chapter:conlink:domain-csched-tsched}
+\begin{tabular}{P{0.95\textwidth}}
+$\CSched[\_, \_] = (\Layer_{\CSched}, \_ , \_) \rightarrow \TSched[\_, \_] = (\Layer_{\TSched}, \_ , \_) \rightarrow$\\
+$\forall id.\ (id, \_) \in \Layer_{\CSched}  \leftrightarrow (id, \_) \in \Layer_{\TSched} $\\
+\end{tabular}
+\end{definition}
+
+With the stated constraint and the refinement theorems that we have provided,
+thy $\TSched$  layer on $\hasmmach$ provides the same functionality with 
+the $\CSched$  layer on $\lasmmach$ but hides
+the transitions for other threads that run on the same CPU. 
+For example, the evaluation rule for $\yield$ is
+\begin{mathpar}
+\inferrule[Yield Rule]
+{l' = \listconsoppo{(tid\ YIELD)}{l}\\
+l'' = \listappoppo{(\oracle_{\codeinmath{tid}}\ tid \ l')}{l'}\\
+l''' = \listconsoppo{(tid\ YIELDBACK)}{l''}}
+{\PLayer{\TSched}{tid}{\oracle_{tid}}(\Layer)(\yield)
+ \vdash_{\hasm}  \sstepr{\spec_{\yield}}{args}{\regs, m, adt, l}{\textit{res}\cup \{\}}{\regs,  m, adt, l'''}}
+\end{mathpar}
+which implies that updating the shared log from $l$ to $l'''$ with using the appropriate environmental context for 
+the thread, $\oracle_{\codeinmath{tid}}$.
+The rule, however, modifies any parts of its private (local) state at all, 
+which differs from the $\yield$ rule in the program with layer $\CSched$ on $\lasmmach$ (\ie, the rule performs context switching between the threads on the same CPU.)
+
+\jieung{AbsRelT??}
 
 
 %
@@ -325,67 +399,6 @@ showing that the program evaluation on a per-CPU machine
 %The machine only contains only one register set and one private abstract data in its state.
 %The layer definitely captures the execution of the whole thread set of CPU $c$ 
 %and does not support thread-local reasoning.
-
-
-
-
-\begin{figure}
-\begin{center}
-\includegraphics[width=0.9\textwidth, page=7]{figs/conlink/concurrent_linking}
-\end{center}
-\caption{Introduce Single Threaded Machine Model.}
-\label{fig:chapter:conlink:introduce-single-threaded-machine-model-with-iiasm}
-\end{figure}
-
-
-
-\begin{figure}
-\begin{center}
-\includegraphics[width=0.9\textwidth, page=8]{figs/conlink/concurrent_linking}
-\end{center}
-\caption{Introduce Single Threaded Machine Model with Environmental Context Query Optimization.}
-\label{fig:chapter:conlink:introduce-single-threaded-machine-model-with-tasm}
-\end{figure}
-
-
-
-\subsubsection{$\TSched$ layer with $\hasmmach$} 
-
-
-
-\begin{figure}
-\begin{center}
-\includegraphics[width=0.9\textwidth, page=9]{figs/conlink/concurrent_linking}
-\end{center}
-\caption{Per-thread Machine Model ($\hasmmach$).}
-\label{fig:chapter:conlink:per-thread-machine-model}
-\end{figure}
-
-
-
-\begin{definition}[Primitive Domain of $\CSched$ and $\TSched$]
-$\CSched[\_, \_] = (\Layer_{\CSched}, \_ , \_) \rightarrow \TSched[\_, \_] = (\Layer_{\TSched}, \_ , \_) \rightarrow 
-\forall id.\ (id, \_) \in \Layer_{\CSched}  \leftrightarrow (id, \_) \in \Layer_{\TSched} $
-\end{definition}
-
-
-\begin{mathpar}
-\inferrule[Yield Rule]
-{
-l' = (\oracle_{\codeinmath{thrd}} tid (tid YIELD::l)))
-l' = (tid YIELDBACK)::(\oracle_{\codeinmath{thrd}} tid (tid YIELD::l)))}
-{\PLayer{\TSched}{cid}{\oracle_{\codeinmath{cpu}}}(\Layer)(\yield)
- \vdash_{\hasm}  \sstepr{\spec_{\yield}}{args}{\regs, m, adt, l}{\textit{res}\cup \{\}}{\regs,  m, adt, l'}}
-\end{mathpar}
-
-By following all those steps, 
-we provide per-thread interface and  Figure~\ref{fig:chapter:conlink:per-thread-machine-model} shows 
-the key feature of our per-thread machine model.
-The machine state of the per-thread machine model $\codeinmath{state}_{\hasmmach}$ is identical
- to the machine state of the per-CPU machine model, $\codeinmath{state}_{\hasmmach}$ 
-
-During the remaining parts of this section, 
-we provides the definitions that we presented in this section with the associated $\coq$ code. 
 
 
 
