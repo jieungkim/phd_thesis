@@ -1,8 +1,41 @@
-
-TO BE ADDED
-
+%
 %\section{Trusted Computing Based in CertiKOS}
 %\label{chapter:conclusion:sec:trusted-computing-based-in-certikos}
+
+This thesis 
+explains
+the toolkit 
+for concurrent program verification, 
+that supports for users to build abstraction layers with machine-checked proof objects in them. 
+The toolkit also provides 
+the framework 
+to combine local isolated proof instances in the concurrent environment 
+to form the formal link between the local instance and
+the formal behavior of the program on concurrent machine model. 
+As case studies, 
+$\certikos$ and $\wormspace$ 
+have presented in this thesis
+which are a concurrent operating system with fine-grained locking
+and a distributed system API 
+based on a collection of $\paxos$. 
+
+In regarding the verification on distributed systems,
+we also provide the generic toolkit to support the safety proof of multiple leader-based distributed systems. 
+We form a generic form that those systems has to follow that can aids the safety proof of those systems. 
+It is critical in the verification of distributed systems, 
+because providing
+the high-assurance of those systems 
+is not only associated with the functional correctness
+but also related to the protocol safety that usually
+requires a sophisticated case analysis.
+
+As a future direction, 
+we plan 
+to rule out assumptions that 
+our framework and the proofs rely on
+and improve 
+the framework to extend its expressiveness, 
+simplify the framework itself.
 
 %
 %We build concurrent operating systems using CCAL, but there are some potholes in the verification. 
