@@ -1,8 +1,8 @@
 %Concurrent programs are in common these days because 
 %multicore hardware and multithreaded programming become 
 %ubiquitous. 
-Concurrency is everywhere these days. 
-They are not only related to the local machines (\ie, multicore hardware or multithreaded programming)
+Concurrency is ubiquitous today. 
+It is  not only related to the local machines (\ie, multicore hardware or multithreaded programming)
 but also associated with external behaviors of the system (\ie, I/O device) and other nodes' behaviors in the cluster of multiple machines via network communications.
 They, however, are known to be challenging to get right and debug because the behavior of the system contains the number (usually unbounded) of arbitrary interactions and interleaved executions among all components of the system. 
 In this sense, building high-assurance concurrent programs is still a challenging problem;
@@ -18,7 +18,7 @@ Software system usually consists of multiple sub-modules which are highly relate
 and they also form multiple concurrently interleaved instances (\ie, the mixture of heterogeneous and/or homogeneous instances depending on the system)
 that interact with others.
 In this sense, a novel modular and compositional verification approach to resolve them is required for concurrent programs
-which provides a way to maintain global invariants when building multiple sub-modules that can run with 
+which provide a way to maintain global invariants when building multiple sub-modules that can run with 
 other concurrent components in the full system.
 % Those features require the system to maintain global invariants when building multiple sub-modules as well as other components together. by providing modularity and compositionality approach for the verification.
 %Second, the verification also needs to decouple the complexity of concurrent interleaving from the verification 

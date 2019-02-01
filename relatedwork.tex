@@ -151,7 +151,7 @@ propose the way to build and prove concurrent programs in a \textit{layered} way
 However, their layers differ from $\ccalname$ layers in three aspects;
 1) their approaches do not support contextual refinement proofs of linearizability like Filipovic \etal~\cite{filipovic10} and Liang \etal~\cite{liang13} does;
 2) they are lack of connections with any verified compilers; and
-3) they do address liveness properties as we have shown in MCS lock verification.
+3) they do not address liveness properties as we have shown in MCS lock verification.
 
 
 
@@ -229,12 +229,13 @@ to support compositional thread-safe compilation of concurrent Clight programs.
 They introduce their interaction semantics followed by the approach proposed by Beringer \etal~\cite{beringer14}, which treats
 synchronization
 primitive calls as external calls.
-They, however, does not support a layered ClightX language as we support in our $\compcertx$.  
+They, however, do not support a layered ClightX language as we support in our $\compcertx$.  
 Thus, building concurrent layers is impossible based on their work.
+In addition, hey do not investigate on supporting concurrency in the paper even though 
+their interaction model is designed to support shared-memory concurrency.
 Kang \etal~\cite{hur16} and Ramananandro \etal~\cite{ramananandro:2015} also modified $\compcert$ compiler to support separate compilation and composition, 
 but they do not support concurrency.  
 Other works on the verified compilation~\cite{Lochbihler10esop, Sevcik11popl, zhao:2013, kang:2018} does not support concurrent and/or compositionality. 
-
 
 \para{Game Semantics.} 
 
