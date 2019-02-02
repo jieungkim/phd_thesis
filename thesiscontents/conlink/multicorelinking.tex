@@ -3,8 +3,8 @@
 
 Multicore Linking is to provide the evidence that the program execution on
 our local layer (CPU local layer) is connected to the execution of the same program on our multicore machine model. 
-To do that, concurrent linking (composition) usually requires assumptions about the environment. 
-We assume that the environment with the following constraint:
+%To do that, concurrent linking (composition) usually requires assumptions about the environment. 
+In this purpose, we assume the environment with the following constraint:
 fixed number of CPUs, the fixed initial state for all CPUs,
 as well as the fairness among CPUs.
 With those assumptions, 
@@ -15,8 +15,8 @@ concurrent linking for multicore need to solve multiple challenges;
 (4) provide a simple environmental context for per-CPU machines;
 and (5) finally connect this multicore linking framework with the machine for the local layer interface
 The last piece of the multicore linking ((5) in Figure~\ref{fig:chapter:conlink:intermediate-languages-and-their-relationsihps-for-multicore-linking}) 
-has to be manually proven depending on the local layer interface and its underlying machine model. 
-In our case study in Chapter~\ref{chapter:certikos}, the machine model is the assembly machine of $\compcertx$, $\codeinmath{Mach}_{\lasm}$,
+has to be manually proven depending on the local layer interface and its underlying machine model (\ie, $\intelmachine$, ARM, or RISC-V).
+In our case study in Chapter~\ref{chapter:certikos}, the machine model is the assembly machine of $\compcertx$, $\lasmmach$,
 and the bottom layer of the system ($\mmcsbootfull$), which is also slightly discussed in Chapter~\ref{chapter:mcs-lock}.
 %Section~\ref{chapter:ccal:sec:ccal-overview} provides the way to handle 
 \begin{figure}
