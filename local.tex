@@ -187,7 +187,6 @@
 \newcommand{\hasmmach}{\machkwd_{\hasm}}
 \newcommand{\ieasmmach}{\machkwd_{\ieasm}}
 
-
 \newcommand{\ignorechar}{\_}
 %%%%
 
@@ -425,70 +424,70 @@
 
 
 \newcommand\join{\!\bowtie\!}
+%
+%\newcommand{\EAsmM}[1]{\mathsf{EAsm_{#1}}}
+%\newcommand{\TAsmM}[1]{\mathsf{TAsm_{#1}}}
+%%
+%\newcommand{\dshare}{\mathsf{sa}}
+%\newcommand{\dproc}{\mathsf{pa}}
+%\newcommand{\dsnap}{\mathbb{n}\dproc}
+%\newcommand{\cpuid}{\mathsf{f_{cpu}}}
+%\newcommand{\procid}{\mathsf{f_{proc}}}
+%\newcommand{\blocknum}{\mathsf{nb}}
+%
+%\newcommand{\lval}{\mathsf{Lval}}
+%\newcommand{\largs}{\mathsf{Largs}}
+%
+%\newcommand{\primevunit}[1]{\mathsf{EU_{#1}}}
+%\newcommand{\yieldbackunit}{\mathsf{yieldBack}}
+%\newcommand{\SLog}{\mathsf{Log}}
+%\newcommand{\snapfun}{\mathsf{f_{\dsnap}}}
 
-\newcommand{\EAsmM}[1]{\mathsf{EAsm_{#1}}}
-\newcommand{\TAsmM}[1]{\mathsf{TAsm_{#1}}}
+%\newcommand{\Sevent}{\mathsf{Ev}}
+%\newcommand{\threadfunid}{\mathsf{ident}}
+%\newcommand{\statecheck}{\mathsf{f}_{\mathcal{C}}}
 
-\newcommand{\dshare}{\mathsf{sa}}
-\newcommand{\dproc}{\mathsf{pa}}
-\newcommand{\dsnap}{\mathbb{n}\dproc}
-\newcommand{\cpuid}{\mathsf{f_{cpu}}}
-\newcommand{\procid}{\mathsf{f_{proc}}}
-\newcommand{\blocknum}{\mathsf{nb}}
+%\newcommand{\updatefun}{\mathcal{SR}}
+%\newcommand{\haseventfun}{\mathsf{f_{evcheck}}}
+%\newcommand{\threadstate}{\mathsf{ts}}
+%\newcommand{\nextblockfun}{\mathsf{f_{\blocknum}}}
 
-\newcommand{\lval}{\mathsf{Lval}}
-\newcommand{\largs}{\mathsf{Largs}}
-
-\newcommand{\primevunit}[1]{\mathsf{EU_{#1}}}
-\newcommand{\yieldbackunit}{\mathsf{yieldBack}}
-\newcommand{\SLog}{\mathsf{Log}}
-\newcommand{\snapfun}{\mathsf{f_{\dsnap}}}
-
-\newcommand{\Sevent}{\mathsf{Ev}}
-\newcommand{\threadfunid}{\mathsf{ident}}
-\newcommand{\statecheck}{\mathsf{f}_{\mathcal{C}}}
-
-\newcommand{\updatefun}{\mathcal{SR}}
-\newcommand{\haseventfun}{\mathsf{f_{evcheck}}}
-\newcommand{\threadstate}{\mathsf{ts}}
-\newcommand{\nextblockfun}{\mathsf{f_{\blocknum}}}
-
-\newcommand{\initdproc}{\mathsf{f_{init\_pa}}}
-\newcommand{\curthread}{\mathsf{CurID}}
-\newcommand{\initregs}{\mathsf{f_{init\_regs}}}
-\newcommand{\getenvlog}{\mathsf{\varphi^{\curthread}_{[\mathrm{TAsm}]}}}
-\newcommand{\composedata}{\mathcal{CD}_{\mathrm{init}}}
-\newcommand{\threadset}{{\mathcal{S}_{\mathrm{thrd}}}}
-\newcommand{\fullthreadset}{{\mathcal{S}_{\mathrm{T}}}}
+%\newcommand{\initdproc}{\mathsf{f_{init\_pa}}}
+%\newcommand{\curthread}{\mathsf{CurID}}
+%\newcommand{\initregs}{\mathsf{f_{init\_regs}}}
+%\newcommand{\getenvlog}{\mathsf{\varphi^{\curthread}_{[\mathrm{TAsm}]}}}
+%\newcommand{\composedata}{\mathcal{CD}_{\mathrm{init}}}
+%\newcommand{\threadset}{{\mathcal{S}_{\mathrm{thrd}}}}
+%\newcommand{\fullthreadset}{{\mathcal{S}_{\mathrm{T}}}}
 
 %\newcommand{\AsmLM}{\mathsf{Asm}_{\mathrm{L}}}
-\newcommand{\AsmLM}{\mathsf{Asm}}
-\newcommand{\AsmHM}{\mathsf{Asm}^{\mathrm{t}}}
-\newcommand{\simrel}{\mathcal{R}_{\mathrm{sim}}}
-\newcommand{\absrel}{\mathcal{AR}^{{_{\EAsmM{}}}}_{_{\AsmLM}}}
-\newcommand{\absrelt}{\mathcal{AR}^{{_{\AsmHM}}}_{_{\TAsmM{}}}}
-\newcommand{\proofcase}[1]{({Case\ }_{\mathrm{#1}})}
+%\newcommand{\AsmLM}{\mathsf{Asm}}
+%\newcommand{\AsmHM}{\mathsf{Asm}^{\mathrm{t}}}
+%\newcommand{\simrel}{\mathcal{R}_{\mathrm{sim}}}
+%\newcommand{\absrel}{\mathcal{AR}^{{_{\EAsmM{}}}}_{_{\AsmLM}}}
+%\newcommand{\absrelt}{\mathcal{AR}^{{_{\AsmHM}}}_{_{\TAsmM{}}}}
+%\newcommand{\proofcase}[1]{({Case\ }_{\mathrm{#1}})}
 
-
-\newcommand\Lpthread{L_\codeinmath{pthread}}
+%
+%\newcommand\Lpthread{L_\codeinmath{pthread}}
 
 
 \newcommand{\sstepr}[5]{#1(#2, #3) \ni (#4, #5)}
 \newcommand{\sstep}[4]{#1(#2, #3) \ni (#4)}
 
-\newcommand{\nextblockOP}[0]{\mathsf{nb}}
-\newcommand{\nextblock}[1]{\nextblockOP({#1})}
-\newcommand{\liftnextblockOP}[0]{\mathsf{liftnb}}
-\newcommand{\liftnextblock}[2]{\liftnextblockOP({#1}, {#2})}
-\newcommand{\extends}[2]{{#1} \subseteq {#2}}
-\newcommand{\inject}[3]{{#2} \stackrel{#1}{\hookrightarrow} {#3}}
-\newcommand{\alloc}[3]{\mathsf{alloc}({#1}, {#2}, {#3})}
-\newcommand{\store}[3]{\mathsf{st}({#1}, {#2}, {#3})}
-\newcommand{\load}[2]{\mathsf{ld}({#1}, {#2})}
-\newcommand{\some}[1]{\left\lfloor {#1} \right\rfloor}
-
-\newcommand{\disjointunionOP}[0]{\circledast}
-\newcommand{\disjointunion}[3]{{#1} \disjointunionOP {#2} \simeq {#3}}
+%\newcommand{\nextblockOP}[0]{\mathsf{nb}}
+%\newcommand{\nextblock}[1]{\nextblockOP({#1})}
+%\newcommand{\liftnextblockOP}[0]{\mathsf{liftnb}}
+%\newcommand{\liftnextblock}[2]{\liftnextblockOP({#1}, {#2})}
+%\newcommand{\extends}[2]{{#1} \subseteq {#2}}
+%\newcommand{\inject}[3]{{#2} \stackrel{#1}{\hookrightarrow} {#3}}
+%\newcommand{\alloc}[3]{\mathsf{alloc}({#1}, {#2}, {#3})}
+%\newcommand{\store}[3]{\mathsf{st}({#1}, {#2}, {#3})}
+%\newcommand{\load}[2]{\mathsf{ld}({#1}, {#2})}
+%\newcommand{\some}[1]{\left\lfloor {#1} \right\rfloor}
+%
+%\newcommand{\disjointunionOP}[0]{\circledast}
+%\newcommand{\disjointunion}[3]{{#1} \disjointunionOP {#2} \simeq {#3}}
 %%%%%
 %%%%%
 %%%%%   END of Thread Linking
@@ -1013,6 +1012,9 @@
 \newcommand{\AbsRelC}{{\codeinmath{AbsRelC}}}
 \newcommand{\AbsRelT}{{\codeinmath{AbsRelT}}}
 
+\newcommand{\ThreadConf}{{\codeinmath{C}}}
+%
+%\newcommand{\ThreadConf}{{\codeinmath{C}_{\codeinmath{thrd}}}}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5

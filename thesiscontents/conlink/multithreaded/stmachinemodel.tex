@@ -89,7 +89,7 @@ The machine, however,
  which always returns the same thread ID as the result of the rule 
  by using 
  an auxiliary function, \lstinline$get_env_log$, in  Figure~\ref{fig:chapter:conlink:yield-rule-in-tasm} (a).
- The funciton   merges multiple environmental context queries into a single step with a fairness assumption
+ The function   merges multiple environmental context queries into a single step with a fairness assumption
  of threads' evaluation, which is stated as \lstinline$limit$ in line 11 of  Figure~\ref{fig:chapter:conlink:yield-rule-in-tasm} (b).
 
 We also provide 
@@ -99,7 +99,7 @@ which users can freely use without any additional cost.
 
 \begin{lemma}[Refinement Between $\ieasm$ and $\tasm$]
 \label{lemma:chapter:conlink:ieasm-refines-tasm}
-Suppose that $C$ is a multithreaded linking environment that contains thread configurations, auxiliary functions, as well as properties for them. 
+Suppose that $\ThreadConf$ is a multithreaded linking environment that contains thread configurations, auxiliary functions, as well as properties for them. 
 Additionaly, let's assume that 
  $tid$ is a valid thread ID in a certain CPU,
 and 
@@ -110,11 +110,16 @@ and $\codeinmath{Ctxt}$ is a
  Then, we can state that
  \begin{center}
 \begin{tabular}{c}
-$\semwmachine{C, \PLayer{\TLink}{tid}{\oracle^{\TLink}_{cid}}}{\codeinmath{Ctxt}}{\codeinmath{mach}_{\ieasm}} \refines_{R_{\mathcal{M}{[\tasm, \ieasm]}}} \semwmachine{C, \PLayer{\TLink}{tid}{\oracle^{\TLink}_{tid}}}{\codeinmath{Ctxt}}{{\codeinmath{mach}_{\tasm}}}$\\
+$\semwmachine{\ThreadConf, \PLayer{\TLink}{tid}{\oracle^{\TLink}_{cid}}}{\codeinmath{Ctxt}}{\ieasmmach} \refines_{R_{\mathcal{M}{[\tasm, \ieasm]}}} \semwmachine{\ThreadConf, \PLayer{\TLink}{tid}{\oracle^{\TLink}_{tid}}}{\codeinmath{Ctxt}}{\tasmmach}$\\
 \end{tabular}
 \end{center}
 when $R_{\mathcal{M}{[\tasm, \ieasm]}}$ is a refinement relation between two machine models with the  $\TLink$ layer.
 \end{lemma}
+
+Similar to Lemma~\ref{lemma:chapter:conlink:easm-refines-iieasm} and Lemma~\ref{lemma:chapter:conlink:easm-refines-single-ieasm},
+Lemma~\ref{lemma:chapter:conlink:ieasm-refines-tasm} depends on a thread configuration ($\ThreadConf$) and an abstract layer definition ($\TLink$).
+It, however, does not depend on other abstract properties such as $\AbsRelC$; thus
+using it does not require us to introduce any additional concrete definitions. 
 
 
 
@@ -516,7 +521,7 @@ when $R_{\mathcal{M}{[\tasm, \ieasm]}}$ is a refinement relation between two mac
 %$$\ltyp{(c, \oracle \vdash_{\AsmLM} \CSched)}
 %{}
 %{\varnothing}{(\curthread, \oracle^{t}, c, \oracle \vdash_{\AsmHM} \TSched)}$$
-%when $\curthread$ is a member of threads on CPU $c$, and when we have valid abstract relations
+%when $\curthread$ is a member of threads on CPU $\ThreadConf$, and when we have valid abstract relations
 %$\absrel$ and $\absrelt$ with the abstract intermediate layer $\mathrm{PH}$ on $\EAsmM{}$ and $\TAsmM{}$.
 %\end{small}
 %\label{theorem:tasm_refines_lasm}
@@ -528,7 +533,7 @@ when $R_{\mathcal{M}{[\tasm, \ieasm]}}$ is a refinement relation between two mac
 %
 %\begin{theorem}[Merged $\AsmHM$ refines $\AsmLM$]
 %\begin{small}
-%Assuming two machines, $\AsmHM$ and $\AsmLM$ and $\fullthreadset$ contains all available threads on CPU $c$.
+%Assuming two machines, $\AsmHM$ and $\AsmLM$ and $\fullthreadset$ contains all available threads on CPU $\ThreadConf$.
 %. Then we can show that
 %$$\ltyp{(c, \oracle \vdash_{\AsmLM} \CSched)}
 %{}

@@ -3,10 +3,10 @@
 \label{chapter:linking:subsec:multithreaded-env-configuration}
 
 This section provides the definitions 
-that are necessary for us to build intermediate machine models in our multithreaded linking framework
-(\ie, abstract state types for teh $\TLink$ layer , thread configurations, auxiliary functions)
-which includes the function that calculates the dynamic initial state for each thread shown 
-in Figure~\ref{fig:chapter:conlink:multithreaded-machine-model-easm}
+that are necessary to build intermediate machine models in our multithreaded linking framework
+(\ie, abstract state types for the $\TLink$ layer , thread configurations, auxiliary functions)
+which includes the function that calculates the dynamic initial state for each thread.
+Those definitions are to formally define a multithreaded machine model in Figure~\ref{fig:chapter:conlink:multithreaded-machine-model-easm}.
 %multithreaded environment definitions that we explained in Section~\ref{chapter:linking:subsec:multithreaded-linking-overview}.
 %
 %Similar to the multicore machine model, we provide configurations 
@@ -27,21 +27,22 @@ Class SingleData := {
 \label{fig:chapter:conlink:abs-state-types-for-tlink}
 \end{figure}
 
-To divide the CPU private state and the log into the proper set of private state and the shared log, we introduce new abstract data types in \lstinline$SingleDAta$ in Figure~\ref{fig:chapter:conlink:abs-state-types-for-tlink}. 
+To divide a CPU private state and a global log into the proper set of private states and a shared log, we introduce new abstract data types in \lstinline$SingleDAta$ in Figure~\ref{fig:chapter:conlink:abs-state-types-for-tlink}. 
 There are two abstract data types, $\codeinmath{dshare}$ and $\codeinmath{dproc}$, 
-which represent a shared data and private data for each thread, respectively. 
+which represent a shared data and a private data for each thread, respectively. 
 There are not many restrictions for those types,
 but shared data has the information about the 
-CPU ID as well as the currently running thread ID in it.
+CPU ID as well as the currently running thread ID in it to provide 
+\lstinline$processor_id$ and \lstinline$proc_id$ functions. 
 
 
 \subsubsection{Thread Machine Memory Model}
 
 % algebraic memory model
-
-Multithreaded linking also requires the composition and the decomposition of the memory,
+Multithreaded linking also requires composition and decomposition of a memory,
 which logically divides a single memory into a set of memories associated with threads.
-Our system does not allow ownership transfers for the bare memories; thus we could safely assume that the memory can be divided into multiple disjoint memories that are owned by the designated threads in the system. 
+Our system neither allows ownership transfers for the same memory region among threads nor assume shared memory; thus we could safely assume that the memory can be divided into multiple disjoint memories that are owned by the designated threads in the system. 
+Threads, however, share several resources in the kernel via primitive calls that provide the way to manipulate them with restricted manners. 
 Based on the assumption, 
 we have built the algebraic memory model, the extended version of the memory model by adding two key relations from $\compcertx$'s memory model.
 Those two key relations are 
@@ -57,6 +58,7 @@ the $m3$ is the union of $m1$ and $m2$ when $m1$ and $m2$
 are disjoint from each other. 
 The second, \lstinline$mem_lift_nextblock$ 
 provides the operation that makes the adjustment on the memory possible. 
+
 
 
 \subsubsection{Thread Configuration}
@@ -78,7 +80,7 @@ Class ThreadsConfigurationOps := {
 
 Thread linking also requires multiple configurations about the environment of the system, which are defined in  
 \lstinline$ThreadConfigurationOps$ of Figure~\ref{fig:chapter:linking:thread-configurations}.
-For example, \lstinline$current_CPU_ID$ is the CPU ID that is 
+For example, \lstinline$current_CPU_ID$ is a CPU ID that is 
 associated with the current local layer.
 Layer $\CSched$ is associated with \lstinline$current_CPU_ID$, 
 and all threads associated with $\TLink$ and $\TSched$ layers 
@@ -88,8 +90,8 @@ In this sense, the layer above $\TSched$ is parameterized by this thread ID (\ls
 The full thread list is a set of thread identifiers which run on top of the current CPU ID. 
 It is a union of the current thread identifier, a singleton set, 
 and non-current threads. 
-There are no restrictions on the size of the full thread set in here,
-differently with the full CPU set in multicore linking configuration.
+There are no restrictions on the size of the full thread set in here even though 
+the thread pool can be bounded in the real implementation, which differs from the full CPU set in multicore linking configuration.
 The \lstinline$main_thread$ represents the main thread (which initializes the system) of the CPU. 
 This main thread may differ from the current thread identifier or same with the current thread identifier.
 
@@ -101,7 +103,7 @@ Inductive LogEventUnit :=
   | LogSleep (i: Z) (n: positive) <@$\cdots$@>
   | LogPrim (id: ident) (args: list lval) (choice : Z) (dprocSnap : privDataSnap) 
   | LogYieldBack.
-Inductive LogEvent :=| LEvent : Z -> LogEventUnit -> LogEvent.
+Inductive LogEvent := | LEvent : Z -> LogEventUnit -> LogEvent.
 \end{lstlisting}
 \begin{center}
 (a) Event and Log Definitions for Machine Models in Multithreaded Linking Framework.
@@ -238,7 +240,7 @@ Those definitions, of course, requires multiple properties that they have to sat
 Those properties are necessary for us to prove the multiple properties that the machine has to follow (\eg, decidability on their initial state and the property of their log construction)  
 Figure~\ref{fig:chapter:conlink:multithreaded-configuration-props} shows several properties related to thread configurations, auxiliary functions, as well as initial logs.
 For example, 
-the \lstinline$CPU_ID_valid$ (Figure~\ref{fig:chapter:conlink:multithreaded-configuration-props} (a))
+ \lstinline$CPU_ID_valid$ (Figure~\ref{fig:chapter:conlink:multithreaded-configuration-props} (a))
 tells that all the scheduling result of this CPU 
 will not change the CPU ID. 
 Also, the initial log for each thread satisfies a certain property, \lstinline$oracle_init_log$ and \lstinline$init_log_property$

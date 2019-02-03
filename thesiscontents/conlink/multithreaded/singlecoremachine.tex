@@ -1,15 +1,7 @@
 \subsection{Machine Model for Per-CPU Layer Interface}
 \label{chapter:linking:subsec:cpu-local-layer-interface}
 
-%The formal definition about the state 
-The machine model for per-CPU local layer interfaces,
-$\lasmmach$, contains five rules, 
-but we explain only two rules in this section; the rules 
-that are sufficient for us to explain core parts of our thread-linking framework.
-The first evaluation rule is 
-about the rule for assembly instructions in Figure~\ref{fig:chapter:linking:eval-rule-in-lasm} (a), 
-which basically evaluates the corresponding execution 
-rule for the assembly instruction that the current program counter points out. 
+
 \begin{figure}
 \begin{lstlisting}[language=C, deletekeywords={unsigned, struct}]
 | exec_step_internal:
@@ -45,15 +37,23 @@ rule for the assembly instruction that the current program counter points out.
 \label{fig:chapter:linking:eval-rule-in-lasm}
 \end{figure}
 
+%The formal definition about the state 
+The machine model for per-CPU local layer interfaces,
+$\lasmmach$, contains five transition rules, 
+but we explain only two rules in this section; the rules 
+that are sufficient for us to explain core parts of our thread-linking framework.
+The first evaluation rule is 
+about the rule for assembly instructions in Figure~\ref{fig:chapter:linking:eval-rule-in-lasm} (a), 
+which basically evaluates the corresponding execution 
+rule for the assembly instruction that the current program counter points out. 
+
 One another rule that is necessary to explain our framework is the rule for external function calls in Figure~\ref{fig:chapter:linking:eval-rule-in-lasm} (b),
 which is the rule for primitive calls that are defined in $\CSched$ including $\yield$ and $\sleep$ primitives.
 It basically says that it uses 
-the specification of the primitive by calling \lstinline$external_call<@$'$@>$,
+the specification of the primitive by calling \lstinline$external_call'$,
 which implies the same meaning with $\sigma_{id}$ in our formal definition shown in the previous section.
 For other machine models in our multithreaded linking,
 we presents the rules that correspond to those two rules in the machine model for per-CPU local layer interfaces.
-
-
 
 %The first rule is for internal instruction revaluation rules, 
 %that defines the rules for bunch of possible instructions including 

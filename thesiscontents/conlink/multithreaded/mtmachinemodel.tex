@@ -3,9 +3,12 @@
 
 This section presents the definition of our multithreaded machine model,
 $\easmmach$.
-It first requires us to define the thread state definition, which distinguishes
-the thread that is running, available (waiting  for the initial run), 
-and environment (out of our focused set) by extending the register set definition in the $\lasmmach$ state.
+We first define a thread state;
+which has to contain not only the proper register values for the thread that is currently running  but also 
+the status of the thread, which is explained in Figure~\ref{fig:chapter:conlink:multithreaded-machine-model-easm} (b).
+In that purpose, the state definition contains the flag that distinguishes the thread's running status,
+which is running, available (waiting  for the initial run), 
+or environment (out of our focused set).
 \begin{lstlisting}[language=C]
 Inductive ThreadState := | Environment | Available | Running (rs: regset).
 \end{lstlisting}
@@ -24,12 +27,25 @@ Inductive ThreadState := | Environment | Available | Running (rs: regset).
 %Definition init_dproc (i : Z)  :=
 %  if zeq main_thread i then main_init_dproc else nomain_init_dproc.
 %\end{lstlisting}
-It first need to remember whether the thread is currently running (which implies that it has been initialized properly),
-or waiting until its first run (Available), or not in the current focused thread set (Environment).
+When the thread status is \lstinline$Running$, the thread state also contains the register set (\lstinline$(rs: regset)$) for the thread. 
+%
+%It first need to remember whether the thread is currently running (which implies that it has been initialized properly),
+When the status is \lstinline$Available$, it implies that the thread is a member of focused thread set, but does not start its evaluation 
+yet.
+When the thread associated with this status initially achieves the evaluation control, it calculates its own initial state via using 
+auxiliary functions. 
+With the full focused set, for example, the main thread is initialized with the \lstinline$Running$ flag as well as the proper register values (\ie, including the initial program counter for the system),
+but other threads in the full focused set are initialized with the   the \lstinline$Available$ flag,
+Lastly, when the thread is  \lstinline$Environmnet$, 
+this implies that the thread is neither running nor a member of the current focused set. 
+%They are 
+%
+%or waiting until its first run (Available), or not in the current focused thread set (Environment).
 %The initial map for the thread state is parameterized by a focused set ($tid$). 
 %For example, with the given full thread set ($\fullthreadset$), which is a total multithreaded machine over a CPU, 
 %all threads in the $\fullthreadset$ should be initialized as available at the beginning with the exception about the main thread, 
 %which has to be initialized as a initial state of the CPU.  
+
 
 With the thread state,  the state of $\easmmach$ is
 \begin{lstlisting}[language=C]
@@ -105,7 +121,7 @@ The memory in here is logically a collection of private memories via our algebra
 \label{fig:chapter:linking:eval-rule-in-easm-normal}
 \end{figure}
 
-With this state definition, $\easmmach$ defines its transition rules that changes its state. 
+With this state definition, $\easmmach$ defines its transition rules that change its state. 
 Two transition rules that corresponds to the two rules in $\lasmmach$ in Figure~\ref{fig:chapter:linking:eval-rule-in-lasm}
 are presented in Figure~\ref{fig:chapter:linking:eval-rule-in-easm-normal}.
 When compared to the rules in $\lasmmach$,
@@ -117,22 +133,19 @@ With excluding those scheduling primitives in the rules for external calls,
 $\easmmach$ can provide the designated rules for them, and 
 Figure~\ref{fig:chapter:linking:eval-rule-in-easm-yield} (a) shows
 the key part of the evaluation rule for $\yield$. 
-It updates the log by adding the proper yield event, then 
-change the currently running thread ID in the state. 
+It updates the log by adding the proper yield event, then change the currently running thread ID in the state. 
 
 The updated thread ID via the $\yield$ call may be in the focused set or not. 
 When it is in the focused set, 
 then the machine performs the second phase of the scheduling, 
 which is the yield back rule in Figure~\ref{fig:chapter:linking:eval-rule-in-easm-yield} (c).
-This rule takes the responsibility of context switching 
-and building the proper initial context (when the thread starts its initial evaluation),
+This rule takes the responsibility of context switching and building the proper initial context (when the thread starts its initial evaluation),
 which was involved with the context switching that affects the state shared by all threads in $\lasmmach$, the machine model for per-CPU layer interfaces. 
 Instead of that,
 the yield back rule in $\easmmach$ only touches the thread private state which is not visible to other threads.
 In the case of having the state associated with thread ID that is in the environment,
 $\easmmach$ queries the environmental context, which is similar to the \textsf{SKIP} rule in our environmental machine model of our multicore linking framework in Figure~\ref{fig:chapter:conlink:multicore-env-step-machine}. 
 The rule is defined in Figure~\ref{fig:chapter:linking:eval-rule-in-easm-yield} (b).
-
 
 \begin{figure}
 \begin{lstlisting}[language=C]
@@ -326,32 +339,32 @@ In addition to that,
 users specify the specifications of those primitives when providing the concrete layer definitions. 
 In this sense, defining the form that the users have to follow when they specify those layers
 are useful for the users as well as for proving the refinement theorem without thoroughly depending on the concrete layer definitions that users can fill out.  
-In this purpose, we define an abstract relation, $\codeinmath{AbsRelC}$,
+In this purpose, we define an abstract relation, $\AbsRelC$,
 which describes the minimum criteria that users have to follow for each primitive that users will provide in their layers.
 The relation is based on the relation on two abstract sates (\lstinline$match_EData_RData$) in two different machines with has a
-type \lstinline$EData -> Log -> RData -> Prop$ and show be specified later by users with  concrete definitions for those abstract data types too. Figure~\ref{fig:chapter:conlink:two-cases-of-abs-rel-c} shows 
-one case in  $\codeinmath{AbsRelC}$, which is the case 
+type ``\lstinline$EData -> Log -> RData -> Prop$'' and show be specified later by users with  concrete definitions for those abstract data types too. Figure~\ref{fig:chapter:conlink:two-cases-of-abs-rel-c} shows 
+one case in  $\AbsRelC$, which is the case 
 for the external call with generating an event. 
 With that, we shows the parallel composition in our multithreaded linking framework, which is in Lemma~\ref{lemma:chapter:conlink:parallel-composition}. 
 
 \begin{lemma}[Parallel Composition: Contextual Refinement Between $\lasmmach$ and $\easmmach$]
 \label{lemma:chapter:conlink:parallel-composition}
-Suppose that $C$ is a multithreaded linking environment that contains thread configurations, auxiliary functions, as well as properties for them. 
+Suppose that $\ThreadConf$ is a multithreaded linking environment that contains thread configurations, auxiliary functions, as well as properties for them. 
 Additionaly, let's assume that  $T_{[cid]}$ is full set that contains all threads in CPU $cid$, 
  $\oracle_{cid}$ is a valid
-environmental context for CPU $cid$ (associated with $\CSched$ on $\lasmmach$),
+environmental context for CPU $cid$ (associated with $\CSched$ on $\lasmmach$,
 and $\codeinmath{Ctxt}$ is a
 context program that runs on top of layer $\CSched$ (as well as $\TLink$)
  Then, we can state that
  \begin{center}
 \begin{tabular}{c}
-$\semwmachine{C, \PLayer{\CSched}{cid}{\oracle_{cid}}}{\codeinmath{Ctxt}}{\codeinmath{mach}_{\lasm}} \refines_{R_{\mathcal{M}{[\easm, \lasm]}}}$\\ 
-$\semwmachine{C, \parallel tid \in T_{[cid]} \  \PLayer{\TLink}{tid}{\oracle_{cid}}}{\codeinmath{Ctxt}}{{\codeinmath{mach}_{\easm}}}$\\
+$\semwmachine{\ThreadConf, \PLayer{\CSched}{cid}{\oracle_{cid}}}{\codeinmath{Ctxt}}{\codeinmath{mach}_{\lasm}} \refines_{R_{\mathcal{M}{[\easm, \lasm]}}}$\\ 
+$\semwmachine{\ThreadConf, \parallel tid \in T_{[cid]} \  \PLayer{\TLink}{tid}{\oracle_{cid}}}{\codeinmath{Ctxt}}{{\codeinmath{mach}_{\easm}}}$\\
 \end{tabular}
 \end{center}
 when $R_{\mathcal{M}{[\lasm, \easm]}}$ is a refinement relation between two machine models with the associated layer definitions,
  two environmental contexts,
-as well as contains $\codeinmath{AbsRelC}$ as parts of it.
+as well as contains $\AbsRelC$ as parts of it.
 \end{lemma}
 
 
@@ -361,7 +374,7 @@ Our multithreaded linking framework also connects the multithreaded machine mode
 and that with a singleton focused thread set. 
 As shown in Figure~\ref{fig:chapter:conlink:introduce-single-threaded-machine-model-with-iiasm},
 we introduce an another level of intermediate machine model ($\ieasmmach$) with
-simple optimization on the memory definition.
+simple optimization on the memory definition to avoid unnecessary complex proofs about the memory. 
 The definition of machine state for this $\ieasmmach$ is 
 \begin{lstlisting}[language=C]
   (* fst mem : mine / snd mem : others *)
@@ -382,7 +395,7 @@ Our multithreaded linking framework provides those theorems without any addition
 
 \begin{lemma}[Contextual Refinement Between $\easmmach$ and $\ieasmmach$]
 \label{lemma:chapter:conlink:easm-refines-iieasm}
-Suppose that $C$ is a multithreaded linking environment that contains thread configurations, auxiliary functions, as well as properties for them. 
+Suppose that $\ThreadConf$ is a multithreaded linking environment that contains thread configurations, auxiliary functions, as well as properties for them. 
 Additionaly, let's assume that  $T_{[cid]}$ is full set that contains all threads in CPU $cid$, 
  $\oracle_{cid}$ is a valid
 environmental context for CPU $cid$,
@@ -391,8 +404,8 @@ context program that runs on top of layer $\TLink$
  Then, we can state that
  \begin{center}
 \begin{tabular}{c}
-$\semwmachine{C, \parallel tid \in T_{[cid]} \  \PLayer{\TLink}{tid}{\oracle_{cid}}}{\codeinmath{Ctxt}}{{\codeinmath{mach}_{\easm}}} \refines_{R_{\mathcal{M}{[\ieasm, \easm]}}}$\\ 
-$\semwmachine{C, \parallel tid \in T_{[cid]} \  \PLayer{\TLink}{tid}{\oracle_{cid}}}{\codeinmath{Ctxt}}{{\codeinmath{mach}_{\ieasm}}}$\\
+$\semwmachine{\ThreadConf, \parallel tid \in T_{[cid]} \  \PLayer{\TLink}{tid}{\oracle_{cid}}}{\codeinmath{Ctxt}}{\easmmach} \refines_{R_{\mathcal{M}{[\ieasm, \easm]}}}$\\ 
+$\semwmachine{\ThreadConf, \parallel tid \in T_{[cid]} \  \PLayer{\TLink}{tid}{\oracle_{cid}}}{\codeinmath{Ctxt}}{\ieasmmach}$\\
 \end{tabular}
 \end{center}
 when $R_{\mathcal{M}{[\ieasm, \easm]}}$ is a refinement relation between two machine models with the $\TLink$ layer.
@@ -401,7 +414,7 @@ when $R_{\mathcal{M}{[\ieasm, \easm]}}$ is a refinement relation between two mac
 
 \begin{lemma}[Multithreaded Linking: Providing a Single Threaded Machine]
 \label{lemma:chapter:conlink:easm-refines-single-ieasm}
-Suppose that $C$ is a multithreaded linking environment that contains thread configurations, auxiliary functions, as well as properties for them.
+Suppose that $\ThreadConf$ is a multithreaded linking environment that contains thread configurations, auxiliary functions, as well as properties for them.
 Additionaly, let's assume that  $T_{[cid]}$ is full set that contains all threads in CPU $cid$, 
  $\oracle_{cid}$ is a valid
 environmental context for CPU $cid$,
@@ -414,16 +427,18 @@ context program that runs on top of layer $\TLink$
  with the assumption that each thread generate at least one event within finite steps:
  \begin{center}
 \begin{tabular}{c}
-$\semwmachine{C, \parallel tid \in T_{[cid]} \  \PLayer{\TLink}{tid}{\oracle_{cid}}}{\codeinmath{Ctxt}}{{\codeinmath{mach}_{\easm}}} \refines_{R_{\mathcal{M}{[\ieasm, \easm]}}}$\\ 
-$\semwmachine{C, \PLayer{\TLink}{tid}{\oracle^{\TLink}_{tid}}}{\codeinmath{Ctxt}}{{\codeinmath{mach}_{\ieasm}}}$\\
+$\semwmachine{\ThreadConf, \parallel tid \in T_{[cid]} \  \PLayer{\TLink}{tid}{\oracle_{cid}}}{\codeinmath{Ctxt}}{\easmmach} \refines_{R_{\mathcal{M}{[\ieasm, \easm]}}}$\\ 
+$\semwmachine{\ThreadConf, \PLayer{\TLink}{tid}{\oracle^{\TLink}_{tid}}}{\codeinmath{Ctxt}}{\ieasmmach}$\\
 \end{tabular}
 \end{center}
 when $R_{\mathcal{M}{[\ieasm, \ieasm]}}$ is a refinement relation for two different focused set with $\TLink$ layer on
 $\ieasmmach$ which includes the refinement relation for two different environmental contexts.
 \end{lemma}
 
-
-
+Those two lemmas depend on a thread configuration ($\ThreadConf$) and an abstract layer definition ($\TLink$).
+They, however, do not depend on other abstract properties such as $\AbsRelC$; thus
+using them does not require us to introduce any additional concrete definitions. 
+They are freely applicable to any concrete definition of $\ThreadConf$ and $\TLink$. 
 
 
 %
@@ -798,7 +813,7 @@ $\ieasmmach$ which includes the refinement relation for two different environmen
 %Therefore, calling  scheduling primitives can arbitrarily update 
 %the memory block based on other threads<@$'$@> behavior, and our thread-local machine need to capture this behavior properly. 
 %We also want to use all benefits of $\compcertx$, which are not only layered approach 
-%but also behavior preserving between $C$ and complied $Assembly$ programs.
+%but also behavior preserving between $\ThreadConf$ and complied $Assembly$ programs.
 %Lastly, we want a generic and scalable thread-local layer interface as much as possible.
 %Even if we add or remove multiple primitives in the layer that we want to link multiple 
 %thread-local layers together to refine it into a single CPU-local layer, 
@@ -817,8 +832,8 @@ $\ieasmmach$ which includes the refinement relation for two different environmen
 %$m$ ($loc \rightarrow val$) is a memory, $\SLog$ is a single log that is shared by the whole thread, 
 %$f_{\dproc}$ is a partial map from a thread id to a private state.
 %
-%The first step to facilitate this concurrent machine model is defining semantics with the full thread set on CPU $c$,
-%which is notated as $\EAsmM{[c, \fullthreadset]}$ when $\fullthreadset$ is a set of all active threads on CPU $c$.
+%The first step to facilitate this concurrent machine model is defining semantics with the full thread set on CPU $\ThreadConf$,
+%which is notated as $\EAsmM{[c, \fullthreadset]}$ when $\fullthreadset$ is a set of all active threads on CPU $\ThreadConf$.
 %At this step, key differences between this machine model and the machine model 
 %(Sec.~\ref{subsec:lowlevelasm}) for CPU-local layers are
 %1) the machine state contains an explicit set of registers;
@@ -952,7 +967,7 @@ $\ieasmmach$ which includes the refinement relation for two different environmen
 %
 %
 %\para{Building initial state}
-%In this stage, all threads in the CPU ($c$) are in the set of our full thread set ($\fullthreadset$), and this implies that all threads will return a valid private data with $f_{\dproc}$.
+%In this stage, all threads in the CPU ($\ThreadConf$) are in the set of our full thread set ($\fullthreadset$), and this implies that all threads will return a valid private data with $f_{\dproc}$.
 %However, this private abstract data is purely local, and threads cannot touch 
 %others<@$'$@> local values, even if other threads are its children.
 %This implies that each thread has its own responsibility to build its initial state. 
@@ -974,7 +989,7 @@ $\ieasmmach$ which includes the refinement relation for two different environmen
 %, and we show the correctness of this mechanism while proving refinement theorems, 
 %both in the language level refinement 
 %and the concrete layer refinement.
-%Finally, with the whole thread set on CPU $c$, we are able to show the refinement theorem between two different machine models.
+%Finally, with the whole thread set on CPU $\ThreadConf$, we are able to show the refinement theorem between two different machine models.
 %\begin{theorem}[$\EAsmM{}$ refines $\AsmLM$]
 %\label{theorem:easm_refine_lasm}
 %\begin{small}
@@ -1036,7 +1051,7 @@ $\ieasmmach$ which includes the refinement relation for two different environmen
 %The next step in defining thread-local layer interface
 %is replacing other threads<@$'$@> evaluation using the strategy as we have already seen in Fig.~\ref{fig:chapter:conlink:threadlinking}. 
 %In this step, our machine does not guarantee that the scheduled thread id is always a member 
-%unning or available threads because the machine is not a total machine on CPU $c$. 
+%unning or available threads because the machine is not a total machine on CPU $\ThreadConf$. 
 %If the thread is not in both cases, we categorize it as a thread with an $\mathrm{Environment}$ state.
 %To handle the case,
 %$\EAsmM{}$ has a $\mathrm{Environment}$ rule

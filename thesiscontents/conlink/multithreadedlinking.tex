@@ -5,26 +5,27 @@
 The purpose of building a framework for multithreaded linking is similar to  that of our multicore part,
 provide the thread-local interface by hiding other threads' behavior. 
 It, however, differs from our multicore linking framework, of which the  context and the configuration 
-are simpler than those of multithreaded linking part due to multiple reasons.
+are simpler than those of multithreaded linking part.
+There are multiple reasons that increase complexity of this multithreaded linking. 
 First, when looking at the multithreaded linking, 
 systems already have to provide 
 scheduling related primitives (\ie, yield, sleep, create)
 as well as other system services 
 that are necessary to implement those primitives. 
 For example, 
-thread (process) creation usually related to the 
+thread spawn is usually related to the 
 resource management,
 such as designating the maximum capability of the memory usage 
 for the newly created thread. 
 Also, 
-local memory areas for multiple threads should be 
+local memory regions for threads should be 
 mutually exclusive from others even though 
 they are not distinguished from others before the system introduces the notion of threads.
 In addition to that, 
 several parts of the thread's private state,
 which are hidden from other threads,
 have to be initialized appropriately when the thread starts its evaluation.
-The problem with this initialization is other threads cannot modify the thread's private state even though these initializations are dynamically triggered by
+The problem with this initialization is threads cannot modify other thread's private state even though these initializations are dynamically triggered by
 other threads, usually the thread's parent. 
 
 Multithreaded linking is also related to 
@@ -115,7 +116,7 @@ into the memory that can be parameterized by an abstract data (\ie, $(mem :mwd L
 The abstract data also contains the global log in it, which shows the sequence of all operations on shared objects in the system. 
 The purpose of using this state definition for per-CPU local layer interface is reusability of $\compcertx$, which could be used to verify sequential programs. 
 With the underlying components of the state definition, 
-it's easy for us to translate the definition into a simple form, $state_{\lasm} = (lst, l)$,
+it's easy for us to translate the definition into a simple form, $state_{\lasmmach} = (lst, l)$,
 when the first element ($lst$) is a local state for the CPU, which contains 
 the register values ($\regs$), a local copy of the memory ($mem$), as well as a private abstract data ($abs$),
 and the second one is a global log for shared objects.
@@ -130,14 +131,14 @@ and the second one is a global log for shared objects.
 %which change the state by the transition with recording $\compcert$ style trace,
 %which is 
 %\begin{center}
-%$\codeinmath{Mach}_{\lasm}: st_{\lasm} \rightarrow \cctracekwd \rightarrow st_{\lasm} \rightarrow \mcprop$
+%$\codeinmath{Mach}_{\lasmmach}: st_{\lasmmach} \rightarrow \cctracekwd \rightarrow st_{\lasmmach} \rightarrow \mcprop$
 %\end{center}
 %
 The transition rule of the machine is then a relation on two states, the initial state to the result state, 
 and each primitive in the layer defines (including $\CSched$) its transition by providing its specifications as follows:
 \begin{center}
 $\PLayer{\CSched}{cid}{\oracle_{cid}}(\Layer)(id)
- \vdash_{\lasm}  \sstepr{\spec_{id}}{args}{lst, l}{\textit{res}\cup \{\}}{lst', l'}$
+ \vdash_{\lasmmach}  \sstepr{\spec_{id}}{args}{lst, l}{\textit{res}\cup \{\}}{lst', l'}$
 \end{center}
 {\noindent}when $\spec_{id}$ is a specification for primitive $id$,
 $args$ is the list of arguments for the primitive call, and $\textit{res}\cup \{\}$ defines the 
@@ -157,7 +158,7 @@ get\_curid(l') = cid'\\
 adt.kctxt[curid'] = \regs'\\
 adt' = adt/[adt.kctxt := adt.kctxt/[cid = \regs]]}
 {\PLayer{\CSched}{cid}{\oracle_{cid}}(\Layer)(\yield)
- \vdash_{\lasm}  \sstepr{\spec_{\yield}}{\{\}}{lst, l}{\{\}}{lst',  l'}}
+ \vdash_{\lasmmach}  \sstepr{\spec_{\yield}}{\{\}}{lst, l}{\{\}}{lst',  l'}}
 \end{mathpar}
 which modifies the shared state by first querying the environmental context to update the global information 
 regarding scheduling and adding an $\codeinmath{yield}$ event.
@@ -174,7 +175,7 @@ dividing a single CPU state into a set of thread states as well as a shared stat
 and also providing 
 the transition rules as well as the layer definition ($\TLink$) that uses the new state definition with capturing 
 the same behavior of the connected per-CPU layer interface (\ie, $\CSched$ associated with $\lasmmach$.)
-Simply, the state of $\lasmmach$ ($state_{\lasm} = (lst, l)$) need to be divided into 
+Simply, the state of $\lasmmach$ ($state_{\lasmmach} = (lst, l)$) need to be divided into 
 a set of thread states as well as a shared log, such as ($(\set{lst_{thread}}, l)$).
 Since intermediate machine models in our multithreaded linking framework possibly use a different data type definition from that of a per-CPU machine, 
 directly using the specification in  $\CSched$ is not possible. 
@@ -230,12 +231,12 @@ Figure~\ref{fig:chapter:conlink:multithreaded-machine-model-easm} shows
 the first step of our multithreaded linking by providing 
 a $\easmmach$, a multithreaded machine model that uses the $\TLink$ layer.
 Figure~\ref{fig:chapter:conlink:multithreaded-machine-model-easm} (a)
-shows a simple overview how we divide a single state for $\lasmmach$  ($\codeinmath{state}_{\lasm} := (lst_{\codeinmath{cpu}}, log)$)
+shows a simple overview how we divide a single state for $\lasmmach$  ($\codeinmath{state}_{\lasmmach} := (lst_{\codeinmath{cpu}}, log)$)
 into a state, ($\codeinmath{state}_{\easm[{\codeinmath{T}_{[1]}}]} := (tid, mem, \set{ti \mapsto lst_{ti}}, log)$),
 that contains a global state for the CPU ($tid$, $mem$, and $log$) as well as 
 multiple thread private states ($\set{ti \mapsto lst_{ti}}$).
 A set of thread private states is a partial map from a thread id to its private states designed as a tuple that contains
-a register set, as well as an abstract state that may have a different type of an abstract state in $state_{\lasm}$. 
+a register set, as well as an abstract state that may have a different type of an abstract state in $state_{\lasmmach}$. 
 We, however, do not explicitly divide a per-CPU memory into the multiple sets of memories since 
 it adds the complexity of the machine definition as well as providing the 
 refinement theorem between machine models.
@@ -443,7 +444,7 @@ Section~\ref{chapter:linking:subsec:machine-model-for-single-threaded} shows mor
 %To make it general as much as possible, 
 %we have defined two abstract relations, 
 %which is $AbsRelC$ and $AbsRelT$ in the figure with will work 
-%with the arbitrary layers for each machines as well as the thread configuration $C$. 
+%with the arbitrary layers for each machines as well as the thread configuration $\ThreadConf$. 
 %
 %
 %
@@ -568,7 +569,7 @@ Section~\ref{chapter:linking:subsec:machine-model-for-single-threaded} shows mor
 %threads' operations can be modeled as input strategies to the layer interface. 
 %Here, we introduced a new kind of environment context, $\oracle_{\codeinmath{thrd}}$, which contains the strategy the environmental threads and is the key to support  thread-local reasoning.
 %Formally, with a CPU-local layer  $\PLayer{L}{c}{\oracle_{\codeinmath{cpu}}}$,  we a multithreaded machine model 
-%with  the whole thread set ($\fullthreadset$) running over CPU $c$.
+%with  the whole thread set ($\fullthreadset$) running over CPU $\ThreadConf$.
 %For this purpose, we introduce 
 % \emph{multithreaded} layer $\PLayer{\TLink}{\threadset}{{\oracle_{\codeinmath{thrd}}}} := (\Layer_{\TLink},
 % \Rely_{\TLink}, \Guard_{\TLink})$,
