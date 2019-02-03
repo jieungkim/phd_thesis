@@ -7,7 +7,7 @@ The model can be connected with the compiler in $\compcertx$ by matching the sta
 The model also can calculate the proper initial state for each focused thread,
 as well as provide the no-op like software scheduling behavior by hiding the context switching between threads on the same CPU with the proper environmental context. 
 The $\coq$ definition of this machine model is 
-\begin{lstlisting}[language=C]
+\begin{lstlisting}[language=C, numbersep=5pt]
   Definition semantics <@$\cdots$@>:=
     // use the transition rules that are same with the rules of <@$\color{red} \lasmmach$@>,
     // but use different initial state with <@$\color{red} \lasmmach$@>,
@@ -42,7 +42,7 @@ Inductive initial_state {F V} p: state (mem := mwd (cdata RData)) -> Prop :=
     let rs0 := (Pregmap.init Vundef) # PC <- pc # ESP <- Vzero in
     initial_state p (State rs0 (m1, d)).
 \end{lstlisting}
-\caption{Initial State of $\hasmmach$}
+\caption{Initial State of $\hasmmach$.}
 \label{fig:chapter:linking:initial-state-of-hasm}
 \end{figure}
 

@@ -161,11 +161,11 @@ When the hardware oracle is valid ($ \validoraclenoeq{start\_cpu}{\coreset}{hw\_
 $
 \begin{array}{l}
 \forall \ curid \ lsp \ l \ curid' \ hsp \ l' . \ \matchstatehstate{(\mcstate{curid}{lsp}{l})}{(\hstate{curid'}{hsp}{l'})} \rightarrow \\
-\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \  \exists \ curid'' \ lsp' \ l'  . \ \\
-\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \  \ \ \ \ccstarstep{\oraclestep{hw\_o}{(\mcstate{curid}{lsp}{l})}{\ccemptytrace}{(\mcstate{curid''}{lsp}{l'})}} \wedge\\
-\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \  \ \ \ l' = \listconsoppo{\yieldbackev{curid''}}{\listconsoppo{\yieldev{curid}}{l}} \wedge\\
-\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \  \ \ \ (\forall \ ps  . \ \getpstsome{\localstatekwd}{curid}{lsp}{(\localstate{ps}{\btrue})} \rightarrow \\
-\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \  \ \ \ \ \ \ \ \ \ \  \ \ \setpst{\localstatekwd}{curid}{(\localstate{ps}{\bfalse})}{lsp}{lsp'} \\
+\ \ \ \ \  \exists \ curid'' \ lsp' \ l'  . \ \\
+\ \ \ \ \   \ \ \ \ccstarstep{\oraclestep{hw\_o}{(\mcstate{curid}{lsp}{l})}{\ccemptytrace}{(\mcstate{curid''}{lsp}{l'})}} \wedge\\
+\ \ \ \ \   \ \ \ l' = \listconsoppo{\yieldbackev{curid''}}{\listconsoppo{\yieldev{curid}}{l}} \wedge\\
+\ \ \ \ \   \ \ \ (\forall \ ps  . \ \getpstsome{\localstatekwd}{curid}{lsp}{(\localstate{ps}{\btrue})} \rightarrow \\
+\ \ \ \ \    \ \ \ \ \ \ \ \ \ \ \ \ \ \setpst{\localstatekwd}{curid}{(\localstate{ps}{\bfalse})}{lsp}{lsp'} \\
 \end{array}
 $
 \end{tabular}
