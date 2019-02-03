@@ -30,13 +30,11 @@ The overall structure of the proof is in FIgure~\ref{fig:chapter:certikos:multit
 similar to the multithreaded linking framework structure (in FIgure~\ref{fig:chapter:linking:multithreaded-linking-structure}) but does not rely on
 the abstract thread configuration, the abstract layers ($\TSched$, $\TLink$, and $\CSched$), and 
 the abstract relations between those layers ($\codeinmath{AbstractRel}$ and $\codeinmath{AbstractRelT}$.)
- 
 \begin{figure}
 \includegraphics[width=\textwidth, page=3]{figs/certikos/concurrent_linking}
-\caption{Idea of Dividing $\certikos$ with Formal Definitions} 
+\caption{Multithreaded Linking Structure in $\certikos$.}
 \label{fig:chapter:certikos:multithreaded-connect-proof-overall-structure}
 \end{figure}
-
 Providing concrete definitions for those abstract definitions, however, is tedious and requires a lot of proof efforts. 
 Our future direction is to reduce the cost of multithreaded linking by minimizing the cost for building 
 those abstract definitions. 

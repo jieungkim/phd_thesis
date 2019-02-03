@@ -2,7 +2,8 @@
 \subsection{Global Log Optimization for Better Interface}
 \label{chapter:linking:subsec:global-log-optimization}
 
-We have defined the single core machine model from the multicore machine model with providing refinements between those machines. 
+We have defined a single core machine model from a multicore machine model with providing refinements between those machines. 
+Those refinement proofs also can be connected with the backward simulation proofs in $\compcert$. 
 The single core machine in Section~\ref{chapter:linking:subsec:single-core-machine-model} , however, 
 is not sufficient to work as a 
 basis of local layer interfaces in Section~\ref{chapter:ccal:subsec:local-layer-interface}. 
@@ -161,9 +162,9 @@ which are stated in Lemma~\ref{lemma:chapter:linking:one-step-big-refines-single
 
 \begin{lemma}[one$\_$step$\_$big$\_$refines$\_$single]
 \label{lemma:chapter:linking:one-step-big-refines-single}
-Let's assume that there is a valid CPU ID $start\_cpu$ ($start\_cpu \in \coreset$)
+Let's assume that there is a valid CPU ID $cpuid$ ($cpuid \in \coreset$)
 and a single core oracle $si\_o$.
-When the single oracle is valid ($ \validoraclenoeq{start\_cpu}{\set{start\_cpu}}{si\_o}$) we assume the following fact:
+When the single oracle is valid ($ \validoraclenoeq{cpuid}{\set{cpuid}}{si\_o}$) we assume the following fact:
 \begin{center}
 \begin{tabular}{P{0.95\textwidth}}
 $
@@ -217,9 +218,9 @@ l \neq \listconsoppo{\yieldev{\_}}{\_}\\
 
 \begin{lemma}[one$\_$step$\_$big'$\_$refines$\_$big]
 \label{lemma:chapter:linking:one-step-big-p-refines-big}
-Let's assume that there is a valid CPU ID $start\_cpu$ ($start\_cpu \in \coreset$)
+Let's assume that there is a valid CPU ID $cpuid$ ($cpuid \in \coreset$)
 and a single core oracle $si\_o$.
-When the single oracle is valid ($ \validoraclenoeq{start\_cpu}{\set{start\_cpu}}{si\_o}$) we can show the following fact:
+When the single oracle is valid ($ \validoraclenoeq{cpuid}{\set{cpuid}}{si\_o}$) we can show the following fact:
 \begin{center}
 \begin{tabular}{P{0.95\textwidth}}
 $
@@ -470,7 +471,7 @@ when the match relation between machine states of those two models is defined as
 \end{mathpar}
 \end{lemma}
 
-The other lemma (in Lemma ~ref{lemma:chapter:conlink:reorder-refines-split}) shows the connection between two machines 
+The other lemma (in Lemma~\ref{lemma:chapter:conlink:reorder-refines-split}) shows the connection between two machines 
 which use different type of environmental contexts, one of which has a type $\mcoracle{\set{cpuid}}{\mclog}{\mclog}$ and the other has a type $\mcoracle{\set{cpuid}}{\mclog}{\mcevent}$. 
 The lemma relies on the match relation between two different machine models in Figure~\ref{fig:chapter:conlink:reorder-refines-split}.
 Similar to the environmental context constructions in the previous parts, which are parts when we introduce
@@ -489,9 +490,9 @@ We can show the valid construction of the new environmental context, but connect
 %re\_o & : & \mcoracle{\set{cpuid}}{\mclog}{\mclog} &  \mbox{(oracle for a single cpu - reordered)}\\
 %\end{array}
 %$$
-Let's assume that there is a valid CPU ID $start\_cpu$ ($start\_cpu \in \coreset$),
+Let's assume that there is a valid CPU ID $cpuid$ ($cpuid \in \coreset$),
 a single core oracle $si\_o$ with the type $ \mcoracle{\set{cpuid}}{\mclog}{\mcevent}$, and a reordered oracle $re\_o$ with the type $\mcoracle{\set{cpuid}}{\mclog}{\mclog}$.
-When the single oracle is valid ($ \validoraclenoeq{start\_cpu}{\set{start\_cpu}}{si\_o}$) we can show the following fact
+When the single oracle is valid ($ \validoraclenoeq{cpuid}{\set{cpuid}}{si\_o}$) we can show the following fact
 \begin{center}
 \begin{tabular}{P{0.95\textwidth}}
 $
@@ -581,7 +582,7 @@ l_h \neq \listconsoppo{\yieldev{\_}}{\_} \\
 %\end{array}
 %$
 %\end{enumerate}
-\caption{State Match Relation: the relation between two states of the reorder  machine model and a split machine model}
+\caption{State Match Relation: the relation between two states of the reorder  machine model and a split machine model.}
 \label{fig:chapter:conlink:reorder-refines-split}
 \end{figure}
 %%%%%%%%%%%%%%%%
@@ -684,7 +685,7 @@ The refinement lemma is stated in Lemma~\ref{lemma:chapter:conlink:reorder-refin
 
 \begin{lemma}[one$\_$step$\_$reorder$\_$refines$\_$reorder]
 \label{lemma:chapter:conlink:reorder-refines-reorder}
-Let's assume that there is a valid CPU ID $start\_cpu$ ($start\_cpu \in \coreset$),
+Let's assume that there is a valid CPU ID $cpuid$ ($cpuid \in \coreset$),
 and two oracles $hi\_re\_o$ and $lo\_re\_o $ with the type
 $\mcoracle{\set{cpuid}}{\mclog}{\mclog}$. Then we can show the fact that
 \begin{center}
@@ -928,7 +929,7 @@ $$
 %\end{array}
 %$
 %\end{enumerate}
-\caption{Auxiliary Functions and State Match Relation: for the refinement between the separate machine model and the reorder machine model}
+\caption{Auxiliary Functions and State Match Relation: for the refinement between the separate machine model and the reorder machine model.}
 \label{fig:chapter:conlink:separate-refines-reorder}
 \end{figure}
 
@@ -960,10 +961,10 @@ the refinement lemma between evaluations on two different machines.
 
 \begin{lemma}[one$\_$step$\_$separate$\_$refines$\_$reorder]
 \label{lemma:chapter:conlink:separate-refines-reorder}
-Let's assume that there is a valid CPU ID $start\_cpu$ ($start\_cpu \in \coreset$),
+Assume that there is a valid CPU ID $cpuid$ ($cpuid \in \coreset$),
 an oracle $re\_o$ for a global log with the type $\mcoracle{\set{cpuid}}{\mclog}{\mclog}$, and a oracle for a set of logs 
-$sep\_o$ with the type $\mcoracle{\set{cpuid}}{\separateoraclelogtypekwd}{\separatelogtypekwd}$.
-When the oracle for a global logis valid ($\validoracleprim{cpuid}{re\_o }$) we can show the following fact
+$sep\_o$ which has a type as follows: $\mcoracle{\set{cpuid}}{\separateoraclelogtypekwd}{\separatelogtypekwd}$.
+When the oracle for a global log is valid ($\validoracleprim{cpuid}{re\_o }$) we can show the following fact
 \begin{center}
 \begin{tabular}{P{0.95\textwidth}}
 $

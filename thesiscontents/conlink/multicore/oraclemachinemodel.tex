@@ -34,7 +34,7 @@ l' = \listconsoppo{\yieldev{curid'}}{l_0} \\
 \oget{\coreset}{\mclog}{\mcevent}{l_0}{oracle}{{\yieldbackev{curid}}}}
 {\oraclestep{oracle}{(\mcstate{curid}{lsp}{l})}{\ccemptytrace}{(\mcstate{curid}{lsp'}{l'})}}
 \end{mathpar}
-\caption{Oracle Machine Model Syntax and Semantics}
+\caption{Oracle Machine Model Syntax and Semantics.}
 \label{fig:chapter:conlink:multicore-machine-with-hardware-oracle}
 \end{figure}
 
@@ -88,8 +88,8 @@ Therefore, we directly need to prove the backward refinement proof in here to in
 \getpstsome{\localstatekwd}{i}{lsp}{ls} \rightarrow  \matchlocal{curid}{i}{ps}{ls})\\\\
  l \neq \listconsoppo{\yieldev{\_}}{\_}\\
  curid \in \coreset \\
- \validlog{cpuid}{l} \\
- \getcuridfromlog{cpuid}{l}{curid}}
+ \validlog{start\_cpu}{l} \\
+ \getcuridfromlog{start\_cpu}{l}{curid}}
  {\matchstatehstate{(\mcstate{curid}{lsp}{l})}{(\hstate{curid}{psp}{l})}}
 \end{mathpar}
 
@@ -99,7 +99,7 @@ Therefore, we directly need to prove the backward refinement proof in here to in
 
 The most challenging part in connecting those two different machine models is defining the refinement relation between two states of those languages. 
 Figure~\ref{fig:chapter:conlink:match-relation-multicore-oracle-steps} shows the 
-refinement relation for those two states. 
+refinement relation for those two states with relying on one variable, $start\_cpu$, that indicates the CPU that first starts the system. 
 The local state of the oracle machine differs from that of the multicore machine model by having a boolean indicator 
 to distinguish the evaluation that the machine has to take next time.
 The local state match definition tells that except the current running CPU, all the indicator has to have a false value,
@@ -108,6 +108,7 @@ which implies that they can evaluate their own local step after they get an eval
 defining the match relation between two full states are available.
  It tells that 
  two states are valid matched states when all of their local states (for all CPUs) are in a proper relation as well as the global log and the current running CPU ID are well-formed. 
+
 
 %
 %\begin{hypothesis}[valid$\_$cpuid]
@@ -146,7 +147,7 @@ The purpose of our framework is providing all the necessary proofs that are requ
 for users to use the backward simulation theorems in $\compcert$ to link the all steps together. 
 When using the backward refinement proof for that purpose, however, we has to provide the progress property of the 
 source language, which is an oracle machine in this case. 
-The progress property is stated in Lemma~\ref{lemma:chapter:conlink:mc-hw-refines-oracle-progress}
+The progress property is stated in Lemma~\ref{lemma:chapter:conlink:mc-hw-refines-oracle-progress}.
 
 \begin{lemma}[match$\_$state$\_$implies$\_$one$\_$step]
 \label{lemma:chapter:conlink:mc-hw-refines-oracle-progress}
@@ -240,13 +241,13 @@ but connecting the proof with the $\compcert$ style proof is a future work of ou
 %\end{array}
 %$
 %\end{enumerate}
-
-
-
-Based on the relation we prove two key lemmas; 
-we prove that one step in the multicore machine model always has the corresponding multiple steps of multicore machine with hardware scheduler oracle (in lemma 1). 
-When proving the backward simulation in $\compcert$, providing the evidence about the progress property of the oracle machine, which is stated in the lemma 2. 
-Proving that lemmas require that there will always be a matched environmental context that is matched with the same scheduling sequence of the possible execution of the program in multicore machine model (among all non-deterministic interleaved cases of execution). 
-This is stated in hypothesis 3. 
-
-
+%
+%
+%
+%Based on the relation we prove two key lemmas; 
+%we prove that one step in the multicore machine model always has the corresponding multiple steps of multicore machine with hardware scheduler oracle (in lemma 1). 
+%When proving the backward simulation in $\compcert$, providing the evidence about the progress property of the oracle machine, which is stated in the lemma 2. 
+%Proving that lemmas require that there will always be a matched environmental context that is matched with the same scheduling sequence of the possible execution of the program in multicore machine model (among all non-deterministic interleaved cases of execution). 
+%This is stated in hypothesis 3. 
+%
+%

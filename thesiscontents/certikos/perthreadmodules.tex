@@ -2,7 +2,7 @@
 \label{chapter:certikos:sec:per-thread-modules}
 
 Per-thread modules are built on
-the bottom-most layer of our thread local layer interfaces, $\codeinmath{PHThread}$. 
+the bottom-most layer of our thread local layer interfaces, $\PHThrd$.
 In this layer, all scheduling primitives are defined as an identity function for the private state (\ie, they change nothing in the thread's private state),
 and only updates the shared log as a result of their evaluation. 
 The specification for the  yield function, for example, is
@@ -46,7 +46,7 @@ even though lots of details are hidden.
 \subsection{Trap Handler Module}
 \label{chapter:certikos:subsec:trap-handler-module}
 
-The trap handler module is providing the top-level API, the $\codeinmath{TSyscall}$ layer, of our operating systems to users.  
+The trap handler module is providing the top-level API, the $\TSyscall$ layer, of our operating systems to users.  
 The module begins with the layer that contains a list of primitives to retrieve the system call arguments and return values
 by following the convention.
 When we trap into the kernel, the register $\codeinmath{EAX}$ has the system call number, and other registers contain the system call arguments in order of $\codeinmath{EBX}$, $\codeinmath{ECX}$, $\codeinmath{EDX}$, $\codeinmath{ESI}$, and $\codeinmath{EDI}$. 
@@ -57,29 +57,29 @@ Based on them,
 we built a list of system call handlers with the guarantee of safety condition for them, 
 ``the semantics of each system call handler does not get stuck.'' 
 our top-most layer also implements the system call dispatcher that facilitates the proper system call handler based on the system call number in the $\codeinmath{EAX}$ register.
-The $\codeinmath{TSyscall}$ layer also contains the page fault handler as its interface.
+The $\TSyscall$ layer also contains the page fault handler as its interface.
 
 \subsection{Connecting All Per-thread Layers}
 \label{chapter:certikos:subsec:connecting-all-thread-layers}
 
-We have introduces 7 layers for all those modules in our per-thread layers, from the $\codeinmath{PHThrd}$ layer to the 
-$\codeinmath{TSyscall}$ layer.
+We have introduces 7 layers for all those modules in our per-thread layers, from the $\PHThrd$ layer to the 
+$\TSyscall$ layer.
 Similar to the per-CPU modules, all those layers can be linked together via the composition rules described in Section~\ref{chapter:ccal:subsec:linking};
 thus form a single contextual refinement theorem, which is defined in Theorem~\ref{theorem:chapter:certikos:per-thread-contextual-refinement},
 which corresponds to the number (2) in Figure~\ref{fig:chapter:certikos:idea-of-dividing-certikos-with-formal-def}.
 \begin{theorem}[Contextual Refinement for Per-thread layers]
 \label{theorem:chapter:certikos:per-thread-contextual-refinement}
 Let's assume that $tid$ is a valid thread ID, $\oracle_{\codeinmath{thrd}}$ and  $\oracle'_{\codeinmath{thrd}}$ are environmental contexts for 
-$\codeinmath{PHThrd}$  and $\codeinmath{TSyscall}$ layers, respectively, and $\codeinmath{CTXT}$ is an any context program. Then, we can say that
+$\PHThrd$  and $\TSyscall$ layers, respectively, and $\codeinmath{CTXT}$ is an any context program. Then, we can say that
 \begin{center}
-$\semwmachine{\codeinmath{PHThrd}[tid, \oracle_{\codeinmath{thrd}}]}{\certikos_{\codeinmath{td}} \oplus \codeinmath{Ctxt}}{\codeinmath{mach}_{\hasm}} \refines_{R_{\certikos_\codeinmath{td}}} \semwmachine{\codeinmath{TSyscall}[tid, \oracle'_{\codeinmath{thrd}}]}{\codeinmath{Ctxt}}{{\codeinmath{mach}_{\hasm}}}$
+$\semwmachine{\PLayer{\PHThrd}{tid}{\oracle_{\codeinmath{thrd}}}}{\certikos_{\codeinmath{td}} \oplus \codeinmath{Ctxt}}{\hasmmach} \refines_{R_{\certikos_\codeinmath{td}}} \semwmachine{\PLayer{\TSyscall}{tid}{\oracle'_{\codeinmath{thrd}}}}{\codeinmath{Ctxt}}{\hasmmach}$
 \end{center}
 when ${R_{\certikos_\codeinmath{td}}}$ is a refinement relation between those two layers (the refinement relation can be achieved by 
-connecting all the refinement relations in between 7 per-thread layers.)
+connecting all the refinement relations in between 7 per-thread layers.
 \end{theorem}
 
 
-%This theorem shows that "any context program CTXT running on the tsyscall layer contextually refines the context program CTXT plus per_thread_mC2 running on phthread (the bottom-most layer interface of per-thread layers) with HAsm". HAsm is described in Section 4-2 in this document; it can use CompCertX to propagate the C proofs down to the assembly level (HAsm), and it has the power to dynamically allocate the proper initial state for each thread. To link the proofs for all layers together, we use the LinkSourceTemplate.v library for source code in all layers, and the HAsmLinkTemplate.v library (both libraries are mentioned in Section 4 of this document) for proofs in all layers.
+%This theorem shows that "any context program CTXT running on the tsyscall layer contextually refines the context program CTXT plus per_thread_mC2 running on phthrd (the bottom-most layer interface of per-thread layers) with HAsm". HAsm is described in Section 4-2 in this document; it can use CompCertX to propagate the C proofs down to the assembly level (HAsm), and it has the power to dynamically allocate the proper initial state for each thread. To link the proofs for all layers together, we use the LinkSourceTemplate.v library for source code in all layers, and the HAsmLinkTemplate.v library (both libraries are mentioned in Section 4 of this document) for proofs in all layers.
 %
 %\begin{lstlisting}[language=C]
 %  Theorem Per_Thread_CertiKOS_correct:

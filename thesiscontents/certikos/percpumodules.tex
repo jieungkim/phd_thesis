@@ -2,11 +2,11 @@
 \label{chapter:certikos:sec:per-cpu-modules}
 
 Per-CPU modules in $\certikos$ is refining a part of $\certikos$ modules,
-which are included in $\certikos_{\codeinmath{cpu}}$ in the figure, based on the $\codeinmath{MBoot}$ layer, 
-into the local layer interface, $\codeinmath{PBThrd}$.
+which are included in $\certikos_{\codeinmath{cpu}}$ in the figure, based on the $\mmcsbootfull$ layer, 
+into the local layer interface, $\PBThrd$.
 Those modules consist of six components;
-two spinlock modules, a device driver module, a memory management module,  a process (thread) management module, and a virtual machine management module. 
-\jieung{process? thread? which one will I choose?}
+two spinlock modules, a device driver module, a memory management module,  a thread management module, and a virtual machine management module. 
+\jieung{process? thread? which one will I choose? --- thread}
 
 \subsection{Spinlock Module}
 \label{chapter:certikos:subsec:spinlock-module}
@@ -41,7 +41,7 @@ Among them, the atomic increment to the ticket (the operation of the dispenser)
 uses the atomic fetch-and-increment (FAI) operation, that is implemented using the $\codeinmath{xaddl}$ instruction with the 
 lock prefix in $\intelmachine$.
 
-We also prove the starvation freedom property for this Ticket Lock based on the assumption about hardware fairness,
+We also prove one progress property,  starvation freedom, for this Ticket Lock based on the assumption about hardware fairness,
 which implies that each CPU has a fair chance to execute its one program instance.
 The starvation freedom proof in this ticket lock is 
 similar to that of MCS Lock in Chapter~\ref{chapter:mcs-lock}, but 
@@ -90,10 +90,10 @@ but we omit to explain the library because our thread linking does not include t
 \caption{Container Data Type Definition (Written in C and $\coq$.)}
 \label{fig:chapter:certikos:container}
 \end{figure}
-The container manages the resource that each process (its children) can facilitate; 
+The container manages the resource that each thread (its children) can facilitate; 
 In the case of memory management, for instance,
-the container memorizes the maximum number of pages (via the process' quota) 
-that each process can use or hand it over to its children.
+the container memorizes the maximum number of pages (via the thread's quota) 
+that each thread can use or hand it over to its children.
 Definitions of container data structure (both in C and $\coq$) are in 
 Figure~\ref{fig:chapter:certikos:container}. 
 By following our \textit{fun-lift} pattern of $\ccalname$ (Section~\ref{chapter:ccal:subsec:local-layer-interface}, 
@@ -101,14 +101,14 @@ we built getter/setter functions based on the C data structure (left in the figu
 and refines them with the functions that uses $\coq$ data structure (right in the figure.)
 
 Our container object stems from the notion of containers and quotas in HiStar~\cite{zeldovich06};
-thus our process creation is parameterized by the number for the process' quota, the maximum number of pages that 
-the process can occupy.
-This Quota works as a protection for a denial-of-service attack, where one process repeatedly allocates pages and uses up all available memory. 
+thus our thread spawn is parameterized by the number for the thread's  quota, the maximum number of pages that 
+the thread can occupy.
+This Quota works as a protection for a denial-of-service attack, where one thread repeatedly allocates pages and uses up all available memory. 
 Denying other threads from allocating pages via a denial-of-service attack due to this quota system. 
-Since each process has its capacity, all processes can fairly use memory pages even though some processes occupy their maximum pages specified in quota. 
-It also prevents the undesirable information channel between different processes that occur due to such an attack.
+Since each thread has its capacity, all threads can fairly use memory pages even though some threads occupy their maximum pages specified in quota. 
+It also prevents the undesirable information channel between different threads that occur due to such an attack.
 
-This container is a tree structure, and each CPU contains their tree with the root process for each core. 
+This container is a tree structure, and each CPU contains their tree with the root thread for each core. 
 With this separation, the container of each core does not interfere by other containers in other cores. 
 
 \subsubsection{Physical memory management} 
@@ -141,10 +141,10 @@ In the figure, \lstinline$RData$ is a type of abstract data, $AC$ is a container
 related to page allocations in the system, and \lstinline$pperm$ is a CPU-local page permission table. 
 With that given information, \lstinline$palloc_spec$ updates a single event (\lstinline$OPALLOCE$) into the log based on the result of the page allocation operation with considering the relate interleaving with other CPUs via the environmental context (\lstinline$multi_oracle$ in the figure.)
 The lock instance for this page allocation, one element in our spinlock pool, are not allowed to be invoked at higher layers;
-thus processes that hold the lock for other shared objects 
+thus threads that hold the lock for other shared objects 
 cannot hold (and does not release) the lock for page allocation.
 With providing this atomic interface for those locks,
-processes precisely follow the order of acquiring and releasing locks with the layer order, which implies that 
+threads precisely follow the order of acquiring and releasing locks with the layer order, which implies that 
 the lock in the higher layer will be acquired before the lock in the lower layer,
 and the lock in the lower layer will be released before the lock in the higher layer.
 This implicit order of lock acquisitions prevents deadlocks in the $\certikos$ kernel.
@@ -164,17 +164,17 @@ that the initialization procedure sets up the two-level page maps correctly rega
 \caption{Page Table Abstract Data Structure Definition (Written in $\coq$.)}
 \label{fig:chapter:certikos:page-table}
 \end{figure}
-In detail, the page table is a partial map from a process ID to its page table as the definition related to the page table (written in $\coq$) is in
+In detail, the page table is a partial map from a thread ID to its page table as the definition related to the page table (written in $\coq$) is in
 Figure~\ref{fig:chapter:certikos:page-table}. 
 Page table 0 is reserved for the kernel page table, which is defined as an identity map,
 and we map the low memory as an identity map with kernel only permission
-for every process' page table.
-It reduces the complexity of our permission resolution because when each process traps into the kernel,
+for every thread's page table.
+It reduces the complexity of our permission resolution because when each thread traps into the kernel,
 the kernel can still access kernel data natively via memory access
 without switching to the kernel page table. 
 In the figure, 
 \lstinline$IDPDE$ is an identity  map, which maps its address to every page directory entry when we need an identity mapping.
-The page table structure, \lstinline$PMapPool$, is a partial map from a process identifier to its 2-level page table , \lstinline$PMap$.
+The page table structure, \lstinline$PMapPool$, is a partial map from a thread identifier to its 2-level page table , \lstinline$PMap$.
  Each page directory entry (\lstinline$PDE$) has one of four values;
  1) the proper page table entry (\lstinline$PDEValid$); 2) an identity map (\lstinline$PDEID$); 3) unallocated (\lstinline$PDEUnPresent$); or 4) uninitialized or invalid (\lstinline$PDEUndef$). 
 A page table entry is one of three values;
@@ -187,7 +187,7 @@ A page table entry is one of three values;
 \label{fig:chapter:certikos:ptresv-func}
 \end{figure}
  One important function that manipulates the page table is a page table reservation function,
- which updates each process' page table.
+ which updates each thread's page table.
  The specification for the function is defined in Figure~\ref{fig:chapter:certikos:ptresv-func},
   where  $\codeinmath{ptInsert\_spec}$ is a specification for the $\codeinmath{ptInsert}$ function which links 
 the physical address mapping with the virtual address mapping. 
@@ -196,7 +196,7 @@ If it is not, it allocates one by invoking $\codeinmath{ptAllocPDE}$ primitive t
 in the figure.
 The $\codeinmath{ptInsertPTE\_spec}$ is the specification for function $\codeinmath{ptInsertPTE}$ that actually inserts the page 
 information into the page table. 
-When either of any processes fails during this evaluation, it returns the magic number as its result, which is distinguishable with 
+When either of any threads fails during this evaluation, it returns the magic number as its result, which is distinguishable with 
 any return values of the function.
 
 \subsection{Intel Virtualization Module}
@@ -217,11 +217,11 @@ as well as provide primitives that properly initialize and manipulate them.
 This module also introduces two $\codeinmath{vm\_enter}$ and $\codeinmath{vm\_exit}$ primitives to enter and exit from the host mode.
 
 \jieung{Need to change the word process (or thread) to make them to be consistent}
-\subsection{Process Management Module}
+\subsection{Thread Management Module}
 \label{chapter:certikos:subsec:process-management-module}
-Our process management module contains 
+Our thread management module contains 
 a kernel context switching, an abstract queue library, thread management which includes scheduling primitives (\ie, yield, sleep, wake up)
-and dynamic process creation. 
+and dynamic thread spawn.
 
 \subsubsection{Kernel Context Switching}
 
@@ -230,7 +230,7 @@ and dynamic process creation.
 \caption{Kernel Context Switch Implementation (Written in Assembly.)}
 \label{fig:chapter:certikos:kernel-context-switch-impl}
 \end{figure}
-Our process management first introduces the context switching written in Assembly, of which the implementation is in Figure~\ref{fig:chapter:certikos:kernel-context-switch-impl}.
+Our thread management first introduces the context switching written in Assembly, of which the implementation is in Figure~\ref{fig:chapter:certikos:kernel-context-switch-impl}.
 We first abstracts the kernel context pool in the memory ($\codeinmath{KCtxtPool\_LOC}$ in Figure~\ref{fig:chapter:certikos:kernel-context-switch-impl}) 
 into the kernel context map in the abstract data:
 \begin{lstlisting}[language = C, deletekeywords = {Context}]
@@ -281,7 +281,7 @@ Function local_enqueue_spec (n i: Z) (adt: RData): option RData :=
   {abq: ZMap.set n (AbQValid (l ++ (i::nil))) (abq adt)}
   <@$\cdots$@>
 \end{lstlisting}
-Since those queues can be shared by multiple processes in the system, 
+Since those queues can be shared by multiple threads in the system, 
 we associate each shared queue with a lock,
 \begin{lstlisting}[language = C]
 Function enqueue_atomic_spec (n i: Z) (adt: RData): option RData :=
@@ -328,29 +328,29 @@ that the thread belongs to (\ie, notes that all CPUs can manipulate other CPUs' 
 check the pending queue. But, it should be ok because our proc create is bounded with the maximum number of threads for each CPU.}
 \jieung{Can I use the scheduling figure in certikos paper (Figure 9)? Even if I can use that one, I need to modify it by adding proc create.}
 
-The process creation primitive also affects the scheduling.
-When one process wants to create its child, 
+The thread spawn primitive also affects the scheduling.
+When one thread wants to create its child, 
 it first checks the quota that the child wants to have (\ie, it is the argument of the primitive), 
-and then create the child by giving the new process ID to the child. 
+and then create the child by giving the new thread ID to the child. 
 It then adds the newly created child at the end of the ready queue of the CPU that the parent and the newly created child belong to it. 
-As seen in these scheduling procedures, we do not allow the process migration from one CPU to others.
+As seen in these scheduling procedures, we do not allow the thread migration from one CPU to others.
 
-Like what our layers do for other shared primitives, $\certikos$ provides the layer interface ($\codeinmath{PBThrd}$)
+Like what our layers do for other shared primitives, $\certikos$ provides the layer interface ($\PBThrd$)
 that contains atomic specifications for all scheduling related primitives. 
-The layer, $\codeinmath{PBThrd}$, also merges all separate logs\footnote{Note that we divide the global log into multiple individual logs is associated with the corresponding shared objects from $\codeinmath{MBoot}$. The division is for the simplicity of our layer building, but we have to merge them into the single global log for multithreaded linking. We mentioned about it in multiple places in Chapter~\ref{chapter:mcs-lock} and Chapter~\ref{chapter:linking}} 
+The layer, $\PBThrd$, also merges all separate logs\footnote{Note that we divide the global log into multiple individual logs is associated with the corresponding shared objects from $\mmcsbootfull$. The division is for the simplicity of our layer building, but we have to merge them into the single global log for multithreaded linking. We mentioned about it in multiple places in Chapter~\ref{chapter:mcs-lock} and Chapter~\ref{chapter:linking}} 
 into a single log to provide the top-most layer of our per-CPU modules (and thus the base layer for our multithreaded linking.)
-Figure~\ref{fig:chapter:certikos:proc-create-cpu-spec} and Figure~\ref{fig:chapter:certikos:thread-yield-cpu-spec} show the specification of the process creation primitive and the specification of the thread yield primitive, respectively.
+Figure~\ref{fig:chapter:certikos:proc-create-cpu-spec} and Figure~\ref{fig:chapter:certikos:thread-yield-cpu-spec} show the specification of the thread creation primitive and the specification of the thread yield primitive, respectively.
 
 \begin{figure}
 \lstinputlisting[language =C, deletekeywords={int}]{source_code/certikos/cpu_proc_create.v} 
-\caption{Process Create Primitive Specification in $\codeinmath{PBThrd}$ (Written in $\coq$.)}
+\caption{Thread Spawn Primitive Specification in $\PBThrd$ (Written in $\coq$.)}
 \label{fig:chapter:certikos:proc-create-cpu-spec}
 \end{figure}
 
 
 \begin{figure}
 \lstinputlisting[language = C]{source_code/certikos/cpu_thread_yield.v} 
-\caption{Thread Yield Primitive Specification in $\codeinmath{PBThrd}$ (Written in $\coq$.)}
+\caption{Thread Yield Primitive Specification in $\PBThrd$ (Written in $\coq$.)}
 \label{fig:chapter:certikos:thread-yield-cpu-spec} 
 \end{figure}
 
@@ -358,17 +358,17 @@ Figure~\ref{fig:chapter:certikos:proc-create-cpu-spec} and Figure~\ref{fig:chapt
 \subsection{Connecting All per-CPU layers}
 \label{chapter:certikos:subsec:connecting-all-per-cpu-layers}
 
-We have introduces 60 layers for all those modules in our per-CPU layers, from the $\codeinmath{MBoot}$ layer to the 
-$\codeinmath{PBThrd}$ layer.
+We have introduced 60 layers for all those modules in our per-CPU layers, from the $\mmcsbootfull$ layer to the 
+$\PBThrd$ layer.
 All those layers can be linked together via the composition rules described in Section~\ref{chapter:ccal:subsec:linking};
 thus form a single contextual refinement theorem, which is defined in Theorem~\ref{theorem:chapter:certikos:per-cpu-contextual-refinement},
 which corresponds to the number (1) in Figure~\ref{fig:chapter:certikos:idea-of-dividing-certikos-with-formal-def}.
 \begin{theorem}[Contextual Refinement for Per-CPU layers]
 \label{theorem:chapter:certikos:per-cpu-contextual-refinement}
 Let's assume that $cid$ is a valid CPU ID (in between 0 and 7), $\oracle_{\codeinmath{cpu}}$ and  $\oracle'_{\codeinmath{cpu}}$ are 
-environmental contexts for $\codeinmath{MBoot}$  and $\codeinmath{PBThrd}$ layers, respectively, and $\codeinmath{CTXT}$ is an any context program. Then, we can say that
+environmental contexts for $\mmcsbootfull$  and $\PBThrd$ layers, respectively, and $\codeinmath{CTXT}$ is an any context program. Then, we can say that
 \begin{center}
-$\semwmachine{\codeinmath{MBoot}[cid, \oracle_{\codeinmath{cpu}}]}{\certikos_{\codeinmath{cpu}} \oplus \codeinmath{Ctxt}}{\codeinmath{mach}_{\lasm}} \refines_{R_{\certikos_\codeinmath{cpu}}} \semwmachine{\codeinmath{PBThrd}[cid, \oracle'_{\codeinmath{cpu}}]}{\codeinmath{Ctxt}}{{\codeinmath{mach}_{\lasm}}}$
+$\semwmachine{\mmcsbootfull[cid, \oracle_{\codeinmath{cpu}}]}{\certikos_{\codeinmath{cpu}} \oplus \codeinmath{Ctxt}}{\codeinmath{mach}_{\lasm}} \refines_{R_{\certikos_\codeinmath{cpu}}} \semwmachine{\PBThrd[cid, \oracle'_{\codeinmath{cpu}}]}{\codeinmath{Ctxt}}{{\codeinmath{mach}_{\lasm}}}$
 \end{center}
 when ${R_{\certikos_\codeinmath{cpu}}}$ is a refinement relation between those two layers (the refinement relation can be achieved by 
 connecting all the refinement relations in between 60 per-CPU layers.)
@@ -376,8 +376,8 @@ connecting all the refinement relations in between 60 per-CPU layers.)
 
 %Informally, this theorem states the following property:
 %\begin{quote} 
-%"any context program $\codeinmath{Ctxt}$ running on the $\codeinmath{PBThrd}$ layer (the top-most layer interface of per-CPU layers) contextually refines the context program $\codeinmath{Ctxt}$ plus  the implementation of CPU local modules of $\certikos$, $\certikos_{\codeinmath{cpu}}$,
-%running on $\codeinmath{MBoot}$ (the bottom-most layer interface of per-thread layers) with LAsm".
+%"any context program $\codeinmath{Ctxt}$ running on the $\PBThrd$ layer (the top-most layer interface of per-CPU layers) contextually refines the context program $\codeinmath{Ctxt}$ plus  the implementation of CPU local modules of $\certikos$, $\certikos_{\codeinmath{cpu}}$,
+%running on $\mmcsbootfull$ (the bottom-most layer interface of per-thread layers) with LAsm".
 %\end{quote}
 %%
 

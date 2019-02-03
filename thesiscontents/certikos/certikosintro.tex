@@ -3,14 +3,14 @@
 
 This chapter presents our work on a large-scaled concurrent program verification, 
 especially 
-how $\ccalname$ in Chapter~\ref{chapter:ccal} and concurrent linking template in Chapter~\ref{chapter:linking} are applied 
+how $\ccalname$ in Chapter~\ref{chapter:ccal} and concurrent linking framework in Chapter~\ref{chapter:linking} are applied 
 to verify a large-scaled and practical concurrent operation system, $\certikos$.
 We divide the full OS kernel as a stack of layers, independently verify them, 
 and connecting them via our layer linking library. 
 In addition to that, 
 we glue multiple instances in concurrent evaluations together by using concurrent linking (composition) templates, both for multicore and for multithreaded concurrency.  
-Our certified kernel is written in 6500 lines of C and x86 assembly
-and runs on stock x86 multicore machines with supporting fine-grained locking concurrency. 
+Our certified kernel is written in 6,500 lines of C and x86 assembly
+and runs on stock $\intelmachine$ multicore machines with supporting fine-grained locking concurrency. 
 $\certikos$ is the first proof of functional correctness of a complete,
 general-purpose concurrent OS kernel with fine-grained locking,
 which supports a single top-level correctness theorem. 

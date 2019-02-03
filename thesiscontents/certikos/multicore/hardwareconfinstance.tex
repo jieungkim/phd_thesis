@@ -34,7 +34,7 @@ provides those  primitives to give  extra transition rules for the state of $\co
 %\end{figure}
 
 As discussed in Section~\ref{chapter:linking:sec:multithreaded-linking} and Section~\ref{chapter:certikos:sec:multithreaded-linking-for-certikos},
-the state definition for a machine model of  $\compcertx$ ($\lasm$) is
+the state definition for a machine model of  $\compcertx$ ($\lasmmach$) is
 \begin{lstlisting}
 Inductive state <@$\cdots$@> : Type :=
   | State: regset -> (mem: mwd LDADTOps)-> state.

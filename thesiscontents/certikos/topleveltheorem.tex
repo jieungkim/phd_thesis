@@ -14,7 +14,7 @@ environmental context for thread $tid$, $\codeinmath{certikos}$ is a implementat
  Then, we want to prove that 
  \begin{center}
 \begin{tabular}{c}
-$\semwmachine{\codeinmath{MBoot}}{\codeinmath{CertiKOS} \oplus \codeinmath{Ctxt}}{\codeinmath{mach}_{\codeinmath{x86mc}}} \refines_{R_{\codeinmath{certikos}}} \semwmachine{\codeinmath{TSyscall}[tid, \oracle_{tid}]}{\codeinmath{Ctxt}}{{\codeinmath{mach}_{\codeinmath{x86thrd}}}}$\\
+$\semwmachine{\mmcsbootfull}{\codeinmath{CertiKOS} \oplus \codeinmath{Ctxt}}{\codeinmath{mach}_{\codeinmath{x86mc}}} \refines_{R_{\codeinmath{certikos}}} \semwmachine{\PLayer{\TSyscall}{tid}{\oracle_{tid}}}{\codeinmath{Ctxt}}{\hasmmach}$\\
 \end{tabular}
 \end{center}
 when $R_{\codeinmath{certikos}}$ is a refinement relation between those two different layers on different machine models (\ie, connecting all refinement relations of multicore linking, per-CPU layers, multithreaded linking, and per-thread layers.)

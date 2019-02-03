@@ -5,7 +5,7 @@
 
 Concurrent (environmental) machine model is a language that can run programs with partially focused set on it,
 and it is associated with the concurrent layer interface in Section~\ref{chapter:ccal:subsec:concurrent-layer-interface}. 
-This machine model does not provide the interface for us to build layers on top of it, but give the key connection between oracle machine model (thus multicore machine model) and a single CPU machine model
+This machine model does not provide the interface for us to build layers on top of it (\eg, $\compcertx$ and its machine model), but give the key connection between oracle machine model (thus multicore machine model) and a single CPU machine model
 by treating parts of the system as an environment of the currently focused system. 
 
 \begin{figure}
@@ -51,7 +51,7 @@ l' = \listconsoppo{\yieldev{curid'}}{l_0} \\
 \backid{curid}{e}{curid'}}
 {\envstep{A}{oracle}{(\envstate{A}{curid}{lsp}{l})}{\ccemptytrace}{(\envstate{A}{curid'}{lsp}{l'})}}
 \end{mathpar}
-\caption{Environmental Machine Model Syntax and Semantics}
+\caption{Environmental Machine Model Syntax and Semantics.}
 \label{fig:chapter:conlink:multicore-env-step-machine}
 \end{figure}
 
@@ -67,10 +67,10 @@ This rule is a key for connecting the full machine semantics with the local mach
 
 \subsubsection{Concurrent Machine Model with the Full CPU Set}
 
-
+%thus we treat this proof is a linking proof (for parallel composition)
 Since the set for this concurrent machine model can be a set precisely same with the full CPU set, 
 we first show that the program runs with the oracle machine refines the concurrent machine model with full CPU set. 
-Informally, It is the parallel composition rule for all threads; thus we treat this proof is a linking proof (for parallel composition), which provide the transition on the full machine semantics can refine the transition on the collection of multiple instances in the concurrent program (Lemma~\ref{lemma:chapter:conlink:mc-oracle-env}) based on the 
+The refinement corresponds to the parallel composition rule for all CPUs. It provides the transition on the full machine semantics can refine the transition on the collection of multiple instances in the concurrent program (Lemma~\ref{lemma:chapter:conlink:mc-oracle-env}) based on the 
 match relation between two states defined in Figure~\ref{fig:chapter:conlink:parallel-composition-for-multicore} (with the 
 environmental variable $start\_cpu$, a start CPU ID for the system's evaluation. 
 The relation is basically saying that all values in both states are identical with keeping the valid evaluation flag as well as the valid log condition. 
@@ -132,10 +132,10 @@ l \neq \listconsoppo{\yieldev{\_}}{\_}\\
 
 \begin{lemma}[one$\_$step$\_$env$\_$refines$\_$oracle]
 \label{lemma:chapter:conlink:mc-oracle-env}
-Let's assume that there is a valid start CPU ID
-($start\_cpu$ ($start\_cpu \in \coreset$), and a hardware oracle $hw\_o$,  
+Let's assume that there is a valid start CPU ID,
+$start\_cpu$ ($start\_cpu \in \coreset$), and a hardware oracle, $hw\_o$,  
 which is an environmental context for the oracle machine model that contains the full focused set ($\coreset$) in it.
-When the hardware oracle is valid ($ \validoraclenoeq{start\_cpu}{\coreset}{hw\_o}$) we can show the following fact:
+When the hardware oracle is valid ($\validoraclenoeq{start\_cpu}{\coreset}{hw\_o}$) we can show the following fact:
 \begin{center}
 \begin{tabular}{P{0.95\textwidth}}
 $
@@ -173,7 +173,7 @@ $\textsf{SKIP}$ rules when the currently running CPU is not in the domain (is no
 This implies that one step evaluation in the machine with the full focused set 
 can be associated with the two-step oracle queries in the machine with a single focused CPU ID.
 
-To work around this issue with using forward-to-backward simulation technique, 
+To work around this issue with using forward-to-backward simulation proof technique, 
 we introduce $\mcmeasurekwd$ as well as $\mcstatemeasurekwd$ which implies that 
 the currently running CPU ID is a hardware scheduler when the given log ends with the $\yieldevkwd$ event, which means that we need to pause the evaluation on the machine with the full focused set to match the evaluation in both machines.
 
@@ -218,7 +218,7 @@ $ \localstepevkwd (ev : \mcevent) : \optiondef\ \mclog :=
 %    | _ => None
 %    end.
 \caption{Auxiliary Functions:  auxiliary functions for the refinement proof between
-the enviornmental machine model with a single focused set and a full CPU set}
+the enviornmental machine model with a single focused set and a full CPU set.}
 \label{fig:chapter:conlink:auxiliary-function-for-full-cpus-and-a-single-cpu}
 \end{figure}
 
@@ -338,10 +338,10 @@ multiple evaluations in the environmental machine with a single focused CPU matc
 
 \begin{lemma}[one$\_$step$\_$env$\_$refines$\_$env]
 \label{lemma:chapter:conlink:one-env-refines-env}
-Let's assume that there is a valid CPU ID $start\_cpu$ (\ie, a focused CPU as well as a start CPU of the system
-$start\_cpu \in \coreset$),  a hardware oracle $hw\_o$ (\ie, an environmental context for the environmental machine model that contains the full focused set, $\coreset$, in it), 
-and a single core oracle $si\_o$ (\ie, an environmental context for the environmental machine model that contains a singleton CPU, $start\_cpu$ in it.)
-When the single oracle is valid ($ \validoraclenoeq{start\_cpu}{\set{start\_cpu}}{si\_o}$) we can show the following fact:
+Let's assume that there is a valid CPU ID $cpuid$ (\ie, a focused CPU as well as a start CPU of the system
+$cpuid \in \coreset$),  a hardware oracle $hw\_o$ (\ie, an environmental context for the environmental machine model that contains the full focused set, $\coreset$, in it), 
+and a single core oracle $si\_o$ (\ie, an environmental context for the environmental machine model that contains a singleton CPU, $cpuid$ in it.)
+When the single oracle is valid ($ \validoraclenoeq{cpuid}{\set{cpuid}}{si\_o}$) we can show the following fact:
 \begin{center}
 \begin{tabular}{P{0.95\textwidth}}
 $
@@ -357,7 +357,7 @@ $
 \end{lemma}
 
 Proving this lemma relies on two oracles 
-as well as an assumption about the correctness each CPU's private evaluation;
+as well as an assumption about the correctness of each CPU's private evaluation;
 hardware scheduling events in two oracles are exactly matched with each other (Hypothesis~\ref{hypothesis:chapter:conlink:related-single-oracle-hw-oracle})
 the corresponding private evaluation in the machine with the full core set
 will always succeed (will not get stuck) when we have a strategy for an environmental step in the machine with a single CPU
@@ -365,10 +365,10 @@ will always succeed (will not get stuck) when we have a strategy for an environm
 
 \begin{hypothesis}[related$\_$single$\_$oracle$\_$hw$\_$oracle$\_$def]
 \label{hypothesis:chapter:conlink:related-single-oracle-hw-oracle}
-Let's assume that there is a valid CPU ID $start\_cpu$
-($start\_cpu \in \coreset$),  a hardware oracle $hw\_o$
+Let's assume that there is a valid CPU ID $cpuid$
+($cpuid \in \coreset$),  a hardware oracle $hw\_o$
 and a single core oracle $si\_o$.
-When the single oracle is valid ($ \validoraclenoeq{start\_cpu}{\set{start\_cpu}}{si\_o}$) we assume the following fact:
+When the single oracle is valid ($ \validoraclenoeq{cpuid}{\set{cpuid}}{si\_o}$) we assume the following fact:
 \begin{center}
 \begin{tabular}{P{0.95\textwidth}}
 $
@@ -384,9 +384,9 @@ $
 
 \begin{hypothesis}[relate$\_$single$\_$oracle$\_$concrete$\_$step$\_$def]
 \label{hypothesis:chapter:conlink:related-single-oracle-concrete-step}
-Let's assume that there is a valid CPU ID $start\_cpu$ ($start\_cpu \in \coreset$),  a hardware oracle $hw\_o$
+Let's assume that there is a valid CPU ID $cpuid$ ($cpuid \in \coreset$),  a hardware oracle $hw\_o$
 and a single core oracle $si\_o$.
-When the single oracle is valid ($ \validoraclenoeq{start\_cpu}{\set{start\_cpu}}{si\_o}$) we assume the following fact:
+When the single oracle is valid ($ \validoraclenoeq{cpuid}{\set{cpuid}}{si\_o}$) we assume the following fact:
 \begin{center}
 \begin{tabular}{P{0.95\textwidth}}
 $

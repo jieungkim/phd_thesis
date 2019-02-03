@@ -45,13 +45,13 @@ $$
 
 
 Based on the hardware configurations, semantics, and auxiliary functions in Section~\ref{chapter:linking:subsec:hardware-configuration},
-we define the non-deterministic multicore machine model in this section.
-We first define the local view, which is the view from each core that consists of a private state and a view of the global log. 
+we define a non-deterministic multicore machine model in this section.
+We first define a \textit{local view}, which is the view from each core that consists of a private state and a view of the global log. 
 Based on the local view, 
 step relation rules for four commands 
-are defined in Figure~\ref{fig:chapter:conlink:hardware-local-step-transition-rules}, which 
-check the program counter first, then perform each step. 
-Note that rules for acquiring shared and releasing shared resources 
+are defined in Figure~\ref{fig:chapter:conlink:hardware-local-step-transition-rules}.
+They check the program counter first, then perform each step. 
+Among them, rules for acquiring shared and releasing shared resources 
 first check the ownership that is associated with the shared resource;
 but they do not have any safety condition to guarantee that the owner of that shared resource is in a valid status when they are invoked. 
 
@@ -96,7 +96,7 @@ curid \in \coreset \\
 \setpst{\privatestate}{curid'}{ps'}{lsp}{lsp'} }
 { \hardwarestep{start}{(\hstate{curid}{lsp}{l})}{\ccemptytrace}{(\hstate{curid'}{lsp'}{(\listappoppo{l'}{ l_0})}))}}
 \end{mathpar}
-\caption{Multicore Machine Syntax and Semantics}
+\caption{Multicore Machine Syntax and Semantics.}
 \label{fig:chapter:conlink:multicore-machine-syntax-and-semantics}
 \end{figure}
 
