@@ -1,6 +1,101 @@
-%
-%\section{Trusted Computing Based in CertiKOS}
-%\label{chapter:conclusion:sec:trusted-computing-based-in-certikos}
+\section{Limitations on Concurrent Certified Abstraction Layers}
+
+Our concurrent certified abstraction layer (CCAL) has several limitations.
+The automation in CCAL still has many chances to be improved. 
+Among the two common layer building patterns discussed in Chapter~\ref{chapter:ccal},
+the \textit{log-lift} pattern still requires a plethora of manual proofs that users have to write.
+We believe that providing better automation for several parts of them will
+dramatically improve the efficiency of our framework.  
+
+Besides, our per-thread layer interfaces cannot allocate 
+any new blocks in the memory.
+Even though we provide a new memory model for composing 
+multiple threads' memories together (in Section~\ref{chapter:linking:subsec:multithreaded-env-configuration}),
+our per-thread layer interfaces cannot support it properly due to other dependencies 
+of our framework (\ie, compiler and linking library).
+This restriction limits the expressiveness of per-thread layer interfaces a lot 
+and also increases the complexity of multithreaded linking by
+making the size  of multithreaded linking (\ie, The concrete definition of 
+$\CSched$, $\TLink$, $\TSched$,  thread configurations, and auxiliary functions) huge. 
+
+One another limitation is the lack of general parallel composition rules. 
+As discussed in Chapter~\ref{chapter:linking} and Chapter~\ref{chapter:certikos}, 
+our parallel composition is limited in specific places among the full layer stacks. 
+Extending the framework to support parallel compositions for every layer is required to strengthen our framework.
+
+\section{Relaxed Memory Model}
+
+
+We assume sequential consistency for atomic operations. 
+It implies that all atomic operations on the system
+appear to take place in some total order,
+the global order of atomic operations.
+This assumption makes reasoning about concurrent program easy, 
+differs from most of today's $\intelmachine$ hardware models.
+Based on observation of the previous work~\cite{sevcik13}, 
+race-free programs on a TSO model behave as if executing on the sequential consistent machine.
+We believe that this observation can be applied to our program since the programs
+on our push/pull model are race-free.
+We, however, need more investigation to extend our work to support relaxed memory models. 
+
+
+\section{Timed Behaviors}
+
+Timed behavior is crucial on the system that provides time-sensitive services, such as real-time operating systems (RTOS),
+which is a sort of an operating system that serves real-time applications.
+Our framework, however, does not support the reasoning of real-time behaviors,
+and providing the precise metric for each assembly instruction is challenging. 
+Extending the current work to support it is another future direction of our work, and a separate line of work in our group is focusing on this direction. 
+
+
+\section{Trusted Computing Base in CertiKOS}
+
+Our verified kernel assumes the correctness of the hardware, and we also assume that the top level system call specifications have to be trusted.
+Those shim layers are vulnerable points that possess bugs in it, and the previous work~\cite{shimlayer} investigates the weak parts via comparing multiple verification works. We minimize those vulnerable points as much as possible. 
+$\compcert$ does not contain full specifications of $\intelmachine$ machine models.
+It does not have some control registers (\eg, CR3) and 
+instructions (\eg, xchg).
+We focus on modeling hardware specifications that are only related to our kernel verification instead of specifying the entire hardware manual.
+Trusted system call specifications are parts of our top-level abstraction layer ($\TSyscall$) in our $\certikos$.
+Since all implementation details of our kernel are hidden in the layer, 
+system call specifications are reasonably small.
+It minimizes the possibility of errors as well as reduce the cost of the review process. 
+However, we found multiple errors while reviewing them, so we believe that testing on those trusted parts is desirable to reduce the possibility of mistakes.  
+
+
+\section{Extending CertiKOS}
+
+Providing richer interfaces to users than what we currently have are a desirable extension of our verified concurrent kernel.
+Among them, 
+network stacks are one of the promising candidates to connect the verified kernel and the verified distributed system. 
+Our group adds a network module in the unverified version of  $\certikos$ by porting lwIP~\cite{lwip},  which is a small implementation of the TCP/IP protocol stack. 
+But, verifying it is not addressed yet. 
+
+
+\section{Trusted Computing Base in WormSpace}
+
+Similar to TCBs in $\certikos$, we trust bottom and top layers in our abstraction layers. 
+The bottom layer contains minimal system call specifications that are
+necessary to verify distributed systems. 
+For example, send and receive primitives, and a socket initialization primitive are parts of the bottom layer. 
+Extending $\certikos$ can reduce these trusted parts.
+For the top layer interface, it contains API for clients.
+We minimize the size of those specifications as much as possible as we did in  $\certikos$.
+It reduces the possibility of errors, but testing for those specifications are desirable if we have a proper testing tool for them. 
+
+
+\section{Extending WormSpace}
+
+Our $\wormspace$ has multiple possibilities to extend it. 
+Our work currently does not support membership changes that are common in practical distributed systems. 
+Also, liveness or other progress properties are not investigated in our work. 
+To support them, we need to modify the current asynchronous network model as a semi-asynchronous network model that has a time-related behavior (\ie, time out) in it. 
+Our network assumption is a non-byzantine setting, which trusts all nodes in the network. 
+Relaxing this condition is sometimes desirable, and it may be a future direction of $\wormspace$ as well as our distributed system verification. 
+We believe that modeling them is feasible with the current framework, 
+and we focus on parts of them as our ongoing works. 
+
+\section{Conclusion}
 
 This thesis 
 explains
@@ -11,7 +106,7 @@ The toolkit also provides
 the framework 
 to combine local isolated proof instances in the concurrent environment 
 to form the formal link between the local instance and
-the formal behavior of the program on concurrent machine model. 
+the formal behavior of the program on a concurrent machine model. 
 As case studies, 
 $\certikos$ and $\wormspace$ 
 have presented in this thesis
@@ -34,31 +129,5 @@ we plan
 to rule out assumptions that 
 our framework and the proofs rely on
 and improve 
-the framework to extend its expressiveness, 
-simplify the framework itself.
-
-%
-%We build concurrent operating systems using CCAL, but there are some potholes in the verification. 
-%Our x86 machine model in the verification assumes sequential consistency instead of the acutal x86 machine mode, x86 TSO.
-%
-%\section{Timed Behaviors}
-%\label{chapter:conclusion:sec:timed-behaviors}
-%TImed behaviors are a basis of real-time software systems.
-%
-%\section{Better Concurrent Linking Framework}
-%\label{chapter:conclusion:sec:better-concurrent-linking-framework}
-%
-%Concurrent linking in our framework is still extremely complex, expensive, and not general enough to applied into any layers as we have shown in Chapter~\ref{chapter:linking}.  
-%
-%
-%\section{Applying Witness Passing to Other Systems}
-%\label{chapter:conclusion:sec:applying-witness-passing-to-other-systems}
-%
-%%We presents witness-passing in Chapter~\ref{chapter:witness-passing}, and show how it can be applied to 
-%%verify other consensus mechanisms such as multiple works in blockchain. 
-%
-%
-%\section{Conclusion}
-%\label{chapter:conclusion:sec:conclusion}
-%
-%In this dissertation, we have presented a novel, compositional, practical, and powerful toolkit that can be applied to verify multiple complex system software. 
+the framework to extend its expressiveness and automation.
+We also plan to simplify the framework itself.
