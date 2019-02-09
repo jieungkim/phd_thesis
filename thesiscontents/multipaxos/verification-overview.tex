@@ -180,7 +180,7 @@ Let's assume that $\codeinmath{nid}$ is a node identifier in the distributed sys
 $L_{\codeinmath{Ghost}}$ is a ghost layer that all $\wormspace$ related transitions are illustrated with global transition systems, 
 $\oracle_{\codeinmath{wp}}$ is an environmental context for the network communication in $\wormspace$.
 Then for any programs $\codeinmath{Ctxt}$ runs with the ghost layer (notated as
-$\sem{L_{\codeinmath{Ghost}}[\codeinmath{nid}, \oracle_{\codeinmath{wp}}}{Ctxt}$),
+$\sem{\PLayer{L_{\codeinmath{Ghost}}}{\codeinmath{nid}}{\oracle_{\codeinmath{wp}}}}{Ctxt}$),
 once a value is written to a $\WOR$, the value in the $\WOR$ never changes.
  \end{theorem}
 

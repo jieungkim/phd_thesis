@@ -15,16 +15,16 @@ and the concurrent linking section for the notation}
 \label{chapter:ccal:subsec:multicore-machine-model}
 
 
-We first define a machine model for the full participants ($D$ and also a scheduler), which is a multicore machine model, 
+We first define a machine model for the full participants ($D$ and  a scheduler), which is a multicore machine model, 
 to provide a better understanding of our machine model for local layers.
-This multicore machine model is a part of TCB in our framework, but it be instantiated as a conventional model (such as $\intelmachine$ -- see Chapter~\ref{chapter:linking} for  details) with enforcing sequentially consistent program
+This multicore machine model is a part of TCB in our framework, but it be instantiated as a conventional model (such as $\intelmachine$--see Chapter~\ref{chapter:linking} for  details) with enforcing sequentially consistent program
 execution and allowing arbitrary interleaving
 and shared memory accesses. 
 
 
 \subsubsection{Machine State} 
 The state of  multicore machine model is denoted as a tuple ``$\state := (c, f_{\regs}, m, a, l)$"
-consists of
+consisting of
  the current running CPU ID $c$,
 all CPUs' private states $f_\regs$ (a partial map from CPU ID to  private state $\regs$)
  a shared memory $m$,
@@ -37,12 +37,12 @@ in-memory data structures by hiding low-level details in the memory (such as pad
 but it is not only an abstraction of parts of memory but also a state that affects program execution when making primitive calls. 
 The global log $l$ is a list of observable events that contains the history of all shared operations in the system.
 Those events recorded by different CPUs and
-interleaved in the log with having the chronological order of events for all operations that are visible to other components in the system. 
+interleaved in the log with  the chronological order of events for all operations that are visible to other components in the system. 
 Therefore, 
-two shared parts in our state definition (the shared memory $m$ and 
+two shared parts in our state definition (the shared memory $m$  
 and the shared abstract state $a$)
 can be reconstructed
-from the log $l$ alone by using \emph{replay function} $\replay$,
+from the log $l$ alone  using \emph{replay function} $\replay$,
 the idea of which is briefly discussed in Section~\ref{chapter:ccal:subsec:concurrent-layer-with-environment}.
 
 
@@ -52,15 +52,15 @@ Modeling shared-memory accesses is
 a significant challenge in concurrent program verification;
 it should enable local reasoning while reflecting manipulations of other participants.
 On the other hand, 
-With the proper semantics of sequential consistency execution,
+with the proper semantics of sequential consistency execution,
 our model needs to enforces that the memory always memorizes all changes in the global log to make them visible to the whole system.
 Besides,   
 each CPU does not need to know in detail how other CPUs 
-change the memory, but have to keep track of the result of those changes.
+change the memory, but it has to keep track of the result of those changes.
 We should  only expose the resulting memory 
-content and hide the concrete manipulation details
-Furthermore, we also rely on the memory model
-to detect and forbid dangerous accesses like data races.
+content and hide the concrete manipulation details.
+Further, we also rely on the memory model
+to detect and forbid dangerous accesses such as data races.
 
 
 \begin{figure}
@@ -71,7 +71,7 @@ to detect and forbid dangerous accesses like data races.
 
 We introduce ``push/pull'' memory model for the shared memory $m$ to address all the issues we mentioned and 
 Figure~\ref{fig:chapter:ccal:push-pull-memory-model-and-shared-memory} shows 
-how this model works as well as push/pull events correspond to the changes in the associated memory block and an ownership field of a shared abstract state.
+how this model works as well as how push/pull events correspond to the changes in the associated memory block and an ownership field of a shared abstract state.
 The memory is a map from a block identifier to its value,
 and the ownership field of our shared abstract state is also a map form a block identifier to the ownership flag.
 Only two shared primitives, $\pull$ and $\push$,
@@ -80,23 +80,22 @@ In this example CPU 1 tries to access the memory block $b$ by calling primitive 
 The $\pull$ operation modifies the ownership from \code{free} to \code{own} $1$. 
 Then, other CPUs cannot change the ownership flag of the block until CPU $1$ change it back to \code{free} 
 by a $\push$ operation.
-The $\push$ operation also update the shared memory block $b$ (from $v$ to $v'$), which is the result of the operations for the memory block $b$ performed by CPU $1$ in between $\pull$ and $\push$ calls. 
+The $\push$ operation also update the shared memory block $b$ (from $v$ to $v'$), which is the result of the operations for the memory block $b$ performed by CPU $1$  between $\pull$ and $\push$ calls. 
 Those two shared operations also generate $1.\push(b)(v)$ (the memory snapshot when CPU $1$ start its shared memory manipulation) 
 and  $1.\pull(b)(v)$ (the result of shared memory manipulation by CPU $1$), respectively.
-By doing that, those two $\push$ and $\pull$ encapsulates the shared memory operations
-into $\push/\pull$ events as well as can detect data races.
+By doing that, those two $\push$ and $\pull$ encapsulate the shared memory operations
+into $\push/\pull$ events, and they can detect data races.
 
 \subsubsection{Transitions}
 
-There are two kinds of transitions, program transitions and scheduler transitions, in our multicore machine,
+There are two kinds of transitions--program transitions and scheduler transitions--in our multicore machine,
 which are arbitrarily and nondeterministically interleaved together.
 
 
 \textbf{Program transitions} are one of two possible types:
 private execution, and shared execution.
-The first only changes private states associated with the CPU ID and 
-they are not visible to other CPUs;
-thus we are safe to treat them as ``silent'' steps without generating any events. 
+The first only changes private states associated with the CPU ID and is not visible to other CPUs;
+thus we are safe to treat it as a ``silent'' steps without generating any events. 
 The other, however, 
 accesses shared states (a shared memory and/or a shared abstract state),
 so executing it is  the only way for our machine model  to access and append events to the global log 
@@ -104,72 +103,69 @@ Figure~\ref{fig:chapter:ccal:push-pull-memory-model-and-shared-memory} is one ex
 
 When we model our multicore machine as a $\intelmachine$ model (with multiple cores),
 those program transition relations can be connected with the relations 
-in the machine model of $\compcertx$~\cite{deepspec},, 
+in the machine model of $\compcertx$~\cite{deepspec},
 which is a variance of $\compcert$~\cite{leroy09}
-by adding primitive calls which are specific to our style of verification;
+by adding primitive calls which are specific to our style of verification.
 Primitive calls directly specify the semantics of function $f$ from underlying layers defined in $\coq$. 
 This relation determines the state update after the $f$ call (with the given arguments) and what the return value is.
 We show how we efficiently connect program transition relations in 
 $\intelmachine$ model with transition rules in $\compcertx$ in Chapter~\ref{chapter:linking}.
 
-\textbf{Scheduler transitions} are moves in the multicore machine model and performed by one logical component, a hardware scheduler.
+\textbf{Scheduler transitions} are moves in the multicore machine model performed by one logical component, a hardware scheduler.
  These transitions determine  the CPU that will perform its program transition 
 in the next turn and 
-an instance of all possible non-deterministic scheduler transitions provide 
+an instance of all possible nondeterministic scheduler transitions provide 
 the strategy   ($\strat{sched}$) for this logical component, 
 which will be a part of an environmental context for other machine models. 
 In detail, when the current CPU ID $c$ changes
 the control to CPU ID $c'$,
 the hardware scheduler works as a
 middleman between 
-two CPU, and records the scheduling event 
+two CPUs and records the scheduling event 
 in the global log ($c \switch c'$).
 These hardware scheduling
 can be arbitrarily interleaved with
 program transitions.
 In other words, at any step,
-$\intelmachine$ machine can take either a program transition staying
-on the current CPU,
+an $\intelmachine$ machine can take either a program transition staying
+on the current CPU
 or a hardware scheduling to another CPU.
 The \emph{behavior} of a client program \code{P} over this multicore machine is a set of global logs generated by executing \code{P} via these two kinds of transitions.
-It is also a way for us to hide non-determinism in the higher layers
+It is also a way for us to hide nondeterminism in the higher layers
 by picking up 
-one hardware scheduling strategy at once for the verification process.
-
-
-
+one hardware-scheduling strategy at once for the verification process.
 
 \subsection{Partial  Machine Model and Concurrent Layer Interface}
 \label{chapter:ccal:subsec:concurrent-layer-interface}
 
 
 The state definition ``$\state := (c, f_{\regs}, m, a, l)$'' and the memory model in our partial machine model are
-same with those of a multicore machine model, 
+same as those of a multicore machine model, 
 except the domain of its private state ($f_{\regs}$) is only for the focused set $A$ instead of the full CPU set $D$.
-The partial machine model, however, requires one more transition rules to handle environmental steps for the participants that are not in the focused set.
+The partial machine model, however, requires one more transition rule to handle environmental steps for the participants that are not in the focused set.
 When focusing on a partial machine works with a subset of CPUs $A$,
 the execution of the machine needs to handle 
 the steps for its environments ($D - A$ plus the hardware scheduler) with a \textit{valid} environmental context ($\oracle$);
-thus we want to  achieve a way to semantically verify the part for $A$ of the whole program locally, 
+thus, we want to  achieve a way to semantically verify the part for $A$ of the whole program locally
 by making the assumptions on the rest of programs (as discussed in Secion~\ref{chapter:ccal:subsec:concurrent-layer-with-environment}).
 
-Those assumptions are also need to be able to guaranteed by the execution of the other part of the entire system for 
+Those assumptions  also need to be able to be guaranteed by the execution of the other part of the entire system for 
 the compositionality of multiple partial machines.
-For example, the assumption of transitions with $L[A, \oracle_{A}]$ should be consistent with the invariants guaranteed by the transitions of $L[(D - A), \oracle_{(D-A)}]$, and vice versa, when $D$ implies the set that contains the whole CPUs.
+For example, the assumption of transitions with $L[A, \oracle_{A}]$ should be consistent with the invariants guaranteed by the transitions of $L[(D - A), \oracle_{(D-A)}]$ and vice versa, when $D$ implies the set that contains the whole CPUs.
 In this sense, our layer can be defined as
 $L[A, \oracle] := (\Layer, \Rely,\Guard)$ when $\Layer$ is a set of primitives in the layer $L$,
 $\Rely : log \rightarrow Prop$ is  rely invariant that provides assumptions about  environmental movements,
 and $\Guard: log \rightarrow Prop$ is guarantee invariant that local movements of $L[A, \oracle]$ need to satisfy.
 
-\emph{Environmental Transitions} then can be simply defined as 
-an environmental context ($\oracle$) query when participants outside of the focused set perform transitions;
-thus return a particular sequence of events for one specific run of the concurrent program 
-that satisfies $\Rely$ condition.
+\emph{Environmental transitions} then can be simply defined as 
+an environmental context ($\oracle$) query when participants outside  the focused set perform transitions,
+thus returning a particular sequence of events for one specific run of the concurrent program 
+that satisfies the $\Rely$ condition.
 Environmental transitions also include the transitions performed by 
 the hardware scheduler, which is constructed by 
 a single instance ($\strat{sched}$) of possible strategies of the scheduler.
 All transitions in here are also deterministic thanks to our environmental context.
-Non-determinism of multicore machine model is hidden in building strategies by
+The nondeterminism of the multicore machine model is hidden in building strategies by
 program executions with the machine (\eg, events generated by the hardware scheduler).
 
 \subsection{Local Machine Model and Local Layer Interface}
@@ -177,7 +173,7 @@ program executions with the machine (\eg, events generated by the hardware sched
 
 With the singleton focused set, $\set{c}$, 
 simplification is possible for the definition of the transition machine.
-The sate for the singleton set is a tuple ``$(\regs, m, a, l)$'',
+The sate for the singleton set is a tuple ``$(\regs, m, a, l)$''
 where $\regs$ is the private state of the CPU $c$
 and $m$ is just a \emph{local copy} of the shared memory.
 
@@ -198,52 +194,52 @@ Section~\ref{chapter:ccal:subsec:multicore-machine-model}.
 
 Figure~\ref{fig:chapter:ccal:push-pull-memory-model-and-local-memory} shows how
 all local memory updates keep consistency with the corresponding shared memory updates. 
-In the example, the model has the same sequence of updates with the example 
+In the example, the model has the same sequence of updates as the example 
 in Figure~\ref{fig:chapter:ccal:push-pull-memory-model-and-shared-memory}.
 The local memory update by CPU $1$ needs to be followed by the corresponding $\pull$ event, 
 so the pull event, $1.pull(b)(v)$, tells the local machine that the current memory value is 
 $v$ for the block $b$ by replaying the global log up to that point ($l$)
 and updates the block in the local copy $m$ with the value ($b \rightarrow v$). 
 After that, CPU $1$ operates on the memory based on the value $v$ until it pushes the change (as well as frees the ownership for the block).
-The value $v$ for the block in here is exactly same with the value in the global shared memory accessed by multiple CPUs. 
-All shared memory (and abstract state) updates are recorded in the global log; thus
+The value $v$ for the block in here is exactly same as the value in the global shared memory accessed by multiple CPUs. 
+All shared memory (and abstract state) updates are recorded in the global log; thus,
 updating the local copy of block $b$ by replaying the log $l$ gives the exact same status for the shared memory block $b$ (in multicore machine mode) at the moment
 (\ie, notes that the local copy of the memory breaks the consistency when it does not have its ownership for the memory block). 
 
 Similarly,  in between $(1.\pull(b)(v))$ and $(1.\push(b)(v'))$, 
-CPU $1$ is the only one CPU that can modify the contents in the block $b$
+CPU $1$ is the only  CPU that can modify the contents in the block $b$
 because other CPUs cannot own the ownership for the block.
 Therefore, the local update for the memory block $b$ in the log $l'$ 
 is consistent with the operations for the block $b$ of the shared memory (in our multicore machine model).
 
-The machine model for this singleton focused set has significant similarity with the machine model in $\compcertx$. 
+The machine model for this singleton focused set has significant similarity to the machine model in $\compcertx$. 
 We, therefore, can easily connect this machine model with the $\compcertx$ compiler, 
 so our local layer interface can freely use the correctness guarantee of the compiler for C. 
-Due to this advantage of local machine model, local layer interface is the only place that we build layers with facilitating multiple libraries and generic proofs of the previous work for sequential programs~\cite{deepspec}. 
-When building private primitives that only updates the private state of $c$, 
-layer building is same with the layer constructions in $\calname$.
-Building layers for shared primitives, however, is slightly different in here, and usually can be divided into 
+Due to this advantage of local machine model, local layer interface is the only place where we build layers with facilitating multiple libraries and generic proofs of the previous work for sequential programs~\cite{deepspec}. 
+When building private primitives that only update the private state of $c$, 
+layer building is same as the layer constructions in $\calname$.
+Building layers for shared primitives, however, is slightly different in here and usually can be divided into 
 two patterns. 
 Similar to $\calname$, layers built by two patterns are connected via contextual refinement between layers. 
 
 \subsubsection{Fun-lift}
 The fun-lift pattern is usually abstracting shared physical memory into shared abstract states,
-which is similar to the abstraction layer building for sequential programs.
+which is similar to  abstraction layer building for sequential programs.
 This pattern does not change any potential interleavings, 
-thus the environmental context in the layer $L_{low}[c, \oracle_{low}]$ remains 
-as same in the higher layer $L_{high}[c, \oracle_{high}]$ ($\oracle_{low} = \oracle_{high}$), thus the 
-relation for two environmental contexts is defined as a identity relation 
+so the environmental context in the layer $L_{low}[c, \oracle_{low}]$ remains 
+as same in the higher layer $L_{high}[c, \oracle_{high}]$ ($\oracle_{low} = \oracle_{high}$), and the 
+relation for two environmental contexts is defined as an identity relation 
 for the contextual refinement property between two layers (see Definition~\ref{def:chapter:ccal:contextual-refinement}).
 This fun-lift pattern, however, possibly breaks the atomicity because the behavior of $L_{high}$ depends on other concurrent programs’ behavior in the middle of the primitive executions. 
 
 \subsubsection{Log-lift}
 
-Once all the low-level details are abstracted away for the shared primitive via using the \textit{fun-lift} pattern, we use the \textit{log-lift} pattern to lift non-atomic behaviors on shared abstract states to atomic behaviors, which only generate own single atomic event as the strategy for the primitive call, on the states. 
+Once all the low-level details are abstracted away for the shared primitive via using the \textit{fun-lift} pattern, we use the \textit{log-lift} pattern to lift non-atomic behaviors on shared abstract states to atomic behaviors--which only generate a single atomic event as the strategy for the primitive call-- on the states. 
 Proving the contextual refinement with the \textit{log-lift} pattern requires reductions on the log, 
 which includes merging and shuffling events to show 
 that a consecutive list of  events in underlay, $L_{low}[c, \oracle_{low}]$ , corresponds to a single new event in overlay, 
 $L_{high}[c, \oracle_{high}]$.  Changes of the event generated by the local movement 
-implies that this refinement also need to relates two different environmental movements specified by $\oracle_{low}$ and $\oracle_{high}$.
+imply that this refinement also need to relates two different environmental movements specified by $\oracle_{low}$ and $\oracle_{high}$.
 Section~\ref{chapter:ccal:subsec:local-layer-with-environmental-context-and-local-layer-linking} shows the relation,
 which is $\forall\ (j \in \codeinmath{EnvSet})\ 
 (\strat{j} \in \oracle(c)) .\ \exists \stratp{j} . \ \stratp{j} \in \oracle'(c) \wedge R_{\strat{}}(\stratp{j}, \strat{j})$ when 
@@ -254,9 +250,9 @@ $\codeinmath{EnvSet} = ((D - \{ c\}) \cup \{ sched\})$
 
 The contextual refinement property for the local layer interface also requires 
 modification to cover those patterns in a uniform way. 
-The contextual refinement property in here is similarly using forward simulation technique as shown in the 
+The contextual refinement property in here is similarly using forward simulation technique as shown in  
 Section~\ref{chapter:ccal:sec:cal}.
-On the other hand, one challenge in defining the refinement property in here is the relation is not only related to layer definitions but also related to different environmental contexts over two layers. 
+On the other hand, one challenge in defining the refinement property in here is that the relation is not only related to layer definitions but also  to different environmental contexts over two layers. 
 \begin{figure}
 \begin{center}
 \includegraphics[width=0.6\textwidth]{figs/ccal/locallayerrefinement}
@@ -288,7 +284,7 @@ $\codeinmath{EnvSet} = ((D - \{ i\}) \cup \{ sched\})$.''
 \end{quote}
 
 {\noindent}We also state this contextual refinement with simpler notation, 
-``$\ltyp{\PLayer{L_{low}}{i}{\oracle}}{R}{\codeinmath{M}_{\codeinmath{high}}}{\PLayer{L_{high}}{i}{\oracle'}}$''. 
+``$\ltyp{\PLayer{L_{low}}{i}{\oracle}}{R}{\codeinmath{M}_{\codeinmath{high}}}{\PLayer{L_{high}}{i}{\oracle'}}$.''
 
 
 
@@ -297,7 +293,7 @@ $\codeinmath{EnvSet} = ((D - \{ i\}) \cup \{ sched\})$.''
 
 
 To build and compose concurrent layers, 
-our framework also extends the layered calculus in $\calname$~\cite{deepspec} with 
+our framework also extends the layered calculus in $\calname$~\cite{deepspec} by 
 borrowing the following notations 
 from $\calname$:
 \begin{itemize}
@@ -306,14 +302,14 @@ from $\calname$:
 \item $\relcomposekwd$ : the composition of two refinement relations (between layers)
 \end{itemize}
 
-The empty rule works as bases of our layered calculus.
+The empty rule works as basis of our layered calculus.
  \begin{mathpar}
 \inferrule*[Right=Empty]{ }{\ltyp{\PLayer{L}{c}{\oracle}}{\id}{\varnothing}{\PLayer{L}{c}{\oracle}}}
 \end{mathpar}
 
 The vertical composition rule allows us
 to verify the modules $M$ and $N$ (where $N$ may depend on $M$) 
-in two separate steps, and provides us to build layer stacks.
+in two separate steps and allows us to build layer stacks.
     \begin{mathpar}
 \inferrule*[Right=Vcomp]{ \ltyp{\PLayer{L_1}{c}{ \oracle_1}}{R}{M}{\PLayer{L_2}{c}{ \oracle_2}} \\
  \ltyp{\PLayer{L_2}{c}{\oracle_2}}{S}{N}{\PLayer{L_3}{c}{ \oracle_3}}}{\ltyp{\PLayer{L_1}{c}{\oracle_1}}{\relcompose{R}{S}}{\modulecompose{M}{N}}{\PLayer{L_3}{c}{\oracle_3}}}
@@ -339,7 +335,7 @@ also can be defined in a conceptual level for any layers.
 It is, however, not well supported in our framework; we do not provide
 any canonical forms to support the concurrent linking
 in our implementation.
-Later part of this dissertation (Chapter~\ref{chapter:linking}) addresses the concurrent linking. 
+A later part of this dissertation (Chapter~\ref{chapter:linking}) addresses the concurrent linking rule.
 
 
 
