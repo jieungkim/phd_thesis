@@ -1,6 +1,6 @@
 
 
-\subsection{Single Core Machine Model}
+\subsection{Single-Core Machine Model}
 \label{chapter:linking:subsec:single-core-machine-model}
 
 
@@ -38,27 +38,27 @@ curid' \neq curid\\
 \backid{curid'}{e}{curid_0}}
 {\singlestep{curid}{oracle}{(\singlestate{curid'}{ls}{l})}{\ccemptytrace}{(\singlestate{curid_0}{ls}{l'})}}
 \end{mathpar}
-\caption{Single Core Machine Model.}
+\caption{Single-Core Machine Model.}
 \label{fig:chapter:conlink:single-core-machine-model}
 \end{figure}
 
 The environmental machine model 
 (in Section~\ref{chapter:linking:subsec:concurrent-machine-model})
- with a single focused CPU provides the 
+ with a single-focused CPU provides the 
 basis for us to build a local layer interface described in Section~\ref{chapter:ccal:subsec:local-layer-interface},
 which still requires simplification on the state definition by 
 removing unnecessary private states for environments. 
-In this sense, the single core machine model has been introduced;
+In this sense, the single-core machine model has been introduced,
 of which the state definition is a tuple that contains 
 a CPU ID, the current running CPU, 
-a local state, which includes the private state of the current focused CPU,
+a local state, that includes the private state of the current focused CPU,
 and a log that represents the shared state with other CPUs. 
-The step relation in this single core machine model identically corresponds to that of our environmental machine model
-with the difference of not having the domain check for the focused set. 
+The step relation in this single-core machine model identically corresponds to that of our environmental machine model,
+the domain check for the focused set. 
 Instead of checking the domain in the private state pool in the environmental machine model, 
-the single core machine model only checks the equality between the currently running CPU ID with the focused CPU ID to determine whether the evaluation takes $\textsf{PROGRESS}$ or $\textsf{YIELD}$ steps or a $\textsf{SKIP}$ step. 
+the single-core machine model only checks the equality between the currently running CPU ID with the focused CPU ID to determine whether the evaluation takes $\textsf{PROGRESS}$ or $\textsf{YIELD}$ steps or a $\textsf{SKIP}$ step. 
 All those definitions are in Figure~\ref{fig:chapter:conlink:single-core-machine-model}.
-The proof for the refinement lemma (in Lemma~\ref{lemma:chapter:conlink:one-step-single-refines-env}) between two machine models is straightforward due to the similarity of those two machine models, both state definitions and evaluation rules. 
+The proof for the refinement lemma (in Lemma~\ref{lemma:chapter:conlink:one-step-single-refines-env}) between two machine models is straightforward due to the similarity of those two machine models: both state definitions and evaluation rules. 
 
 %\begin{figure}
 %\noindent\fbox{variables for match relation}
@@ -91,7 +91,7 @@ The proof for the refinement lemma (in Lemma~\ref{lemma:chapter:conlink:one-step
 
 \begin{lemma}[one$\_$step$\_$single$\_$refines$\_$env]
 \label{lemma:chapter:conlink:one-step-single-refines-env}
-Let's assume that there is a CPU ID that two machines are focused $cpuid$. With the CPU ID we can show that
+Let's assume  there is a CPU ID that two machines are focused $cpuid$. With the CPU ID, we can show that
 \begin{center}
 \begin{tabular}{P{0.95\textwidth}}
 $

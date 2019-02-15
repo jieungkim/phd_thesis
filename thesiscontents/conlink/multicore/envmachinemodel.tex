@@ -3,9 +3,9 @@
 \subsection{Concurrent (Environmental) Machine Model}
 \label{chapter:linking:subsec:concurrent-machine-model}
 
-Concurrent (environmental) machine model is a language that can run programs with partially focused set on it,
+The concurrent (environmental) machine model is a language that can run programs with a partially focused set in it,
 and it is associated with the concurrent layer interface in Section~\ref{chapter:ccal:subsec:concurrent-layer-interface}. 
-This machine model does not provide the interface for us to build layers on top of it (\eg, $\compcertx$ and its machine model), but give the key connection between oracle machine model (thus multicore machine model) and a single CPU machine model
+This machine model does not provide the interface for us to build layers on top of it (\eg, $\compcertx$ and its machine model), but it provides the key connection between the oracle machine model (and thus the multicore machine model) and a single CPU machine model
 by treating parts of the system as an environment of the currently focused system. 
 
 \begin{figure}
@@ -18,7 +18,7 @@ $$
 \end{array}
 $$
 
-\noindent\fbox{back id function:}
+\noindent\fbox{back ID function:}
 $$
 \backidkwd (curid : \ztype) (e : \mcevent):= \left\{\begin{array}{lr}
 curid' & \text{for } e = \yieldbackev{curid'} \\
@@ -56,25 +56,25 @@ l' = \listconsoppo{\yieldev{curid'}}{l_0} \\
 \end{figure}
 
 Figure~\ref{fig:chapter:conlink:multicore-env-step-machine} contains the state definition, 
-auxiliary functions and step relations of the partial machine. 
-The state definition is almost same with the state definition in Figure~\ref{fig:chapter:conlink:multicore-machine-with-hardware-oracle},
+auxiliary functions, and step relations of the partial machine. 
+The state definition is almost same as the state definition in Figure~\ref{fig:chapter:conlink:multicore-machine-with-hardware-oracle},
 which is the state for all cores.
-It, however, differs from the state definition in our oracle machine in a sense the local state pool can be parameterized by any sets of CPUs, which will be the focused set for the machine.
+However, it differs from the state definition in our oracle machine in the sense the local state pool can be parameterized by any sets of CPUs, the focused set for the machine.
 Other CPUs outside of the focused set ($D - A$) and the hardware scheduler are treated as the environment of the machine. 
-To handle the steps by the environment of the machine, the step relation has \textsf{SKIP} rule, 
+To handle the steps by the environment of the machine, the step relation has the \textsf{SKIP} rule, 
 which queries the oracle to update the global log when the currently running CPU is not in the set $A$.
-This rule is a key for connecting the full machine semantics with the local machine semantics. 
+This rule is  key to connecting the full machine semantics with the local machine semantics. 
 
 \subsubsection{Concurrent Machine Model with the Full CPU Set}
 
 %thus we treat this proof is a linking proof (for parallel composition)
-Since the set for this concurrent machine model can be a set precisely same with the full CPU set, 
+Because the set for this concurrent machine model can be a set that is precisely the same as the full CPU set, 
 we first show that the program runs with the oracle machine refines the concurrent machine model with full CPU set. 
-The refinement corresponds to the parallel composition rule for all CPUs. It provides the transition on the full machine semantics can refine the transition on the collection of multiple instances in the concurrent program (Lemma~\ref{lemma:chapter:conlink:mc-oracle-env}) based on the 
+The refinement corresponds to the parallel composition rule for all CPUs. It provides that the transition on the full machine semantics can refine the transition on the collection of multiple instances in the concurrent program (Lemma~\ref{lemma:chapter:conlink:mc-oracle-env}) based on the 
 match relation between two states defined in Figure~\ref{fig:chapter:conlink:parallel-composition-for-multicore} (with the 
-environmental variable $start\_cpu$, a start CPU ID for the system's evaluation. 
-The relation is basically saying that all values in both states are identical with keeping the valid evaluation flag as well as the valid log condition. 
-With the definition, the proof for the lemma is straightforward, because evaluations of both machines are identical. 
+environmental variable $start\_cpu$, which is a start CPU ID for the system's evaluation).
+The relation is basically saying that all values in both states are identical when keeping the valid evaluation flag as well as the valid log condition. 
+With the definition, the proof for the lemma is straightforward, because the  evaluations of both machines are identical. 
 
 \begin{figure}
 
@@ -132,9 +132,9 @@ l \neq \listconsoppo{\yieldev{\_}}{\_}\\
 
 \begin{lemma}[one$\_$step$\_$env$\_$refines$\_$oracle]
 \label{lemma:chapter:conlink:mc-oracle-env}
-Let's assume that there is a valid start CPU ID,
+Let's assume  there is a valid start CPU ID,
 $start\_cpu$ ($start\_cpu \in \coreset$), and a hardware oracle, $hw\_o$,  
-which is an environmental context for the oracle machine model that contains the full focused set ($\coreset$) in it.
+which is an environmental context for the oracle machine model that contains the full focused set ($\coreset$).
 When the hardware oracle is valid ($\validoraclenoeq{start\_cpu}{\coreset}{hw\_o}$) we can show the following fact:
 \begin{center}
 \begin{tabular}{P{0.95\textwidth}}
@@ -148,34 +148,33 @@ $\\
 \end{center}
 \end{lemma}
 
-Figure~\ref{fig:chapter:conlink:parallel-composition-for-multicore} shows the full context of the proof. 
-The proof is relatively easy after defining the proper refinement relation. 
+Figure~\ref{fig:chapter:conlink:parallel-composition-for-multicore} shows the full context of the proof, which is relatively easy after defining the proper refinement relation. 
 
 \subsubsection{Concurrent Machine Model with a Single CPU}
 
 
-When focusing on a single CPU, however, 
+However, when  focusing on a single CPU
 multiple things to be considered to connect the environmental machine that uses the full CPU set  
-with the environmental machine that uses a single focused set.
-It works as a crucial role 
-for our multicore linking since it proves that the multiple concrete steps  in the machine with the full CPU set can
+with the environmental machine that uses a single-focused set.
+It plays a crucial role 
+for our multicore linking because it proves that the multiple concrete steps  in the machine with the full CPU set can
  refine the evaluation of multiple environmental steps in the machine with a single CPU.
-The proof is sophisticated due to the mismatch of those two different states (even though they are 
-using the same concurrent machine model.)
+The proof is sophisticated due to the mismatch between those two  states (even though they are 
+using the same concurrent machine model).
 To prove this theorem, 
-we first introduce auxiliary function defined in Figure~\ref{fig:chapter:conlink:auxiliary-function-for-full-cpus-and-a-single-cpu}
+we first introduce the auxiliary function defined in Figure~\ref{fig:chapter:conlink:auxiliary-function-for-full-cpus-and-a-single-cpu},
 which measures the progress of the evaluation by the environment. 
 
-The evaluation on the machine with the full focused set does not evaluate the program with its $\textsf{SKIP}$ rule since all private states are associated with the all domain, all CPU IDs in the core set. 
-In this sense, the evaluation of the machine with the full core set always generate two adjacent events regarding its scheduling. 
+The evaluation on the machine with the full focused set does not evaluate the program with its $\textsf{SKIP}$ rule because all private states are associated with the all domain, all CPU IDs in the core set. 
+In this sense, the evaluation of the machine with the full-core set always generates two adjacent events regarding its scheduling. 
 On the other hand, the evaluation of the machine with a single focused set uses 
 $\textsf{SKIP}$ rules when the currently running CPU is not in the domain (is not equal to the focused CPU ID.)
-This implies that one step evaluation in the machine with the full focused set 
+This implies that one-step evaluation in the machine with the full focused set 
 can be associated with the two-step oracle queries in the machine with a single focused CPU ID.
 
-To work around this issue with using forward-to-backward simulation proof technique, 
+To work around this issue  using the forward-to-backward simulation proof technique, 
 we introduce $\mcmeasurekwd$ as well as $\mcstatemeasurekwd$ which implies that 
-the currently running CPU ID is a hardware scheduler when the given log ends with the $\yieldevkwd$ event, which means that we need to pause the evaluation on the machine with the full focused set to match the evaluation in both machines.
+the currently running CPU ID is a hardware scheduler when the given log ends with the $\yieldevkwd$ event. This means  we need to pause the evaluation on the machine with the full focused set to match the evaluation in both machines.
 
 \begin{figure}
 \noindent\fbox{auxiliary function - decreasing index:}
@@ -218,14 +217,13 @@ $ \localstepevkwd (ev : \mcevent) : \optiondef\ \mclog :=
 %    | _ => None
 %    end.
 \caption{Auxiliary Functions:  auxiliary functions for the refinement proof between
-the enviornmental machine model with a single focused set and a full CPU set.}
+the enviornmental machine model with a single-focused set and a full CPU set.}
 \label{fig:chapter:conlink:auxiliary-function-for-full-cpus-and-a-single-cpu}
 \end{figure}
 
 
 By using those auxiliary functions, we define the refinement relation between two machine states in Figure~\ref{fig:chapter:conlink:refinement-relation-for-full-cpus-and-a-single-cpu}, 
-which distinguish the case when the machine with the full core set has to perform is evaluation and 
-when it should not. 
+which distinguish when the machine with the full-core set has to perform is evaluation.
 
 \begin{figure}
 \noindent\fbox{match state : $\envstatekwd_{[\set{cpuid}]} \rightarrow  \envstatekwd_{[\coreset]}  \rightarrow \mcprop$}
@@ -262,7 +260,7 @@ b = \bfalse \rightarrow  l = \listconsoppo{\yieldbackev{\_}}{\_})}
 {\matchestateestate{\set{cpuid}}{(\envstate{\set{cpuid}}{curid'}{lsp'}{l'})}{(\envstate{\coreset}{curid}{lsp}{l})}}
 
 \end{mathpar}
-\caption{State Match Relation: the relation between two states between the environmental  machine model (with a single focused CPU and a full CPU set).}
+\caption{State Match Relation: the relation between two states of the environmental  machine model (with a single-focused CPU and a full CPU set).}
 \label{fig:chapter:conlink:refinement-relation-for-full-cpus-and-a-single-cpu}
 \end{figure}
 
@@ -334,13 +332,13 @@ b = \bfalse \rightarrow  l = \listconsoppo{\yieldbackev{\_}}{\_})}
 Using the refinement relation, 
 we formally states the refinement lemma between two machines in Lemma~\ref{lemma:chapter:conlink:one-env-refines-env},
 which basically says that 
-multiple evaluations in the environmental machine with a single focused CPU matches with certain multiple evaluations in the environmental machine with a full core set.
+multiple evaluations in the environmental machine with a single-focused CPU matches with certain multiple evaluations in the environmental machine with a full-core set.
 
 \begin{lemma}[one$\_$step$\_$env$\_$refines$\_$env]
 \label{lemma:chapter:conlink:one-env-refines-env}
 Let's assume that there is a valid CPU ID $cpuid$ (\ie, a focused CPU as well as a start CPU of the system
-$cpuid \in \coreset$),  a hardware oracle $hw\_o$ (\ie, an environmental context for the environmental machine model that contains the full focused set, $\coreset$, in it), 
-and a single core oracle $si\_o$ (\ie, an environmental context for the environmental machine model that contains a singleton CPU, $cpuid$ in it.)
+$cpuid \in \coreset$),  a hardware oracle $hw\_o$ (\ie, an environmental context for the environmental machine model that contains the full focused set, $\coreset$), 
+and a single-core oracle $si\_o$ (\ie, an environmental context for the environmental machine model that contains a singleton CPU, $cpuid$.)
 When the single oracle is valid ($ \validoraclenoeq{cpuid}{\set{cpuid}}{si\_o}$) we can show the following fact:
 \begin{center}
 \begin{tabular}{P{0.95\textwidth}}
@@ -358,16 +356,16 @@ $
 
 Proving this lemma relies on two oracles 
 as well as an assumption about the correctness of each CPU's private evaluation;
-hardware scheduling events in two oracles are exactly matched with each other (Hypothesis~\ref{hypothesis:chapter:conlink:related-single-oracle-hw-oracle})
-the corresponding private evaluation in the machine with the full core set
+hardware-scheduling events in two oracles are exactly matched with each other (Hypothesis~\ref{hypothesis:chapter:conlink:related-single-oracle-hw-oracle}), so
+the corresponding private evaluation in the machine with the full-core set
 will always succeed (will not get stuck) when we have a strategy for an environmental step in the machine with a single CPU
-(Hypothesis~\ref{hypothesis:chapter:conlink:related-single-oracle-concrete-step}.)
+(Hypothesis~\ref{hypothesis:chapter:conlink:related-single-oracle-concrete-step}).
 
 \begin{hypothesis}[related$\_$single$\_$oracle$\_$hw$\_$oracle$\_$def]
 \label{hypothesis:chapter:conlink:related-single-oracle-hw-oracle}
-Let's assume that there is a valid CPU ID $cpuid$
-($cpuid \in \coreset$),  a hardware oracle $hw\_o$
-and a single core oracle $si\_o$.
+Let's assume  there is a valid CPU ID $cpuid$
+($cpuid \in \coreset$),  a hardware oracle $hw\_o$,
+and a single-core oracle $si\_o$.
 When the single oracle is valid ($ \validoraclenoeq{cpuid}{\set{cpuid}}{si\_o}$) we assume the following fact:
 \begin{center}
 \begin{tabular}{P{0.95\textwidth}}
@@ -384,8 +382,8 @@ $
 
 \begin{hypothesis}[relate$\_$single$\_$oracle$\_$concrete$\_$step$\_$def]
 \label{hypothesis:chapter:conlink:related-single-oracle-concrete-step}
-Let's assume that there is a valid CPU ID $cpuid$ ($cpuid \in \coreset$),  a hardware oracle $hw\_o$
-and a single core oracle $si\_o$.
+Let's assume  there is a valid CPU ID $cpuid$ ($cpuid \in \coreset$),  a hardware oracle $hw\_o$,
+and a single-core oracle $si\_o$.
 When the single oracle is valid ($ \validoraclenoeq{cpuid}{\set{cpuid}}{si\_o}$) we assume the following fact:
 \begin{center}
 \begin{tabular}{P{0.95\textwidth}}
@@ -403,8 +401,8 @@ $
 \end{center}
 \end{hypothesis}
 
-Providing the evidence about building an oracle with satisfying the hypothesis is possible, 
-but connecting the proof with the $\compcert$ style proof is a future work of our framework. 
+Providing the evidence about building an oracle that satisfies the hypothesis is possible, 
+but connecting the proof with the $\compcert$ style proof is a future work for our framework. 
 
 %
 %$$

@@ -2,20 +2,20 @@
 \subsection{Global Log Optimization for Better Interface}
 \label{chapter:linking:subsec:global-log-optimization}
 
-We have defined a single core machine model from a multicore machine model with providing refinements between those machines. 
+We have defined a single-core machine model from a multicore machine model by providing refinements between those machines. 
 Those refinement proofs also can be connected with the backward simulation proofs in $\compcert$. 
-The single core machine in Section~\ref{chapter:linking:subsec:single-core-machine-model} , however, 
+However, the single-core machine in Section~\ref{chapter:linking:subsec:single-core-machine-model} 
 is not sufficient to work as a 
 basis of local layer interfaces in Section~\ref{chapter:ccal:subsec:local-layer-interface}. 
-First, the state definition in machine model differs from the machine that we used for building layers with the support for the compositional compilation, $\compcertx$. 
-In this sense, optimization is required to match the machine state for a single core machine with a machine state of $\compcertx$, $\lasmmach$. 
-Second, the oracle query in the machine is operational step style, 
-which always query the oracle at each step of the evaluation.
-Adding this oracle query in between all steps in the $\compcertx$ machine model ($\lasmmach$) is not feasible because it requires the modification of the machine model itself as well as the compilation path of $\compcertx$. 
+First, the state definition in the machine model differs from the machine  we used for building layers with the support for the compositional compilation, $\compcertx$. 
+In this sense, optimization is required to match the machine state for a single-core machine with a machine state of $\compcertx$, $\lasmmach$. 
+Second, the oracle query in the machine is operational-step style, 
+which always queries the oracle at each step of the evaluation.
+Adding this oracle query in between all steps in the $\compcertx$ machine model ($\lasmmach$) is not feasible because it requires modifying the machine model itself as well as the compilation path of $\compcertx$. 
 Therefore, 
-optimization on the point of oracle query has to be adjusted. 
-Third, the global oracle contains multiple scheduling events in it as well as not practical for us to build multiple disjoint shared object since it includes too many unnecessary events for other objects when we focus on a single shared object. 
-This section deals with intermediate machine models resolving those stated issues with brief explanations. 
+optimization on the point of oracle query must be adjusted. 
+Third, the global oracle contains multiple scheduling events, and it is not practical for us to build multiple disjoint shared objects because it includes too many unnecessary events for other objects when we focus on a single shared object. 
+This section deals with intermediate machine models, resolving those stated issues with brief explanations. 
 
 
 
@@ -24,7 +24,7 @@ This section deals with intermediate machine models resolving those stated issue
 \noindent\fbox{fairness:}
 $$
 \begin{array}{llll}
-\timebound & : & \nattype &\mbox{(time bound for wating scheduling)} \\
+\timebound & : & \nattype &\mbox{(time bound for waiting scheduling)} \\
 \end{array}
 $$
 
@@ -81,28 +81,28 @@ $}
 \hardwarelocalstep{curid}{(\localview{ps}{(\listappoppo{l_1}{l_0})})}{(\localview{ps'}{l'})}}
 {\singlebigtwostep{curid}{oracle}{(\rstate{ps}{l})}{\ccemptytrace}{(\rstate{ps'}{(\listappoppo{l'}{\listappoppo{l_1}{l_0}})})}}
 \end{mathpar}
-\caption{Single Core Machine Model with Big Step Style Oracle Query.}
+\caption{Single-Core Machine Model with Big-Step Style Oracle Query.}
 \label{fig:chapter:conlink:single-core-big-step}
 \end{figure}
 
-\subsubsection{Big Step Oracle Query}
+\subsubsection{Big-Step Oracle Query}
 
-Querying the environmental context after each local step is subtle in defining local layer interface;
+Querying the environmental context after each local step is subtle when defining the local layer interface;
 thus, simplification is desirable. 
-We define two intermediate machine model for this optimization,
+We define two intermediate machine models for this optimization,
 which is presented in Figure~\ref{fig:chapter:conlink:single-core-big-step} based on the one, the fairness of the evaluation chance for each CPU, which is notated as $\timebound$. 
-The fairness assumes that each core will always evaluate at least one step evaluation within 
+The fairness assumes that each core will always perform at least one step evaluation within 
 $\timebound$,  the maximum number
 of events in between two evaluations of the CPU.
 With the fairness assumption, 
 the $\yieldbackfunckwd$ gives us the way to merge multiple oracles queries in
-the single core machine in Section~\ref{chapter:linking:subsec:single-core-machine-model} 
+the single-core machine in Section~\ref{chapter:linking:subsec:single-core-machine-model} 
 into a single big-step style query,
 which is defined in the $\textsf{YIELD}$ rule in the $\singlebigstepkwd$.
-The $\singlebigtwostepkwd$ even merge the two rules in  $\singlebigstepkwd$ to simplify 
+The $\singlebigtwostepkwd$ even merges the two rules in  $\singlebigstepkwd$ to simplify 
 the evaluation rule of the machine, which removes the boolean flag in the local view (as well as in  the definition of state $\rstatekwd$) 
-what we have added when introducing our hardware oracle (in Section~\ref{chapter:linking:subsec:multicore-machine-model-with-hardware-scheduler}) to indicate whether the current state is for the hardware scheduler or for the local evaluation.
-We, of course provides the refinement lemmas between those machines.
+we added when introducing our hardware oracle (in Section~\ref{chapter:linking:subsec:multicore-machine-model-with-hardware-scheduler}) to indicate whether the current state is for the hardware scheduler or for the local evaluation.
+We, of course, provides the refinement lemmas between those machines.
 Similar to the previous steps, 
 we show  refinement proofs between those machine models,
 which are stated in Lemma~\ref{lemma:chapter:linking:one-step-big-refines-single} and Lemma~\ref{lemma:chapter:linking:one-step-big-p-refines-big}.
@@ -162,8 +162,8 @@ which are stated in Lemma~\ref{lemma:chapter:linking:one-step-big-refines-single
 
 \begin{lemma}[one$\_$step$\_$big$\_$refines$\_$single]
 \label{lemma:chapter:linking:one-step-big-refines-single}
-Let's assume that there is a valid CPU ID $cpuid$ ($cpuid \in \coreset$)
-and a single core oracle $si\_o$.
+Let's assume  there is a valid CPU ID $cpuid$ ($cpuid \in \coreset$)
+and a single-core oracle $si\_o$.
 When the single oracle is valid ($ \validoraclenoeq{cpuid}{\set{cpuid}}{si\_o}$) we assume the following fact:
 \begin{center}
 \begin{tabular}{P{0.95\textwidth}}
@@ -298,19 +298,19 @@ $$
 
 \subsubsection{Reordering and  zipping}
 
-Another optimization that is required  is  reordering the point that queries the environmental context 
-and zipping the multiple adjacent scheduling events into the single scheduling event (and finally remove them).
+Another required optimization that is required  is  reordering the point that queries the environmental context 
+and zipping the multiple adjacent scheduling events into the single scheduling event (and finally removing them).
 Those steps 
-first, require the separation on the local step rules as two folds;
-the step rules with visible behavior and the step rules with silent behavior and depending on
-whether the rules generate visible events or not during their evaluations. 
+first, require the separation of the local step rules into two folds;
+the step rules with visible behavior, the step rules with silent behavior and depending on
+whether they generate visible events during their evaluations. 
 Those newly defined local step rules are in Figure~\ref{fig:chapter:conlink:single-local-and-log-step-rules},
 and we define 
 the new machine model
  in Figure~\ref{fig:chapter:conlink:single-split-step-rules}.
  This new machine model defers the update on the global log based on the program counter. 
 If the current local step is a visible step, then it will update the cached log to the global log to update the view of the shared state. 
-It, however, only adds the cached log instead of propagating the result to the global log when the program counter points out the command that will perform a silent step. 
+However, it only adds the cached log instead of propagating the result to the global log when the program counter points out the command that will perform a silent step. 
 By doing that, the machine updates the global log only when the focused CPU performs its shared operation,
 which corresponds to the second rule of the machine.
 %%%%%%%%%%%%%%%%
@@ -441,15 +441,15 @@ l_0 = \listappoppo{al_0}{l}\\
 %%%%%%%%%%%%%%%%
 The machine model in Figure~\ref{fig:chapter:conlink:single-split-step-rules}  queries the oracle as a big-step style (\ie, updating multiple events in a single oracle query),
 but it relies on the oracle query function $\yieldbackfunckwd$. 
-As a part of optimization, another model has been introduced to 
+As part of the optimization, another model has been introduced to 
 remove the oracle query function as well as to replace the 
-oracle type with the proper type (which returns a log instead of an event) for a big step oracle query,
+oracle type with the proper type (which returns a log instead of an event) for a big-step oracle query,
 and the machine model for this oracle query zipping is defined in Figure~\ref{fig:chapter:conlink:reorder-step-machine}.
 Similar to the previous steps, we 
 also provide refinement lemmas for both steps. 
 
 First, Lemma~\ref{lemma:chapter:conlink:split-refines-big-p} shows the refinement between 
-the machine model in Figure~\ref{fig:chapter:conlink:single-split-step-rules} and the machine model in Figure~\ref{fig:chapter:conlink:single-core-big-step}, which shows the connection between the evaluation with the delayed update on the global log  and the evaluation with the prompt update on the at each moment.
+the machine model in Figure~\ref{fig:chapter:conlink:single-split-step-rules} and the machine model in Figure~\ref{fig:chapter:conlink:single-core-big-step}, which shows the connection between the evaluation with the delayed update on the global log  and the evaluation with the prompt update at each moment.
 \begin{lemma}[one$\_$step$\_$split$\_$refines$\_$big2]
 \label{lemma:chapter:conlink:split-refines-big-p}
 We says that 
@@ -472,12 +472,12 @@ when the match relation between machine states of those two models is defined as
 \end{lemma}
 
 The other lemma (in Lemma~\ref{lemma:chapter:conlink:reorder-refines-split}) shows the connection between two machines 
-which use different type of environmental contexts, one of which has a type $\mcoracle{\set{cpuid}}{\mclog}{\mclog}$ and the other has a type $\mcoracle{\set{cpuid}}{\mclog}{\mcevent}$. 
+which use different types of environmental contexts, one of which has a type $\mcoracle{\set{cpuid}}{\mclog}{\mclog}$ and the other of which has a type $\mcoracle{\set{cpuid}}{\mclog}{\mcevent}$. 
 The lemma relies on the match relation between two different machine models in Figure~\ref{fig:chapter:conlink:reorder-refines-split}.
 Similar to the environmental context constructions in the previous parts, which are parts when we introduce
 environmental contexts for a hardware scheduler as well as all other components except one single focused core,
-the refinement proof has to rely on an assumption due to the current limitation on our proof style. 
-We can show the valid construction of the new environmental context, but connecting it with the refinement lemma that this framework provides has remained as future work. 
+the refinement proof must rely on an assumption due to the current limitation on our proof style. 
+We can show the valid construction of the new environmental context, but connecting it with the refinement lemma that this framework provides remains future work.
 
 \begin{lemma}[one$\_$step$\_$reorder$\_$refines$\_$split]
 \label{lemma:chapter:conlink:reorder-refines-split}
@@ -490,8 +490,8 @@ We can show the valid construction of the new environmental context, but connect
 %re\_o & : & \mcoracle{\set{cpuid}}{\mclog}{\mclog} &  \mbox{(oracle for a single cpu - reordered)}\\
 %\end{array}
 %$$
-Let's assume that there is a valid CPU ID $cpuid$ ($cpuid \in \coreset$),
-a single core oracle $si\_o$ with the type $ \mcoracle{\set{cpuid}}{\mclog}{\mcevent}$, and a reordered oracle $re\_o$ with the type $\mcoracle{\set{cpuid}}{\mclog}{\mclog}$.
+Let's assume  there is a valid CPU ID $cpuid$ ($cpuid \in \coreset$),
+a single-core oracle $si\_o$ with the type $ \mcoracle{\set{cpuid}}{\mclog}{\mcevent}$, and a reordered oracle $re\_o$ with the type $\mcoracle{\set{cpuid}}{\mclog}{\mclog}$.
 When the single oracle is valid ($ \validoraclenoeq{cpuid}{\set{cpuid}}{si\_o}$) we can show the following fact
 \begin{center}
 \begin{tabular}{P{0.95\textwidth}}
@@ -671,21 +671,20 @@ $$
 \end{figure}
 %%%%%%%%%%%%%%%%
 
-The reorder machine model also can be used for 
-the simplification of the global log.
-At this point, the machine is not changing the currently running CPU as well as only query the environmental context before it evaluates shared operations. 
-In this sense, keeping all scheduling events does not necessary, and it only increases the complexity. 
-Due to this reason, we facilitate the reorder machine model to remove scheduling events in the global log. 
-The refinement proof for this optimization, however, mostly relies on
+The reorder machine model also can be used  the global log.
+At this point, the machine is not changing the currently running CPU as well as only querying the environmental context before it evaluates shared operations. 
+In this sense, keeping all scheduling events is not necessary, and it only increases the complexity. 
+Because of this, we facilitate the reorder machine model to remove scheduling events in the global log. 
+However, the refinement proof for this optimization mostly relies on
 the relation between two oracles. 
-Connecting the proof about the relation between two environmental contexts with this refinement proof is a future work to provide a better multicore linking framework. 
+Connecting the proof about the relation between two environmental contexts with this refinement proof is a future work to provide a better multicore-linking framework. 
 The match relation between two states is in Figure~\ref{fig:chapter:conlink:reorder-refines-reorder}, which basically
-says that two states are identical except the existence of scheduling events in the log.
+says that two states are identical besides the existence of scheduling events in the log.
 The refinement lemma is stated in Lemma~\ref{lemma:chapter:conlink:reorder-refines-reorder}
 
 \begin{lemma}[one$\_$step$\_$reorder$\_$refines$\_$reorder]
 \label{lemma:chapter:conlink:reorder-refines-reorder}
-Let's assume that there is a valid CPU ID $cpuid$ ($cpuid \in \coreset$),
+Let's assume  there is a valid CPU ID $cpuid$ ($cpuid \in \coreset$),
 and two oracles $hi\_re\_o$ and $lo\_re\_o $ with the type
 $\mcoracle{\set{cpuid}}{\mclog}{\mclog}$. Then we can show the fact that
 \begin{center}
@@ -751,17 +750,17 @@ $$
 \label{fig:chapter:conlink:separate-state-definition}
 \end{figure}
 
-All previous machine models simplify the global log as well as the environmental context query 
+All previous machine models simplify the global log and the environmental context query 
 via collecting, reordering, as well as removing  the events in the log (as well as the environmental context.)
-It, however, still requires to keep the information of all shared objects in a single location, which is a single global log.
-It is bothersome when building a replay function, which constructs the shared state via interpreting a global log because it requires to consider all events for all shared objects at once. 
+However, it still requires keeping the information of all shared objects in a single location, which is a single global log.
+It is bothersome when building a replay function, which constructs the shared state via interpreting a global log, because it requires considering all events for all shared objects at once. 
 To reduce the complexity due to this a single log,
-our last optimization divides one single global log into multiple logs by using shared object identifiers.
+our last optimization divides a single global log into multiple logs by using shared object identifiers.
 
-It first requires the new definition regards the event and the log as well as 
+The optimization first requires the new definition regarding the event and the log as well as 
 the local evaluation rules based on the new local state that uses the new representation about the log,
 and Figure~\ref{fig:chapter:conlink:separate-state-definition} presents them. 
-It basically says that the state, $\spstatekwd$, for this machine model contains a partial map (from an identifier of a shared object to the log related to the shared object) for a set of log to represent a bunch of shared objects.
+It basically says that the state, $\spstatekwd$, for this machine model contains a partial map (from an identifier of a shared object to the logs related to the shared object) for a set of log to represent a bunch of shared objects.
 
 
 \begin{figure}
@@ -829,20 +828,20 @@ ${}_{[curid : \ztype]} (oracle : \mcoracle{\set{curid}}{\separateoraclelogtypekw
 \end{figure}
 
 With the new state definition and multiple auxiliary functions regarding the state definition in Figure~\ref{fig:chapter:conlink:auxiliary-funcitons-for-single-separate-machine},
-we presents the single separate step machine model in Figure~\ref{fig:chapter:conlink:separate-step-rules}, 
-the last piece of our multicore linking framework 
+we presents the single separate-step machine model in Figure~\ref{fig:chapter:conlink:separate-step-rules}, 
+which is the last piece of our multicore-linking framework 
 as well as an abstract but expressive machine model that can be connected with 
 the machine model for the local layer interface.
-Again, the machine model the local layer interface is $\lasmmach$ in our case, but it is not restricted to  $\lasmmach$, but can be applied to other machines that satisfy specific properties, mostly the properties about hardware configurations. 
-The machine model contains two rules; the first is for the local private evaluation
+Again, the machine model of the local layer interface is $\lasmmach$ in our case, but it is not restricted to  $\lasmmach$ and can be applied to other machines that satisfy specific properties--mostly the properties about hardware configurations. 
+The machine model contains two rules; the first is for the local private evaluation,
 and the other is for the shared operation that updates the proper log that is associated with the shared object 
-identifier and remains other logs for other shared objects as same.
+identifier  and leaves other logs for other shared objects the same.
 
 
 
 %%%%%%%%%%5
 \begin{figure}
-\noindent\fbox{auxiliary function, valid log, and valid oracle for global log:}
+\noindent\fbox{auxiliary function, valid log, and valid oracle for the global log:}
 %
 %  Fixpoint remove_cache_event (l: Log) (tid: Z) :=
 %    match l with
@@ -933,12 +932,11 @@ $$
 \label{fig:chapter:conlink:separate-refines-reorder}
 \end{figure}
 
-Proving the refinement between the evaluation on single separate machine model and the 
+Proving the refinement between the evaluation on the single separate machine model and the 
 evaluation on the reordered machine model 
 requires a few definitions and auxiliary  functions and also a math relation between states of two machines,
 and Figure~\ref{fig:chapter:conlink:separate-refines-reorder} provides those definitions. 
-Among them, $\removecacheeventkwd$ is a key function that maps two different types of log,
- a single global log and a set of logs. 
+Among them, $\removecacheeventkwd$ is a key function that maps two different types of log--a single global log and a set of logs. 
 With those definitions, 
 Lemma~\ref{lemma:chapter:conlink:separate-refines-reorder} states 
 the refinement lemma between evaluations on two different machines.
@@ -961,10 +959,10 @@ the refinement lemma between evaluations on two different machines.
 
 \begin{lemma}[one$\_$step$\_$separate$\_$refines$\_$reorder]
 \label{lemma:chapter:conlink:separate-refines-reorder}
-Assume that there is a valid CPU ID $cpuid$ ($cpuid \in \coreset$),
-an oracle $re\_o$ for a global log with the type $\mcoracle{\set{cpuid}}{\mclog}{\mclog}$, and a oracle for a set of logs 
+Assume  there is a valid CPU ID $cpuid$ ($cpuid \in \coreset$),
+an oracle $re\_o$ for a global log with the type $\mcoracle{\set{cpuid}}{\mclog}{\mclog}$, and an oracle for a set of logs 
 $sep\_o$ which has a type as follows: $\mcoracle{\set{cpuid}}{\separateoraclelogtypekwd}{\separatelogtypekwd}$.
-When the oracle for a global log is valid ($\validoracleprim{cpuid}{re\_o }$) we can show the following fact
+When the oracle for a global log is valid ($\validoracleprim{cpuid}{re\_o }$) we can show the following fact:
 \begin{center}
 \begin{tabular}{P{0.95\textwidth}}
 $

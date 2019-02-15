@@ -1,14 +1,14 @@
 \jieung{Check the notations for list app and cons (and others) - those things should be consistent with the operators in previous sections}
 
 
-This chapter presents our work on a large-scaled concurrent program verification, 
+This chapter presents our work on a large-scaled concurrent program verification, and
 especially 
-how $\ccalname$ in Chapter~\ref{chapter:ccal} and concurrent linking framework in Chapter~\ref{chapter:linking} are applied 
-to verify a large-scaled and practical concurrent operation system, $\certikos$.
+how $\ccalname$ in Chapter~\ref{chapter:ccal} and the concurrent-linking framework in Chapter~\ref{chapter:linking} are applied 
+to verify a large-scaled and practical concurrent-operation system, $\certikos$.
 We divide the full OS kernel as a stack of layers, independently verify them, 
-and connecting them via our layer linking library. 
-In addition to that, 
-we glue multiple instances in concurrent evaluations together by using concurrent linking (composition) templates, both for multicore and for multithreaded concurrency.  
+and connect them via our layer-linking library. 
+In addition,
+we glue multiple instances in concurrent evaluations together by using concurrent-linking (composition) templates, both for multicore and  multithreaded concurrency.  
 Our certified kernel is written in 6,500 lines of C and x86 assembly
 and runs on stock $\intelmachine$ multicore machines with supporting fine-grained locking concurrency. 
 $\certikos$ is the first proof of functional correctness of a complete,

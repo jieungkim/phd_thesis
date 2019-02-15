@@ -3,16 +3,16 @@
 
 \subsubsection{For Language Definitions}
 
-Abstraction is vital to handle complex problems, and it is also the same for this multicore linking framework.
-We are aiming to build a realistic machine model that provides 
+Abstraction is vital for handling complex problems, and it is also the same for this multicore-linking framework.
+We aim to build a realistic machine model that provides 
 concurrent linking as well as a base model that supports 
 the layered framework described in Chapter~\ref{chapter:ccal}.
-It, however, requires complex details in the intermediate languages, 
+However, it requires complex details in the intermediate languages, 
 such as including a bunch of assembly instructions, memory models, 
-restrictions in the semantics definition in $\compcert$ (because we follow 
+and restrictions in the semantics definition in $\compcert$ (because we follow 
 the simulation proofs for the framework).
 To avoid those complexities while focusing on building multicore linking  libraries,
-our framework define multiple abstract definitions (hardware configurations, auxiliary functions, 
+our framework defines multiple abstract definitions (hardware configurations, auxiliary functions, 
 abstract states, and abstract transition rules)
 that most intermediate languages can commonly use, 
 and then be instantiated later. 
@@ -21,7 +21,7 @@ and then be instantiated later.
 %which contains the abstract form for us to follow for multicore linking.
 Figure~\ref{fig:chapter:conlinkg:abstract-hardware-configuration-and-semantics} provides the 
 abstract hardware configurations and semantics that are
-not stick into any specific hardware (such as $\intelmachine$).
+not stuck into any specific hardware (such as $\intelmachine$).
 
 \begin{figure}
 \noindent\fbox{abstract hardware setting, abstract command definitions ($\hardwaresetting$):}
@@ -68,47 +68,46 @@ $$
 \label{fig:chapter:conlinkg:abstract-hardware-configuration-and-semantics}
 \end{figure}
 
-The abstract hardware setting contains two kinds of states, private state ($\privatestate$) and shared state ($\sharedpiece$). 
+The abstract hardware setting contains two kinds of states: private state ($\privatestate$) and a shared state ($\sharedpiece$). 
 Also, all atomic operations are associated with their shared state, and then they generate an event ($\atomicevent$) that 
-are associated with the actions (\eg, CAS, SWAP, \etc).
-The abstract hardware setting, however, 
-does not know how many atomic operations and what kinds of atomic operations 
-will be connected to this multicore linking framework at this moment.
+are associated with the actions (\eg, CAS and SWAP).
+However, the abstract hardware setting 
+does not know how many atomic operations there are and what kinds of atomic operations 
+will be connected to the multicore-linking framework at this moment.
 In this sense, their details are hidden and can be instantiated later. 
-There are four kinds of commands in this abstract level, 
-which are private, atomic, acquire shared, and release shared operations. 
-Two operations, acquire shared and release shared, are logical and work as an unsafe ownership transfer operations for shared resources. 
-The global log contains multiple kinds of even in $\mcevent$. 
-Three of them correspond to three command; $\atomicevkwd$, $\acqevkwd$, and $\relevkwd$ are for $\atomiccmdkwd$, $\acqsharedcmdkwd$, and $\relsharedcmdkwd$, respectively. 
-On the other hand, private operations do not generate any event, because it does not affect others' behavior at all. 
-By using acquire shared and release shared events,
+There are four kinds of commands in this abstract level: private, atomic, acquire-shared, and release-shared operations. 
+Two operations--acquire shared and release shared--are logical and work as  unsafe ownership-transfer operations for shared resources. 
+The global log contains multiple kinds of event in $\mcevent$. 
+Three of them correspond to three commands; $\atomicevkwd$, $\acqevkwd$, and $\relevkwd$, which are for $\atomiccmdkwd$, $\acqsharedcmdkwd$, and $\relsharedcmdkwd$, respectively. 
+On the other hand, private operations do not generate any event, because they do not affect others' behavior at all. 
+By using acquire-shared and release-shared events,
 calculating the ownership that is related to the shared resource with the identifier ($id$) is possible. 
-To notate the ownership status, we define the ``own state'', $\ownstatekwd$.
+To notate the ownership status, we define the ``own state,'' $\ownstatekwd$.
 When it has been freed, then we memorize the status of that moment. 
 When it has been owned, we marked that point with the ID for the owner. 
 Based on the definition of the log, 
-we then provide the environmental context ($\mcoraclekwd$)
+we then provide the environmental context ($\mcoraclekwd$),
 as well as the function that gets the result based on the current log and the environmental context, $\ogetkwd$.
-This function is parameterized by three arguments, 
-the currently focused set ($S$), the type of the current global log ($log$), and the result, and the type of 
+This function is parameterized by three arguments:
+the currently focused set ($S$), the type of the current global log ($log$), and the type of 
 the result that the environmental context will return ($ret$). 
-With having the currently focused set as an argument of the function, using this generic function
-for any focused set (\eg, the full core set, a singleton CPU set, \etc) is available. 
+With  the currently focused set as an argument of the function,  this generic function can be used
+for any focused set (\eg, the full-core set or a singleton CPU set).
 The second and the third arguments are required for the optimization purpose, which is 
 necessary for us to provide the better framework to the local layer interface as 
 well as to link this multicore linking framework with the machine model of $\compcertx$. 
 Up to that point, we can view that the input type of the function is a global log and the return type of the function is a single event.
 
 The abstract semantics contain 
-four program rules and one special rules ($\programcounterkwd$). 
-$\programcounterkwd$ tells us the next command that we have to evaluate, 
-and other four kinds of rules are for the operations that are associated with the corresponding commands.
-The abstract hardware semantics for the private command takes the current CPU ID and private state and returns the private states, which implies that 
-it does not look-up or modify shared resources, a global log.
+four program rules and one special rule ($\programcounterkwd$). 
+$\programcounterkwd$ tells us the next command evaluate, 
+and the other four rules are for the operations associated with the corresponding commands.
+The abstract hardware semantics for the private command take the current CPU ID and private state and return the private states, which implies that 
+it does not look up or modify shared resources, a global log.
 The semantics for the get operation, which corresponds to the $\pull$ operation in Section~\ref{chapter:ccal:sec:interface-calculus}, takes the private state and returns the shared piece and the private state as its result. 
 The semantics for the set operation,  which corresponds to the $\push$ operation in Section~\ref{chapter:ccal:sec:interface-calculus}, takes the private state and the shared piece (the updated shared piece by the CPU) and returns the private state as its result. 
-The last rule, the semantics for the atomic operation gets the CPU ID, the atomic event ID (primitive ID for the atomic operation), 
-the private state, and the log, and returns the private state and the event generated by the operation. 
+In the last rule, the semantics for the atomic operation get the CPU ID,  atomic event ID (primitive ID for the atomic operation), 
+ private state, and  log, and they return the private state and the event generated by the operation. 
 
 
 
@@ -155,10 +154,10 @@ $ \\
 
 Figure~\ref{fig:chapter:conlinkg:auxliary-funcitons-for-abstract-harware-semantics} provides two auxiliary functions
 that are closely related to the abstract hardware semantics and configurations.
-$\loggetatomkwd$ function is a projection function from a global log to the log that is only associated with the atomic operation ID. The ID will later be mapped with the primitive ID. 
-$\calownerkwd$ function gets the current owner of the shared resource associated with the primitive ID ($eid$). 
+The $\loggetatomkwd$ function is a projection function from a global log to the log that is only associated with the atomic operation ID. The ID will later be mapped with the primitive ID. 
+The $\calownerkwd$ function gets the current owner of the shared resource associated with the primitive ID ($eid$). 
 Note that $\calownerkwd$ does not have any safety guarantee on the ownership control.
-The responsibility of those safety control does not rely on the hardware configuration but depends on the actual software implementation, such as spinlocks. 
+The responsibility of those safety controls does not rely on the hardware configuration but depends on the actual software implementation, such as spinlocks. 
 
 \begin{figure}
 \noindent\fbox{properties of abstract hardware semantics:}
@@ -194,19 +193,19 @@ The responsibility of those safety control does not rely on the hardware configu
 \label{fig:chapter:conlink:properties-of-abstract-hardware-semantics-for-multicore-linking}
 \end{figure}
 
-They, of course, require few restrictions presented in Figure~\ref{fig:chapter:conlink:properties-of-abstract-hardware-semantics-for-multicore-linking}. 
+Of course, they require few restrictions, as presented in Figure~\ref{fig:chapter:conlink:properties-of-abstract-hardware-semantics-for-multicore-linking}. 
 Most restrictions are for the \textit{deterministic} and \textit{receptive} behavior of the rules.
-They are necessary for us to prove various refinement theorems which will work as bases of backward simulation proofs between different machine models, 
-and essential for us to use forward-to-backward simulation template in $\compcert$~\cite{leroy06} which is
+They are necessary for us to prove various refinement theorems, which will work as bases of backward simulation proofs between different machine models, 
+and they are essential for us to use the forward-to-backward simulation template in $\compcert$~\cite{leroy06}, which is
 \begin{quote}
 ``A backward simulation can be constructed from a forward
 simulation if the source language is receptive and the target
 language is determinate.''
 \end{quote}
-In addition to that, the atomic operation, which only exists 
-in our framework 
+In addition to that, the atomic operation--which only exists 
+in our framework--
 requires the validity check (\textsf{Atomic Valid})
-that is based on the rely-guarantee method for compositional proof of the concurrent program verification.
+that is based on the rely-guarantee method for the compositional proof of the concurrent program verification.
 
 \subsubsection{For Refinement Proofs}
 
@@ -276,11 +275,11 @@ $\\
 \jieung{Do we need to move this part next to the multicore machine model?}
 
 
-In addition to those definitions and auxiliary functions for language definitions, 
+In addition to these definitions and auxiliary functions for language definitions, 
 we have also introduced multiple definitions that are necessary for the refinement proofs between our intermediate machine models. 
 $\eventsourcefunckwd$ and $\eventdesfunckwd$ defines who is the source and destination of the event, respectively. 
-By using that, defining the function that gets the global log and returns the current running CPU ID ($\getcuridfromlogkwd$) is possible. 
-The function tells that it returns start CPU ID when the log is empty, and the destination of the last event in the log 
+With this, defining the function that gets the global log and returns the current running CPU ID ($\getcuridfromlogkwd$) is possible. 
+The function tells us that it returns the start CPU ID when the log is empty, and it returns the destination of the last event in the log 
 as the current running CPU ID.
 We will show how it is related to our evaluation rules from the next section.
 
@@ -375,16 +374,16 @@ $
 \label{fig:chapter:valid-global-log-and-valid-oracle-definitions-for-multicore-linking}
 \end{figure}
 
-Other fundamental relations for the refinement proofs are the valid log relation and the valid oracle definition by using that.
-The valid log definition checks whether the log is valid according to the log update of our semantics and
+Other fundamental relations for the refinement proofs are the valid log relation and the valid oracle definition.
+The valid log definition checks whether the log is valid according to the log update of our semantics, and it
 is defined in Figure~\ref{fig:chapter:valid-global-log-and-valid-oracle-definitions-for-multicore-linking}.
-Since many details of our definitions are abstract, the valid log relation does not contain any detailed information 
+Because many details of our definitions are abstract, the valid log relation does not contain any detailed information 
 of each event in the log.
-Instead of that, it contains the restrictions about the pattern of different types of events, especially about the pattern for yield and  yield back events associated with scheduling.
+Instead, it contains the restrictions about the pattern of different types of events--especially  the pattern of yield and  yield-back events associated with scheduling.
 %They are closely related to the log update pattern in our intermediate languages. 
 Based on the valid log relation, 
-we assume that the result generated by the environmental context always return the event that 
+we assume that the result generated by the environmental context always returns the event that 
 will not be in the focused set of the semantics as well as satisfies the valid log relation.
-It is a crucial concept of our rely-guarantee style reasoning in our refinement proofs while showing multicore linking, which tells that the context's behavior always valid when we prove the behavior of focused set (closed set) in the system is valid. 
+It is a crucial concept of our rely-guarantee style reasoning in our refinement proofs while showing multicore linking, which tells us that the context's behavior is always valid when we prove the behavior of the focused set (closed set) in the system is valid. 
 
 

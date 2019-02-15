@@ -40,25 +40,25 @@ l' = \listconsoppo{\yieldev{curid'}}{l_0} \\
 
 
 As discussed in Section~\ref{chapter:ccal:subsec:concurrent-layer-with-environment}, 
-one hidden component in multicore machine model is a logical participant, hardware scheduler. 
-The hardware scheduler builds a specific scheduling strategy for the single game that the verification wants to consider at each time.  
+one hidden component in the multicore machine model is a logical participant--the hardware scheduler. 
+The hardware scheduler builds a specific scheduling strategy for the single game that the verification wants to consider.
 To define this model, 
-we extend the private state definition by adding a boolean value, which tells us whether the CPU needs to perform its local hardware step or call hardware scheduler to give out the control. 
-First, the \textsf{Progress} rule is for local evaluation of each CPU. It uses the same evaluation rule (hardware local step) with the previous multicore machine model, 
-but change the boolean value from false to true to indicated that the CPU served its evaluation at this turn. 
+we extend the private state definition by adding a boolean value, which tells us whether the CPU needs to perform its local hardware step or call the hardware scheduler to give out the control. 
+First, the \textsf{Progress} rule is for the local evaluation of each CPU. It uses the same evaluation rule (hardware local step) as the previous multicore machine model, 
+but changes the boolean value from false to true to indicated that the CPU served its evaluation at this turn. 
 Second, the \text{Yield} rule is for the hardware scheduler.
-Similarly, it adds two hardware scheduler events into the log, but the difference in here with the previous multicore machine is it queries the environmental context with the full CPU Set and the current global log. 
+Similarly, it adds two hardware scheduler events into the log, but the difference from the previous multicore machine is that it queries the environmental context with the full CPU set and the current global log. 
 Then, the oracle will return a single event, which tells the next event that will perform its evaluation. 
 
 We also prove the simulation of each machine via using backward simulation (upward-forward simulation -- if the target language
-has a single step evaluation, then the source language has corresponding multiple steps.) 
+has a single-step evaluation, then the source language has corresponding multiple steps.) 
 in $\compcert$. 
-Directly proving backward simulation, however, requires us to prove the progress property of the source language, which is bothersome. 
-In this sense, $\compcert$ provide the way to show the equivalence of forward simulation and the backward simulation when 
+However, directly proving the backward simulation requires us to prove the progress property of the source language, which is bothersome. 
+In this sense, $\compcert$ provides the way to show the equivalence of the forward simulation and  backward simulation when 
 two languages are deterministic.
-We could not take advantage of this conversion in here due to the non-deterministic behavior of our bottom level machine,
+We could not take advantage of this conversion due to the non-deterministic behavior of our bottom-level machine,
 multicore machine model. 
-Therefore, we directly need to prove the backward refinement proof in here to inject the proof in the backward simulation form of $\compcert$ later. 
+Therefore, we  need to prove the backward refinement proof directly to inject the proof into the backward simulation form of $\compcert$ later. 
 
 
 \begin{figure}
@@ -99,15 +99,15 @@ Therefore, we directly need to prove the backward refinement proof in here to in
 
 The most challenging part in connecting those two different machine models is defining the refinement relation between two states of those languages. 
 Figure~\ref{fig:chapter:conlink:match-relation-multicore-oracle-steps} shows the 
-refinement relation for those two states with relying on one variable, $start\_cpu$, that indicates the CPU that first starts the system. 
+refinement relation for those two states by relying on one variable, $start\_cpu$, that indicates the CPU that first starts the system. 
 The local state of the oracle machine differs from that of the multicore machine model by having a boolean indicator 
-to distinguish the evaluation that the machine has to take next time.
-The local state match definition tells that except the current running CPU, all the indicator has to have a false value,
+to distinguish the evaluation that the machine has to take the next time.
+The local state match definition tells us that except the current running CPU, all the indicators must have a false value,
 which implies that they can evaluate their own local step after they get an evaluation control via a scheduling result.
  With this local step, 
-defining the match relation between two full states are available.
- It tells that 
- two states are valid matched states when all of their local states (for all CPUs) are in a proper relation as well as the global log and the current running CPU ID are well-formed. 
+defining the match relation between two full states is available.
+ It tells us that 
+ two states are valid matched states when all  their local states (for all CPUs) are in a proper relation as well as when the global log and  current running CPU ID are well-formed. 
 
 
 %
@@ -129,7 +129,7 @@ which is stated in Lemma~\ref{lemma:chapter:conlink:mc-hw-refines-oracle}.
 \label{lemma:chapter:conlink:mc-hw-refines-oracle}
 Let's assume that there is a valid start CPU ID for the multicore machine model, 
 $start\_cpu$ ($start\_cpu \in \coreset$), and a hardware oracle $hw\_o$,  
-which is an environmental context for the oracle machine model that contains the full focused set ($\coreset$) in it.
+which is an environmental context for the oracle machine model that contains the full focused set ($\coreset$).
 When the hardware oracle is valid ($ \validoraclenoeq{start\_cpu}{\coreset}{hw\_o}$) we can show the following fact:
 \begin{center}
 \begin{tabular}{P{0.95\textwidth}}
@@ -143,19 +143,19 @@ $
 \end{center}
 \end{lemma}
 
-The purpose of our framework is providing all the necessary proofs that are required 
+The purpose of our framework is to provide all the necessary proofs
 for users to use the backward simulation theorems in $\compcert$ to link the all steps together. 
-When using the backward refinement proof for that purpose, however, we has to provide the progress property of the 
+However, when using the backward refinement proof for that purpose we has to provide the progress property of the 
 source language, which is an oracle machine in this case. 
 The progress property is stated in Lemma~\ref{lemma:chapter:conlink:mc-hw-refines-oracle-progress}.
 
 \begin{lemma}[match$\_$state$\_$implies$\_$one$\_$step]
 \label{lemma:chapter:conlink:mc-hw-refines-oracle-progress}
 
-Let's assume that there is a valid start CPU ID for the multicore machine model, 
+Let's assume  there is a valid start CPU ID for the multicore machine model, 
 $start\_cpu$ ($start\_cpu \in \coreset$), and a hardware oracle $hw\_o$,  
-which is an environmental context for the oracle machine model that contains the full focused set ($\coreset$) in it.
-When the hardware oracle is valid ($ \validoraclenoeq{start\_cpu}{\coreset}{hw\_o}$) we can show the following fact:
+which is an environmental context for the oracle machine model that contains the full focused set ($\coreset$).
+When the hardware oracle is valid (notated as $ \validoraclenoeq{start\_cpu}{\coreset}{hw\_o}$) we can show the following fact:
 \begin{center}
 \begin{tabular}{P{0.95\textwidth}}
 $
@@ -178,10 +178,10 @@ In this sense, we  provide Hypothesis~\ref{hypo:chapter:conlink:mc-hw-refines-or
 
 \begin{hypothesis}[related$\_$hw$\_$step$\_$hw$\_$oracle]
 \label{hypo:chapter:conlink:mc-hw-refines-oracle-hypo}
-Let's assume that there is a valid start CPU ID for the multicore machine model, 
+Let's assume  there is a valid start CPU ID for the multicore machine model, 
 $start\_cpu$ ($start\_cpu \in \coreset$), and a hardware oracle $hw\_o$,  
-which is an environmental context for the oracle machine model that contains the full focused set ($\coreset$) in it.
-When the hardware oracle is valid ($ \validoraclenoeq{start\_cpu}{\coreset}{hw\_o}$) we assume the following fact:
+which is an environmental context for the oracle machine model that contains the full focused set ($\coreset$).
+When the hardware oracle is valid (notated as $ \validoraclenoeq{start\_cpu}{\coreset}{hw\_o}$) we assume the following fact:
 \begin{center}
 \begin{tabular}{P{0.95\textwidth}}
 $
@@ -197,8 +197,8 @@ $
 \end{center}
 \end{hypothesis}
 
-Providing the evidence about building an oracle with satisfying the hypothesis is possible, 
-but connecting the proof with the $\compcert$ style proof is a future work of our framework. 
+Providing the evidence about building an oracle that satisfies the hypothesis is possible, 
+but connecting the proof with the $\compcert$ style proof is a future work for our framework. 
 
 
 %\noindent\fbox{hypothesis} 

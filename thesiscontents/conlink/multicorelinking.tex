@@ -1,40 +1,40 @@
 \section{Multicore Linking}
 \label{chapter:linking:sec:multicore-linking}
 
-Multicore Linking is to provide the evidence that the program execution on
+Multicore linking provides the evidence that the program execution on
 our local layer (CPU local layer) is connected to the execution of the same program on our multicore machine model. 
 %To do that, concurrent linking (composition) usually requires assumptions about the environment. 
-In this purpose, we assume the environment with the following constraint:
-fixed number of CPUs, the fixed initial state for all CPUs,
-as well as the fairness among CPUs.
+We assume the environment with the following constraint:
+the fixed number of CPUs, the fixed initial state for all CPUs,
+and the fairness among CPUs.
 With those assumptions, 
-concurrent linking for multicore need to solve multiple challenges;
-(1) hide non-determinism of multicore machine model (by using the strategy of hardware scheduler);
-(2) build environmental context for each CPU;
-(3) prove compositionality of multiple per-PCU machines;
+concurrent linking for multicore needs to solve multiple challenges;
+(1) hide the non-determinism of a multicore machine model (by using the strategy of a hardware scheduler);
+(2) build an environmental context for each CPU:
+(3) prove the compositionality of multiple per-PCU machines;
 (4) provide a simple environmental context for per-CPU machines;
-and (5) finally connect this multicore linking framework with the machine for the local layer interface
+and (5) finally connect this multicore-linking framework with the machine for the local layer interface
 The last piece of the multicore linking ((5) in Figure~\ref{fig:chapter:conlink:intermediate-languages-and-their-relationsihps-for-multicore-linking}) 
-has to be manually proven depending on the local layer interface and its underlying machine model (\ie, $\intelmachine$, ARM, or RISC-V).
-In our case study in Chapter~\ref{chapter:certikos}, the machine model is the assembly machine of $\compcertx$, $\lasmmach$,
-and the bottom layer of the system ($\mmcsbootfull$), which is also slightly discussed in Chapter~\ref{chapter:mcs-lock}.
+must be manually proven, depending on the local layer interface and its underlying machine model (\ie, $\intelmachine$, ARM, or RISC-V).
+In our case study in Chapter~\ref{chapter:certikos}, the machine model is the assembly machine of $\compcertx$--$\lasmmach$--
+and the bottom layer of the system ($\mmcsbootfull$), which is also briefly discussed in Chapter~\ref{chapter:mcs-lock}.
 %Section~\ref{chapter:ccal:sec:ccal-overview} provides the way to handle 
 \begin{figure}
 \begin{center}
 \includegraphics[width=\textwidth, page=1]{figs/conlink/concurrent_linking}
 \end{center}
-\caption{Intermediate Languages and Their Relations in Multicore Linking Framework.}
+\caption{Intermediate Languages and Their Relations in the Multicore Linking Framework.}
 \label{fig:chapter:conlink:intermediate-languages-and-their-relationsihps-for-multicore-linking}
 \end{figure}
-Tackling all those challenges in a single step is not feasible at all. 
+Tackling all those challenges in a single step is not feasible.
 In that sense, 
-we have introduced multiple intermediate languages 
-to handle all challenges step by step (sometimes,
+we  introduced multiple intermediate languages 
+to handle all the challenges step by step (sometimes,
 resolving one challenge requires multiple intermediate languages
 for simple proofs.) 
 Figure~\ref{fig:chapter:conlink:intermediate-languages-and-their-relationsihps-for-multicore-linking} shows
-all the intermediate languages as well as the proof structure that we have built for concurrent linking. 
-Numbers in the figure are exactly matched with the number for the challenges. 
+all the intermediate languages as well as the proof structure  we  built for concurrent linking. 
+Numbers in the figure are exactly matched with the numbers for the challenges. 
 
 
 
