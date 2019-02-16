@@ -1,25 +1,23 @@
 \section{Multicore Linking for CertiKOS}
 \label{chapter:certikos:sec:multicore-linking-for-certikos}
 
-Similar to the multithreaded linking instances in Section~\ref{chapter:certikos:sec:multithreaded-linking-for-certikos}, a few steps are required us to provide the multicore linking for $\certikos$.
-%For the linking with $\certikos$
-Those steps are facilitating all the intermediate languages
+Similar to the multithreaded-linking instances in Section~\ref{chapter:certikos:sec:multithreaded-linking-for-certikos}, a few steps are required  to provide the multicore linking for $\certikos$--facilitating all the intermediate languages
 and proofs in Section~\ref{chapter:linking:sec:multicore-linking}.
 Figure~\ref{fig:chapter:conlink:intermediate-languages-and-their-relationsihps-for-multicore-linking} and 
 Section~\ref{chapter:linking:sec:multicore-linking} show all definitions and 
 proofs that the linking for $\certikos$ wants to use. 
-The first step is instantiating hardware setting, $\HardWareSetting$, and the local program transition rules, $\HardSemantics$;
-thus the step provides concrete definitions for the corresponding ones in 
+The first step is instantiating the hardware setting, $\HardWareSetting$, and the local program transition rules, $\HardSemantics$;
+thus, the step provides concrete definitions for the corresponding ones in 
  in Figure~\ref{fig:chapter:conlink:hardware-local-step-transition-rules}.
 
 With the concrete definitions for those abstract configurations, 
-The one thing that we required for the linking (without getting any benefits from the framework and the library)
-is providing the evidence that any program on the $\mmcsbootfull$ layer with $\lasmmach$ is contextually refined by the program on the $\mmcsbootfull$ layer with $\singleseparatestepkwd$, which is the adjacent machine model with $\lasmmach$ in our multicore linking framework. This proof is not provided by our multicore linking library toolkit because it heavily depends on the definition of the $\lasmmach$ layer.
+the one thing  we required for the linking (without getting any benefits from the framework or the library)
+was to provide the evidence that any program on the $\mmcsbootfull$ layer with $\lasmmach$ is contextually refined by the program on the $\mmcsbootfull$ layer with $\singleseparatestepkwd$, which is the adjacent machine model with $\lasmmach$ in our multicore-linking framework. This proof is not provided by our multicore-linking library toolkit because it heavily depends on the definition of the $\lasmmach$ layer.
 
 Without those two things, 
-providing the proof instances for other parts is straightforward with our library. 
+providing the proof instances for the other parts is straightforward with our library. 
 By connecting the configuration instances and our machine (and proof) libraries, 
 we can use all refinement proofs in Section~\ref{chapter:linking:sec:multicore-linking}. 
-This guarantees that ``any program on the $\mmcsbootfull$ layer with $\singleseparatestepkwd$ contextually refines that program on the $\mmcsbootfull$ layer with $\hardwarestepkwd$ (which is the non-deterministic $\intelmachine$ multicore semantics).''
+This guarantees that ``any program on the $\mmcsbootfull$ layer with $\singleseparatestepkwd$ contextually refines that program on the $\mmcsbootfull$ layer with $\hardwarestepkwd$ (which is the non-deterministic $\intelmachine$ multicore semantics)''.
 Thanks to our framework, most proofs in this step can be directly achieved by applying the existing refinement proofs in our library.
 %

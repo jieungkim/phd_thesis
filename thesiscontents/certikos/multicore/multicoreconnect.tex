@@ -41,14 +41,14 @@
 
 %The top level theorem for multicore linking uses the backward simulation proofs 
 %for each steps that we have described in Section~\ref{chapter:linking:sec:multicore-linking}.
-The top level theorem of
+The top-level theorem of
 multicore linking in $\certikos$  is in Theorem~\ref{theorem:chapter:certikos:contextual-refinement-theorem-in-certikos-multicore-linking}.
 \begin{theorem}[Multicore Linking Theorem for $\certikos$]
 \label{theorem:chapter:certikos:contextual-refinement-theorem-in-certikos-multicore-linking}
-Let's assume that $cid$ is a valid CPU ID, $\oracle_{cid}$ is a valid
+Let's assume  $cid$ is a valid CPU ID, $\oracle_{cid}$ is a valid
 environmental context for thread $cid$, and $\codeinmath{Ctxt}$ is a
  context program that runs on top of layer $\codeinmath{MBoot}$. 
- Then, we can state that
+ Then we can state that
  \begin{center}
 \begin{tabular}{c}
 $\semwmachine{\codeinmath{MBoot}}{\codeinmath{Ctxt}}{\codeinmath{mach}_{\codeinmath{x86mc}}} \refines_{R_{\codeinmath{mclink}}} \semwmachine{\codeinmath{MBoot}[cid, \oracle_{cid}]}{\codeinmath{Ctxt}}{{\codeinmath{mach}_{\lasm}}}$\\
@@ -59,15 +59,15 @@ when ${R_{\certikos_\codeinmath{mclink}}}$ is a refinement relation for multicor
 
 
 The proof for Theorem~\ref{theorem:chapter:certikos:contextual-refinement-theorem-in-certikos-multicore-linking} 
-can be divided into multiple sub-lemmas, each of which is a backward simulation proof 
+can be divided into multiple sub-lemmas, each of which is a backward-simulation proof 
 that facilitates the refinement theorems in Section~\ref{chapter:linking:sec:multicore-linking}. 
-The overall structure of the proof is in FIgure~\ref{fig:chapter:certikos:multicore-connect-proof-overall-structure}, which is 
-similar to the multicore linking framework structure (in FIgure~\ref{fig:chapter:conlink:intermediate-languages-and-their-relationsihps-for-multicore-linking}) but does not rely on
-the abstract hardware configuration as well as uses the concrete layer definition. 
+The overall structure of the proof is in Figure~\ref{fig:chapter:certikos:multicore-connect-proof-overall-structure}, which is 
+similar to the multicore linking framework structure (in Figure~\ref{fig:chapter:conlink:intermediate-languages-and-their-relationsihps-for-multicore-linking}) but does not rely on
+the abstract hardware configuration, and it uses the concrete layer definition. 
  
 \begin{figure}
 \includegraphics[width=\textwidth, page=2]{figs/certikos/concurrent_linking}
-\caption{Multicore Linking Structure in $\certikos$.}
+\caption{Multicore-Linking Structure in $\certikos$.}
 \label{fig:chapter:certikos:multicore-connect-proof-overall-structure}
 \end{figure}
 

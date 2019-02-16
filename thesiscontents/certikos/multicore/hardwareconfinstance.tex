@@ -1,5 +1,5 @@
 
-\subsection{Hardware Configuration Instance}
+\subsection{Hardware-configuration Instance}
 \label{chapter:certikos:subsec:hardware-configuration-instance}
 
 The hardware configuration in Section~\ref{chapter:linking:subsec:hardware-configuration} works as a 
@@ -7,14 +7,14 @@ template for users to instantiate all intermediate machine models in multicore l
 To show the instance for that configuration,
 we again briefly show the state definition of $\compcertx$
 as well as the lowest layer in $\certikos$, which includes TCB functions that we mentioned in Section~\ref{chapter:mcslock:sec:verification}.
-Those TCB functions are 
+Those functions are 
 necessary for supporting extended features that $\compcert$ cannot support. 
 For example, 
-Fetch-and-Increase or Compare-and-Swap functions are atomic operations that are crucial to build a 
+fetch-and-increase or compare-and-swap functions are atomic operations that are crucial for building a 
 concurrent object by providing the lowest-level atomicity. 
-They, however, are not supported by $\compcert$'s instructions.
-Our bottom (TCB) layer, $\mmcsbootfull$, the parameter of the machine model for $\compcertx$ 
-provides those  primitives to give  extra transition rules for the state of $\compcertx$.
+However, they are not supported by $\compcert$'s instructions.
+Our bottom (TCB) layer, $\mmcsbootfull$, is the parameter of the machine model for $\compcertx$ 
+and provides those  primitives to give  extra transition rules for the state of $\compcertx$.
 %
 %\begin{figure}
 %\begin{lstlisting}[language=C]
@@ -39,26 +39,25 @@ the state definition for a machine model of  $\compcertx$ ($\lasmmach$) is
 Inductive state <@$\cdots$@> : Type :=
   | State: regset -> (mem: mwd LDADTOps)-> state.
 \end{lstlisting}
-which is a pair consists of  a register and a memory. 
+which is a pair consisting of  a register and a memory. 
 The state is similar to that of $\compcert$ except the extension of the memory type, which is associated with 
-the abstract data type ($LDADTOps$).
+the abstract data type  (notated as $LDADTOps$).
 Thanks to the similarity between this state definition and the state definition of $\compcert$, 
-$\compcertx$ facilitates many parts of verified compiler of $\compcert$ with some modifications, 
-and it is applicable to our concurrent program verification (since 
-we built all layers based on our sequential-like layer interfaces.)
-The memory in the $\compcertx$ precisely  is also a pair of two elements, 
-a memory (a map from a identifier to a value) and an abstract data. 
+$\compcertx$ facilitates many parts of the verified compiler of $\compcert$ with some modifications, 
+and it is applicable to our concurrent program verification (because 
+we built all layers based on our sequential-like layer interfaces).
+The memory in the $\compcertx$   is also a pair of two elements--a memory (a map from a identifier to a value) and an abstract datum. 
 %\begin{lstlisting}
 %Definition <@$\pi$@>_mem {D}: mwd D -> mem := fst.
 %Definition <@$\pi$@>_data {D}: mwd D -> ldata_type D := snd.
 %\end{lstlisting}
-The first element of the memory is same with the memory in the $\compcert$~\cite{leroy08},
+The first element of the memory is the same as the memory in the $\compcert$~\cite{leroy08},
  which is a map from its index (a pair of a block ID and an offset) to the value alongside with its type information for the size of the value. 
-The abstract data gives us huge freedom to the state definition by allowing us to add multiple fields into it. 
+An abstract datum gives us huge freedom for the state definition by allowing us to add multiple fields.
 To use the existing tools as much as possible, 
-we also include our global log in the abstract data (as we have seen in Chapter~\ref{chapter:mcs-lock}.)
-Thus, the \lstinline$(mem: mwd LDATAOps)$ can be interpreted as a tuple consists of 
-\lstinline$mem$, \lstinline$RData$ (an abstract data), and a set of logs for shared objects (notated as \lstinline$multi_log$ 
+we also include our global log in the abstract data (as we have seen in Chapter~\ref{chapter:mcs-lock}).
+Thus, the \lstinline$(mem: mwd LDATAOps)$ can be interpreted as a tuple consisting of 
+\lstinline$mem$, \lstinline$RData$ (an abstract data), and a set of logs for shared objects (notated as \lstinline$multi_log$ in
 Chapter~\ref{chapter:mcs-lock}.)
 
 
@@ -105,43 +104,42 @@ Figure~\ref{chapter:certikos:subsec:hardware-configuration-instance}
 %which is basically a partial map from a primitive ID ($\primitiveid$) to the specifications ($\spec$).
 %Each layer also use its abstract data, and the abstract data definition for the bottom layer is in Figure~\ref{fig:chapter:certikos:abstract-data-for-bottom-layer}.
 As mentioned, 
-we have provided atomic fetch and increase as an atomic operation in the layer 
+we have provided atomic fetch-and-increase as an atomic operation in the layer,
 and it will update the log in the abstract data ($\codeinmath{multi\_log}$), which is 
 a part of our state definition. 
-Our hardware configuration instance is closely related to those definitions
+Our hardware-configuration instance is closely related to those definitions
 because they are parts of the lowest machine model 
 in our certified concurrent abstraction layers.
-Atomic operations in the configuration (Figure~\ref{fig:chapter:conlinkg:abstract-hardware-configuration-and-semantics}), for example,
+For example, atomic operations in the configuration (Figure~\ref{fig:chapter:conlinkg:abstract-hardware-configuration-and-semantics})
 need to include $\codeinmath{atomic\_FAI}$  
-in it and the local evaluation rule in the atomic statement in Figure~\ref{fig:chapter:conlink:hardware-local-step-transition-rules}  has to 
+in and the local evaluation rule in the atomic statement in Figure~\ref{fig:chapter:conlink:hardware-local-step-transition-rules}  must be
 consistent with the specification of the primitive.
 The private state can be instantiated with 
-the state definition in the machine model of $\compcertx$, a pair two elements which consist of a register set 
-and a memory (\ie, the extended memory with having abstract states in it)
-and the shared piece is a list of byte, which represents 
+the state definition in the machine model of $\compcertx$--a pair two elements which consist of a register set 
+and a memory (\ie, the extended memory with  abstract states in it)--and the shared piece is a list of bytes, which represents 
 the snapshot of the shared memory via $\push$/$\pull$ operations. 
 
-To instantiates the definition $\mcevent$ in Figure~\ref{chapter:certikos:subsec:hardware-configuration-instance}.
-we define \lstinline$OtherEvent$ as follows:
+To instantiates the definition $\mcevent$ in Figure~\ref{chapter:certikos:subsec:hardware-configuration-instance},
+we define ``\lstinline$OtherEvent$'' as follows:
 \begin{lstlisting}[language=C, deletekeywords={for}]
 // The instance that implements <@${\color{red}  \mcevent}$@>
 Inductive OtherEvent := | OINC_TICKET (n: nat) <@$\cdots$@> 
 \end{lstlisting}
 The definition maps the atomic operation in layer $\mmcsbootfull$ into each single event in our hardware configuration.
-For example, \lstinline$OINC_TICKET (n: nat)$ corresponds to the fetch and increase primitive,
+For example, \lstinline$OINC_TICKET (n: nat)$ corresponds to the fetch-and-increase primitive,
 
-In addition, \lstinline$OtherEvent_2_ident$ is an instance for $\atomiceventidentkwd$ function, which is the function
+In addition, \lstinline$OtherEvent_2_ident$ is an instance for the $\atomiceventidentkwd$ function, which is the function
 that gets the event and returns the corresponding identifier (the primitive identifier) that is related to the event.
 \begin{lstlisting}[language=C]
 // The instance that implements <@${\color{red}  \atomiceventidentkwd}$@>
 Function OtherEvent_2_ident (e: OtherEvent) := 
 match e with | OINC_TICKET _ => atomic_FAI <@$\cdots$@> end.
 \end{lstlisting}
-And, the \lstinline$core_set$ is defined as a full CPU set ($\coreset$), and 
-the set contains all CPU numbers in it (from 0 to 7 because $\certikos$ runs on 8 cores.)
+The \lstinline$core_set$ is defined as a full CPU set ($\coreset$), and 
+the set contains all CPU numbers in it (from zero to seven because $\certikos$ runs on eight cores.)
 The last element is the identifier for 
-the scheduler, which should not in the \lstinline$core_set$. 
-we designated 8 for the scheduler ID.
+the scheduler, which should not be in the \lstinline$core_set$. 
+We designated eight for the scheduler ID.
 Those configurations are all included in the 
 \lstinline$hdsetting$ class, and the instance of the type class
 is in Figure~\ref{fig:chapter:ceritkos:instances-of-abstract-hardware-setting}.
@@ -156,11 +154,11 @@ Global Instance hdseting: HardWaredSetting := {
   sched_id := 8  // <@$\color{red} \schedid$@>
 }.
 \end{lstlisting}
-\caption{The Hardware Setting Definition for $\certikos$ Multicore Linking.}
+\caption{The Hardware-setting Definition for $\certikos$ Multicore Linking.}
 \label{fig:chapter:ceritkos:instances-of-abstract-hardware-setting}
 \end{figure}
 All values are instances of 
-hardware configuration definitions ($\hardwaresetting$) in Figure~\ref{fig:chapter:conlinkg:abstract-hardware-configuration-and-semantics}. 
+hardware-configuration definitions ($\hardwaresetting$) in Figure~\ref{fig:chapter:conlinkg:abstract-hardware-configuration-and-semantics}. 
 
 \begin{figure}
 \begin{lstlisting}[language=C]
@@ -201,9 +199,9 @@ Inductive atomic_exec (ge: genv):
   <@$\cdots$@>
 \end{lstlisting}
 \begin{center}
-(b) The  Transition Rule Definition for the $\atomiccmdkwd$ Command.
+(b) The  Transition-rule Definition for the $\atomiccmdkwd$ Command.
 \end{center}
-\caption{Program Counter and Transition Rules in $\certikos$ Multicore Linking (Details Are Ignored.)}
+\caption{Program Counter and Transition Rules in $\certikos$ Multicore Linking (Details Are Ignored).}
 \label{fig:chapter:certikos:definitions-for-hw-abstract-semantics}
 \end{figure}
 
@@ -215,19 +213,19 @@ it also facilitates the layer definition (the $\codeinmath{mboot}$ layer),
 and machine model of $\compcertx$, $\lasmmach$.
 For example, the core part of the program counter command definition for the fetch-and-increase function call is defined in Figure~\ref{fig:chapter:certikos:definitions-for-hw-abstract-semantics} (a), which is associated with the case when the current function pointer is pointing out the \lstinline$atomic_FAI$. 
 In the rule, \lstinline$(ge :genv)$ stands for the global environment that contains the 
-global information such as the function names, global variables of the whole programs, which 
-is necessary for us to divide the full program as multiple components without keeping the information 
+global information such as the function names--global variables of the whole programs--which 
+is necessary for us to divide the full program into multiple components without keeping the information 
 about the entire program context.
 
 Similarly, all abstract transition rules   ($\hardwaresemantics$)  in  Figure~\ref{fig:chapter:conlinkg:abstract-hardware-configuration-and-semantics}.
 are defined 
-by slightly modifying the step relation in $\compcertx$ as well as by using the case analysis for the primitive identifiers. 
+by slightly modifying the step relation in $\compcertx$ as well as  using the case analysis for the primitive identifiers. 
 For instance, the transition rule for the $\acqsharedcmdkwd$ is defined in Figure~\ref{fig:chapter:certikos:definitions-for-hw-abstract-semantics} (b), which updates the program counter in the private state
-and  updates the shared log (\ie, note that the shared log is a part of our abstract state in our implementation.)
+and  updates the shared log (note that the shared log is a part of our abstract state in our implementation).
 Similarly, the atomic execution rule is in Figure~\ref{fig:chapter:conlinkg:abstract-hardware-configuration-and-semantics} (c),
-which gets the global environment (\lstinline$ge$), current CPU ID (\lstinline$cid$), the identifier for the atomic primitive
-(\lstinline$id$), the local state (\lstinline$(State rs m)$),
-and the shared log (\lstinline$sl$), and returns the updated local state (\lstinline$(State rs_res m_res)$) as well as an event (\lstinline$e$) generated during the evaluation of the primitive.
+which gets the global environment (\lstinline$ge$), current CPU ID (\lstinline$cid$),  identifier for the atomic primitive
+(\lstinline$id$),  local state (\lstinline$(State rs m)$),
+and  shared log (\lstinline$sl$) and returns the updated local state (\lstinline$(State rs_res m_res)$) as well as an event (\lstinline$e$) generated during the evaluation of the primitive.
 This type is identical to the type of $\atomicstepkwd$ in $\hardwaresemantics$ of Figure~\ref{fig:chapter:certikos:hardware-local-step-transition-rules}.
 
 
@@ -250,20 +248,20 @@ Global Program Instance hdsem : HardSemantics (hdset:= hdseting) := {
 \label{fig:chapter:certikos:hardware-local-step-transition-rules}
 \end{figure}
 
-With having transition rules for $\relsharedcmdkwd$ and $\privatecmdkwd$ in a similar manner, 
-we provide the instance of $\hardwaresemantics$  in  Figure~\ref{fig:chapter:conlinkg:abstract-hardware-configuration-and-semantics}, which is defined in Figure~\ref{fig:chapter:certikos:hardware-local-step-transition-rules}. 
-With those definitions, 
-we also proved basic properties of those transition rules in Figure~\ref{fig:chapter:conlink:properties-of-abstract-hardware-semantics-for-multicore-linking}.
-Most of them are straightforward because our instances are using the definitions in the machine model of $\compcertx$,
+With similar transition rules for $\relsharedcmdkwd$ and $\privatecmdkwd$,
+Figure~\ref{fig:chapter:conlinkg:abstract-hardware-configuration-and-semantics}
+show the instance of $\hardwaresemantics$, which is defined in Figure~\ref{fig:chapter:certikos:hardware-local-step-transition-rules}. 
+We also proved basic properties of those transition rules in Figure~\ref{fig:chapter:conlink:properties-of-abstract-hardware-semantics-for-multicore-linking}.
+Most of them are straightforward because our instances use the definitions in the machine model of $\compcertx$,
 which already contains the deterministic properties. 
 
-Note that we are using the assembly model  in $\compcertx$ for $\intelmachine$; thus it implies that 
-our instance for this hardware configuration is a  part of practical $\intelmachine$ multicore machine,
+Note that we are using the assembly model  in $\compcertx$ for $\intelmachine$; thus, it implies that 
+our instance for this hardware configuration is   part of a practical $\intelmachine$ multicore machine,
 that has a subset of its instructions (but sufficiently rich for building operating systems) with a small TCB, 
 and follows the sequentially consistent evaluation order for the memory consistency. 
-It, however, does not need to be specified by $\intelmachine$. 
+However, it does not need to be specified by $\intelmachine$. 
 All those hardware configurations can be instantiated with other definitions, such as ARM assembly machine for $\compcertx$, 
-or even other machine models that is not entirely related to $\compcertx$ if users can prove the desired property of it. 
+or even other machine models that are not entirely related to $\compcertx$ if users can prove the desired property of them.
 
 
 

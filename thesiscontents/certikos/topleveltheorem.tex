@@ -1,4 +1,4 @@
-\section{Top Level Theorem in CertiKOS}
+\section{Top-level Theorem in CertiKOS}
 \label{chapter:certikos:sec:top-level-theorem}
 
 
@@ -17,15 +17,15 @@ environmental context for thread $tid$, $\codeinmath{certikos}$ is a implementat
 $\semwmachine{\mmcsbootfull}{\codeinmath{CertiKOS} \oplus \codeinmath{Ctxt}}{\codeinmath{mach}_{\codeinmath{x86mc}}} \refines_{R_{\codeinmath{certikos}}} \semwmachine{\PLayer{\TSyscall}{tid}{\oracle_{tid}}}{\codeinmath{Ctxt}}{\hasmmach}$\\
 \end{tabular}
 \end{center}
-when $R_{\codeinmath{certikos}}$ is a refinement relation between those two different layers on different machine models (\ie, connecting all refinement relations of multicore linking, per-CPU layers, multithreaded linking, and per-thread layers.)
+when $R_{\codeinmath{certikos}}$ is a refinement relation between those two different layers on different machine models (\ie, connecting all refinement relations of multicore linking, per-CPU layers, multithreaded linking, and per-thread layers).
 \end{theorem}
 
 The proof of this theorem is 
 straightforward with 
 the lemmas that we have stated in previous sections.
-The proof still requires multiple assumptions that we discussed 
+It still requires multiple assumptions that we discussed 
 in Section~\ref{chapter:linking:sec:multicore-linking} and Section~\ref{chapter:linking:sec:multithreaded-linking}. 
-Providing a better framework than the current version has remained as our future work. 
+Providing a better framework than the current version remains our future work. 
 
 %
 %\begin{proof}
