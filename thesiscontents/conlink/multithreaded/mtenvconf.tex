@@ -2,11 +2,11 @@
 \subsection{Multithreaded Environment Configuration}
 \label{chapter:linking:subsec:multithreaded-env-configuration}
 
-This section provides the definitions 
-that are necessary to build intermediate machine models in our multithreaded linking framework
-(\ie, abstract state types for the $\TLink$ layer , thread configurations, auxiliary functions)
+This section provides the necessary definitions 
+for buliding intermediate machine models in our multithreaded-linking framework
+(\ie, abstract state types for the $\TLink$ layer , thread configurations, and auxiliary functions),
 which includes the function that calculates the dynamic initial state for each thread.
-Those definitions are to formally define a multithreaded machine model in Figure~\ref{fig:chapter:conlink:multithreaded-machine-model-easm}.
+Those definitions are used to formally define a multithreaded machine model in Figure~\ref{fig:chapter:conlink:multithreaded-machine-model-easm}.
 %multithreaded environment definitions that we explained in Section~\ref{chapter:linking:subsec:multithreaded-linking-overview}.
 %
 %Similar to the multicore machine model, we provide configurations 
@@ -28,23 +28,22 @@ Class SingleData := {
 \end{figure}
 
 To divide a CPU private state and a global log into the proper set of private states and a shared log, we introduce new abstract data types in \lstinline$SingleDAta$ in Figure~\ref{fig:chapter:conlink:abs-state-types-for-tlink}. 
-There are two abstract data types, $\codeinmath{dshare}$ and $\codeinmath{dproc}$, 
-which represent a shared data and a private data for each thread, respectively. 
+There are two--$\codeinmath{dshare}$ and $\codeinmath{dproc}$--which represent a shared datum and a private datum for each thread, respectively. 
 There are not many restrictions for those types,
-but shared data has the information about the 
-CPU ID as well as the currently running thread ID in it to provide 
+but shared data contain the information about the 
+CPU ID as well as the currently running thread ID to provide 
 \lstinline$processor_id$ and \lstinline$proc_id$ functions. 
 
 
 \subsubsection{Thread Machine Memory Model}
 
 % algebraic memory model
-Multithreaded linking also requires composition and decomposition of a memory,
+Multithreaded linking also requires the composition and decomposition of a memory,
 which logically divides a single memory into a set of memories associated with threads.
-Our system neither allows ownership transfers for the same memory region among threads nor assume shared memory; thus we could safely assume that the memory can be divided into multiple disjoint memories that are owned by the designated threads in the system. 
-Threads, however, share several resources in the kernel via primitive calls that provide the way to manipulate them with restricted manners. 
-Based on the assumption, 
-we have built the algebraic memory model, the extended version of the memory model by adding two key relations from $\compcertx$'s memory model.
+Our system neither allows ownership transfers for the same memory region among threads nor assumes shared memory; thus, we can safely assume that the memory can be divided into multiple disjoint memories that are owned by the designated threads in the system. 
+However, threads share several resources in the kernel via primitive calls that provide the way to manipulate them with restricted manners. 
+Based on this assumption, 
+we have  the algebraic memory model--the extended version of the memory model--by adding two key relations from $\compcertx$'s memory model.
 Those two key relations are 
 \begin{lstlisting}[language=C]
 mem_disjoint_union : mem -> mem -> mem -> Prop;
@@ -52,11 +51,11 @@ mem_lift_nextblock : mem -> nat -> mem;
 \end{lstlisting}
 The memory in $\compcertx$ is distinguished by its block identifier and an offset for each block. 
 The type of block identifier is a natural number,
-and we restrict that each thread has distinguished blocks.  
+and we restrict each thread to distinguished blocks.  
 The first \lstinline$mem_disjoint_union m1 m2 m3$  shows that 
 the $m3$ is the union of $m1$ and $m2$ when $m1$ and $m2$ 
 are disjoint from each other. 
-The second, \lstinline$mem_lift_nextblock$ 
+The second, \lstinline$mem_lift_nextblock$,
 provides the operation that makes the adjustment on the memory possible. 
 
 
@@ -83,18 +82,17 @@ Thread linking also requires multiple configurations about the environment of th
 For example, \lstinline$current_CPU_ID$ is a CPU ID that is 
 associated with the current local layer.
 Layer $\CSched$ is associated with \lstinline$current_CPU_ID$, 
-and all threads associated with $\TLink$ and $\TSched$ layers 
+and all threads associated with the $\TLink$ and $\TSched$ layers 
 are also run with  \lstinline$current_CPU_ID$.
 The \lstinline$current_thread$ is a variable for the focused thread ID that is associated with our per-thread machine.
 In this sense, the layer above $\TSched$ is parameterized by this thread ID (\lstinline$current_thread$). 
 The full thread list is a set of thread identifiers which run on top of the current CPU ID. 
 It is a union of the current thread identifier, a singleton set, 
 and non-current threads. 
-There are no restrictions on the size of the full thread set in here even though 
-the thread pool can be bounded in the real implementation, which differs from the full CPU set in multicore linking configuration.
+There are no restrictions on the size of the full thread set even though 
+the thread pool can be bounded in the real implementation, which differs from the full CPU set in multicore-linking configuration.
 The \lstinline$main_thread$ represents the main thread (which initializes the system) of the CPU. 
-This main thread may differ from the current thread identifier or same with the current thread identifier.
-
+This main thread may differ from the current thread identifier.
 
 \begin{figure}
 \begin{lstlisting}[language=C]
@@ -106,7 +104,7 @@ Inductive LogEventUnit :=
 Inductive LogEvent := | LEvent : Z -> LogEventUnit -> LogEvent.
 \end{lstlisting}
 \begin{center}
-(a) Event and Log Definitions for Machine Models in Multithreaded Linking Framework.
+(a) Event and Log Definitions for Machine Models in the Multithreaded-Linking Framework.
 \end{center}
 \begin{lstlisting}[language=C, morekeywords={Class}]
 Class SingleOracleOps := {
@@ -122,34 +120,34 @@ Class SingleOracleOps := {
 \end{figure}
 
 
-New types of event and log are also necessary to build our multithreaded linking framework. 
-Similar to the multicore linking case, 
-shared resources are represented as a log,  a list of event,
-which can be applied to any concrete layer definitions for $\CSched$, $\TLink$, and $\TSched$.
+New types of event and log are also necessary to build our multithreaded-linking framework. 
+Similar to the multicore-linking case, 
+shared resources are represented as a log--a list of event--which can be applied to any concrete layer definitions for 
+$\CSched$, $\TLink$, and $\TSched$.
 The definition for those events and the log is in Figure~\ref{fig:chapter:linking:event-and-log-for-multithreaded-linking} (a).
 Our framework allows two scheduling primitives, 
 $\yield$ and $\sleep$. 
 Those two primitives use their designated events to keep the information in the global log. 
-The yield event does not need to contain any information in it; it just needs to give the control
-to another thread (among the thread in the same CPU). 
-The sleep event, however, is usually related to the conditional variable and a shared resource among CPUs.
-In this sense, we have to memorize the conditional variable that the sleep call uses ($i$),
+The yield event does not need to contain any information; it just needs to give the control
+to another thread (among the threads in the same CPU). 
+However, the sleep event is usually related to the conditional variable and also a shared resource among CPUs.
+In this sense, we have to memorize the conditional variable that the sleep call uses ($i$).
 Other primitives that access the shared resources trigger the primitive event. 
-The event memories the primitive name, the argument for the primitive name,
-as well as the snapshot of the private data of the thread.
-The private data snapshot is a snapshot of the private data when the primitive has been invoked. 
+The event memorize the primitive name, the argument for the primitive name,
+and the snapshot of the private data of the thread.
+The private data snapshot is taken  when the primitive has been invoked. 
 They are not always necessary, but some primitives may be required to contain the information.
 For example, the acquire lock and the release lock primitives have to memorize the snapshot of the (abstract) private data when they have been invoked, which has similarities with the $\push/\pull$ operations of our multicore memory model. 
-The last event, \lstinline$LogYieldBack$ is the memorize the moment to figure out when each thread re-achieve the evaluation control. 
+The last event, \lstinline$LogYieldBack$, is to memorize the moment to figure out when each thread re-achieves the evaluation control. 
 
 There are also a few definitions that depends on event and log definitions, which are presented in Figure~\ref{fig:chapter:linking:event-and-log-for-multithreaded-linking} (b).
 The environmental context \lstinline$Single_Oracle$  for our multithreaded linking
 then can be defined as a function that gets the current log and returns the event. 
-In addition to that, 
-each thread has to have its initial log for the evaluation. 
-For example, as in Figure~\ref{fig:chapter:conlink:multithreaded-machine-model-easm},
-the initial log of thread 2 has to include the proper spawn event as well as yield and yield back events in it
-when thread 2 starts its evaluation after thread 1 spawns the thread as well as gives the control to it.
+In addition,
+each thread have its initial log for the evaluation. 
+For example, as shown in Figure~\ref{fig:chapter:conlink:multithreaded-machine-model-easm},
+the initial log of thread 2 must include the proper spawn event as well as yield and yield-back events
+when thread 2 starts its evaluation after thread 1 spawns  thread 2 and gives the control to it.
 
 \subsubsection{Auxiliary Functions}
 
@@ -169,19 +167,20 @@ when thread 2 starts its evaluation after thread 1 spawns the thread as well as 
       // calculate each thread's initial register value
       prim_thread_init_pc {F V} (ge: Genv.t F V): ident -> list lval -> option val }.
 \end{lstlisting}
-\caption{Auxiliary Functions in Multithreaded Linking Framework.}
+\caption{Auxiliary Functions in the Multithreaded-Linking Framework.}
 \label{fig:chapter:conlink:multithreaded-linking-aux-functions}
 \end{figure}
 
 Based on those definitions, we provide multiple auxiliary functions 
-for thread local machines to calculate necessary information in Figure~\ref{fig:chapter:conlink:multithreaded-linking-aux-functions}.
+for thread-local machines to calculate necessary information in Figure~\ref{fig:chapter:conlink:multithreaded-linking-aux-functions}.
 Among them,  \lstinline$update$ and \lstinline$uRData$ functions are  declarations of a replay function for the global log. 
-The has event \lstinline$has_event$ function is to check whether the primitive calls have to trigger the event or not. 
-we also require the snapshot functions for the events as we have seen in the above.
-It also shows two important abstract function declarations, \lstinline$thread_init_dproc$ and \lstinline$prim_thread_init_pc$, that calculate the initial abstract data for the thread as well as the initial program counter value for the thread. 
-Two other functions, \lstinline$thread_init_rdata$ \lstinline$PHThread2TCompose$ are for providing the proper initial state for the programs that run with $\hasmmach$, 
+The \lstinline$has_event$ function is to check whether the primitive calls must trigger the event.
+We also require the snapshot functions for the events.
+It also shows two important abstract function declarations--\lstinline$thread_init_dproc$ and \lstinline$prim_thread_init_pc$--that calculate the initial abstract data as well as the initial program counter value for the thread. 
+Two other functions--\lstinline$thread_init_rdata$ \lstinline$PHThread2TCompose$--are for providing the proper initial state for the programs that run with $\hasmmach$, 
 which requires a translation from the result of \lstinline$thread_init_dproc$   to adjust the differences between
-the abstract state type in the per-thread machine model and that of intermediate machine models in our multithreaded linking. 
+the abstract state type in the per-thread machine model and the abstract state type in the
+intermediate machine models in our multithreaded linking. 
 
 \subsubsection{Properties on Thread Configurations and Auxiliary Functions}
 
@@ -232,23 +231,22 @@ Class SingleOracleLinkP  <@$\cdots$@> := {
 \begin{center}
 (b) Properties of an Environmental Context and an Initial Log.
 \end{center}
-\caption{Properties of Thread Configurations and Auxiliary Functions in Multithreaded Linking Framework.}	
+\caption{Properties of Thread Configurations and Auxiliary Functions in the Multithreaded-Linking Framework.}	
 \label{fig:chapter:conlink:multithreaded-configuration-props}
 \end{figure}
 
-Those definitions, of course, requires multiple properties that they have to satisfy.
-Those properties are necessary for us to prove the multiple properties that the machine has to follow (\eg, decidability on their initial state and the property of their log construction)  
-Figure~\ref{fig:chapter:conlink:multithreaded-configuration-props} shows several properties related to thread configurations, auxiliary functions, as well as initial logs.
+Of course, those definitions must satisfy multiple properties.
+Those properties are necessary for us to prove the multiple properties that the machine must follow (\eg, decidability on their initial state and the property of their log construction).
+Figure~\ref{fig:chapter:conlink:multithreaded-configuration-props} shows several properties related to thread configurations, auxiliary functions, and initial logs.
 For example, 
  \lstinline$CPU_ID_valid$ (Figure~\ref{fig:chapter:conlink:multithreaded-configuration-props} (a))
-tells that all the scheduling result of this CPU 
+tells us that all the scheduling results of this CPU 
 will not change the CPU ID. 
-Also, the initial log for each thread satisfies a certain property, \lstinline$oracle_init_log$ and \lstinline$init_log_property$
-in Figure~\ref{fig:chapter:conlink:multithreaded-configuration-props} (b),
-which provides the well-formed initial log for us to be required to show the 
+Also, the initial log for each thread satisfies a certain property--\lstinline$oracle_init_log$ and \lstinline$init_log_property$
+in Figure~\ref{fig:chapter:conlink:multithreaded-configuration-props} (b)--which provides the well-formed initial log for us to be required to show the 
 refinement between the intermediate machines. 
 Most of them can be instantiated with our concrete definition of the configurations, auxiliary functions,
-as well as abstract thread definitions. 
+and abstract thread definitions. 
 
 %\begin{figure}
 %$$

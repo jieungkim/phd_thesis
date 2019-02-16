@@ -1,17 +1,17 @@
-\subsection{Single Threaded Machine Model}
+\subsection{Single-threaded Machine Model}
 \label{chapter:linking:subsec:single-threaded-machine-model}
 
-Like what we have shown in Figure~\ref{fig:chapter:conlink:introduce-single-threaded-machine-model-with-tasm}, 
+Like we show in Figure~\ref{fig:chapter:conlink:introduce-single-threaded-machine-model-with-tasm}, 
 another optimization is available and necessary 
-to connect the program runs on the $\ieasmmach$ with having a single focused set to
+to connect the program runs on the $\ieasmmach$ with  a single focused set to
 the program runs with the per-thread machine model, $\hasmmach$, which shares the 
 same state definition and transition rules with $\lasmmach$. 
 In this manner,
 we introduce $\tasmmach$, a machine model
-which simplify the machine state definition as  well as
-merging multiple operational style environmental context queries into a single big-step style 
+which simplifies the machine state definition as  well as
+merges multiple operational style environmental context queries into a single big-step style 
 environmental context query.  
-This part has a similarity with the corresponding part of our multicore linking framework, 
+This part has a similarity with the corresponding part of our multicore-linking framework, 
 that introduces $\singlebigstepkwd$ and $\singlebigtwostepkwd$ in Section~\ref{chapter:linking:subsec:global-log-optimization}.
 
 
@@ -79,10 +79,10 @@ which is a tuple of five elements.
 Those elements represent a current thread ID, 
 a register value for the thread, a local memory, a private abstract state, and a global log for shared objects. 
 The state definition is identical to the each thread's view of the global state in $\ieasmmach$ an $\easmmach$ in the previous section. 
-In this manner,
-this machine also can use the same abstract layer definition, $\TLink$, 
-as well as similar but simplified transition rules with those of two multithreaded machine model.
-The machine, however,
+This way,
+this machine can also use the same abstract layer definition, $\TLink$, 
+as well as similar but simplified transition rules as those of the two multithreaded machine models.
+However, the machine
  collects the environmental context queries to form a big-step style transition for scheduling primitives. 
  For example, 
  the transition rule for $\yield$ is defined in Figure~\ref{fig:chapter:conlink:yield-rule-in-tasm} (b),
@@ -90,7 +90,7 @@ The machine, however,
  by using 
  an auxiliary function, \lstinline$get_env_log$, in  Figure~\ref{fig:chapter:conlink:yield-rule-in-tasm} (a).
  The function   merges multiple environmental context queries into a single step with a fairness assumption
- of threads' evaluation, which is stated as \lstinline$limit$ in line 11 of  Figure~\ref{fig:chapter:conlink:yield-rule-in-tasm} (b).
+ of the threads' evaluation, which is stated as \lstinline$limit$ in line 11 of  Figure~\ref{fig:chapter:conlink:yield-rule-in-tasm} (b).
 
 We also provide 
 the theorem to connect the program evaluation on $\tasmmach$
@@ -99,15 +99,14 @@ which users can freely use without any additional cost.
 
 \begin{lemma}[Refinement Between $\ieasm$ and $\tasm$]
 \label{lemma:chapter:conlink:ieasm-refines-tasm}
-Suppose that $\ThreadConf$ is a multithreaded linking environment that contains thread configurations, auxiliary functions, as well as properties for them. 
-Additionaly, let's assume that 
- $tid$ is a valid thread ID in a certain CPU,
-and 
+Suppose  $\ThreadConf$ is a multithreaded-linking environment that contains thread configurations, auxiliary functions, and properties for them. 
+Additionally, let's assume  
+ $tid$ is a valid thread ID in a certain CPU, 
  $\oracle^{\TLink}_{tid}$ is a valid
 environmental context for a thread $tid$, 
 and $\codeinmath{Ctxt}$ is a
- context program that runs on top of layer $\TLink$
- Then, we can state that
+ context program that runs on top of layer $\TLink$.
+ Then we can state that
  \begin{center}
 \begin{tabular}{c}
 $\semwmachine{\ThreadConf, \PLayer{\TLink}{tid}{\oracle^{\TLink}_{cid}}}{\codeinmath{Ctxt}}{\ieasmmach} \refines_{R_{\mathcal{M}{[\tasm, \ieasm]}}} \semwmachine{\ThreadConf, \PLayer{\TLink}{tid}{\oracle^{\TLink}_{tid}}}{\codeinmath{Ctxt}}{\tasmmach}$\\
@@ -118,7 +117,7 @@ when $R_{\mathcal{M}{[\tasm, \ieasm]}}$ is a refinement relation between two mac
 
 Similar to Lemma~\ref{lemma:chapter:conlink:easm-refines-iieasm} and Lemma~\ref{lemma:chapter:conlink:easm-refines-single-ieasm},
 Lemma~\ref{lemma:chapter:conlink:ieasm-refines-tasm} depends on a thread configuration ($\ThreadConf$) and an abstract layer definition ($\TLink$).
-It, however, does not depend on other abstract properties such as $\AbsRelC$; thus
+However, it does not depend on other abstract properties such as $\AbsRelC$; thus,
 using it does not require us to introduce any additional concrete definitions. 
 
 
