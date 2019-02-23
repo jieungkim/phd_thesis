@@ -91,19 +91,20 @@ multi-Paxos~\cite{cppraft, ironfleet}.
 Linearizability
 and leader-soundness proofs in Chapter~\ref{chapter:witness-passing} build on existing work on
 linearizability: the key insight for the proof is to base the reasoning on
-an atomic step of each operation.  Yet we generalize the reasoning of linearizability
-to the leader-based distributed system and create a reusable proof template.
-The template extracts
-necessary states from the witness that is created by the lower-level
-specification of concrete systems
-of a generic leader-based distributed system and provides a proof template based on
-abstract states which are represented as the witness.
+an atomic step of each operation. 
+% Yet we generalize the reasoning of linearizability
+%to the leader-based distributed system and create a reusable proof template.
+%The template extracts
+%necessary states from the witness that is created by the lower-level
+%specification of concrete systems
+%of a generic leader-based distributed system and provides a proof template based on
+%abstract states which are represented as the witness.
 The witness encodes atomic steps backed by a quorum--which approves state
 changes--and the validity of the leader who is initiating the atomic actions.
-Our template guarantees the linearizability of any leader-based system that
-satisfies the constraints of the witness. Using a similar witness structure, our
-model automatically verifies the soundness of the leader based on
-the linearizability of leader election.
+%Our template guarantees the linearizability of any leader-based system that
+%satisfies the constraints of the witness. Using a similar witness structure, our
+%model automatically verifies the soundness of the leader based on
+%the linearizability of leader election.
 
 
 
@@ -418,9 +419,9 @@ to find a reusable framework for these proofs,
 but our approach chooses to pass around the information (by logically exposing the key implicit invariant as the explicit one)
  that is needed to prove the fundamental properties of distributed protocols instead of decomposing Paxos further. 
 
-Padon et al. verified high-level specifications of many variants of Paxos
+Padon et al.~\cite{paxosepr} verified high-level specifications of many variants of Paxos
 and multi-Paxos while proposing a method to specify the protocols using
-a decidable first-order logic~\cite{paxosepr}. Verification of Paxos
+a decidable first-order logic. Verification of Paxos
 variants was made possible by reusing the specification and proof of vanilla
 Paxos. 
 On the other hand, our approach can reuse the proof of a Paxos instance
@@ -440,7 +441,7 @@ Lampson attempted to distill Paxos into its core components by creating a very h
 and showing how other variants can be derived from it.
 Some still felt that this did not get at the essence of the algorithm because at least two works since then \cite{dpaxos, sdpaxos}
 have studied other ways of dividing Paxos into simpler components such that  proofs of the protocol can be made more modular.
-Our write-witness-passing approach also attempts to find a reusable framework for these proofs,
+Our witness-passing approach also attempts to find a reusable framework for these proofs,
 but instead of decomposing Paxos further, we make the critical implicit invariants more explicit by passing around
 the information needed to prove them.
 
@@ -478,5 +479,4 @@ CASPaxos to build a generic specification for leader-based distributed systems.
 Our specification also resembles the high-level specification of the state machine
 replication protocol that  Lamport generalized~\cite{generalizedconsensus} based on the trace theory~\cite{mazurkiewicz:tracetheory}.
 Our work aims to model and verify the common properties of  generic leader-based distributed systems;
-thus it differs from Lamport's work which focuses on modeling multi-Paxos and consensus (that is one of our examples).
-
+thus it differs from Lamport's work which focuses on modeling multi-Paxos and consensus.

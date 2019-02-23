@@ -10,23 +10,32 @@ $L \in \fullset$ can make changes to $\dobj$. There can be many ways to elect
 $L$, but the election protocol must assign at most one $L$ per $\termnum$,
 or the system should include a conflict resolution scheme to only apply
 state changes by at most one $L$ at $\termnum$.
-
-The constraints of state updates, which are specified in $\protocolfunction$ in \sysname{},
-are that update operations can fail during execution, but the effect on $\dobj$ should be atomic. For example, a $\multipaxos$ system can reach a
+Update operations can fail during execution, but the effect on $\dobj$ should be atomic. 
+For example, a $\multipaxos$ system can reach a
 state where a $\paxos$ instance did not reach a consensus but contains an
 incomplete state change proposal from $\gstate$ to $\gstate^\prime$.
 Then $\protocolfunction$ should make sure that this incomplete state is either safely abandoned (in favor of retaining state $\gstate$)
 or completed (in favor of adopting $\gstate^\prime$ in its entirety)
 before executing any subsequent operations. 
-\sysname{} only focus on the leader-based systems that can be modeled by this approach.
+Our approach only focuses on the leader-based systems that can be modeled by this approach.
 We further formally model the elements of a leader-based distributed system.
+
+%The constraints of state updates, which are specified in $\protocolfunction$ in \sysname{},
+%are that update operations can fail during execution, but the effect on $\dobj$ should be atomic. For example, a $\multipaxos$ system can reach a
+%state where a $\paxos$ instance did not reach a consensus but contains an
+%incomplete state change proposal from $\gstate$ to $\gstate^\prime$.
+%Then $\protocolfunction$ should make sure that this incomplete state is either safely abandoned (in favor of retaining state $\gstate$)
+%or completed (in favor of adopting $\gstate^\prime$ in its entirety)
+%before executing any subsequent operations. 
+%\sysname{} only focus on the leader-based systems that can be modeled by this approach.
+%We further formally model the elements of a leader-based distributed system.
 
 \section{MultiPaxos}
 \label{chapter:witnesspassing:multipaxos}
 
 We use the fixed-configuration multi-decree $\paxos$ protocol (a simplified variant
 of the protocol commonly referred to as $\multipaxos$)~\cite{rvrpaxos}
-as an example protocol to explain how \sysname{} facilitates modeling and
+as an example protocol to explain how our approach facilitates modeling and
 verifying leader-based distributed systems. $\multipaxos$ is a
 state machine replication protocol. In $\multipaxos$, a system's state changes
 are chosen by synod consensus of a $\paxos$ instance and replicated across acceptor nodes.
@@ -54,7 +63,7 @@ of a single $\paxos$ instance
 and developers are left to choose their implementation of $\multipaxos$.
 
 Our $\multipaxos$ example employs the scheme that is described as below:
-\begin{itemize}[leftmargin=*]
+\begin{itemize}
 	\item {\textbf{Leader election: }} whenever the leader at $\termnum$ is
 		suspected to be dead, a proposer increments $\termnum$ to $\termnum'$ and
 		sends a vote request to the acceptors.
@@ -83,7 +92,7 @@ to reason globally, one must trace the network history back in time and consider
 nodes' states at once.
 It is further complicated if one assumes a network that can have failures such as duplicated
 or lost messages.
-In \sysname{} we attempt to reduce the amount of global reasoning by logically gathering sufficient
+We attempt to reduce the amount of global reasoning by logically gathering sufficient
 information in the local state to prove the desired properties.
 We call this gathered information a \textit{witness}, and while we provide a formal treatment, it is helpful first to see a simple example.
 
@@ -119,54 +128,54 @@ Then by inspecting the promises stored in the witnesses, we can show that every 
 came from a proposer with the highest round number among a majority of acceptors.
 Therefore we know that the witnesses contain a history of all written values.
 We use this fact to sketch a proof of immutability.
+%
+%\begin{proof}
+%Consider a proposer in phase 2a with a witness $wit$ and a value $val$.
+%Proceeding by induction on the length of $wit$, the base case is trivial because no witnesses
+%means no value is written so it is safe to write anything.
+%In the inductive case we have a value $old$ that was the last write in round $rnd$.
+%If $val$'s round number is $rnd'$ then it must be the case that $rnd' >= rnd$ because
+%the acceptors would have rejected the messages otherwise.
+%If $rnd' = rnd$ then $val = old$ because round numbers are unique and only one value can be proposed
+%per round, so we are done.
+%If $rnd' > rnd$ then that implies there was a write in a round after $rnd$, which contradicts our
+%assumption that $rnd$ was the latest write.
+%Therefore, for any acceptor in phase 2b, the value in the witness is always safe to write and since
+%it matches the value in the message from the proposer, immutability is preserved.
+%\end{proof}
 
-\begin{proof}
-Consider a proposer in phase 2a with a witness $wit$ and a value $val$.
-Proceeding by induction on the length of $wit$, the base case is trivial because no witnesses
-means no value is written so it is safe to write anything.
-In the inductive case we have a value $old$ that was the last write in round $rnd$.
-If $val$'s round number is $rnd'$ then it must be the case that $rnd' >= rnd$ because
-the acceptors would have rejected the messages otherwise.
-If $rnd' = rnd$ then $val = old$ because round numbers are unique and only one value can be proposed
-per round, so we are done.
-If $rnd' > rnd$ then that implies there was a write in a round after $rnd$, which contradicts our
-assumption that $rnd$ was the latest write.
-Therefore, for any acceptor in phase 2b, the value in the witness is always safe to write and since
-it matches the value in the message from the proposer, immutability is preserved.
-\end{proof}
-
-\jieung{Check the correctness of these tables!!}
-
-\begin{figure}
-\begin{center}
-%\includegraphics[width=.45\textwidth,page=1,trim=0 120 0 50,clip]{figs/witnesspassing/construct_witness}
-	\includegraphics[width=.7\textwidth, page=1]{figs/witnesspassing/witnessspmp}
-\end{center}
-\caption{Single-Paxos Witnesses: fields are (round number, value) (promises omitted)}
-\label{fig:chapter:witnesspassing:paxos-witness-table}
-\vspace{-1em}
-\end{figure}
-
-\begin{figure}
-\begin{center}
-%\includegraphics[width=.45\textwidth,page=2,trim=40 90 0 0,clip]{figs/witnesspassing/construct_witness}
-	\includegraphics[width=.7\textwidth, page=2]{figs/witnesspassing/witnessspmp}
-\end{center}
-\caption{$\multipaxos$ Witnesses: fields are (cell-index, round number, value) (promises omitted)}
-\label{fig:chapter:witnesspassing:multipaxos-witness-table}
-\vspace{-1em}
-\end{figure}
-
-Another strength of witnesses is their compositionality.
-Figure~\ref{fig:chapter:witnesspassing:paxos-witness-table} shows the witnesses for two instances of $\paxos$.
-The second write on each $\paxos$ instance keeps track of witnesses for each
-instance: writes at round 3 in both instances shows that value $v_{1}$ and
-$v_{2}$ originally came from writes at round 1 and round 2 respectively. 
-If we want to extend our proofs about single-Paxos to $\multipaxos$, we can construct
-a function that composes the witnesses in the manner shown in Figure~\\ref{fig:chapter:witnesspassing:multipaxos-witness-table}.
-The composed witness is almost equivalent to what is actually stored in the sequence of
-$\paxos$ instances in $\multipaxos$, which shows step-by-step state changes.
-Even in a leader-based distributed system that does not maintain an explicit log 
-to record state changes, the composed witness can provide the entire history of
-state changes that can be used to reason about the system. 
+%\jieung{Check the correctness of these tables!!}
+%
+%\begin{figure}
+%\begin{center}
+%%\includegraphics[width=.45\textwidth,page=1,trim=0 120 0 50,clip]{figs/witnesspassing/construct_witness}
+%	\includegraphics[width=.7\textwidth, page=1]{figs/witnesspassing/witnessspmp}
+%\end{center}
+%\caption{Single-Paxos Witnesses: fields are (round number, value) (promises omitted)}
+%\label{fig:chapter:witnesspassing:paxos-witness-table}
+%\vspace{-1em}
+%\end{figure}
+%
+%\begin{figure}
+%\begin{center}
+%%\includegraphics[width=.45\textwidth,page=2,trim=40 90 0 0,clip]{figs/witnesspassing/construct_witness}
+%	\includegraphics[width=.7\textwidth, page=2]{figs/witnesspassing/witnessspmp}
+%\end{center}
+%\caption{$\multipaxos$ Witnesses: fields are (cell-index, round number, value) (promises omitted)}
+%\label{fig:chapter:witnesspassing:multipaxos-witness-table}
+%\vspace{-1em}
+%\end{figure}
+%
+%Another strength of witnesses is their compositionality.
+%Figure~\ref{fig:chapter:witnesspassing:paxos-witness-table} shows the witnesses for two instances of $\paxos$.
+%The second write on each $\paxos$ instance keeps track of witnesses for each
+%instance: writes at round 3 in both instances shows that value $v_{1}$ and
+%$v_{2}$ originally came from writes at round 1 and round 2 respectively. 
+%If we want to extend our proofs about single-Paxos to $\multipaxos$, we can construct
+%a function that composes the witnesses in the manner shown in Figure~\\ref{fig:chapter:witnesspassing:multipaxos-witness-table}.
+%The composed witness is almost equivalent to what is actually stored in the sequence of
+%$\paxos$ instances in $\multipaxos$, which shows step-by-step state changes.
+%Even in a leader-based distributed system that does not maintain an explicit log 
+%to record state changes, the composed witness can provide the entire history of
+%state changes that can be used to reason about the system. 
 

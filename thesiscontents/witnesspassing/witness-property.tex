@@ -1,13 +1,12 @@
 \section{Common Property Proof}
 \label{chapter:witnesspassing:sec:prove-safety-with-witness}
 
-Proving the safety property of generic specifications using witnesses is 
-similar to showing that invariants of the witness holds.
+Proving the safety property of generic specifications using witnesses is similar to showing that invariants of the witness hold.
 %Besides the basic invariant including Theorem~\ref{thm:witness-invariant},
 %other assumptions about protocol specific functions can be defined and used to 
 %prove other crucial properties of distributed systems. 
 This section illustrates the proof of one of the common desirable properties
-of leader-based distributed system, linearizability.
+of a leader-based distributed system, linearizability.
 Linearizability guarantees that if a quorum of approvers accepts a request $c$, 
 all the subsequently issued requests reflects the result of $c$. 
 The proof of linearizability can take advantage of the witness. 
@@ -26,21 +25,18 @@ $\forall \ (st \ st' : \dsvalue) : \ u \ st = st' \rightarrow st.\seqnum
 \end{center}
 where $<_{\seqnum}$ is a comparison relation of two version numbers.
 
-Another requirement to build a linearizable leader-based distributed system 
-is to make sure that the elected leader is able to get the latest consistent
-state of the system. Such state is represented as the commit witness with the
-longest list of witness elements and this witness contains the entire history of
-all committed requests. 
+
+Another requirement to build a linearizable leader-based distributed system is to make sure that the elected leader can get the latest consistent
+state of the system. Such a state is represented as a witness with the most extended list, and this witness includes the entire history of all committed requests. 
+It requires the check for witnesses to figure out the witness that contains the longest the committed witness. If there are two committed witnesses from two approvers, choose the witness that includes longer uncommitted witness. It only requires the check for the last index value in the uncommitted witness if there are elements in the uncommitted witness.
+
 
 This proof is related to generic functions, $\ldrfunction$ and $\ldrhfunction$, 
-and the witness construction functions, $\conwcons$ and $\ldrwcons$.
+and the witness construction functions, $\ldrwcons$ and $\opwcons$.
 First, the $g$ function in $\ldrhfunction$ has to satisfy that  
-it always returns the up-to-date status to the requester.
-Second, the $g_{post}$ function has to choose the value mapped with the highest 
-version number among the valid acknowledgments. 
-Third, $\conwcons$ and $\ldrwcons$ functions should be called with the proper 
-write witness, which is the witness mapped with the highest version number 
-among all witnesses from the approvers. 
+it always returns the current status to the requester.
+Second, the $g_{post}$ function has to choose the value mapped with the highest version number among the valid acknowledgments. 
+Third, the $\ldrwcons$ function should be called with the proper write witness, which is the witness mapped with the highest version number among all witnesses from the approvers (in a set of quorum).
 With the given constraints, the following two lemmas can be proved.
 
 \begin{lemma}[Election consistency]\label{lemma:chapter:witnesspassing:election-consistency}
@@ -53,10 +49,9 @@ witness with the largest number of entries.
 \end{lemma}
 
 \begin{proof}
-Proving the election consistency is providing that system-specific functions 
-satisfy the conditions that we illustrated. However, satisfying these
+Proving the election consistency is providing that system-specific functions satisfy the conditions that we illustrated. However, satisfying these
 conditions are common requirements for system-specific functions in
-\sysname{} and thus if we assume that the conditions already hold for all
+our approach and thus if we assume that the conditions already hold for all
 system-specific functions, the proofs for the lemmas are straightforward.
 \end{proof}
 

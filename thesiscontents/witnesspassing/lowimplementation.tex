@@ -3,17 +3,17 @@
 
 \jieung{We are able to extend this section later by adding multiple details if it is desirable.}
 
-Previous sections have shown how \sysname{} provides a generic specification
-that can accommodate a variety of distributed systems.  To assure correctness of
-a concrete implementation, a distributed system verification also needs to
+Previous sections have shown how we provide general specifications
+that can accommodate a variety of distributed systems.  To assure correctness of a concrete implementation, a distributed system verification also needs to
 provide evidence that the actual running code refines high-level generic
 specifications. While mere functional correctness is relatively well-understood,
-it is not sufficient for the purposes of a distributed system verification. The
-system's behavior with respect to the network must be taken into account. 
-The previous chapter address this issue, and 
-provide a network model only for one specific protocol, $\WOR$. 
-In here, we have generalized our  asynchronous network model to make it to be used 
-for multiple protocols by filling out necessary information. 
+it is not sufficient for distributed system verification. The
+system's behavior concerning the network must be taken into account. 
+The previous chapter addresses this issue and 
+provides a network model only for one specific protocol, $\WOR$. 
+In here, we have generalized our asynchronous network model to make it be used 
+for multiple protocols by filling out the necessary information. 
+
 
 
 \subsection{Network Model}
@@ -38,6 +38,7 @@ $$
 \label{fig:chapter:witnesspassing:net-defs}
 \end{figure}
 
+
 The network model here is the instantiation of log in
  Section~\ref{chapter:witnesspassing:sec:specs-for-leader-based-system}. Our network is defined as a list of
 network events, and the key definitions are found in Figure~{fig:chapter:witnesspassing:net-defs}. A
@@ -45,7 +46,7 @@ network event ($\mathrm{E}_{net}$) represents an interaction between a node and
 the greater distributed system of which it is part. This $\mathrm{E}_{net}$ is a
 low-level instantiation of $\packet$ from Figure~\ref{fig:chapter:witnesspassing:basic-state}.
 
-At the lowest logical level there are four kinds of events: 1) send, 2) receive,
+At the lowest logical level, there are four kinds of events: 1) send, 2) receive,
 3) timeout, and 4) ghost. A send event represents an interaction in which one
 node sends data to another node and registers corresponding send events in the
 network log. A receive event represents the moment in time when a node begins
@@ -78,16 +79,17 @@ of the communication.
 
 A local node's view of the network log grows over time by the action of two
 primitives - send and receive. The low-level send primitive adds a single send
-event to the network log. There is no acknowledgement and send always succeeds.
+event to the network log. There is no acknowledgment and send always succeeds.
 The low-level receive primitive conceptually collects data received from other
 nodes, but in addition to receive and timeout events, populates the network log
-with all intermediate events. (including events not actually observable by the
+with all intermediate events. (including events not observable by the
 concrete local node). For reasoning purposes, receive consults a network oracle
 to fill in the log. The oracle is constrained by predicates that model only
 relevant forms of network failure,(which can be specified per protocol), and
 verification of a protocol will involve quantifying over all such valid oracles
 to show the correctness of the local node's behavior and the greater distributed
 system.
+
 
 \subsection{Connection with Generic Specifications}
 \label{chapter:witnesspassing:subsec:connection}
@@ -109,11 +111,10 @@ This facilitates clear separation of protocol verification and aids
 horizontal composition.
 
 Two example network reductions are shown in Figure~\ref{fig:chapter:witnesspassing:network-reduction}. In
-reduction (a), a two-step reduction simplifies a network log in which node $P1$
-issues three independent send events. The first step rearranges the three send
+reduction (a), a two-step reduction simplifies a network log in which node $P1$ issues three independent send events. The first step rearranges the three send
 events so that they are adjacent in the network log. The second step
 consolidates the three send events into a single broadcast event. These
-reductions do not involve a change in behavior of the system (the first because
+reductions do not involve a change in the behavior of the system (the first because
 the send events are independent of the intervening network log, and the second
 because a broadcast has the same semantics as individual sends). Each reduction
 introduces a new channel and disallows an old one (the channel id is the first
@@ -132,11 +133,11 @@ Specifications that we have described in
  Section~\ref{chapter:witnesspassing:sec:specs-for-leader-based-system}
  are based on the network log and network
 log replay function. To connect low-level specifications with these log-oriented
-specifications, a refinement from direct update on local state is necessary. 
+specifications, a refinement from a direct update on local state is necessary. 
  $\ccalname$  showed how this can
 be done with CPU schedules, and the same technique applies straightforwardly to
 the network log.
 
-The high level global state calculated by the replay function contains local
+The high-level global state calculated by the replay function contains local
 states for each node. The network oracle, and by extension the local states, can
 be constrained with protocol-specific assumptions for rely-guarantee reasoning.

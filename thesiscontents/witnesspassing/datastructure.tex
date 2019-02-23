@@ -2,11 +2,11 @@
 \section{Specifications for Leader Based Systems}
 \label{chapter:witnesspassing:sec:specs-for-leader-based-system}
 
-\sysname{} specifies leader-based distributed systems with a generic
+One of our goals is to build abstract specifications that represent multiple leader-based distributed systems.
+In this purpose, we specify leader-based distributed systems with a generic
 specification and a system-specific specification. 
 The generic specification defines the high-level behavior of the leader-based 
-distributed system and the system-specific specification, which is encapsulated 
-within the generic specification describes the low-level behaviors. 
+distributed system and the system-specific specification, which is encapsulated within the generic specification describes the low-level behaviors. 
 
 The generic specification obviates the need for the user to write specifications
 of essential safety properties of the leader-based system and instead enables them to
@@ -23,10 +23,10 @@ The generic specification for both requesters and approvers
 works as a template for writing system-specific
 specifications and for common safety property proofs.
 Safety properties can be verified over the generic specification once,
-and the system-specific specification, which meets the pre-defined template in
-the generic specification, is automatically guaranteed to be safe. The safety
-properties that \sysname{} guarantees are linearizability of state update and
+and the system-specific specification--which meets the pre-defined template in the generic specification--is automatically guaranteed to be safe. The safety
+properties that we provide are linearizability of state update and
 soundness of leader selection.
+
 
 \begin{figure}
 \includegraphics[width=0.95\textwidth]{figs/witnesspassing/overviewfig}
@@ -141,7 +141,7 @@ The interleaving is expressed by our network model, described in Section~\ref{ch
 Our framework keeps track of each function call
 within the network log and the replay function $\replay$ computes the
 global state based on the network log.
-Finally, \sysname{}'s generic specification is parameterized by some protocol-specific
+Finally, our generic specification is parameterized by some protocol-specific
 functions that we explain later in this section.
 
 
@@ -152,7 +152,7 @@ functions that we explain later in this section.
 The goal of leader election is to set a new term, give one node exclusive access to the
 entire system, and synchronize every node's local state such that the
 global state is prepared to be updated.
-Using function definitions in Figure~{fig:chapter:witnesspassing:basic-state}, we define the template function for leader election as follows:
+Using function definitions in Figure~\ref{fig:chapter:witnesspassing:basic-state}, we define the template function for leader election as follows:
 $$
 \begin{array}{l}
 	\ldrfunction (nid: \nodeid) (g_{pre}\ g_{post}:  \gldrfunction)
@@ -214,7 +214,7 @@ are able to prove in Section~\ref{chapter:witnesspassing:sec:prove-safety-with-w
 
 \subsubsection{Requester}
 The commit function has a similar format to the leader election function, but
-includes an object update function $u : \updatefunc$:
+includes an object update function $(u : \updatefunc)$:
 
 $$
 \begin{array}{l}
@@ -262,4 +262,4 @@ $$
 \end{array}
 $$
 
-
+All those definitions generic and simple, but they provide useful guidelines for users to build leader-based distributed systems. We also offer fundamental local invariants that those functions have to follow; thus users can check their local implementation is valid to guarantee important safety properties of leader-based distributed systems--linearizability and mutual exclusion of a leader election operation.

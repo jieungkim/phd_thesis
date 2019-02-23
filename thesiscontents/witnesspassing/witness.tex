@@ -1,106 +1,125 @@
+\section{Witness Passing}
+\label{chapter:witnesspassing:sec:witness-passing}
+The generic specification provides a template for leader-based distributed
+system and hides unnecessary details from users. It also provides a guideline 
+for proving functional correctness when connecting the specification with a 
+low-level implementation is written in C or Assembly by decomposing 
+two key functions into multiple sub-functions.
+However, we need further items to prove safety properties of distributed systems efficiently.  
+Therefore, we model the state of the distributed system as a network history, 
+which we can refer to the status of other nodes.
+The network history, however, contains unnecessary events in it due to
+the network failure assumptions, packet reordering or duplication, that distributed systems consider. Therefore, having a more precise, 
+locally built, and globally consistent data structure to aid the safety proof of the distributed system is desired. Hence, we propose the \textit{witness}.
+
+The witness is a logical data structure that continually grows to contain a global
+history of the distributed system state changes that are meaningful to the
+latest state. A witness grows by being passed between nodes through the network.
+Information in a witness is never replaced or deleted, but a witness can be discarded if the operation is associated with fails.
+%While our template functions mainly use witnesses to verify
+%linearizability of state changes and the leader election by composing the 
+%witnesses for commit operations and leaders, the underlying systems can
+%build their own witnesses to verify system-specific properties (\eg, immutability
+%of $\paxos$ in Section~\ref{chapter:witnesspassing:sec:global-local-reasoning}).
+We first formally define witnesses as they are used in the template functions
+and then show how we integrate them into the specifications described in Section~\ref{chapter:witnesspassing:sec:specs-for-leader-based-system}.
+
+
+
 \begin{figure}
 \raggedright
-\textbf{Quorum definition}  \\
+\textbf{Basic definitions:}  \\
 $$
 \begin{array}{llll}
 \accsset & := & \set{\nodeid} & \mbox{(All voters)}\\
+\isquorums (ca: \accsset) (v: \voters) &:& \mathbb{B} & \mbox{(Quorum)} \\
+\end{array}
+$$
+\raggedright
+\textbf{Witness definitions:}  \\
+$$
+\begin{array}{llll}
 \voters & := & \set{\nodeid} & \mbox{(All supportive voters)}\\
-\isquorums_{ldr} (ca: \accsset) (v: \voters) &:& \mathbb{B} & \mbox{(Leader election quorum)} \\
-\isquorums_{op} (ca: \accsset) (v: \voters)  &:&  \mathbb{B} &  \mbox{(Commit quorum)}\\
+\witness & :=  & (\termnum, \dstate, \updatefunc, \voters) & \mbox{(Witness Element)}\\
+\ldrwitness &: & lst \ \witness   & \mbox{(Uncommitted witness)}\\
+\ldrwitness &: & lst \ \witness   & \mbox{(Committed witness)}\\
+\witnesstree &: &  (\ldrwitness , \ldrwitness) & \mbox{(Witness)}\\
 \end{array}
 $$
-\textbf{Leader election witness}  \\
-$$
-\begin{array}{llll}
-\ldrwitness &:=&  \set{\termnum \mapsto list\ (\dstate, \voters, \accsset, \isquorums_{ldr})} & \\
-\end{array}
-$$
-\textbf{Commit operation witness}  \\
-$$
-\begin{array}{llll}
-\opwitness &:=& \set{\termnum \mapsto list\ (\dstate, \updatefunc, \voters,
-	\accsset, \isquorums_{op})}& 
-\end{array}
-$$
+%\textbf{Uncommitted witness}  \\
+%$$
+%\begin{array}{llll}
+%\ldrwitness &:=&  \set{\termnum \mapsto list\ (\dstate, \voters, \accsset)} & \\
+%\end{array}
+%$$
+%\textbf{Committed witness}  \\
+%$$
+%\begin{array}{llll}
+%\opwitness &:=& \set{\termnum \mapsto list\ (\dstate, \updatefunc, \voters, \accsset)}& 
+%\end{array}
+%$$
 \caption{Witness Definition for Distributed Systems.}
 \label{fig:chapter:witnesspassing:witness-definition}
 \end{figure}
 
-\section{Witness Passing}
-\label{chapter:witnesspassing:sec:witness-passing}
-
-The generic specification provides a template for leader-based distributed
-system and hides unnecessary details from users. It also provides a guideline 
-for proving functional correctness when connecting the specification with a 
-low-level implementation written in C or Assembly.
-It, however, needs further items to prove safety properties of distributed 
-systems efficiently.  
-\sysname{} models the state of the distributed system as a network history, 
-which we can refer the status of other nodes.
-The network history, however, contains unnecessary events in it due to
-the network failure assumptions, packet reordering or duplication, that  
-distributed systems consider. Therefore, having a more precise, 
-locally built, and globally consistent data structure to aid the safety proof 
-of the distributed system is desired. Hence, we propose the witness.   
-
-The witness is a logical data structure that constantly grows to contain a global
-history of the distributed system state changes that are meaningful to the
-latest state. A witness grows by being passed between nodes through the network.
-Information in a witness is never replaced or deleted, but a witness can
-be discarded if the operation it is associated with fails.
-While \sysname{}'s template functions mainly use witnesses to verify
-linearizability of state changes and the leader election by composing the 
-witnesses for commit operations and leaders, the underlying systems can
-build their own witnesses to verify system-specific properties (e.g. immutability
-of Paxos in Section~\ref{chapter:witnesspassing:sec:global-local-reasoning}).
-
-We first formally define witnesses as they are used in the template functions
-and then show how we integrate them into the specifications described in Section~\ref{chapter:witnesspassing:sec:specs-for-leader-based-system}.
-
 \subsection{Witness Definitions} 
 \label{chapte:witnesspassing:subsec:witness-definition}
-Witnesses in \sysname{} are associated with the two template functions.
-We view the leadership witness $\ldrwitness$ as a history of ownership transfers
-of a distributed object and the commit witness $\opwitness$ as
-a logical sequence of updates to the object. While the information added to a
-witness is created by all nodes in the system, the witness construction only
+
+A witness ($\witnesstree$) contains all logical information that is sufficient for us to deduce the current status and the history of the associated distributed object. 
+While all nodes in the system create the information added to a witness, the witness construction only
 happens at the requester side. Witness-related definitions are outlined in
 Figure~\ref{fig:chapter:witnesspassing:witness-definition}.
+Reconfiguration of the set of nodes in the system is currently out of scope, so we assume that the information for all voters ($\accsset$) and the quorum definition ($\isquorums$) is fixed.
 
-The witness for the leader election function ($\ldrwitness$) contains a map
-from the term numbers ($\termnum$) to a set of witness elements.
-Each element contains a list of local node state ($\dstate$), node ids
-of all of the voters in the leader election ($\accsset$), node ids of the voters who voted
-for the requester ($\voters$), and a function to determine the success of the
-election ($\isquorums_{ldr}$), which makes a decision by checking for the existence of a
-quorum. The necessary quorum size for a successful election varies
-by protocol; e.g., Raft requires $F + 1$ votes out of $2F + 1$
-nodes while the Lamport lock needs $N$ votes out of $N$ nodes.
-
-The witness for the commit function ($\opwitness$) describes how the distributed
-object has evolved from the initial to the latest state by keeping a
-history of all intermediate values of $\sigma$ and the update function
-$\updatefunc$ that is applied for each update. $\opwitness$ also contains
-the other fields in $\ldrwitness$; however, the necessary quorum size for $\isquorums_{op}$
-can be different than that for $\isquorums_{ldr}$. For example,
-two-phase commit as described in Figure~\ref{fig:chapter:witnesspassing:process-flow} uses
-a membership service for leader election, but relies on resource managers to
-commit data.
-
-Two quorum functions ($\isquorums_{ldr}$ and $\isquorums_{op}$), which determine whether the leader 
-election and operation are successful, generalize how leader-based distributed 
-systems make atomic state transitions. We make the assumption that the underlying
-protocol allows only one quorum that allows the state change for an operation 
-that multiple nodes may try to execute concurrently. This is one of the key
-requirements that a system must meet to use \sysname{}'s proof template.
-
+Each element in the witness contains four parts, a term number  ($\termnum$), a local node state ($\dstate$), an update function associated with the update ($\updatefunc$), and the evidence that a proposer collects to build the element. 
+The top-level definition of our witness is a pair that consists of two witness lists--one is for committed operations and the other is for uncommitted operations.
 The process of building a witness is modular and simple. A requester sends
-requests and approvers send back acknowledgements with existing witnesses that
+requests and approvers send back acknowledgments with existing witnesses that
 show how they reached their latest state.
-The requester can simply construct a new witness and concatenate it with the
+The requester can construct a new witness and concatenate it with the
 received witness without having to inspect it.
 The new composite witness is then sent back to the approvers at the point where
 the approvers' state is updated.
+
+
+%
+%Each element in the witness election function ($\ldrwitness$) contains a
+%
+%
+%
+% ($\termnum$) to a set of witness elements.
+%Each element contains a list of local node state ($\dstate$), node ids
+%of all of the voters in the leader election ($\accsset$), node ids of the voters who voted
+%for the requester ($\voters$), and a function to determine the success of the
+%election ($\isquorums_{ldr}$), which makes a decision by checking for the existence of a
+%quorum. The necessary quorum size for a successful election varies
+%by protocol; e.g., Raft requires $F + 1$ votes out of $2F + 1$
+%nodes while the Lamport lock needs $N$ votes out of $N$ nodes.
+%
+%The witness for the commit function ($\opwitness$) describes how the distributed
+%object has evolved from the initial to the latest state by keeping a
+%history of all intermediate values of $\sigma$ and the update function
+%$\updatefunc$ that is applied for each update. $\opwitness$ also contains
+%the other fields in $\ldrwitness$; however, the necessary quorum size for $\isquorums_{op}$
+%can be different than that for $\isquorums_{ldr}$. For example,
+%two-phase commit as described in Figure~\ref{fig:chapter:witnesspassing:process-flow} uses
+%a membership service for leader election, but relies on resource managers to
+%commit data.
+%
+%Two quorum functions ($\isquorums_{ldr}$ and $\isquorums_{op}$), which determine whether the leader 
+%election and operation are successful, generalize how leader-based distributed 
+%systems make atomic state transitions. We make the assumption that the underlying
+%protocol allows only one quorum that allows the state change for an operation 
+%that multiple nodes may try to execute concurrently. This is one of the key
+%requirements that a system must meet to use our proof template.
+%
+%The process of building a witness is modular and simple. A requester sends
+%requests and approvers send back acknowledgements with existing witnesses that
+%show how they reached their latest state.
+%The requester can simply construct a new witness and concatenate it with the
+%received witness without having to inspect it.
+%The new composite witness is then sent back to the approvers at the point where
+%the approvers' state is updated.
 
 \subsection{Specifications with Witness} 
 \label{chapter:witnesspassing:subsec:specifications-with-witness}
@@ -110,9 +129,9 @@ the approvers' state is updated.
 \textbf{State definition with witness}\\
 $$
 \begin{array}{ll}
-\dstate_\witness:= (\dstate \times \ldrwitness \times \opwitness)  & \mbox{(Local state)} \\
+\dstate_\witness:= (\dstate \times \witnesstree)  & \mbox{(Local state)} \\
 \gstate_\witness := \set{\nodeid \mapsto \dstate_\witness} & \mbox{(Global state)}\\
-\packet_\witness:= \packet~\vert~(\packet \times  \witness_{ldr} \times \witness_{op}) & \mbox{(Network event)}\\
+\packet_\witness:= \packet~\vert~(\packet \times  \witnesstree) & \mbox{(Network event)}\\
 {\networklog}_{\witness}:= \mbox{list}\ \packet_\witness & \mbox{(Network log)}\\
 \replay_\witness : {\networklog}_{\witness} \rightarrow  \gstate_\witness& \mbox{(Log replay function)}\\
 \end{array}
@@ -126,7 +145,7 @@ find\_vtr_{op} : \termnum \rightarrow \networklog \rightarrow \networklog \right
 find\_ca_{ldr} : \termnum \rightarrow \networklog \rightarrow \networklog \rightarrow  \set{\nodeid}\\
 find\_vtr_{ldr} : \termnum \rightarrow \networklog \rightarrow \networklog \rightarrow  \set{\nodeid}\\
 \\
-\conwcons \ (nid : \nodeid)\ (rn: \termnum)\  (w_l :\witness_{ldr})\ (w_o : \witness_{op})\ (l_{pre}\ l_{rcv}: \networklog)\\ (f_{q} :  \isquorums_{op}) := \\
+\ldrwcons \ (nid : \nodeid)\ (rn: \termnum)\  (w_l :\witness_{ldr})\ (w_o : \witness_{op})\ (l_{pre}\ l_{rcv}: \networklog)\\ (f_{q} :  \isquorums_{op}) := \\
 \ \ \ \ \mbox{\textbf{let}}\ ca := (find\_ca_{ldr} \ rn \ l_{pre} \ l_{rcv})\  \mbox{\textbf{in}} \\ 
 \ \ \ \ \mbox{\textbf{let}}\ vtr := (find\_vtr_{ldr} \ rn \ l_{pre} \ l_{rcv})\  \mbox{\textbf{in}} \\ 
 \ \ \ \ \mbox{\textbf{if}} \ f_{q} \ ca \ vtr \ \mbox{\textbf{then}}  \\
@@ -135,20 +154,6 @@ find\_vtr_{ldr} : \termnum \rightarrow \networklog \rightarrow \networklog \righ
 \ \ \ \ \ \ \ \  \vert~((rn', \_, \_), \_, \_, \_ )::\_  \Rightarrow w_o / \langle w_o[rn] := w_o[rn'] \rangle \\
 \ \ \ \ \ \ \mbox{\textbf{end}}\\
 \ \ \ \ \  \mbox{\textbf{else}} \ w_o.
-\\
-\ldrwcons \ (nid : \nodeid)\ (rn: \termnum)\ (w_l :\witness_{ldr})\ (w_o : \witness_{op})
-(l_{pre}\ l_{rcv}: \networklog)\\  (f_{q} :  \isquorums_{ldr})\ (f_{o} :  \isquorums_{op}) := \\
- \ \ \ \ \mbox{\textbf{let}}\ ca := (find\_ca_{ldr} \ rn \ l_{pre} \ l_{rcv})\  \mbox{\textbf{in}} \\ 
- \ \ \ \ \mbox{\textbf{let}}\ vtr := (find\_vtr_{ldr} \ rn \ l_{pre} \ l_{rcv})\  \mbox{\textbf{in}} \\ 
-\ \ \ \ \mbox{\textbf{if}} \ f_{q} \ ca \ vtr \ \mbox{\textbf{then}}  \\
-\ \ \ \ \ \ \mbox{\textbf{let}}\ l := l_{rcv}~\doubleplus~l_{pre} \ \mbox{\textbf{in}} \\
-\ \ \ \ \ \ \mbox{\textbf{let}}\ w_l' := w_l/\langle w_l[rn]  := ((\replay(l)[nid]),f, vtr, ca, f_{q}) ::w_l[rn])  \rangle \ \mbox{\textbf{in}}\\
-\ \ \ \ \ \  \mbox{\textbf{let}}\ w_o' := \conwcons\  nid\ rn\ w_l\ w_o \ l_{pre} \ l_{rcv} \ f_o \ \mbox{\textbf{in}}\  (w_l', w_o')\\
-%\ \ \ \ \ \ \ \ \ \ \mbox{\textbf{match}} \ w_l[rn] \ \mbox{\textbf{with}} \\
-%\ \ \ \ \ \ \ \ \ \ \vert~nil \Rightarrow  (w_l', w_o)\\
-%\ \ \ \ \ \ \ \ \ \ \vert~((rn', \_, \_), \_, \_, \_ )::\_  \Rightarrow (w_l', w_o / \langle w_o[rn] := w[rn'] \rangle \\
-%\ \ \ \ \ \ \ \ \ \ \mbox{\textbf{end}} \\ 
-\ \ \ \ \mbox{\textbf{else}}  \ (w_l, w_o). 
 \\
 \opwcons (nid : \nodeid) \ (rn: \termnum)\ (f: \updatefunc)\ (w :\witness_{op})
  (l_{pre}\ l_{rcv}: \networklog)\\ (f_{q} :  \isquorums_{op}) := \\
@@ -159,6 +164,47 @@ find\_vtr_{ldr} : \termnum \rightarrow \networklog \rightarrow \networklog \righ
 \ \ \ \ \mbox{\textbf{else}}  \ w. \\
 \end{array}
 $$
+%$$
+%\begin{array}{ll}
+%
+%find\_ca_{op} : \termnum \rightarrow \networklog \rightarrow \networklog \rightarrow  \set{\nodeid}\\
+%find\_vtr_{op} : \termnum \rightarrow \networklog \rightarrow \networklog \rightarrow  \set{\nodeid}\\
+%find\_ca_{ldr} : \termnum \rightarrow \networklog \rightarrow \networklog \rightarrow  \set{\nodeid}\\
+%find\_vtr_{ldr} : \termnum \rightarrow \networklog \rightarrow \networklog \rightarrow  \set{\nodeid}\\
+%\\
+%\conwcons \ (nid : \nodeid)\ (rn: \termnum)\  (w_l :\witness_{ldr})\ (w_o : \witness_{op})\ (l_{pre}\ l_{rcv}: \networklog)\\ (f_{q} :  \isquorums_{op}) := \\
+%\ \ \ \ \mbox{\textbf{let}}\ ca := (find\_ca_{ldr} \ rn \ l_{pre} \ l_{rcv})\  \mbox{\textbf{in}} \\ 
+%\ \ \ \ \mbox{\textbf{let}}\ vtr := (find\_vtr_{ldr} \ rn \ l_{pre} \ l_{rcv})\  \mbox{\textbf{in}} \\ 
+%\ \ \ \ \mbox{\textbf{if}} \ f_{q} \ ca \ vtr \ \mbox{\textbf{then}}  \\
+%\ \ \ \ \ \ \mbox{\textbf{match}} \ w_l[rn] \ \mbox{\textbf{with}} \\
+%\ \ \ \ \ \ \ \ \vert~nil \Rightarrow w_o \\
+%\ \ \ \ \ \ \ \  \vert~((rn', \_, \_), \_, \_, \_ )::\_  \Rightarrow w_o / \langle w_o[rn] := w_o[rn'] \rangle \\
+%\ \ \ \ \ \ \mbox{\textbf{end}}\\
+%\ \ \ \ \  \mbox{\textbf{else}} \ w_o.
+%\\
+%\ldrwcons \ (nid : \nodeid)\ (rn: \termnum)\ (w_l :\witness_{ldr})\ (w_o : \witness_{op})
+%(l_{pre}\ l_{rcv}: \networklog)\\  (f_{q} :  \isquorums_{ldr})\ (f_{o} :  \isquorums_{op}) := \\
+% \ \ \ \ \mbox{\textbf{let}}\ ca := (find\_ca_{ldr} \ rn \ l_{pre} \ l_{rcv})\  \mbox{\textbf{in}} \\ 
+% \ \ \ \ \mbox{\textbf{let}}\ vtr := (find\_vtr_{ldr} \ rn \ l_{pre} \ l_{rcv})\  \mbox{\textbf{in}} \\ 
+%\ \ \ \ \mbox{\textbf{if}} \ f_{q} \ ca \ vtr \ \mbox{\textbf{then}}  \\
+%\ \ \ \ \ \ \mbox{\textbf{let}}\ l := l_{rcv}~\doubleplus~l_{pre} \ \mbox{\textbf{in}} \\
+%\ \ \ \ \ \ \mbox{\textbf{let}}\ w_l' := w_l/\langle w_l[rn]  := ((\replay(l)[nid]),f, vtr, ca, f_{q}) ::w_l[rn])  \rangle \ \mbox{\textbf{in}}\\
+%\ \ \ \ \ \  \mbox{\textbf{let}}\ w_o' := \conwcons\  nid\ rn\ w_l\ w_o \ l_{pre} \ l_{rcv} \ f_o \ \mbox{\textbf{in}}\  (w_l', w_o')\\
+%%\ \ \ \ \ \ \ \ \ \ \mbox{\textbf{match}} \ w_l[rn] \ \mbox{\textbf{with}} \\
+%%\ \ \ \ \ \ \ \ \ \ \vert~nil \Rightarrow  (w_l', w_o)\\
+%%\ \ \ \ \ \ \ \ \ \ \vert~((rn', \_, \_), \_, \_, \_ )::\_  \Rightarrow (w_l', w_o / \langle w_o[rn] := w[rn'] \rangle \\
+%%\ \ \ \ \ \ \ \ \ \ \mbox{\textbf{end}} \\ 
+%\ \ \ \ \mbox{\textbf{else}}  \ (w_l, w_o). 
+%\\
+%\opwcons (nid : \nodeid) \ (rn: \termnum)\ (f: \updatefunc)\ (w :\witness_{op})
+% (l_{pre}\ l_{rcv}: \networklog)\\ (f_{q} :  \isquorums_{op}) := \\
+%\ \ \ \ \mbox{\textbf{let}}\ ca := (find\_ca_{op} \ rn \ l_{pre} \ l_{rcv})\  \mbox{\textbf{in}} \\ 
+%\ \ \ \ \mbox{\textbf{let}}\ vtr := (find\_vtr_{op} \ rn \ l_{pre} \ l_{rcv})\  \mbox{\textbf{in}} \\ 
+%\ \ \ \ \mbox{\textbf{if}} \ f_{q} \ ca \ vtr \ \mbox{\textbf{then}}  \\
+%\ \ \ \ \ \  w/\langle w[rn] := ((\replay(l_{rcv}~\doubleplus~l_{pre})[nid]),f, vtr, ca, f_{q}) ::w[rn])  \rangle\\
+%\ \ \ \ \mbox{\textbf{else}}  \ w. \\
+%\end{array}
+%$$
 \caption{Witness Construction Functions.}
 \label{fig:chapter:witnesspassing:witness-construction}
 \end{figure}
@@ -168,51 +214,45 @@ Based on the witness definition, we extend the state definitions of
 leader-based systems to utilize witnesses and discuss routines to construct
 witnesses (Figure~\ref{fig:chapter:witnesspassing:witness-construction}).
 
-Each node's local state is extended to store leader and commit witnesses ($\dstate_\witness)$.
+Each node's local state is extended to store its own witness ($\dstate_\witness)$.
 The definition of the global state with witnesses is also updated accordingly.
-In order to pass witnesses from one node to another,
-network events must also contain witnesses in addition to the usual events.
-When the leader election function or the commit operation function successfully 
-updates the local state of the distributed node, the associated witness should be
-attached to the new state. To do so, the log replay
-function should internally call a witness building routine ($\ldrwcons$ or $\opwcons$) at the end of the
+To pass witnesses from one node to another,
+network events must also contain the associated witness in addition to the usual events.
+When the leader election function or the commit operation function successfully updates the local state of the distributed node, the associated witness should be
+attached to the new state. To do so, the log replay function should internally call a witness building routine ($\ldrwcons$ or $\opwcons$) at the end of the
 leader election and the commit functions.
 
 Figure~\ref{fig:chapter:witnesspassing:witness-construction} shows methods for constructing witnesses.
 At the end of $\ldrfunction$, $\ldrwcons$ first constructs the information about the
-voters ($ca:\accsset$) and ($vtr:\voters$) and, if the requester succeeds in becoming the leader,
-it attaches this evidence to $\ldrwitness$. Then $\conwcons$ is called against
-the nodes that processes the commit operation to gather the witness for
-$\opwitness$\footnote{Set of nodes that elect leaders and commit operations
-can be different. E.g., if the system uses external membership services,
-the set of nodes can be different, whereas multi-Paxos and Raft use an identical
-set for both purposes.}.
-$\conwcons$ copies the witnesses from the previous term into the current one.
-
-Up to this point it only
-touches the witness regarding leader election and then as a leader it probes the 
-it extracts the witness, which represents the current state of the system, from 
-the approvers.
+voters ($vtr:\voters$) and, if the requester succeeds in becoming the leader,
+it choose the witness from the received network event. 
+%\footnote{Set of nodes that elect leaders and commit operations
+%can be different. E.g., if the system uses external membership services,
+%the set of nodes can be different, whereas multi-Paxos and Raft use an identical
+%set for both purposes.}.
 The witness building in the leader election does not need to know 
 all details about the distributed object manipulation.
-When the leader has been elected, however, it first needs to build the proper leader witness and 
-also needs to copy the previous witness mapped with the old term number $rn'$ to
- the new term number $rn$. 
- Copying the previous witness does not require calculating all the previous writes. 
- It, however, automatically guarantees the consistency of the distributed object manipulation 
- via leader election when the leader election and the commit operation function guarantees a 
+It only needs to copy one witness from voters of the election and this copying the previous witness does not require calculating all the previous writes. 
+However, the mutual exclusiveness of the leader election guarantees the consistency of the distributed object manipulation via leader election when the leader election and the commit operation function guarantees a 
  certain property described in the Section~\ref{chapter:witnesspassing:sec:prove-safety-with-witness}. 
-
+ 
 The witness update function, $\opwcons$, is the analogous function for $\opfunction$.
 The leader starts from a witness with the complete history of the system state
-that was collected using $\conwcons$ during leader election.
+that was collected using $\ldrwcons$ during leader election.
 Upon a successful call to $\opfunction$, the leader creates a new witness by
 adding a witness entry, which contains the update function $f$ that is to be used
 to update the existing state.
+When the operation succeeds, it also flushes uncommitted witnesses because the proposer collects collect sufficient evidence that those uncommitted witnesses are written in the quorum.  
 
-Witnesses are stored in the local state, and are communicated over the network.
+%Then $\conwcons$ is called against
+%the nodes that process the commit operation to gather the witness for
+%$\witnesstree$.
+%$\conwcons$ copies the witnesses from the previous term into the current one and flush uncommitted witnesses because the proposer collects collect sufficient evidence that those uncommitted witnesses are written in the quorum.  
+
+
+Witnesses are stored in the local state and are communicated over the network.
 This means failed communications can
-cause certain nodes to fall behind with updating their witnesses.
+cause specific nodes to fall behind with updating their witnesses.
 However, as long as the system operates without violating the failure 
 assumptions, the system state eventually becomes consistent and reasoning 
 about the protocol is not affected by outdated nodes.
@@ -220,14 +260,12 @@ Witnesses impose multiple invariants in them.
 For example, all elements inside both leader election and commit operation witnesses 
 always contain the valid voters and candidates that satisfy the quorum as follows:
 
+
 \begin{theorem}[Witness Invariant]\label{thm:witness-invariant}
 Assume that for a network log $l$, the resulting state of replaying the log $l$ 
-	is $gst$, which can be represented as $\replay_\witness(l) = gst$. 
-For all $nid$, if $gst[nid] = (\_, \_, \_, w_l, w_o)$, then $w_l$ and $w_o$ satisfy the following properties:
-\begin{enumerate}
-\item $\forall\ vtr\ ca\ f_q, \ (\_, vtr, ca, f_q) \in w_l \rightarrow f_q(ca, vtr) = true$
-\item $\forall\ vtr\ ca\ f_q, \ (\_, vtr, ca, f_q) \in w_o \rightarrow f_q(ca, vtr) = true$
-\end{enumerate}
+	is $gst$, which can be represented as $\replay_\witness(l) = gst$
+For all $nid$, if $gst[nid] = (\_, \_, \_, w)$ and $w = (w_c, \_)$, then $w_c$ satisfies the following properties with the quorum definition, ($f_q : \isquorums$):
+$$\forall\ vtr\ , \ (\_, \_, \_, vtr) \in w_c \rightarrow f_q(ca, vtr) = true$$
 \end{theorem}
 
 \begin{proof}
@@ -244,10 +282,10 @@ the template functions satisfy the following properties:
 \end{theorem}
 
 \begin{proof}
-Proof is straightforward. 
+The proof is straightforward. 
 Since both $\dstate$ and $\dstate_\witness$ contain the same fields aside from
 the witnesses, the refinement relation $R$ for each field will be identity.
-Thus, the simulation proof for these fields are straightforward. 
+Thus, the simulation proof for these fields is straightforward. 
 The witness can be easily constructed from the witness construction functions
 in Figure~\ref{fig:chapter:witnesspassing:witness-construction}, which do not touch fields other
 than the witness. 
@@ -256,7 +294,7 @@ straightforward.
 \end{proof}
 
 Similarly, proving that providing a generic specification for distributed
-systems implies providing a generic specification with witnesses for distributed
+systems imply providing a generic specification with witnesses for distributed
 system is also straightforward.
 
 
