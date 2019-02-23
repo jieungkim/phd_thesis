@@ -79,7 +79,7 @@ show how they reached their latest state.
 The requester can construct a new witness and concatenate it with the
 received witness without having to inspect it.
 The new composite witness is then sent back to the approvers at the point where
-the approvers' state is updated.
+ the approvers' states are updated.
 
 
 %
@@ -255,7 +255,7 @@ However, the mutual exclusiveness of the leader election guarantees the consiste
 The witness update function, $\opwcons$, is the analogous function for $\opfunction$.
 The leader starts from a witness with the complete history of the system state
 that was collected using $\ldrwcons$ during leader election.
-The send routine in the $\ldrwcons$ function sends the message with the witness that combines both committed witnesses as well as uncommitted witnesses, but remain the witness as same because it does not have enough commit evidence of uncommitted witnesses. 
+The send routine in  $\opfunction$  sends the message with the witness that combines both committed witnesses as well as uncommitted witnesses, but remain the witness as same because it does not have enough commit evidence of uncommitted witnesses. 
 Upon a successful call to $\opfunction$, the leader creates a new witness by flushing the uncommitted witness and 
 adding a witness entry, which contains the update function $f$ that is to be used
 to update the existing state.
@@ -282,7 +282,7 @@ always contain the valid voters and candidates that satisfy the quorum as follow
 Assume that for a network log $l$, the resulting state of replaying the log $l$ 
 	is $gst$, which can be represented as $\replay_\witness(l) = gst$
 For all $nid$, if $gst[nid] = (\_, \_, \_, w)$ and $w = (w_c, \_)$, then $w_c$ satisfies the following properties with the quorum definition, ($f_q : \isquorums$):
-$$\forall\ vtr\ , \ (\_, \_, \_, vtr) \in w_c \rightarrow f_q(ca, vtr) = true$$
+$$\forall\ vtr\ , \ ( \_, \_, vtr) \in w_c \rightarrow f_q(ca, vtr) = true$$
 \end{theorem}
 
 \begin{proof}

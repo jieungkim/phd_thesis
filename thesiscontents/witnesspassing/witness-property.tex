@@ -20,8 +20,8 @@ update function $u$, which is an argument of $\opfunction$ should fulfill a
 property that monotonically increases the version number to distinguish all
 requests:
 \begin{center}
-$\forall \ (st \ st' : \dsvalue) : \ u \ st = st' \rightarrow st.\seqnum
-<_{\seqnum} st'.\seqnum$,
+$\forall \ (st \ st' : (\seqnum * \dsvalue)) : \ u \ st = st' \rightarrow \text{fst }st
+<_{\seqnum}  \text{fst }st'$,
 \end{center}
 where $<_{\seqnum}$ is a comparison relation of two version numbers.
 

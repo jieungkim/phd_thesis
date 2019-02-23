@@ -59,13 +59,15 @@ state:
 \begin{center}
 $
 \begin{array}{lll}
-u (st : \dsvalue)&:=&\mbox{\textbf{match}} \ st \ \mbox{\textbf{with}}\\
-& & \vert~(\_, (idx, cidx), dsval)  \Rightarrow ((idx + 1, cidx + 1), dsval[idx + 1] := uf_{\dsvalue}\ dsval[idx])\\
+u (st : (\seqnum * \dsvalue))&:=&\mbox{\textbf{match}} \ st \ \mbox{\textbf{with}}\\
+& & \vert~ ((idx, cidx), dsv)  \Rightarrow \\
+& & \ \ \ \   \mbox{\textbf{let}}\ dsv' := dsv/\set{dsv[idx + 1] := uf_{\dsvalue}\ dsv[idx]} \ \mbox{\textbf{in}}\\
+& & \ \ \ \ ((idx + 1, cidx + 1), dsv')\\
 & &  \mbox{\textbf{end}}.\\
 \end{array}
 $
 \end{center}
-Here, $u_{\dsvalue}$ is a function that is specific to the system hosted 
+Here, $uf_{\dsvalue}$ is a function that is specific to the system hosted 
 by multi-Paxos.
 
 \begin{theorem}[Linearizabilty of MultiPaxos]
