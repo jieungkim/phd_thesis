@@ -91,7 +91,7 @@ $$
 \textbf{Protocol-specific Functions}  \\
 $$
 \begin{array}{llll}
-	\updatefunc & := & \dstate \rightarrow (\seqnum \times \dsvalue) &
+	\updatefunc & := & (\seqnum * \dsvalue) \rightarrow   (\seqnum * \dsvalue)  &
 	\mbox{(Obj update function)} \\
 \gldrfunction & := & \nodeid \rightarrow \networklog \rightarrow \networklog  & \mbox{(Protocol functions)} \\
 \gopfunction & := & \nodeid \rightarrow \updatefunc \rightarrow \networklog \rightarrow \networklog  & \mbox{(Protocol functions)} \\
@@ -133,7 +133,7 @@ Nodes in a distributed system communicate via the network.
 Inspired by our concurrent verification framework in Chapter~\ref{chapter:ccal},
 the global state $\gstate$ can be reconstructed by
 applying the log replay function $\replay$ to the
-network log $l : \networklog$, which is a list of network events ($\packet$).
+network log ($l : \networklog$), which is a list of network events ($\packet$).
 The effect of a call to either $\tplldrfunction$ or $\tplopfunction$ by a node is atomic 
 and it cannot be interfered by other operations, 
 but function calls by other nodes can be interleaved.

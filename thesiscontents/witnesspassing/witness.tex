@@ -40,7 +40,7 @@ $$
 $$
 \begin{array}{llll}
 \voters & := & \set{\nodeid} & \mbox{(All supportive voters)}\\
-\witness & :=  & (\termnum, \dstate, \updatefunc, \voters) & \mbox{(Witness Element)}\\
+\witness & :=  & ( \dstate, \updatefunc, \voters) & \mbox{(Witness Element)}\\
 \ldrwitness &: & lst \ \witness   & \mbox{(Uncommitted witness)}\\
 \ldrwitness &: & lst \ \witness   & \mbox{(Committed witness)}\\
 \witnesstree &: &  (\ldrwitness , \ldrwitness) & \mbox{(Witness)}\\
@@ -71,7 +71,7 @@ happens at the requester side. Witness-related definitions are outlined in
 Figure~\ref{fig:chapter:witnesspassing:witness-definition}.
 Reconfiguration of the set of nodes in the system is currently out of scope, so we assume that the information for all voters ($\accsset$) and the quorum definition ($\isquorums$) is fixed.
 
-Each element in the witness contains four parts, a term number  ($\termnum$), a local node state ($\dstate$), an update function associated with the update ($\updatefunc$), and the evidence that a proposer collects to build the element. 
+Each element in the witness contains three parts, a local node state ($\dstate$), an update function associated with the update ($\updatefunc$), and the evidence that a proposer collects to build the element. 
 The top-level definition of our witness is a pair that consists of two witness lists--one is for committed operations and the other is for uncommitted operations.
 The process of building a witness is modular and simple. A requester sends
 requests and approvers send back acknowledgments with existing witnesses that
@@ -126,7 +126,7 @@ the approvers' state is updated.
 
 \begin{figure}
 \raggedright
-{State definition with witness}\\
+{State definition with witness}:\\
 $$
 \begin{array}{ll}
 \dstate_\witness:= (\dstate \times \witnesstree)  & \mbox{(Local state)} \\
@@ -138,20 +138,21 @@ $$
 $$
 
 \raggedright
-{Auxiliary abstract definitions for witness building} \\
+{Auxiliary abstract definitions for witness building}: \\
 $$
 \begin{array}{llll}
 find\_vtr_{ldr} &:& \termnum \rightarrow \networklog \rightarrow \networklog \rightarrow  \set{\nodeid} & \mbox{(Find voters for a leader election)}\\
+extract\_wit_{ldr} &:& \termnum \rightarrow \networklog \rightarrow \networklog \rightarrow  \witnesstree & \mbox{(Copy witness from received packets)}\\
 find\_vtr_{op} &:& \termnum \rightarrow \networklog \rightarrow \networklog \rightarrow  \set{\nodeid} & \mbox{(Find voters for a commit operation)}\\
 insert\_qrm_{uc} &:& \witness \networklog \rightarrow  \set{\nodeid} & \mbox{(Build quorum for uncommitted elements)}\\
 f_{q} &:&  \isquorums & \mbox{(Quorum definition)}\\
 \end{array}
 $$
 \raggedright
-{Auxiliary function to insert evidence into uncommitted witness elements}\\
+{Auxiliary function to insert evidence into uncommitted witness elements}:\\
 $$
 \begin{array}{l}
-insert\_qrm_{wl} (wl : \text{lst } \witness)\ (qrm:  \set{\nodeid}) :=\\
+insert\_qrm_{wl}\ (wl : \text{lst } \witness)\ (qrm:  \set{\nodeid}) :=\\
 \ \ \ \  \text{\textbf{match }} wl \text{\textbf{ with}} \\ 
 \ \ \ \  \ \ \vert \ \text{nil} \Rightarrow \text{nil} \\
 \ \ \ \  \ \   \vert \ \text{hd::tl} \Rightarrow 
@@ -161,25 +162,22 @@ insert\_qrm_{uc}(hd, qrm)::tl_{q}  \\
 \end{array}
 $$
 \raggedright
-{Witness building routine in} ${\replay}_{\witness}$  \\
+{Witness building routine in} ${\replay}_{\witness}$:  \\
 $$
 \begin{array}{ll}
-\ldrwcons \ (nid : \nodeid)\ (rn: \termnum) \ (l_{pre}\ l_{rcv}: \networklog) := \\
+\ldrwcons \ (rn: \termnum) \ (l_{pre}\ l_{rcv}: \networklog) := \\
 \ \ \ \ \mbox{\textbf{let}}\ vtr := (find\_vtr_{ldr} \ rn \ l_{pre} \ l_{rcv})\  \mbox{\textbf{in}} \\ 
 \ \ \ \ \mbox{\textbf{if}} \ f_{q} \ ca \ vtr \ \mbox{\textbf{then}}  \\
-\ \ \ \ \ \ \mbox{\textbf{match}} \ w_l[rn] \ \mbox{\textbf{with}} \\
-\ \ \ \ \ \ \ \ \vert~nil \Rightarrow w_o \\
-\ \ \ \ \ \ \ \  \vert~((rn', \_, \_), \_, \_, \_ )::\_  \Rightarrow w_o / \langle w_o[rn] := w_o[rn'] \rangle \\
-\ \ \ \ \ \ \mbox{\textbf{end}}\\
-\ \ \ \ \  \mbox{\textbf{else}} \ w_o.\\
+\ \ \ \ \ \ \mbox{\textbf{let}} \ (w_c, w_{uc}) := (extract\_wit_{ldr} \ rn \ l_{pre} \ l_{rcv})\  \mbox{\textbf{in}} \\
+\ \ \ \ \ \ \mbox{\textbf{let}} \ w_{uc}' := insert\_qrm_{wl} \ w_{uc}' \ vtr \  \mbox{\textbf{in}}\ \text{Some}\ (w_c, w_{uc}')\\
+\ \ \ \ \  \mbox{\textbf{else}} \  \text{None}.\\
 \\
-\opwcons (nid : \nodeid) \ (rn: \termnum)\ (f: \updatefunc)\ (w :\witnesstree
- (l_{pre}\ l_{rcv}: \networklog)) := \\
-\ \ \ \ \mbox{\textbf{let}}\ ca := (find\_ca_{op} \ rn \ l_{pre} \ l_{rcv})\  \mbox{\textbf{in}} \\ 
+\opwcons\ (rn: \termnum)\ (vn :\seqnum)\ (ds : \dsvalue)\ (f: \updatefunc)\ (w :\witnesstree)\ (l_{pre}\ l_{rcv}: \networklog) := \\
+ \ \ \ \ \mbox{\textbf{let}}\ (w_c, w_{uc}) := w\  \mbox{\textbf{in}} \\ 
 \ \ \ \ \mbox{\textbf{let}}\ vtr := (find\_vtr_{op} \ rn \ l_{pre} \ l_{rcv})\  \mbox{\textbf{in}} \\ 
 \ \ \ \ \mbox{\textbf{if}} \ f_{q} \ ca \ vtr \ \mbox{\textbf{then}}  \\
-\ \ \ \ \ \  w/\langle w[rn] := ((\replay(l_{rcv}~\doubleplus~l_{pre})[nid]),f, vtr, ca, f_{q}) ::w[rn])  \rangle\\
-\ \ \ \ \mbox{\textbf{else}}  \ w. \\
+\ \ \ \ \ \  \mbox{\textbf{let}}\ w_c' := w_c \doubleplus w_{uc} \  \mbox{\textbf{in}} \ (w_c',  ((rn, f\ vn \ ds), f, vtr)::nil)\\
+\ \ \ \ \mbox{\textbf{else}}  \ w.\\
 \end{array}
 $$
 %$$
@@ -257,7 +255,8 @@ However, the mutual exclusiveness of the leader election guarantees the consiste
 The witness update function, $\opwcons$, is the analogous function for $\opfunction$.
 The leader starts from a witness with the complete history of the system state
 that was collected using $\ldrwcons$ during leader election.
-Upon a successful call to $\opfunction$, the leader creates a new witness by
+The send routine in the $\ldrwcons$ function sends the message with the witness that combines both committed witnesses as well as uncommitted witnesses, but remain the witness as same because it does not have enough commit evidence of uncommitted witnesses. 
+Upon a successful call to $\opfunction$, the leader creates a new witness by flushing the uncommitted witness and 
 adding a witness entry, which contains the update function $f$ that is to be used
 to update the existing state.
 When the operation succeeds, it also flushes uncommitted witnesses because the proposer collects collect sufficient evidence that those uncommitted witnesses are written in the quorum.  
