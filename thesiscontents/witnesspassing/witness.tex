@@ -126,7 +126,7 @@ the approvers' state is updated.
 
 \begin{figure}
 \raggedright
-\textbf{State definition with witness}\\
+{State definition with witness}\\
 $$
 \begin{array}{ll}
 \dstate_\witness:= (\dstate \times \witnesstree)  & \mbox{(Local state)} \\
@@ -136,27 +136,45 @@ $$
 \replay_\witness : {\networklog}_{\witness} \rightarrow  \gstate_\witness& \mbox{(Log replay function)}\\
 \end{array}
 $$
-\textbf{Witness building routine in} ${\replay}_{\witness}$  \\
+
+\raggedright
+{Auxiliary abstract definitions for witness building} \\
+$$
+\begin{array}{llll}
+find\_vtr_{ldr} &:& \termnum \rightarrow \networklog \rightarrow \networklog \rightarrow  \set{\nodeid} & \mbox{(Find voters for a leader election)}\\
+find\_vtr_{op} &:& \termnum \rightarrow \networklog \rightarrow \networklog \rightarrow  \set{\nodeid} & \mbox{(Find voters for a commit operation)}\\
+insert\_qrm_{uc} &:& \witness \networklog \rightarrow  \set{\nodeid} & \mbox{(Build quorum for uncommitted elements)}\\
+f_{q} &:&  \isquorums & \mbox{(Quorum definition)}\\
+\end{array}
+$$
+\raggedright
+{Auxiliary function to insert evidence into uncommitted witness elements}\\
+$$
+\begin{array}{l}
+insert\_qrm_{wl} (wl : \text{lst } \witness)\ (qrm:  \set{\nodeid}) :=\\
+\ \ \ \  \text{\textbf{match }} wl \text{\textbf{ with}} \\ 
+\ \ \ \  \ \ \vert \ \text{nil} \Rightarrow \text{nil} \\
+\ \ \ \  \ \   \vert \ \text{hd::tl} \Rightarrow 
+ \text{\textbf{ let }} tl_{q} :=  insert\_qrm_{wl} \text{\textbf{ in }} 
+insert\_qrm_{uc}(hd, qrm)::tl_{q}  \\
+\ \ \ \ \text{\textbf{end}} \\
+\end{array}
+$$
+\raggedright
+{Witness building routine in} ${\replay}_{\witness}$  \\
 $$
 \begin{array}{ll}
-
-find\_ca_{op} : \termnum \rightarrow \networklog \rightarrow \networklog \rightarrow  \set{\nodeid}\\
-find\_vtr_{op} : \termnum \rightarrow \networklog \rightarrow \networklog \rightarrow  \set{\nodeid}\\
-find\_ca_{ldr} : \termnum \rightarrow \networklog \rightarrow \networklog \rightarrow  \set{\nodeid}\\
-find\_vtr_{ldr} : \termnum \rightarrow \networklog \rightarrow \networklog \rightarrow  \set{\nodeid}\\
-\\
-\ldrwcons \ (nid : \nodeid)\ (rn: \termnum)\  (w_l :\witness_{ldr})\ (w_o : \witness_{op})\ (l_{pre}\ l_{rcv}: \networklog)\\ (f_{q} :  \isquorums_{op}) := \\
-\ \ \ \ \mbox{\textbf{let}}\ ca := (find\_ca_{ldr} \ rn \ l_{pre} \ l_{rcv})\  \mbox{\textbf{in}} \\ 
+\ldrwcons \ (nid : \nodeid)\ (rn: \termnum) \ (l_{pre}\ l_{rcv}: \networklog) := \\
 \ \ \ \ \mbox{\textbf{let}}\ vtr := (find\_vtr_{ldr} \ rn \ l_{pre} \ l_{rcv})\  \mbox{\textbf{in}} \\ 
 \ \ \ \ \mbox{\textbf{if}} \ f_{q} \ ca \ vtr \ \mbox{\textbf{then}}  \\
 \ \ \ \ \ \ \mbox{\textbf{match}} \ w_l[rn] \ \mbox{\textbf{with}} \\
 \ \ \ \ \ \ \ \ \vert~nil \Rightarrow w_o \\
 \ \ \ \ \ \ \ \  \vert~((rn', \_, \_), \_, \_, \_ )::\_  \Rightarrow w_o / \langle w_o[rn] := w_o[rn'] \rangle \\
 \ \ \ \ \ \ \mbox{\textbf{end}}\\
-\ \ \ \ \  \mbox{\textbf{else}} \ w_o.
+\ \ \ \ \  \mbox{\textbf{else}} \ w_o.\\
 \\
-\opwcons (nid : \nodeid) \ (rn: \termnum)\ (f: \updatefunc)\ (w :\witness_{op})
- (l_{pre}\ l_{rcv}: \networklog)\\ (f_{q} :  \isquorums_{op}) := \\
+\opwcons (nid : \nodeid) \ (rn: \termnum)\ (f: \updatefunc)\ (w :\witnesstree
+ (l_{pre}\ l_{rcv}: \networklog)) := \\
 \ \ \ \ \mbox{\textbf{let}}\ ca := (find\_ca_{op} \ rn \ l_{pre} \ l_{rcv})\  \mbox{\textbf{in}} \\ 
 \ \ \ \ \mbox{\textbf{let}}\ vtr := (find\_vtr_{op} \ rn \ l_{pre} \ l_{rcv})\  \mbox{\textbf{in}} \\ 
 \ \ \ \ \mbox{\textbf{if}} \ f_{q} \ ca \ vtr \ \mbox{\textbf{then}}  \\
