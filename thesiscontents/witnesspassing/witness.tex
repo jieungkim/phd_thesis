@@ -126,7 +126,7 @@ The new composite witness is then sent back to the approvers at the point where
 
 \begin{figure}
 \raggedright
-{State definition with witness}:\\
+\textbf{State definition with witness:}\\
 $$
 \begin{array}{ll}
 \dstate_\witness:= (\dstate \times \witnesstree)  & \mbox{(Local state)} \\
@@ -138,7 +138,7 @@ $$
 $$
 
 \raggedright
-{Auxiliary abstract definitions for witness building}: \\
+\textbf{Auxiliary abstract definitions for witness building:} \\
 $$
 \begin{array}{llll}
 find\_vtr_{ldr} &:& \termnum \rightarrow \networklog \rightarrow \networklog \rightarrow  \set{\nodeid} & \mbox{(Find voters for a leader election)}\\
@@ -149,7 +149,7 @@ f_{q} &:&  \isquorums & \mbox{(Quorum definition)}\\
 \end{array}
 $$
 \raggedright
-{Auxiliary function to insert evidence into uncommitted witness elements}:\\
+\textbf{Auxiliary function to insert evidence into uncommitted witness elements:}\\
 $$
 \begin{array}{l}
 insert\_qrm_{wl}\ (wl : \text{lst } \witness)\ (qrm:  \set{\nodeid}) :=\\
@@ -162,21 +162,19 @@ insert\_qrm_{uc}(hd, qrm)::tl_{q}  \\
 \end{array}
 $$
 \raggedright
-{Witness building routine in} ${\replay}_{\witness}$:  \\
+\textbf{Witness building routine in} ${\replay}_{\witness}$\textbf{:}  \\
 $$
 \begin{array}{ll}
 \ldrwcons \ (rn: \termnum) \ (l_{pre}\ l_{rcv}: \networklog) := \\
 \ \ \ \ \mbox{\textbf{let}}\ vtr := (find\_vtr_{ldr} \ rn \ l_{pre} \ l_{rcv})\  \mbox{\textbf{in}} \\ 
-\ \ \ \ \mbox{\textbf{if}} \ f_{q} \ ca \ vtr \ \mbox{\textbf{then}}  \\
-\ \ \ \ \ \ \mbox{\textbf{let}} \ (w_c, w_{uc}) := (extract\_wit_{ldr} \ rn \ l_{pre} \ l_{rcv})\  \mbox{\textbf{in}} \\
-\ \ \ \ \ \ \mbox{\textbf{let}} \ w_{uc}' := insert\_qrm_{wl} \ w_{uc}' \ vtr \  \mbox{\textbf{in}}\ \text{Some}\ (w_c, w_{uc}')\\
-\ \ \ \ \  \mbox{\textbf{else}} \  \text{None}.\\
+\ \ \ \ \mbox{\textbf{if}} \ f_{q} \ ca \ vtr \ \mbox{\textbf{then}}\
+  \text{Some}\ (extract\_wit_{ldr} \ rn \ l_{pre} \ l_{rcv})\   \mbox{\textbf{else}} \  \text{None}.\\
 \\
 \opwcons\ (rn: \termnum)\ (vn :\seqnum)\ (ds : \dsvalue)\ (f: \updatefunc)\ (w :\witnesstree)\ (l_{pre}\ l_{rcv}: \networklog) := \\
  \ \ \ \ \mbox{\textbf{let}}\ (w_c, w_{uc}) := w\  \mbox{\textbf{in}} \\ 
 \ \ \ \ \mbox{\textbf{let}}\ vtr := (find\_vtr_{op} \ rn \ l_{pre} \ l_{rcv})\  \mbox{\textbf{in}} \\ 
 \ \ \ \ \mbox{\textbf{if}} \ f_{q} \ ca \ vtr \ \mbox{\textbf{then}}  \\
-\ \ \ \ \ \  \mbox{\textbf{let}}\ w_c' := w_c \doubleplus w_{uc} \  \mbox{\textbf{in}} \ (w_c',  ((rn, f\ vn \ ds), f, vtr)::nil)\\
+\ \ \ \ \ \  \mbox{\textbf{let}}\ w_c' := w_c \doubleplus w_{uc} \doubleplus ((rn, f\ vn \ ds), f, vtr)::\text{nil} \  \mbox{\textbf{in}} \ (w_c',  \text{nil})\\
 \ \ \ \ \mbox{\textbf{else}}  \ w.\\
 \end{array}
 $$
@@ -248,18 +246,19 @@ it choose the witness from the received network event.
 %set for both purposes.}.
 The witness building in the leader election does not need to know 
 all details about the distributed object manipulation.
-It only needs to copy one witness from voters of the election and this copying the previous witness does not require calculating all the previous writes. 
+It only needs to copy one witness from voters of the election.
+Copying the previous witness does not require calculating all the previous writes. 
 However, the mutual exclusiveness of the leader election guarantees the consistency of the distributed object manipulation via leader election when the leader election and the commit operation function guarantees a 
  certain property described in the Section~\ref{chapter:witnesspassing:sec:prove-safety-with-witness}. 
  
 The witness update function, $\opwcons$, is the analogous function for $\opfunction$.
 The leader starts from a witness with the complete history of the system state
 that was collected using $\ldrwcons$ during leader election.
-The send routine in  $\opfunction$  sends the message with the witness that combines both committed witnesses as well as uncommitted witnesses, but remain the witness as same because it does not have enough commit evidence of uncommitted witnesses. 
+%The send routine in  $\opfunction$  sends the message with the witness that combines both committed witnesses as well as uncommitted witnesses, but remain the witness as same because it does not have enough commit evidence of uncommitted witnesses. 
 Upon a successful call to $\opfunction$, the leader creates a new witness by flushing the uncommitted witness and 
 adding a witness entry, which contains the update function $f$ that is to be used
 to update the existing state.
-When the operation succeeds, it also flushes uncommitted witnesses because the proposer collects collect sufficient evidence that those uncommitted witnesses are written in the quorum.  
+When the operation succeeds, it also flushes uncommitted witnesses because the proposer collects  sufficient evidence that those uncommitted witnesses are written in the quorum.  
 
 %Then $\conwcons$ is called against
 %the nodes that process the commit operation to gather the witness for
