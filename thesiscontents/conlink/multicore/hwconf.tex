@@ -59,8 +59,8 @@ $$
 \begin{array}{llll}
 \programcounterkwd & : &  \privatestate \rightarrow \command \rightarrow \mcprop\\
 \privatestepkwd & : & \ztype  \rightarrow \privatestate \rightarrow \privatestate \rightarrow \mcprop \\
-\getsharedstepkwd & : & \privatestate \rightarrow \sharedpiece \rightarrow \privatestate \rightarrow  \rightarrow \mcprop \\ 
-\setsharedstepkwd & :  & \privatestate \rightarrow \optioncmd{\privatestate}  \rightarrow \privatestate \rightarrow \mcprop\\
+\getsharedstepkwd & : & \privatestate \rightarrow \sharedpiece \rightarrow \privatestate   \rightarrow \mcprop \\ 
+\setsharedstepkwd & :  & \privatestate \rightarrow \optioncmd{\sharedpiece}  \rightarrow \privatestate \rightarrow \mcprop\\
 \atomicstepkwd & : &  \ztype \rightarrow \ztype  \rightarrow \privatestate \rightarrow \mclog \rightarrow \privatestate \rightarrow \atomicevent \rightarrow \mcprop  \\
 \end{array}
 $$

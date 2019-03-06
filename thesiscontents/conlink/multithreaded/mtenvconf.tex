@@ -65,12 +65,13 @@ provides the operation that makes the adjustment on the memory possible.
 \begin{figure}
 \begin{lstlisting}[language=C, morekeywords={Class}]
 Class ThreadsConfigurationOps := {      
-  current_CPU_ID: Z; // The ID for the CPU we're looking at. (necessary?) 
+  current_CPU_ID: Z; // The ID for the CPU we're looking at. 
   current_thread: Z; // The thread we're looking at in high-level machines
   non_current_thread_list: list Z;  // The other threads on this CPU 
   full_thread_list := current_thread :: non_current_thread_list; // The full list
   main_thread: Z; // The main thread on this CPU 
-  limit: nat // A log look-back limit used in TAsm  }.
+  limit: nat // A log look-back limit used in TAsm 
+  }.
 \end{lstlisting}
 \caption{Thread Configurations.}
 \label{fig:chapter:linking:thread-configurations}

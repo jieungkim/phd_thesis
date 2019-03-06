@@ -6,10 +6,10 @@ Concurrency is ubiquitous. It is not only related to local machines
 but also the external behaviors of the system  (\ie, I/O device) and other nodes’ behaviors in a cluster of multiple machines via network communications.
 However, they are challenging to get right and debug because the behavior of the system contains the number
 (usually unbounded) of arbitrary interactions and interleaved executions among all components of the system. 
-In this sense, building high-assurance concurrent programs is still challenging; thus, a formal verification is desirable 
+In this sense, building high-assurance concurrent programs is still challenging; thus, formal verification is desirable 
 because it is the only known way of building bug-free programs.
 
-However, formal verification requires considerable cost to adapt it to large-scale system software even without considering concurrency, 
+However, formal verification requires a considerable cost to adapt it to large-scale system software even without considering concurrency, 
 and it becomes more expensive with it. 
 Modularization and composition--the fundamental techniques that are common in building large-scale programs--are also required for the verification
 to reduce the cost of developing the verified software, but applying them to the verification is subtle due to the correlation of sub-modules 
@@ -95,7 +95,7 @@ To handle all these challenges, this dissertation provides a modular and composi
  It first provides a way to verify each instance of concurrent programs by following abstraction layer approaches--a conventional technique in building large-scale software--by hiding the complexity of interleaving due to the concurrency.
   It also presents a framework to support linking between multiple proof instances to form full reasoning for 
   concurrent programs. As a part of this linking work, we built multiple machine models that can be connected without losing generality or 
-  the robustness of our proofs. In our case studies, we verified $\certikos$--concurrent operating system with supporting fine-grained 
+  the robustness of our proofs. In our case studies, we verified $\certikos$--a concurrent operating system with supporting fine-grained 
   locking--as well as $\wormspace$, an API that works as a basis of building multiple distributed systems of which the implementation is 
   a collection of multiple Paxos instances. Within the verification of $\certikos$, we also provide detailed work on MCS Lock--a small but complex piece of low-level software that is a standard algorithm for providing inter-CPU locks with FIFO ordering guarantee and scalability.
 

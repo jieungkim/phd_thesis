@@ -87,9 +87,9 @@ Our $\multipaxos$ example employs the scheme that is described as below:
 One of the challenges of distributed system verification is that it requires reasoning about
 global invariants, \ie, properties that hold for the entire distributed state rather than just
 one node's local state.
-There is often not a straightforward relation between the local and global invariants, so
-to reason globally, one must trace the network history back in time and consider multiple
-nodes' states at once.
+However, relations between local and global invariants are not straightforward 
+So,  one must trace the network history back in time and consider multiple
+nodes' states at once to reason globally.
 It is further complicated if one assumes a network that can have failures such as duplicated
 or lost messages.
 We attempt to reduce the amount of global reasoning by logically gathering sufficient
