@@ -24,7 +24,7 @@ a. Proposer:
  for i=1 to 2F + 1
   promises = promises <@$\bigcup$@> recv()
  if count(promises) >= F + 1 
-  if $\forall{}$ promises.val = null
+  if <@$\forall{}$@> promises.val = null
    val := c_val
   else
    val := promise.val

@@ -4,7 +4,8 @@
 \begin{figure}
 \begin{minipage}{\linewidth}
 \begin{multicols}{2}
-\lstinputlisting[numbers = left, language=TeX]{source_code/multipaxos/paxos_spec.c}
+  \lstinputlisting[numbers = left, language=C, mathescape=true, escapeinside={(*}{*)},
+  deletekeywords={struct, prop}, morekeywords={such,that,forall,in,null,to}]{source_code/multipaxos/paxos_spec.c}
 \end{multicols}
 \end{minipage}
 \caption{$\paxos$: information description.}
