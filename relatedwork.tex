@@ -2,6 +2,7 @@
 \section{Certified Abstraction Layers}
 \label{chatper:related:sec:certified-abstraction-laayers}
 
+
 Our $\ccalname$ toolkit follows the layer-based compositional proof approach proposed by Gu \etal~\cite{deepspec}.
 They proposed certified abstraction layers (CAL) for sequential programs and 
 verified certified system software to show the applicability of the approach.
@@ -37,10 +38,11 @@ all shared abstract states are represented as a single global log,
 and atomic method calls always have to 
 replay the entire global state and find the return value to refer to the current status of shared abstract states.
 This global log approach treats all shared atomic objects with a single log.
-Thus this  is seemingly an inefficient way of treating multiple shared atomic objects,
-but it is great for providing compositional. 
+Thus this is seemingly an inefficient way of treating multiple shared atomic objects,
+but it is excellent for providing compositionality. 
 It allows us to apply game semantics ideas, so it
 is required for supporting parallel layer composition.
+
 
 
 
@@ -167,8 +169,7 @@ proposed several approaches from Rely-Guarantee-based Simulation ($\rgsimname$)
 that support the parallel
 composition and  contextual refinement of concurrent
 objects.
-The contextual simulation proof between two concurrent layers in $\ccalname$ 
-is an instance of RGSim variance--the extended version of RGSim achieved by adding auxiliary states including environmental contexts and shared logs. 
+The contextual simulation proof between two concurrent layers in $\ccalname$ is an instance of RGSim variance--the extended version of RGSim achieved by adding auxiliary states including environmental contexts and shared logs. 
 They are the main ingredients of our $\ccalname$ framework 
 to build our new  compositional
 layered model.
@@ -178,7 +179,8 @@ Because their client program context cannot
 be the method body of another concurrent object, 
 they cannot
 support the vertical layer composition that our $\ccalname$ toolkit supports.
-Their recent work~\cite{liang:2017} presents a way for specifying and verifying the progress of concurrent objects with partial methods, but the mechanized proof is out of their research scope. 
+Their recent work~\cite{liang:2017} presents a way to specify and verify the progress of concurrent objects with partial methods, but the mechanized proof is out of their research scope. 
+
 
 LiLi (Linearizability and Liveness) is a program logic based on RGSim
 that can
@@ -193,7 +195,7 @@ method.  Indeed, all examples in their paper are code fragments that
 must first acquire a lock, then perform critical-section tasks, and then release the
 lock. In contrast, our environmental context can specify the full
 strategies (i.e., both the past and the future events) of all
-environment threads and the scheduler, so we can readily impose
+environment threads and a scheduler, so we can readily impose
 temporal invariants over the environment. Within each thread-modular
 layer $L[t]$, we can show that each lock-acquire primitive (\eg, for
 ticket locks) always returns as long as its environment is cooperative
@@ -202,6 +204,7 @@ be cooperative.
 In other words, the termination of $t$'s lock-acquire
 operation does not depend on whether $t$ itself will release the lock
 after first acquiring it.
+
 
 Most concurrent languages use a
 parallel composition command, $(C_1 \| C_2)$, to create and terminate
@@ -296,6 +299,7 @@ On the other hand, the fairness
 constant makes no appearance in $f(\mathrm{G})$, because fairness
 assumptions are implicit in their inference rules.
 
+
 One big difference between our work and LiLi is our emphasis on
 modularity.  
 LiLi requires users to prove all the different invariants, down to low-level data representation in memory, between every two lines of code of a program.
@@ -312,7 +316,7 @@ increments a variable and releases the lock. The pre/post-conditions
 of the code in the critical section include the low-level
 implementation invariants of the lock and the fact the lock will
 eventually be released is proved for the ``increment'' operation as a
-whole. Our locks are specified using \emph{bound} numbers so  they can be used by many different methods.
+whole. Our locks are specified using \emph{bound} numbers so they can be used by many different methods.
 
 In addition to the modularity, one can see a more philosophical difference
 between our $\ccalname$ approach and program logics including LiLi.  
@@ -455,8 +459,8 @@ prove functional correctness.
 By treating each distributed node as a separate thread, we can use the environment context to
 prove properties in a local context.
 Combining this with the witness then allows us to bring in information about the global state when necessary.
-We also use the environment context to model a realistic, nondeterministic network.
-Another advantage afforded by $\ccalname$ is that we can lift our safety proofs to higher layers via contextual refinement.
+We also use the environment context to model a realistic and non-deterministic network.
+Another advantage afforded by $\ccalname$ is that we can lift our safety proofs to higher layers via using a contextual refinement property.
 It allows us to implement and verify a system once and then reuse it as a component in various distributed applications.
 
 
