@@ -6,7 +6,13 @@ Chapter~\ref{chapter:ccal},
 the \textit{log-lift} pattern still requires a plethora of manual proofs that users have to write. 
 We believe that providing better automation for several of their parts will dramatically improve the efficiency of our framework.
 
-Our per-thread layer interfaces also cannot allocate any new blocks in the memory. Even though we provide a new memory 
+Besides that, other parts of our proofs also can be improved by providing more automation. 
+For example, building layers usually requires common patterns in code correctness proofs that show low-level implementations written in C and/or Assembly refines high-level specifications written in $\coq$. 
+As a simple example, introducing getter and setter functions in our framework normally requires us to write proofs about abstracting away the memory by showing operations in each cell in the associated memory block refine operations in each field in the corresponding abstract state definition with similar patterns.
+In this sense, providing a tool that gives auto-generated low-level implementations as well as code correctness proofs with given high-level specifications would dramatically reduce proof efforts. 
+Other members in our group are working on this proof and code auto-generation.
+
+In addition, our per-thread layer interfaces cannot allocate any new blocks in the memory. Even though we provide a new memory 
 model for composing multiple threads’ memories together 
 (in  Section~\ref{chapter:linking:subsec:multithreaded-env-configuration}),
 our per-thread layer interfaces cannot support this model properly due to other dependencies of our framework 
@@ -14,9 +20,18 @@ our per-thread layer interfaces cannot support this model properly due to other 
 and increases the complexity of multithreaded linking by making its size  (\ie, the concrete definition of 
 $\CSched$, $\TLink$, $\TSched$,  thread configurations, and auxiliary functions) huge. 
 
-Another limitation is the lack of general parallel composition rules. As discussed in Chapter~\ref{chapter:linking} and Chapter~\ref{chapter:certikos}, 
-our parallel composition is limited in specific places among the full layer stacks. Extending the framework to support 
-parallel compositions for every layer is required to strengthen our framework.
+
+
+\section{Limitations on Concurrent Linking Frameworks}
+
+
+One limitation in our concurrent linking frameworks-multicore and multithreaded linking frameworks--is the lack of general parallel composition rules. 
+As discussed in Chapter~\ref{chapter:linking} and Chapter~\ref{chapter:certikos}, 
+our parallel composition is limited in specific places among the full layer stacks. Extending the current framework to support parallel compositions for every layer is required to strengthen our framework.
+Besides, our linking framework does not support automation when instantiating abstract relations to connect the framework with actual concurrent program verification.
+For example, providing concrete instances of $\AbsRelC$ and $\AbsRelT$ for $\certikos$ (discussed in Chapter~\ref{chapter:certikos}) requires us to write 30,000 lines of code with making us write same proofs several times. 
+Those things are apparent parts that our linking framework can be improved. 
+
 
 \section{Relaxed Memory Model}
 
