@@ -33,6 +33,7 @@ We further formally model the elements of a leader-based distributed system.
 \section{MultiPaxos}
 \label{chapter:witnesspassing:multipaxos}
 
+
 We use the fixed-configuration multi-decree $\paxos$ protocol (a simplified variant
 of the protocol commonly referred to as $\multipaxos$)~\cite{rvrpaxos}
 as an example protocol to explain how our approach facilitates modeling and
@@ -42,7 +43,7 @@ are chosen by synod consensus of a $\paxos$ instance and replicated across accep
 The $\paxos$ instance consists of a group of acceptor nodes and the $\paxos$ protocol
 ensures that a state chosen by the instance is immutable.
 
-Each $\paxos$ instance requires a prepare and an accept phase to choose a new
+Each $\paxos$ instance requires a prepare and an accept phases to choose a new
 state. A proposer sends the request and acceptors accept the new state.
 A successful prepare requires a quorum (majority) of acceptor acknowledgments
 and the state is successfully chosen only if a quorum of acceptors
@@ -61,6 +62,7 @@ instances for as long as no other proposer attempts to prepare to write. However
 original $\paxos$ paper~\cite{paxos, paxosmadesimple} mostly focuses on the operation
 of a single $\paxos$ instance
 and developers are left to choose their implementation of $\multipaxos$.
+
 
 Our $\multipaxos$ example employs the scheme that is described as below:
 \begin{itemize}
@@ -84,9 +86,10 @@ Our $\multipaxos$ example employs the scheme that is described as below:
 \section{Global vs Local Reasoning}
 \label{chapter:witnesspassing:sec:global-local-reasoning}
 
+
 One of the challenges of distributed system verification is that it requires reasoning about
-global invariants, \ie, properties that hold for the entire distributed state rather than just
-one node's local state.
+global invariants, (\ie, properties that hold for the entire distributed state rather than just
+one node's local state).
 However, relations between local and global invariants are not straightforward 
 So,  one must trace the network history back in time and consider multiple
 nodes' states at once to reason globally.
@@ -95,6 +98,7 @@ or lost messages.
 We attempt to reduce the amount of global reasoning by logically gathering sufficient
 information in the local state to prove the desired properties.
 We call this gathered information a \textit{witness}, and while we provide a formal treatment, it is helpful first to see a simple example.
+
 
 \begin{figure}
 \begin{minipage}{\linewidth}

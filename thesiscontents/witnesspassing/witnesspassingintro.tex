@@ -1,5 +1,3 @@
-\jieung{Check the notations for list app and cons (and others) - those things should be consistent with the operators in previous sections}
-
 The previous chapter (Chapter~\ref{chapter:wormspace}) illustrates that our verification work on distributed systems, 
 a different kind of concurrent programs with multicore/multithreaded concurrent programs. 
 It shows 
@@ -12,14 +10,12 @@ Proving the correctness of the application requires the verification of the unde
 still very challenging. In this paper, we focus on one of the most commonly
 used families of distributed systems, the leader based distributed system, and study the standard properties to build a verification framework.
 We propose a generic specification to model leader-based distributed systems, and based on
-the specification we presents a proof guideline that can verify the common
+the specification we present a proof guideline that can verify the common
 desirable properties of the leader based system: linearizability and soundness of
 the leader election. 
-In addition, our framework uses a novel logical data structure called witness which keeps track of the history for each distributed object.
-%The witness can be used to reason about different distributed functions and can
-%be composed to verify the properties of the entire distributed system. We provide
-%multi-Paxos as the primary example.
+Also, our framework uses a novel logical data structure called witness which keeps track of the history for each distributed object.
 This witness provides the full logical succinct history up to the current status that contains all necessary information for the distributed object. 
+
 
 %In addition, the witness can be used to reason about different distributed functions and can
 %be composed to verify the properties of the entire distributed system. We provide
@@ -29,4 +25,6 @@ This witness provides the full logical succinct history up to the current status
 %We demonstrate that once systems are specified to satisfy the proof template's requirement, the witness data structure delivers necessary
 %information to the proof template and common properties to leader-based systems are proved for free. 
 %
-%\jieung{In this chapter, I copied and pasted and slightly revised our PLDI submisison.  But, I will update this part continuously}
+%\jieung{In this chapter, I copied and pasted and slightly revised our PLDI submisison.  But, I will update this part continuously}%The witness can be used to reason about different distributed functions and can
+%be composed to verify the properties of the entire distributed system. We provide
+%multi-Paxos as the primary example

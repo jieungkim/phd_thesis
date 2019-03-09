@@ -1,18 +1,16 @@
 \section{Representing the Network}
 \label{chapter:witnesspassing:sec:low-level-implementation}
 
-\jieung{We are able to extend this section later by adding multiple details if it is desirable.}
 
 Previous sections have shown how we provide general specifications
 that can accommodate a variety of distributed systems.  To assure correctness of a concrete implementation, a distributed system verification also needs to
-provide evidence that the actual running code refines high-level generic
+provide evidence that actual running codes refine high-level generic
 specifications. While mere functional correctness is relatively well-understood,
 it is not sufficient for distributed system verification. The
 system's behavior concerning the network must be taken into account. 
-The previous chapter addresses this issue and 
-provides a network model only for one specific protocol, $\WOR$. 
-In here, we have generalized our asynchronous network model to make it be used 
-for multiple protocols by filling out the necessary information. 
+The previous chapter addresses this issue and provides a network model only for one specific protocol, $\WOR$. 
+In here, we have generalized our asynchronous network model to make it be used for multiple protocols by filling out the necessary information. 
+
 
 
 
@@ -39,11 +37,11 @@ $$
 \end{figure}
 
 
-The network model here is the instantiation of log in
+A network model here is one instantiation of a log in
  Section~\ref{chapter:witnesspassing:sec:specs-for-leader-based-system}. Our network is defined as a list of
-network events, and the key definitions are found in Figure~{fig:chapter:witnesspassing:net-defs}. A
+network events, and key definitions are found in Figure~{fig:chapter:witnesspassing:net-defs}. A
 network event ($\mathrm{E}_{net}$) represents an interaction between a node and
-the greater distributed system of which it is part. This $\mathrm{E}_{net}$ is a
+a greater distributed system of which it is part. This $\mathrm{E}_{net}$ is a
 low-level instantiation of $\packet$ from Figure~\ref{fig:chapter:witnesspassing:basic-state}.
 
 At the lowest logical level, there are four kinds of events: 1) send, 2) receive,
@@ -59,9 +57,7 @@ system by explicitly demarcating global state transitions in the network log.
 
 All network events carry a channel identifier ($\chid$), the purpose of which is
 to logically separate network events into disjoint subsets for separate
-reasoning and refinement. \ignore{Projection functions are defined for narrowing the
-view of the network log to only the events from a given channel, to focus on
-only the relevant history.} Assigning different channel identifiers for each
+reasoning and refinement. Assigning different channel identifiers for each
 protocol and each verification layer allows for the composition of protocols and
 for network reductions (see Section~\ref{chapter:witnesspassing:subsec:connection}).
 
@@ -138,6 +134,7 @@ specifications, a refinement from a direct update on local state is necessary.
 be done with CPU schedules, and the same technique applies straightforwardly to
 the network log.
 
-The high-level global state calculated by the replay function contains local
-states for each node. The network oracle, and by extension the local states, can
+A high-level global state calculated by a replay function contains local
+states for each node. A network oracle, and by extension of local states, can
 be constrained with protocol-specific assumptions for rely-guarantee reasoning.
+

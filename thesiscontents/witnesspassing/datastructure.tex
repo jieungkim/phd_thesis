@@ -6,12 +6,12 @@ One of our goals is to build abstract specifications that represent multiple lea
 In this purpose, we specify leader-based distributed systems with a generic
 specification and a system-specific specification. 
 The generic specification defines the high-level behavior of the leader-based 
-distributed system and the system-specific specification--which is encapsulated within the generic specification--describes the low-level behaviors. 
+distributed system and the system-specific specification--which is encapsulated within the generic specification--describes  low-level behaviors. 
 
 The generic specification obviates the need for the user to write specifications
 of essential safety properties of the leader-based system and instead enables them to
-focus on writing the system-specific parts. The
-generic and system-specific specifications are designed in a modular fashion and
+focus on writing the system-specific parts. 
+Generic and system-specific specifications are designed in a modular fashion and
 can be composed to form a full specification of a leader-based distributed system.
 
 Modeling the leader-based system requires two kinds of actors in the system:
@@ -106,9 +106,8 @@ $$
 \label{fig:chapter:witnesspassing:basic-state}
 \end{figure}
 
-Figure~\ref{fig:chapter:witnesspassing:basic-state} presents the necessary definitions for the
-generic specification.
-Nodes must have unique identifiers of type $\nodeid$, which can be any type with decidable equality.
+Figure~\ref{fig:chapter:witnesspassing:basic-state} presents  necessary definitions for our generic specifications.
+Nodes must have unique identifiers of a type $\nodeid$, which can be any type with decidable equality.
 A term number of type $\termnum$ acts as a logical temporal indicator in the system.
 Term numbers do not need to correspond to any physical clock,
 but they are used to resolve ordering conflicts between operations within the system,
@@ -118,10 +117,9 @@ of the local object $\dsvalue$.
 A local object is one node's partial view of the global distributed object.
 Since each node's local state may not be exactly in sync globally due to network or
 node failures, the version number indicates how up-to-date a node's state is.
-\jieung{remove the next sentence?}
-Nodes may also contain additional system-specific state inside their distributed object.
+Nodes may also contain additional system-specific states inside their distributed object.
 
-The global state $\gstate$ is the collection of all the local states hosted by the
+A global state $\gstate$ is a collection of all the local states hosted by the
 entire system, which is composed of the set of distributed nodes $\fullset$.
 There is a partial map from each node in the distributed system ($\fullset$)
 to its local state ($\dstate$), which is a tuple consisting of a term number,
@@ -131,16 +129,16 @@ As mentioned in the previous chapter,
 distributed systems usually have one shared resource, the network. 
 Nodes in a distributed system communicate via the network. 
 Inspired by our concurrent verification framework in Chapter~\ref{chapter:ccal},
-the global state $\gstate$ can be reconstructed by
-applying the log replay function $\replay$ to the
+a global state $\gstate$ can be reconstructed by
+applying a log replay function $\replay$ to a
 network log ($l : \networklog$), which is a list of network events ($\packet$).
 The effect of a call to either $\tplldrfunction$ or $\tplopfunction$ by a node is atomic 
 and it cannot be interfered by other operations, 
 but function calls by other nodes can be interleaved.
 The interleaving is expressed by our network model, described in Section~\ref{chapter:witnesspassing:sec:low-level-implementation} in detail.
 Our framework keeps track of each function call
-within the network log and the replay function $\replay$ computes the
-global state based on the network log.
+within a network log and a replay function $\replay$ computes a
+global state based on a network log.
 Finally, our generic specification is parameterized by some protocol-specific
 functions that we explain later in this section.
 
@@ -150,9 +148,9 @@ functions that we explain later in this section.
 
 \subsubsection{Requester}
 The goal of leader election is to set a new term, give one node exclusive access to the
-entire system, and synchronize every node's local state such that the
+the entire system, and synchronize every node's local state such that the
 global state is prepared to be updated.
-Using function definitions in Figure~\ref{fig:chapter:witnesspassing:basic-state}, we define the template function for leader election as follows:
+Using function definitions in Figure~\ref{fig:chapter:witnesspassing:basic-state}, we define a template function for a leader election as follows:
 $$
 \begin{array}{l}
 	\ldrfunction (nid: \nodeid) (g_{pre}\ g_{post}:  \gldrfunction)
@@ -163,31 +161,31 @@ $$
 \ \ \ \ \ \ \ \mbox{\textbf{let}} \ l_5 := g_{post}\ nid \ (l_4 \mdoubleplus l_3 \mdoubleplus l_2 \mdoubleplus l_1) \ \mbox{\textbf{in}} \ l_5. \\
 \end{array}
 $$
-where $\replay(l)[nid]$ is a projection from the global state generated by the log replay function to 
-the local stated of $nid$.
+where $\replay(l)[nid]$ is a projection from a global state generated by a log replay function to 
+a local state associated with $nid$.
 
-This function captures the common form of a leader election scheme, which sends requests to
+This function captures a common form of a leader election scheme, which sends requests to
 and gets approval from a set of authoritative nodes.
-First, $g_{pre}$ changes the local state of a candidate node to prepare
+First, $g_{pre}$ changes a local state of a candidate node to prepare
 for a leader election and generates corresponding request messages.
 Network messages are sent and received using $tx$ and $rx$, which define system-specific
-communication patterns between the requester and the approvers.
-Finally, $g_{post}$ determines the final outcome of the
-leader election and executes any actions that are necessary before becoming the leader.
+communication patterns between the candidate (one of requesters) and approvers.
+Finally, $g_{post}$ determines the final outcome of the 
+leader election and executes any actions that are necessary before becoming a leader.
 
 The table on the left side of Figure~\ref{fig:chapter:witnesspassing:process-flow} lists concrete examples of the parameters of
-$\ldrfunction$. For example, multi-Paxos requires a majority vote from the acceptors to
-become the leader, a two-phase commit protocol that uses a membership service may delegate
+$\ldrfunction$. For example, multi-Paxos requires a majority vote from acceptors to
+become a leader, a two-phase commit protocol that uses a membership service may delegate
 a transaction coordinator selection to this service, and Lamport's lock requires all node's
-approval to acquire the lock. Note that the transaction coordinator and the lock holder are
+approval to acquire a distributed lock. Note that a transaction coordinator and a lock holder are
 regarded as leaders. The typical post-election operations are checking whether the
-previous leader left the system in a consistent state and making the state consistent
+previous leader left the associated system in a consistent state and making the state consistent
 if necessary. 
 
 \subsubsection{Approver}
-The other part of leader election is how the approvers handle requests.
-This typically involves some protocol-specific check of the request's
-term number, followed by a local state update, and then an acknowledgement
+The other part of a leader election is how approvers handle requests.
+This typically involves some protocol-specific checks of the request's
+term number, followed by a local state update, and then an acknowledgment
 containing the new state. We express this pattern as follows:
 $$
 \begin{array}{l}
@@ -205,8 +203,8 @@ the system-specific state update functions must be restricted in some way.
 For example, the term number modified by protocol-specific functions in $\ldrfunction$
 need to increase monotonically in most leader-based distributed systems.
 Additionally, $g$ in $\ldrhfunction$ should not touch the value inside
-the distributed object in order to separate the leader election and the commit operation.
-We discuss more about those requirements that the parameters must satisfy and what properties we
+the distributed object to separate a leader election and a commit operation.
+We discuss more those requirements that the parameters must satisfy and what properties we
 are able to prove in Section~\ref{chapter:witnesspassing:sec:prove-safety-with-witness}.
 
 \subsection{Commit}
@@ -242,8 +240,8 @@ $g_{post}$ should have a flag to handle different functions that correspond to
 each round. 
 
 \subsubsection{Approver}
-When a requester triggers a commit operation, the approvers need to
-handle the operation and update the local view of the distributed object if
+When a requester triggers a commit operation,  approvers need to
+handle the operation and update its local view of a distributed object if
 necessary. Unlike $\opfunction$, $\ophfunction$ does not take an update function as an argument
 because it is already in the message from the requester.
 To retrieve the update function from the received message $\ophfunction$ requires
@@ -262,4 +260,4 @@ $$
 \end{array}
 $$
 
-All those definitions generic and simple, but they provide useful guidelines for users to build leader-based distributed systems. We also offer fundamental local invariants that those functions have to follow; thus users can check their local implementation is valid to guarantee important safety properties of leader-based distributed systems--linearizability and mutual exclusion of a leader election operation.
+All those definitions are generic and simple, but they provide useful guidelines for users to build leader-based distributed systems. We also offer fundamental local invariants that those functions have to follow; thus users can check their local implementation is valid to guarantee important safety properties of leader-based distributed systems--linearizability and mutual exclusion of a leader election operation.
