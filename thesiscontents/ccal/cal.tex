@@ -4,22 +4,22 @@
 
 Building certified software in a layered approach was already addressed in the previous work by Gu \etal~\cite{deepspec},
 but that work does not address handling concurrent programs in it.
-However, this approach, Certified Abstraction Layers ($\calname$), works as a basis of our concurrent layer framework.
+However, the approach, Certified Abstraction Layers ($\calname$), works as a basis of our concurrent layer framework.
 It enables us to build and verify the (sequential) system by dividing it into modular layers, 
-proving the correctness of its each layer independently, and connecting the proofs of all layers in the system to show the correctness of the system's end-to-end behavior via \textit{contextual refinement} between layers. 
+proving the correctness of its every layer independently, and connecting the proofs of all layers in the system to show the correctness of the system's end-to-end behavior via \textit{contextual refinement} between layers. 
 It only supports sequential program verification but works as a basis of our concurrent certified abstraction layers.
 
 $\calname$ is a predicate over two layers with a context program, 
 ``$\ltyp{L_{\codeinmath{low}}}{R}{\codeinmath{M}_\codeinmath{high}}{L_{\codeinmath{high}}}$'' 
-and a mechanized proof object (written in $\coq$) for the predicate where layer $L_{\codeinmath{low}}$ and $L_{\codeinmath{high}}$ are state machines, $\codeinmath{M}_\codeinmath{high}$ is a program written in C and/or Assembly, $R$ is a relation between states of two layers.
+and a mechanized proof object (written in $\coq$) for the predicate where $L_{\codeinmath{low}}$ and $L_{\codeinmath{high}}$ are state machines, $\codeinmath{M}_\codeinmath{high}$ is a program written in C and/or Assembly, $R$ is a relation between states of two layers.
 Informally, the predicate implies that 
-a layer $L_{\codeinmath{low}}$ contextually refines the higher layer $L_{\codeinmath{high}}$ with the relation $R$
- if each state transition made by $L_{\codeinmath{high}}$ based on any context program \code{Ctxt} 
+a layer $L_{\codeinmath{low}}$ contextually refines  a layer $L_{\codeinmath{high}}$ with a relation $R$
+ if each state transition made by $L_{\codeinmath{high}}$ based on a context program \code{Ctxt} 
 % (when \code{Prog} = $\codeinmath{M}_{\codeinmath{high}} \oplus \codeinmath{Ctxt}$, where $\oplus$ computes the union 
 % of implementation modules and contexts) 
- corresponds to (with the relation $R$)  a sequence of 
- state transitions by $L_{\codeinmath{low}}$ which has the context $\codeinmath{M}_{\codeinmath{high}}$ and  \code{Ctxt} together.
- Formally, it is defined as a forward simulation~\cite{Lynch95,leroy09,Milner71,Park81} with the (simulation) relation $R$
+ corresponds to (with a relation $R$)  a sequence of 
+ state transitions by $L_{\codeinmath{low}}$ with $\codeinmath{M}_{\codeinmath{high}}$ and  \code{Ctxt} together.
+ Formally, it is defined as a forward simulation~\cite{Lynch95,leroy09,Milner71,Park81} with a (simulation) relation $R$
  and  $\ltyp{L_{\codeinmath{low}}}{R}{\codeinmath{M}_{\codeinmath{high}} }{L_{\codeinmath{high}}}$ is stated as
  \begin{center}
 $\forall\ \codeinmath{Ctxt},\ \sem{L_{\codeinmath{low}}}{\modulecompose{\codeinmath{M}_{\codeinmath{high}}}{\codeinmath{Ctxt}}} \refines_{R} \sem{L_{\codeinmath{high}}}{\codeinmath{Ctxt}},$
@@ -30,9 +30,9 @@ $\modulecomposekwd$ computes the union
 and $\sem{L}{\cdot}$ denotes a  behavior of the layer machine based on $L$.
 
 
-Contextual refinement, the underlying technique of $\calname$, is powerful because layers can be verified only once individually, and they can be linked together.
- When the layer stack is extended with a new verified layer on top, 
- the inter-layer contextual refinement proofs can be reused with an updated context to include the new layer continuously. 
+Contextual refinement, an underlying technique of $\calname$, is powerful because layers can be verified only once individually, and they can be linked together.
+ When a layer stack is extended with a new verified layer on top, 
+  inter-layer contextual refinement proofs can be reused with an updated context to include a new layer continuously. 
 For instance, if we add a new layer $L_{\codeinmath{top}}$ on top of verified layers $L_{\codeinmath{mid}}$ and $L_{\codeinmath{btm}}$, 
 we need one new proof that shows $L_{\codeinmath{mid}}$ contextually refines $L_{\codeinmath{top}}$, but we can reuse the proof for $L_{\codeinmath{btm}} \refines_{R} L_{\codeinmath{mid}}$ without requiring any modification to the proof thanks to the characteristic of the contextual refinement. After the proof of $L_{\codeinmath{mid}} \refines_{{R}_{total}} L_{\codeinmath{top}}$, we are automatically guaranteed that $L_{\codeinmath{btm}}$ contextually refines all the way up to $L_{\codeinmath{top}}$ as follows:
 \begin{center}
@@ -46,14 +46,15 @@ and $\relcomposekwd$ is an operator that combines two refinement relations and i
  ${R}_{total} =\relcompose{R_{(\codeinmath{mid}, \codeinmath{low})}}{{R_{(\codeinmath{high}, \codeinmath{mid})}}}$ in here.
 
 
-Each layer in $\calname$ is internally composed of the C implementation, specifications, and proofs.
+
+Each layer in $\calname$ is internally composed of  C implementations, specifications, and proofs.
 To develop a layer $L_k$, 
 the developer writes 
-1) source code written in C and/or Assembly; 
-2) high-level and  low-level specifications written in $\coq$, which specify how the code changes abstract state and memory, respectively; 
-3) the auto-generated AST ($\clight$) of C source code using the tool in $\compcert$,
+1) a source code written in C and/or Assembly; 
+2) high-level and  low-level specifications written in $\coq$, which specify how the code changes an abstract state and  a memory, respectively; 
+3) an auto-generated AST ($\clight$) of the code by using a tool in $\compcert$,
 and the developer writes three proofs: 
-1) $p_k$, a proof that the generated code refines the low-level specification; 
+1) $p_k$, a proof that the generated AST refines the low-level specification; 
 2) $r_k$, a proof that the low-level specification refines the high-level specification; and 
 3) $R_{k-1,k}$, a proof using $p_k$ and $r_k$ to verify that $L_{k-1}$ contextually refines $L_{k}$. 
 The proofs $p_k$ and $r_k$ guarantee that the C code (\ie , its verified $\coq$ representation) is correct as defined by the specifications.

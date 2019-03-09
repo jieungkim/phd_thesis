@@ -6,18 +6,17 @@
 
 To support concurrency, 
 we extend the layer definition in Chapter~\ref{chapter:ccal:sec:cal},
-by parameterizing it with a set $A$--a focused set for the layer--which is always a subset of the set $D$ for all participants of the concurrent system (usually the set contains all CPUs/threads).
-Then, the concurrent layer interface $L[A, \oracle]$ is a state transition machine
+by parameterizing it with a set $A$--a focused set for the layer--which is always a subset of a set $D$ which includes all participants of the concurrent system (usually the set contains all CPUs/threads).
+Then, a concurrent layer interface $L[A, \oracle]$ is a state transition machine
 that defines the execution for all members in $A$ with an environmental context $\oracle$.
 We first focus on explaining the set $A$, and we then address about $\oracle$ during the rest of this section.
-Transitions of other members outside $A$  ($\forall \ i . \ i \in\ (D - A)$)
-are treated as the environment of $L[A, \oracle]$. 
 In most circumstances, we only focus on a singleton set; 
 thus, we often abbreviate $L[\{i\},\oracle]$ as $L[i, \oracle]$ where $i\in{}D$ for readability in those cases.
 
+
 A concurrent layer interface also extends the representation of states and primitive specifications in $\calname$ to handle shared resources in the system. 
 Instead of only having thread-local primitives and a private abstract state in $\calname$, 
-a concurrent layer is extended adding abstract \textit{shared} primitives, 
+a concurrent layer is extended by adding abstract \textit{shared} primitives, 
 and a global log. 
 Previous thread-local primitive (in $\calname$) calls are not observable by other threads; thus, it only updates their private states (that are disjoint from other threads' private states) which are not visible from other threads. 
 On the other hand, each shared primitive call and the related information (\ie, arguments passed to the call) 
@@ -101,32 +100,30 @@ interleaving (specified by the strategy of the scheduler).
 The system with two threads
 (thread $1$ and thread $2$) and a scheduler in Figure~\ref{fig:chapter:ccal:env-contexs}
 shows how
-an environment context for thread $1$  with layer $L$ is defined 
+an environment context for a thread $1$  with a layer $L$ is defined 
 and how it is related to the execution of  $L[\set{1,2}, \oracle]$.
 On the left, it shows the interleaved execution of
  invocations to $\incticket$ over $L[\set{1, 2}, \oracle]$
-where the environment context $\oracle$ is just the scheduler
+where its environment context $\oracle$ is just the scheduler
 strategy $\strat{sched}$.
-When querying the environment context with the given set (notated as $\oracle_{\set{1, 2}}$
-it provides the environmental step (the middle box  of the left execution in the figure)),
-which only includes the scheduler's events (\eg, $(1 \switch 2)$, $(2 \switch 2)$, and so on).
+When querying an environment context with a given set (notated as $\oracle_{\set{1, 2}}$
+it provides an environmental step (the middle box of the left execution in the figure)),
+which only includes scheduler's events (\eg, $(1 \switch 2)$, $(2 \switch 2)$, and so on).
 On the right, it shows one execution
-of method $\incticket$ over the layer machine $L[1, \oracle]$, when $\oracle_1$ is the union of
-the strategy $\strat{sched}$ for the scheduler and $\strat{2}$ for
-thread $2$. 
+of a method $\incticket$ over a layer machine $L[1, \oracle]$, when $\oracle_1$ is a union of
+a strategy $\strat{sched}$ for a scheduler and $\strat{2}$ for
+a thread $2$. 
 
 To enforce the safety of environmental moves,
 each layer interface also specifies its set of valid environment contexts.
 The semantics for the (globally) observable operations of $\sem{L[A, \oracle]}{P}$ are then a set of global logs
 generated from running $P$ over $L[A, \oracle]$ under all valid
 environment contexts. 
-The validity definition depends on each layer interface which is stated as invariants over the global log. 
-At each layer, we assume and ``rely''  on the validity of environmental contexts based on the ``guarantee'' about the validity of the current global log and its local update.
-Those two conditions are also parts of our layer as invariant on shared objects and are notated as 
+The validity for each layer interface is stated as invariants over its global log. 
+At each layer, we assume and ``rely''  on the validity of the environmental context based on the ``guarantee'' about the validity of the current global log and its local update.
+Those two conditions are also parts of our layer as invariants on shared objects and are notated as 
 $\Rely$ and  $\Guard$, respectively.
 This is a generalized version of the rely-guarnatee-idea in previous works ~\cite{feng07:sagl,vafeiadis:marriage,LRG,fu10:roch,sergey15}. 
-Those rely-and-guarantee conditions
-are also parts of our extended layer definition. 
 
 
 \subsection{Local Layer and Linking}
@@ -141,39 +138,39 @@ Before each move of a client program $P$ over this local interface,
 the layer machine first repeatedly asks $\oracle$ for environmental events until the control is transferred to $i$. 
 
 
-For example, the second fetch-and-increase primitive call from thread $1$ in FIgure~\ref{fig:chapter:ccal:game-for-fetch-and-increase-primitive-call}
+For example, the second fetch-and-increase primitive call from a thread $1$ in FIgure~\ref{fig:chapter:ccal:game-for-fetch-and-increase-primitive-call}
 matches with the following automaton:
 \begin{center}
 \includegraphics[width=0.75\textwidth]{figs/ccal/faiexamplewithcontext}
 \end{center}
 In the automaton, the initial global log of the primitive call is $l \cons 1.\incticket$,
-the result log after the first round of the game performed by thread $1$.
-The second round of thread $1$, therefore, uses its thread ID, $1$,  and that current global log, $l \cons 1.\incticket$, to query the instance of environmental context ($\oracle$) for the environmental move; then the environment move updates the log based on strategies of thread $2$ and the scheduler based on the result of the query.
+the result log after the first round of the game performed by a thread $1$.
+The second round of a thread $1$, therefore, uses its thread ID, $1$,  and that current global log, $l \cons 1.\incticket$, to query the instance of an environmental context ($\oracle$) for its environmental move; then the environment move updates the log based on strategies of a thread $2$ and a scheduler based on the result of the query.
 Specifically, the query returns ``$\nulllist \cons (1 \switch 2) \cons (2.\incticket) \cons (2 \switch 2) \cons (2.\incticket) \cons (2 \switch 1)$'',
-the behavior of thread $2$ and the scheduler until they transfer the control to thread $1$,  and 
-the log update is exactly same with the behavior of them in between two fetch-and-increase primitive calls by thread $1$ of the example.
+the behavior of a thread $2$ and a scheduler until they transfer the execution control to a thread $1$,  and 
+the log update is exactly the same with the behavior of them in between two fetch-and-increase primitive calls by thread $1$ of the example.
 
-Building layers using this sequential-like local layer interface has a considerable similarity to 
+Building layers using this sequential-like local layer interface has considerable similarity to 
 the layer building in $\calname$; thus 
 our extended layered framework facilitates
-majority properties provided in $\calname$ with almost no cost;
-thus, all layer-linking properties in $\calname$--including horizontal and vertical compositions--also can 
-easily be adapted to the local layer interface with environmental context.
-Section~\ref{chapter:ccal:subsec:local-layer-interface}  and~\ref{chapter:ccal:subsec:linking} provide formal rules for the layer linking that contains this refinement property.
+many properties provided in $\calname$ with almost no cost;
+therefore, all layer-linking properties in $\calname$--including horizontal and vertical compositions--also can 
+easily be adapted to a local layer interface with an environmental context.
+Section~\ref{chapter:ccal:subsec:local-layer-interface}  and~\ref{chapter:ccal:subsec:linking} provide formal rules for layer linking that contains this refinement property.
 
 \subsection{Concurrent Linking and Compilation for Local Layer}
 \label{chapter:ccal:subsec:concurrent-linking-and compilation-for-local-layer}
 
-The layer interface $L[1, \oracle_1]$ and $L[2, \oracle_2]$ are  {\em compatible} and can be linked together if the guarantee based on
+The layer interface $L[1, \oracle_1]$ and $L[2, \oracle_2]$ are  {\em compatible} and can be linked together based on
 the idea discussed in Section~\ref{chapter:ccal:subsec:concurrent-layer-with-environment}
 We then can compose two partial layers to form 
 $L[\set{1, 2}, \oracle_{\set{1, 2}}]$ by canceling out rely conditions in one partial machine with the others' guarantee conditions.
 Also, we can adapt the $\compcertx$ compiler~\cite{deepspec} that we used in $\calname$
-for the local layer interface because it is sequential-like.
+for our local layer interface because it is sequential-like.
 
 Both, however, require us to solve multiple challenges. 
 For example, providing a linking theorem  
-implies that we need to define the behavior of a full machine model (for $L[D, \oracle_{D}]$), a partial machine (for $L[A, \oracle_{A}]$ when $A \subseteq D$), and 
+implies that we need to define behaviors of a full machine model (for $L[D, \oracle_{D}]$), a partial machine (for $L[A, \oracle_{A}]$ when $A \subseteq D$), and 
 a machine for a singleton set (for $L[i, \oracle_{i}]$), as well as mechanically prove simulation theorems for the same layer (but possibly with different focused sets) among those machines. 
 Providing the proper compilation also requires 
 us to reflect appropriate changes affected by other components to each sequential-like machine.

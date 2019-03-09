@@ -4,53 +4,51 @@
 Followed by the previous section, 
 we present formal definitions of our certified concurrent abstraction layers.
 Besides those definitions, 
-we also provide correctness condition in building layers, which is 
-the contextual refinement theorem between two adjacent certified concurrent abstraction layers,
-as well as the extension of the theorem by linking multiple layers together using layer calculus.
+we also provide a correctness condition in building layers, which is 
+a contextual refinement theorem between two adjacent certified concurrent abstraction layers,
+as well as an extension of the theorem by linking multiple layers together using layer calculus.
 
-\jieung{The following two sections should be OK, but let's check the consistency with this section
-and the concurrent linking section for the notation}
 
 \subsection{Multicore Machine Model}
 \label{chapter:ccal:subsec:multicore-machine-model}
 
 
-We first define a machine model for the full participants ($D$ and  a scheduler), which is a multicore machine model, 
+We first define a machine model for full participants ($D$ and  a scheduler), which is a multicore machine model, 
 to provide a better understanding of our machine model for local layers.
-This multicore machine model is a part of TCB in our framework, but it be instantiated as a conventional model (such as $\intelmachine$--see Chapter~\ref{chapter:linking} for  details) with enforcing sequentially consistent program
-execution and allowing arbitrary interleaving
+This multicore machine model is a part of TCB in our framework, but it can be instantiated as a conventional model (such as $\intelmachine$--see Chapter~\ref{chapter:linking} for  details) with enforcing a sequentially consistent program
+execution and allowing an arbitrary interleaving
 and shared memory accesses. 
 
 
 \subsubsection{Machine State} 
-The state of  multicore machine model is denoted as a tuple ``$\state := (c, f_{\regs}, m, a, l)$"
+A state of a  multicore machine model is denoted as a tuple ``$\state := (c, f_{\regs}, m, a, l)$"
 consisting of
- the current running CPU ID $c$,
+ a current running CPU ID $c$,
 all CPUs' private states $f_\regs$ (a partial map from CPU ID to  private state $\regs$)
  a shared memory $m$,
  a shared abstract state $a$,
-and  a global log $l$ (a single list with events).
-The abstract state $a$ 
+and a global log $l$ (a single list with events).
+An abstract state $a$ 
 summarizes and abstracts in-memory low-level data structures from lower layers. 
 This abstract representation replaces
 in-memory data structures by hiding low-level details in the memory (such as padding, aligning, and overflow)
 but it is not only an abstraction of parts of memory but also a state that affects program execution when making primitive calls. 
-The global log $l$ is a list of observable events that contains the history of all shared operations in the system.
-Those events recorded by different CPUs and
-interleaved in the log with  the chronological order of events for all operations that are visible to other components in the system. 
+A global log $l$ is a list of observable events--a history of all shared operations--in the system.
+Those events are
+interleaved in the log with the chronological order of events for all operations that are visible to other components in the system. 
 Therefore, 
 two shared parts in our state definition (the shared memory $m$  
 and the shared abstract state $a$)
 can be reconstructed
-from the log $l$ alone  using \emph{replay function} $\replay$,
-the idea of which is briefly discussed in Section~\ref{chapter:ccal:subsec:concurrent-layer-with-environment}.
+from the log $l$ alone  using a \emph{replay function} $\replay$,
+the key idea of which is briefly discussed in Section~\ref{chapter:ccal:subsec:concurrent-layer-with-environment}.
 
 
 \subsubsection{Memory Model}
 
 Modeling shared-memory accesses is 
 a significant challenge in concurrent program verification;
-it should enable local reasoning while reflecting manipulations of other participants.
+it should enable local reasoning while reflecting the manipulations of other participants.
 On the other hand, 
 with the proper semantics of sequential consistency execution,
 our model needs to enforces that the memory always memorizes all changes in the global log to make them visible to the whole system.
@@ -69,22 +67,22 @@ to detect and forbid dangerous accesses such as data races.
 \label{fig:chapter:ccal:push-pull-memory-model-and-shared-memory}
 \end{figure}
 
-We introduce ``push/pull'' memory model for the shared memory $m$ to address all the issues we mentioned and 
+We introduce a ``push/pull'' memory model for a shared memory $m$ to address all the issues we mentioned and 
 Figure~\ref{fig:chapter:ccal:push-pull-memory-model-and-shared-memory} shows 
-how this model works as well as how push/pull events correspond to the changes in the associated memory block and an ownership field of a shared abstract state.
+how this model works as well as how push/pull events correspond to changes in the associated memory block and an ownership field of a shared abstract state.
 The memory is a map from a block identifier to its value,
 and the ownership field of our shared abstract state is also a map form a block identifier to the ownership flag.
 Only two shared primitives, $\pull$ and $\push$,
 provide a way to manipulate them.
-In this example CPU 1 tries to access the memory block $b$ by calling primitive $\pull$. 
+In this example, a CPU 1 tries to access a memory block $b$ by calling a primitive $\pull$. 
 The $\pull$ operation modifies the ownership from \code{free} to \code{own} $1$. 
 Then, other CPUs cannot change the ownership flag of the block until CPU $1$ change it back to \code{free} 
 by a $\push$ operation.
-The $\push$ operation also update the shared memory block $b$ (from $v$ to $v'$), which is the result of the operations for the memory block $b$ performed by CPU $1$  between $\pull$ and $\push$ calls. 
+The $\push$ operation also update the shared memory block $b$ (from $v$ to $v'$), which is the result of the operations for the memory block $b$ performed by a CPU $1$  between $\pull$ and $\push$ calls. 
 Those two shared operations also generate $1.\push(b)(v)$ (the memory snapshot when CPU $1$ start its shared memory manipulation) 
 and  $1.\pull(b)(v)$ (the result of shared memory manipulation by CPU $1$), respectively.
 By doing that, those two $\push$ and $\pull$ encapsulate the shared memory operations
-into $\push/\pull$ events, and they can detect data races.
+into $\push/\pull$ events and they can detect data races.
 
 \subsubsection{Transitions}
 
@@ -93,7 +91,7 @@ which are arbitrarily and nondeterministically interleaved together.
 
 
 \textbf{Program transitions} are one of two possible types:
-private execution, and shared execution.
+a private execution, and a shared execution.
 The first only changes private states associated with the CPU ID and is not visible to other CPUs;
 thus we are safe to treat it as a ``silent'' steps without generating any events. 
 The other, however, 
@@ -111,7 +109,7 @@ This relation determines the state update after the $f$ call (with the given arg
 We show how we efficiently connect program transition relations in 
 $\intelmachine$ model with transition rules in $\compcertx$ in Chapter~\ref{chapter:linking}.
 
-\textbf{Scheduler transitions} are moves in the multicore machine model performed by one logical component, a hardware scheduler.
+\textbf{Scheduler transitions} are moves in our multicore machine model performed by one logical component, a hardware scheduler.
  These transitions determine  the CPU that will perform its program transition 
 in the next turn and 
 an instance of all possible nondeterministic scheduler transitions provide 
@@ -139,7 +137,7 @@ one hardware-scheduling strategy at once for the verification process.
 \label{chapter:ccal:subsec:concurrent-layer-interface}
 
 
-The state definition ``$\state := (c, f_{\regs}, m, a, l)$'' and the memory model in our partial machine model are
+A state definition ``$\state := (c, f_{\regs}, m, a, l)$'' and a memory model in our partial machine model are
 same as those of a multicore machine model, 
 except the domain of its private state ($f_{\regs}$) is only for the focused set $A$ instead of the full CPU set $D$.
 The partial machine model, however, requires one more transition rule to handle environmental steps for the participants that are not in the focused set.
@@ -147,43 +145,42 @@ When focusing on a partial machine works with a subset of CPUs $A$,
 the execution of the machine needs to handle 
 the steps for its environments ($D - A$ plus the hardware scheduler) with a \textit{valid} environmental context ($\oracle$);
 thus, we want to  achieve a way to semantically verify the part for $A$ of the whole program locally
-by making the assumptions on the rest of programs (as discussed in Secion~\ref{chapter:ccal:subsec:concurrent-layer-with-environment}).
+by making  assumptions on the rest of programs (as discussed in Secion~\ref{chapter:ccal:subsec:concurrent-layer-with-environment}).
 
-Those assumptions  also need to be able to be guaranteed by the execution of the other part of the entire system for 
+Those assumptions  also need to be able to be guaranteed by executions of the other part of the entire system for 
 the compositionality of multiple partial machines.
-For example, the assumption of transitions with $L[A, \oracle_{A}]$ should be consistent with the invariants guaranteed by the transitions of $L[(D - A), \oracle_{(D-A)}]$ and vice versa, when $D$ implies the set that contains the whole CPUs.
+For example, the assumption of transitions with $L[A, \oracle_{A}]$ should be consistent with the invariants guaranteed by transitions of $L[(D - A), \oracle_{(D-A)}]$ and vice versa, when $D$ implies a set that contains whole CPUs.
 In this sense, our layer can be defined as
 $L[A, \oracle] := (\Layer, \Rely,\Guard)$ when $\Layer$ is a set of primitives in the layer $L$,
-$\Rely : log \rightarrow Prop$ is  rely invariant that provides assumptions about  environmental movements,
-and $\Guard: log \rightarrow Prop$ is guarantee invariant that local movements of $L[A, \oracle]$ need to satisfy.
+$\Rely : log \rightarrow Prop$ contains  ``rely'' invariants that provide assumptions about an environmental movement,
+and $\Guard: log \rightarrow Prop$ represents ``guarantee'' invariants that local movements of $L[A, \oracle]$ need to satisfy.
 
 \emph{Environmental transitions} then can be simply defined as 
 an environmental context ($\oracle$) query when participants outside  the focused set perform transitions,
 thus returning a particular sequence of events for one specific run of the concurrent program 
 that satisfies the $\Rely$ condition.
-Environmental transitions also include the transitions performed by 
-the hardware scheduler, which is constructed by 
+Environmental transitions also include  transitions performed by 
+a hardware scheduler, which is constructed by 
 a single instance ($\strat{sched}$) of possible strategies of the scheduler.
 All transitions in here are also deterministic thanks to our environmental context.
-The nondeterminism of the multicore machine model is hidden in building strategies by
+The non-determinism of our multicore machine model is hidden in building strategies by
 program executions with the machine (\eg, events generated by the hardware scheduler).
 
 \subsection{Local Machine Model and Local Layer Interface}
 \label{chapter:ccal:subsec:local-layer-interface}
 
 With the singleton focused set, $\set{c}$, 
-simplification is possible for the definition of the transition machine.
-The sate for the singleton set is a tuple ``$(\regs, m, a, l)$''
-where $\regs$ is the private state of the CPU $c$
-and $m$ is just a \emph{local copy} of the shared memory.
+simplification is possible.
+The state for the singleton set is a tuple ``$(\regs, m, a, l)$''
+where $\regs$ is a private state of the focused CPU $c$
+and $m$ is just a \emph{local copy} of a shared memory.
 
 
-This $m$ can only be accessed locally by $c$ with the $\push$ and $\pull$ primitives discussed in our multicore memory model. 
-The shared  memory update by $c$ in this local copy, however, 
-keeps consistency with 
-that update by $c$ at the shared memory model in
+This $m$ can only be accessed locally by $c$ with  $\push$ and $\pull$ primitives discussed in our multicore memory model. 
+Shared  memory updates by $c$ in this local copy, however, 
+keep the consistency with 
+ updates by $c$ at the shared memory model in
 Section~\ref{chapter:ccal:subsec:multicore-machine-model}.
-
 
 
 \begin{figure}
@@ -193,17 +190,17 @@ Section~\ref{chapter:ccal:subsec:multicore-machine-model}.
 \end{figure}
 
 Figure~\ref{fig:chapter:ccal:push-pull-memory-model-and-local-memory} shows how
-all local memory updates keep consistency with the corresponding shared memory updates. 
-In the example, the model has the same sequence of updates as the example 
+all local memory updates keep the consistency with the corresponding shared memory updates. 
+In the example, the model has the same sequence of updates with the example 
 in Figure~\ref{fig:chapter:ccal:push-pull-memory-model-and-shared-memory}.
-The local memory update by CPU $1$ needs to be followed by the corresponding $\pull$ event, 
+The local memory update by a CPU $1$ needs to be followed by the corresponding $\pull$ event, 
 so the pull event, $1.pull(b)(v)$, tells the local machine that the current memory value is 
 $v$ for the block $b$ by replaying the global log up to that point ($l$)
 and updates the block in the local copy $m$ with the value ($b \rightarrow v$). 
-After that, CPU $1$ operates on the memory based on the value $v$ until it pushes the change (as well as frees the ownership for the block).
-The value $v$ for the block in here is exactly same as the value in the global shared memory accessed by multiple CPUs. 
-All shared memory (and abstract state) updates are recorded in the global log; thus,
-updating the local copy of block $b$ by replaying the log $l$ gives the exact same status for the shared memory block $b$ (in multicore machine mode) at the moment
+After that, a CPU $1$ operates on the memory based on the value $v$ until it pushes the change (as well as frees the ownership for the block).
+The value $v$ for the block in here is the same value in the global shared memory accessed by multiple CPUs. 
+All shared memory (and all abstract state) updates are recorded in the global log; thus,
+updating the local copy of block $b$ by replaying the log $l$ gives the same status for the shared memory block $b$ (in multicore machine mode) at the moment
 (\ie, notes that the local copy of the memory breaks the consistency when it does not have its ownership for the memory block). 
 
 Similarly,  in between $(1.\pull(b)(v))$ and $(1.\push(b)(v'))$, 
@@ -211,6 +208,7 @@ CPU $1$ is the only  CPU that can modify the contents in the block $b$
 because other CPUs cannot own the ownership for the block.
 Therefore, the local update for the memory block $b$ in the log $l'$ 
 is consistent with the operations for the block $b$ of the shared memory (in our multicore machine model).
+
 
 The machine model for this singleton focused set has significant similarity to the machine model in $\compcertx$. 
 We, therefore, can easily connect this machine model with the $\compcertx$ compiler, 
@@ -223,23 +221,23 @@ two patterns.
 Similar to $\calname$, layers built by two patterns are connected via contextual refinement between layers. 
 
 \subsubsection{Fun-lift}
-The fun-lift pattern is usually abstracting shared physical memory into shared abstract states,
+A fun-lift pattern is usually abstracting shared physical memory into shared abstract states,
 which is similar to  abstraction layer building for sequential programs.
 This pattern does not change any potential interleavings, 
-so the environmental context in the layer $L_{low}[c, \oracle_{low}]$ remains 
-as same in the higher layer $L_{high}[c, \oracle_{high}]$ ($\oracle_{low} = \oracle_{high}$), and the 
+so the environmental context in a layer $L_{low}[c, \oracle_{low}]$ remains 
+as same in a higher layer $L_{high}[c, \oracle_{high}]$ ($\oracle_{low} = \oracle_{high}$), and the 
 relation for two environmental contexts is defined as an identity relation 
-for the contextual refinement property between two layers (see Definition~\ref{def:chapter:ccal:contextual-refinement}).
-This fun-lift pattern, however, possibly breaks the atomicity because the behavior of $L_{high}$ depends on other concurrent programs’ behavior in the middle of the primitive executions. 
+for a contextual refinement property between two layers (see Definition~\ref{def:chapter:ccal:contextual-refinement}).
+This fun-lift pattern, however, possibly breaks an atomicity because the behavior of $L_{high}$ depends on other concurrent programs’ behavior in the middle of  primitive executions. 
 
 \subsubsection{Log-lift}
 
-Once all the low-level details are abstracted away for the shared primitive via using the \textit{fun-lift} pattern, we use the \textit{log-lift} pattern to lift non-atomic behaviors on shared abstract states to atomic behaviors--which only generate a single atomic event as the strategy for the primitive call-- on the states. 
-Proving the contextual refinement with the \textit{log-lift} pattern requires reductions on the log, 
+Once all the low-level details are abstracted away for the shared primitive via using a \textit{fun-lift} pattern, we use a \textit{log-lift} pattern to lift non-atomic behaviors on shared abstract states to atomic behaviors--which only generate a single atomic event as the strategy for the associated primitive call-- on the states. 
+Proving a contextual refinement with a \textit{log-lift} pattern requires reductions on the log, 
 which includes merging and shuffling events to show 
-that a consecutive list of  events in underlay, $L_{low}[c, \oracle_{low}]$ , corresponds to a single new event in overlay, 
-$L_{high}[c, \oracle_{high}]$.  Changes of the event generated by the local movement 
-imply that this refinement also need to relates two different environmental movements specified by $\oracle_{low}$ and $\oracle_{high}$.
+that a consecutive list of  events in an underlay, $L_{low}[c, \oracle_{low}]$ , corresponds to a single new event in a overlay, 
+$L_{high}[c, \oracle_{high}]$.  Changes of events generated by local movements
+imply that this refinement also need to relate two different environmental movements specified by $\oracle_{low}$ and $\oracle_{high}$.
 Section~\ref{chapter:ccal:subsec:local-layer-with-environmental-context-and-local-layer-linking} shows the relation,
 which is $\forall\ (j \in \codeinmath{EnvSet})\ 
 (\strat{j} \in \oracle(c)) .\ \exists \stratp{j} . \ \stratp{j} \in \oracle'(c) \wedge R_{\strat{}}(\stratp{j}, \strat{j})$ when 
@@ -248,11 +246,10 @@ $\codeinmath{EnvSet} = ((D - \{ c\}) \cup \{ sched\})$
 
 \subsubsection{Contextual Refinement}
 
-The contextual refinement property for the local layer interface also requires 
-modification to cover those patterns in a uniform way. 
-The contextual refinement property in here is similarly using forward simulation technique as shown in  
+The contextual refinement property for the local layer interface also requires modification to cover those patterns uniformly. 
+A contextual refinement property in here is similarly using a forward simulation technique as shown in  
 Section~\ref{chapter:ccal:sec:cal}.
-On the other hand, one challenge in defining the refinement property in here is that the relation is not only related to layer definitions but also  to different environmental contexts over two layers. 
+On the other hand, one challenge in defining a refinement property in here is that the relation for it is not only related to layer definitions but also to different environmental contexts over two layers. 
 \begin{figure}
 \begin{center}
 \includegraphics[width=0.6\textwidth]{figs/ccal/locallayerrefinement}
@@ -261,7 +258,7 @@ On the other hand, one challenge in defining the refinement property in here is 
 \label{fig:chapter:ccal:refinement-between-two-layers}
 \end{figure}
 Figure~\ref{fig:chapter:ccal:refinement-between-two-layers} shows the key simulation relation for 
-the contextual refinement property with two concurrent layers, which is stated  in Definition~\ref{def:chapter:ccal:contextual-refinement}.
+a contextual refinement property with two concurrent layers, which is stated  in Definition~\ref{def:chapter:ccal:contextual-refinement}.
 \begin{definition}[Contextual Refinement]
 \label{def:chapter:ccal:contextual-refinement}
 $$
@@ -271,12 +268,12 @@ $$
 This contextual refinement property is informally expressed as follows:
 \begin{quote}
 ``For every thread $i$,  code modules $\codeinmath{M}_{high}$ and  $\codeinmath{Ctxt}$,  and environmental contexts
-  $\oracle$ and $\oracle'$ (for thread $i$), we say the underlay system   $\sem{L_{low}[i, \oracle]}{\codeinmath{M}_{high} \oplus \codeinmath{Ctxt}}$
+  $\oracle$ and $\oracle'$ (for thread $i$), we say an underlay system   $\sem{L_{low}[i, \oracle]}{\codeinmath{M}_{high} \oplus \codeinmath{Ctxt}}$
      \textit{contextually
- refines} the overlay system $ \sem{L_{high}[i, \oracle']}{\codeinmath{Ctxt}}$ when there always exists 
+ refines} a overlay system $ \sem{L_{high}[i, \oracle']}{\codeinmath{Ctxt}}$ when there always exist 
  multiple  transition steps in the underlay system for every  single  transition step
-  in the overlay system that can be associated with the relation $R$,
-which also contains the relation between strategies ($R_{\strat{}}$)
+  in the overlay system that can be associated with a relation $R$,
+which also contains a relation between strategies ($R_{\strat{}}$)
  of two layer systems that satisfies the property:
 $\forall\ (j \in \codeinmath{EnvSet})\ 
 (\strat{j} \in \oracle(i)) .\ \exists \stratp{j} . \ \stratp{j} \in \oracle'(i) \wedge R_{\strat{}}(\stratp{j}, \strat{j})$ when 
@@ -293,30 +290,30 @@ $\codeinmath{EnvSet} = ((D - \{ i\}) \cup \{ sched\})$.''
 
 
 To build and compose concurrent layers, 
-our framework also extends the layered calculus in $\calname$~\cite{deepspec} by 
+our framework also extends a layered calculus in $\calname$~\cite{deepspec} by 
 borrowing the following notations 
 from $\calname$:
 \begin{itemize}
 \item $\varnothing$ : An  empty program module
-\item $\modulecomposekwd$ : the union of two modules (or two layers' primitive collections)
-\item $\relcomposekwd$ : the composition of two refinement relations (between layers)
+\item $\modulecomposekwd$ : a union of two modules (or two layers' primitive collections)
+\item $\relcomposekwd$ : a composition of two refinement relations (between layers)
 \end{itemize}
 
-The empty rule works as basis of our layered calculus.
+An empty rule works as basis of our layered calculus.
  \begin{mathpar}
 \inferrule*[Right=Empty]{ }{\ltyp{\PLayer{L}{c}{\oracle}}{\id}{\varnothing}{\PLayer{L}{c}{\oracle}}}
 \end{mathpar}
 
-The vertical composition rule allows us
-to verify the modules $M$ and $N$ (where $N$ may depend on $M$) 
-in two separate steps and allows us to build layer stacks.
+A vertical composition rule allows us
+to verify two modules $M$ and $N$ (where $N$ may depend on $M$) 
+in two separate steps and allows us to build layer stacks by combining them.
     \begin{mathpar}
 \inferrule*[Right=Vcomp]{ \ltyp{\PLayer{L_1}{c}{ \oracle_1}}{R}{M}{\PLayer{L_2}{c}{ \oracle_2}} \\
  \ltyp{\PLayer{L_2}{c}{\oracle_2}}{S}{N}{\PLayer{L_3}{c}{ \oracle_3}}}{\ltyp{\PLayer{L_1}{c}{\oracle_1}}{\relcompose{R}{S}}{\modulecompose{M}{N}}{\PLayer{L_3}{c}{\oracle_3}}}
 \end{mathpar}
 
-The horizontal composition rule enables local reasoning for independent
-modules $M$ and $N$ belonging to the same level. Note that rely and guarantee invariant and the environmental context in $L_1$ and $L_2$ should 
+A horizontal composition rule enables local reasonings for independent
+modules $M$ and $N$ belonging to the same level. Note that rely and guarantee invariants and the associated environmental context in $L_1$ and $L_2$ should 
 be same for this horizontal composition.
  \begin{mathpar}
 \inferrule*[Right=Hcomp]{
@@ -329,13 +326,17 @@ L'[c, \oracle'].\Guard=L_1[Ac, \oracle_1].\Guard = L_2[c, \oracle_2].\Guard \\
 \end{mathpar}
 
 
+
 Besides them, 
-the concurrent linking rule (\ie, $L[C, \oracle_C] = \parallelcompose{L[A, \oracle_A]}{L[B, \oracle_B]}$, when $C = A \cup B$ and $\oracle_C = \oracle_A \cap \oracle_B$)  
+a concurrent linking rule (\ie, $L[C, \oracle_C] = \parallelcompose{L[A, \oracle_A]}{L[B, \oracle_B]}$, when $C = A \cup B$ and $\oracle_C = \oracle_A \cap \oracle_B$)  
 also can be defined in a conceptual level for any layers.
 It is, however, not well supported in our framework; we do not provide
-any canonical forms to support the concurrent linking
+a canonical form to support the concurrent linking
 in our implementation.
-A later part of this dissertation (Chapter~\ref{chapter:linking}) addresses the concurrent linking rule.
+Chapter~\ref{chapter:linking} in this dissertation addresses this concurrent linking rule with more details.
+
+
+
 
 
 
