@@ -88,7 +88,7 @@ it can result in concurrent commands being ordered arbitrarily, which does not v
 .\label{fig:chapter:multipaxos:wormlogarch}
 \end{figure}
 
-A shared log is a shared address space that provides an \textit{append} / \textit{read} API to clients. 
+A shared log is a shared address space that provides  \textit{append} / \textit{read} APIs to clients. 
 CORFU~\cite{corfu} is a system that implements a shared log API over a set of write-once addresses. 
 To append a new entry to the shared log, a client first contacts a centralized sequencer machine to reserve and increment a tail position on the address space. It then issues a write to a write-once address. In CORFU, 
 each write-once address is implemented via a client-driven variant of Chain Replication, that the client writes to each replica in sequence. 
@@ -136,18 +136,16 @@ Our implementation uses the first option: the sequencer allocates and pre-captur
 \label{chapter:wormspace:subsec:wormtx}
 
 Two-Phase Commit (2PC)~\cite{distsys} solves the transaction commit problem via a transaction manager (TM). 
-Any participant (RMs, or resource managers) that wishes to initiate commit contact the TM (message delay \#1). 
+Any participants (RMs, or resource managers) that wish to initiate commit contact the TM (message delay \#1). 
 The TM contacts all participants to elicit a yes/no vote (\#2). Each RM votes, records its vote in local stable storage and responds to the TM (\#3). 
 The TM makes a decision based on the votes it receives, and sends back a commit or abort command to the RMs (\#4). 
 The TM's decision can be a deterministic function of the RM votes -- i.e., the decision is yes if all the votes are yes. 
 Alternatively, the TM can decide no even if all the votes are yes, in which case it stores its decision in stable storage before sending the decision.
 
-The failure model for 2PC is that nodes -- TMs or RMs -- can crash, but will subsequently come back online. 
+The failure model for 2PC is that nodes--TMs or RMs--can crash, but will subsequently come back online. 
 2PC is known to be a blocking protocol in the presence of such failures. In the case where the decision is deterministic, 
-if a single RM fails -- after it has locally stored its vote in stable storage, but before it has responded to the 
-TM -- then the protocol has to block until the RM comes back online. In the case where the TM fails --
- after storing its final decision in stable storage but before sending commit messages -- 
- the protocol has to block until the TM comes back online. In both cases, the remaining RMs cannot determine the decision.    
+if a single RM fails--after it has locally stored its vote in stable storage, but before it has responded to the 
+TM--then the protocol has to block until the RM comes back online. In the case where the TM fails--after storing its final decision in stable storage but before sending commit messages--the protocol has to block until the TM comes back online. In both cases, the remaining RMs cannot determine the decision.    
  
 \begin{figure}
 \centering

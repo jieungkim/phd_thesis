@@ -1,16 +1,15 @@
-\jieung{Check the notations for list app and cons (and others) - those things should be consistent with the operators in previous sections}
 
-Our verification approach has been inspired by $\certikos$ project,
-but the applicability of our framework in Chapter~\ref{chapter:ccal} is not restricted to the operating system verification, but general enough
+Our verification approach has been inspired by the $\certikos$ project,
+but the applicability of our framework in Chapter~\ref{chapter:ccal} is not restricted to operating system verification, but general enough
 to build and verify other interesting system software. 
-Among them, we choose distributed systems as another example to demonstrate our 
+Among them, we choose to build a distributed system as another example to demonstrate our 
 verification framework.
-Distributed systems are notoriously complex due to the many possible interleavings of their coarsely-connected 
+Distributed systems are notoriously complex due to  many possible interleavings of their coarsely-connected 
 instances as well as the possibility of errors in both those instances and the network environment. 
 For these reasons, verification of distributed systems is desirable to remove the possibility of bugs and guarantee their safety and correctness. 
 However, much current verification work still requires a great deal of effort and sometimes has limitations.
 
-Even without interleavings and errors, 
+Even without interleavings and% errors, 
 modern distributed applications are not built on top of one single distributed protocol (or system), but with multiple protocols.
 They are composed of distributed systems that provide replication, 
 logging, and transactions to achieve properties such as durability, concurrency control, failure atomicity, high availability, and strong consistency.

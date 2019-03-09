@@ -24,7 +24,7 @@ implementations of the algorithm often exceed thousands of lines of code due to 
 Moreover, this hidden complexity is made evident by the difficulty that many people have in trying to understand the algorithm.
 Several works~\cite{raft, rvrpaxos} have noted $\paxos$' lack of clarity despite multiple attempts to present
 it in a more understandable way~\cite{paxosmadesimple, Lampson1996, Lampson2001, dpaxos}.
-Part of the difficulty stems from the fact that all nodes in the distributed system locally perform their transitions in a fault-prone environment.
+Parts of the difficulty stem from the fact that all nodes in the distributed system locally perform their transitions in a fault-prone environment.
 Their states and behaviors need to be consistent, but
 the only way to learn another node's state is through the network, which can fail in multiple ways.
 The result is a system that guarantees global properties through local behaviors, but the relation between the two is not made clear by the algorithm.
@@ -68,7 +68,7 @@ This high-level description is relatively short and seemingly simple.
 The complexity, however, arises when all nodes run together concurrently in an asynchronous environment with the possibility of multiple types of failures.
 In an asynchronous environment, nodes are loosely connected with others.
 There are no bounds on timing, so each clock on each node can run arbitrarily fast or slow.
-Additionally, network communication may take a potentially unbounded amount of time,
+Additionally, a network communication may take a potentially unbounded amount of time,
 and nodes themselves may be unpredictably slow in responding to messages.
 The possibility of failures then compounds the complexity.
 Communication may involve message duplication, loss, and reordering, which means that a simple send-receive pair can have many possible interleavings.
@@ -96,13 +96,13 @@ those assumptions.
 
 \item \textbf{Functional correctness}: 
 To reason about correctness at all, there must be a specification of how the system should behave.
-A vital part of the verification of a system is showing that the implementation correctly simulates this specification.
+A vital part of  system verification is showing that the implementation correctly simulates this specification.
 Distributed systems, including Paxos, can often have a large gap between their implementation and specification due to optimizations and careful handling of failure cases.
 This mismatch between code and specification makes proofs of functional correctness especially important.
 
 \item \textbf{Safety of the protocol}: 
-Proving that the implementation refines the specification is necessary but is often insufficient in distributed system verification.
-Since distributed systems consist of multiple nodes, which may have different functionalities,
+Proving that a implementation refines a specification is necessary but is often insufficient in distributed system verification.
+Since a distributed system consists of multiple nodes, which may have different functionalities,
 functional correctness of one node does not imply the correctness or safety of the whole system.
 Instead, verification of such global properties requires modeling the entire system and
 proving that the behaviors of individual nodes ensure that the system runs correctly.
@@ -160,7 +160,7 @@ Accordingly, we present the design, implementation, and verification of $\wormsp
 
 Applications built over $\wormspace$ consist entirely of prepare/write/read commands on the write-once address space, rather than message-passing protocols. As a result, they are easy to develop and verify. We implement three applications over $\wormspace$: WormPaxos, a Multi-Paxos implementation; WormLog, a distributed shared log; and WormTX, a distributed, fault-tolerant transaction coordinator. All these applications are built entirely over the $\WOR$ API, yet provide efficiency comparable to or better than handcrafted implementations. Specifically, we do not `open the Paxos box' while implementing these applications; the logic for consensus and durability remains strictly contained within the $\WOR$ abstraction. In contrast, state-of-the-art implementations for all three applications require the complex melding of Paxos logic with other protocols to obtain efficiency. Further, separating out the $\WOR$ enables novel design points: for example, a shared log that uses Paxos (rather than Chain Replication) to replicate each command, supporting appends in just two round-trips in the failure-free case.
 
-Verification of applications can also hugely benefit from $\wormspace$. We show that contextual refinement, which is the key to the layered verification approach discussed in Chapter~\ref{chapter:ccal}, encapsulates the complexity of distributed coordination within $\wormspace$ and allows the application to be easily verified as non-distributed code; still, verified distributed properties in $\wormspace$ are guaranteed to hold in the application. Applications verified on top of $\wormspace$ are guaranteed to use both the client and server code of $\wormspace$ correctly such that they use the system interface only in a defined way and shares the same semantics about the interface with $\wormspace$. Verifying the application on $\wormspace$ requires only linking a modular top-most layer proof of $\wormspace$ with the application. Similarly, we can easily link the proofs of $\wormspace$ to $\certikos$ in Chapter~\ref{chapter:certikos} and present a verified end-to-end stack from the OS to the distributed application.
+Verification of applications can also hugely benefit from $\wormspace$. We show that contextual refinement, which is the key to the layered verification approach discussed in Chapter~\ref{chapter:ccal}, encapsulates the complexity of distributed coordination within $\wormspace$ and allows the application to be easily verified as non-distributed code; still, verified distributed properties in $\wormspace$ are guaranteed to hold in the application. Applications verified on top of $\wormspace$ are guaranteed to use both the client and server code of $\wormspace$ correctly such that they use the system interface only in a defined way and shares the same semantics about the interface with $\wormspace$. Verifying the application on $\wormspace$ requires only linking a modular top-most layer proof of $\wormspace$ with the application. Similarly, we can easily link  proofs of $\wormspace$ to $\certikos$ in Chapter~\ref{chapter:certikos} and present a verified end-to-end stack from the OS to the distributed application.
 
 Our verification model assumes non-Byzantine network: packets can be arbitrarily delayed, lost, and/or duplicated, but never be corrupted. Applications built on top of $\wormspace$ are easy to verify: the applications can directly use the verified proof from the $\wormspace$ layer and do not have to verify the distributed protocols. Our $\ccalname$ also enables extension and migration of our proofs. Similarly, we show that our system can be linked to $\certikos$ easily leading an end-to-end verified software from OS to the distributed system.
 
@@ -196,7 +196,7 @@ A successful prepare call returns a unique, non-zero prepareID; a subsequent wri
 %Unsafe writes are not safe for concurrent access; applications must ensure that there is only one client in the system that will issue an unsafe write to any particular $\WOR$.
 Unsafe writes are fast because preparing is unnecessary, but not safe for concurrent access; applications must ensure that at most one client issues an unsafe write to a particular $\WOR$.
 
-The WOS provides a \textit{prepare} and \textit{write} API, which act as batched or vectorized operations, preparing all the $\WOR$s in the segment or writing a single value to all of them.
+The WOS provides \textit{prepare} and \textit{write} APIs, which act as batched or vectorized operations, preparing all the $\WOR$s in the segment or writing a single value to all of them.
 A client can also receive notifications when $\WOR$s in a particular WOS are written to, via the \textit{listen} call.
 Garbage collection can be triggered by the application via the \textit{trim} call, which trims individual WOSes. 
 $\wormspace$ returns an error code when a trimmed address is subsequently accessed.
@@ -215,11 +215,10 @@ $\wormspace$ returns an error code when a trimmed address is subsequently access
 \subsection{Design and Implementation}
 \label{chapter:wormspace:subsec:design-and-implementation}
 
-\jieung{Let's revise this part later}
 
 $\wormspace$ is implemented via a combination of a client-side library exposing the API shown in 
 Figure \ref{fig:chapter:multipaxos:api} and a collection of servers (which we call wormservers). 
-In a sense, the $\wormspace$ design is similar to a distributed key-value store: 
+In a sense, our $\wormspace$ design is similar to a distributed key-value store: 
 $\WOR$s are associated with 32-bit IDs for our verified version (and 64bit IDs for non-verified version, 
 consists of segment IDs concatenated with offsets within the segment) and mapped to partitions, 
 which in turn consist of replica sets of wormservers. Partitioning occurs at WOS granularity; 
