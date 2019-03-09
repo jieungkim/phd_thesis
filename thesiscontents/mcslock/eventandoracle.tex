@@ -3,7 +3,7 @@
 
 As discussed in Chapter~\ref{chapter:ccal}, 
 modeling a shared state among CPUs is 
-closely related to define a set of events, a concurrent context, and a replay function that are suitable for
+closely related to defining a set of events, a concurrent context, and a replay function that are suitable for
 the state.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{figure}
@@ -21,20 +21,22 @@ accesses to thread-local memory). The \emph{log} is a list of
 events, representing all actions that have happened in the system
 since it began running. Actions from different CPUs are interleaved in
 the list.
-When we write a specification we can chose the set of events, as long
+When we write a specification we can choose the set of events, as long
 as it is fine-grained enough to capture all scheduling interleavings
 that may happen.
 Figure~\ref{fig:chapter:mcslock:lock_event_type} shows the event definition used to
 model lock acquire and release. They correspond to the part of the $\mcsname$ lock source code in Figure~\ref{fig:chapter:mcslock:mcs_lock}
 and acquiring/releasing the lock after we show starvation freedom. 
 
-Followed by the assumptions in our machine models in Section~\ref{chapter:ccal:sec:interface-calculus},  we again assumes that the
+
+As discussed in Section~\ref{chapter:ccal:sec:interface-calculus},  we again assume that the
 machine is sequentially consistent (all CPUs see a single linear log). 
 This rules out 
 Even with this assumption,
 verifying the $\mcsname$ algorithm is not easy (the other proofs we are aware
-of assume sequential consistency too), so we leave weak memory models
+of assuming sequential consistency too), so we leave weak memory models
 to future work.
+
 
 \begin{itemize}
 
@@ -64,18 +66,18 @@ Every CPU adds at least
 one event every time it "does something", \eg, each loop iteration in $\mcsrelease$ appends a $\getnext$
 event, so
 as we will see in
-Section~\ref{chapter:mcslock:sec:liveness-atomicity} this sufficies to give a bound of
-the number of loop iterations in the lock acquire function. In the following we often speak of
+Section~\ref{chapter:mcslock:sec:liveness-atomicity} this suffices to give a bound of the number of loop iterations in the lock acquire function. In the following, we often speak of
 ``number of operations'', which does not mean single CPU instructions,
 but instead whatever operation is represented by particular events.
+
 
 
 \item \textbf{$\setnext{prev\_last}$} event corresponds to the code at line 10. 
 the $\codeinmath{prev\_last}$ represents the $\codeinmath{prev\_id}$ in the code.
 
 \item\textbf{$\getbusy{busy}$} event shows the busy waiting in the acquire lock function.
-The first argument will be true when the last value is same with the current CPU ID that calls the primitive which generates this event.
-It will be false when the last value is not same with the current CPU ID that calls the primitive.
+The first argument will be true when the last value is equal to the current CPU ID that calls the primitive which generates this event.
+It will be false when the last value is not equal to the current CPU ID that calls the primitive.
 \end{itemize}
 
 Next, other threes are enough to represent release lock in Figure~\ref{fig:chapter:mcslock:mcs_lock}.
@@ -85,7 +87,7 @@ Next, other threes are enough to represent release lock in Figure~\ref{fig:chapt
 \item \textbf{$\castail{busy}$} represents the atomic expression at line 21  in Figure~\ref{fig:chapter:mcslock:mcs_lock}. 
 In addition, the ``busy'' corresponds to the result of the $\CAS$ operation in Figure~\ref{fig:chapter:mcslock:mcs_lock}.
 
-\item  \textbf{$\getnext$} corresponds to the primitive that try to get the next value of the current CPU's node, and abstracts busy waiting in release lock function.
+\item  \textbf{$\getnext$} corresponds to the primitive that try to get the next value of the current CPU's node and abstracts busy waiting in release lock function.
 
 \item  \textbf{$\setbusy$} represents the last three lines in $\mcsrelease$.
 \end{itemize}
