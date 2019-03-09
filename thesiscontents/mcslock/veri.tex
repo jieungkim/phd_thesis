@@ -9,29 +9,29 @@
 \label{fig:chapter:mcslock:layeroverview}
 \end{figure}
 
-We build five layers, starting from a base
-layer which represents the machine model that our compiled code will
+
+We build five layers, starting from a base layer which represents the machine model that our compiled code will
 run on.
 Figure~\ref{fig:chapter:mcslock:layeroverview} shows the overall structure of our development.
 For simplicity the figure only includes lock primitives, and
 primitives passed through from below are hidden in it.
-We also omits the current focused set ($cid$ -- CPU ID) and the environmental context ($\oracle$) in the figure
+We also omit the current focused set ($cid$ -- CPU ID) and the environmental context ($\oracle$) in the figure
  as well as the rest (except in lemmas and theorems) of this section for simplification.
 The CPU ID will not be changed at all during the whole layers (note that all  layer interfaces in this $\mcsname$ Lock module 
 are local layer interfaces), but there is a place that we need a simplification of the global log to guarantee the atomicity of 
 acquire/release locks as mentioned in Section~\ref{chapter:ccal:subsec:local-layer-interface}.
-We will clearly state that which layer is related to the \textit{log-lift} pattern; 
-thus require the change in the environmental context.
+We will clearly state that which layer is related to a \textit{log-lift} pattern; 
+thus require the change in an environmental context.
 Each big and outer rectangle in the figure means each layer in the $\mcsname$ Lock Module, 
-and small and inner rectangles in each layer implies the primitives defined in the layer.
-The arrows show dependencies between adjacent layers,
-for example the definition of $\waitlockfunc$ in  $\mmcslockopfull$
+and small and inner rectangles in each layer implies primitives defined in the layer.
+Arrows show dependencies between adjacent layers,
+for example the implementation of $\waitlockfunc$ in  $\mmcslockopfull$
 uses three primitives ($\mcsswaptailabs$,
 $\mcssetnextabs$, and $\mcsgetbusyabs$) from  $\mmcslockabsintrofull$.
 
 Most layers in the figure are related to the \textit{fun-lift} pattern in Section~\ref{chapter:ccal:subsec:local-layer-interface}.
 The layers from  $\mmcsbootfull$  through the $\mmcslockabsintro$
-introduces getter and setter functions for accessing memory
+introduces getter and setter functions for accessing the memory in the machine
 (Section~\ref{chapter:mcslock:subsec:lowestmachinemodel} and
 \ref{chapter:mcslock:subsec:abstractoperationlayer}). These layers also
 contain logical primitives which record events to the log; we are in
@@ -51,7 +51,7 @@ specification (with a different log replay function and a set of events)
 to the same C function. Those specification names are notated inside the square bracket in Figure~\ref{fig:chapter:mcslock:layeroverview}.
 
 On the other hand, two layers are closely related to the  \textit{log-lift} pattern in Section~\ref{chapter:ccal:subsec:local-layer-interface}.
-The layer $\mqmcslockopfull$ adds ghost state, keeping track of a
+The layer $\mqmcslockopfull$ adds ghost states, keeping track of a
 queue of waiting CPUs.
 (Section~\ref{chapter:mcslock:sec:representation-ghost}). This queue is key to the liveness proof but is not explicitly represented in the C implementation.
 The top layer $\mhmcslockopfull$ proves starvation freedom and liveness
@@ -62,14 +62,14 @@ single event to the log.
 \subsection{Memory operations layers}
 \label{chapter:mcslock:subsec:lowestmachinemodel}
 
+
 Although we glossed over this in Figure~\ref{fig:chapter:mcslock:mcs_lock}, our
 actual C implementations of $\mcsacquire$ and
-$\mcsrelease$ do not access memory directly.  Instead, they call
+$\mcsrelease$ do not access the system's memory directly.  Instead, they call
 a collection of helper functions with names like
 $\mcssetnext$. The lowest two layers in our proofs
 are devoted to implementing these helper functions.
-The key concern is to make sure that the events that get appended to the log
-correspond to the actual actions to the memory. Some of that can be proven, 
+The key concern is to make sure that the events that get appended to the log correspond to the actual actions to the memory. Some of that can be proven, 
 but some parts of this layer are trusted as a part of the machine model.
 
 We first describe the first and the lowest tuple in our proofs,
@@ -84,9 +84,9 @@ when $cid$ is the focused current CPU ID and\\
 \end{center}
 
 The interface ($\mmcsbootfull$) represents the machine model that our compiled code will run on.
-All primitives defined in $\mmcslockintrofull$ are part of the trusted computing base, and correspond to empty functions in our compiled code.
+All primitives defined in $\mmcslockintrofull$ are parts of the trusted computing base and correspond to empty functions in our compiled code.
 
-Eight of the primitives in $\mmcsbootfull$  are closely related to the $\mcsname$ Lock verification:
+Eight of  primitives in $\mmcsbootfull$  are firmly related to the $\mcsname$ Lock verification:
 
 \begin{center}
 \begin{tabular}{P{0.95\textwidth}}
@@ -95,7 +95,7 @@ $\mcsgetnextlog,\ \mcssetnextlog,\ \mcsgetbusylog,\ \mcssetbusylog\} $\\
 \end{tabular}
 \end{center}
 
-Two primitives, $\atomicmcsswap$ and $\atomicmcscas$ are for the two atomic instructions {\em fetch-and-store} and {\em compare-and-swap}, and will be further discussed below.
+Two primitives, $\atomicmcsswap$ and $\atomicmcscas$ are for  two atomic instructions {\em fetch-and-store} and {\em compare-and-swap}, and will be further discussed below.
 
 \begin{figure}
 \begin{center}
@@ -106,14 +106,14 @@ Two primitives, $\atomicmcsswap$ and $\atomicmcscas$ are for the two atomic inst
 \end{figure}
 
 The other six are used to update the log.  
-Ordinary assembly instructions only modify physical memory, not
-abstract state, so in order for programs to be able to append events to
-the log we include these six primitives in $\mmcsbootfull$. 
+Ordinary assembly instructions only modify a physical memory, not
+an abstract state, so in order for programs to be able to append events to
+the log, we include these six primitives in $\mmcsbootfull$. 
 For example, the specification of $\mcssetnextlog$ (in Figure~\ref{fig:chapter:mcslock:specification-of-mcssetnextlog}\footnote{Our implementation divides the global log discussed in Chapter~\ref{chapter:ccal} into a collection of logs, which is a partial form the lock identifier to the log designated with the lock ID by using projection functions for each lock ID. Besides, our logs are defined as a part ($\lockmultilogpool$ in the Figure) of our abstract data in our implementation, which is a little bit different from the local layer state definition in Section~\ref{chapter:ccal:subsec:local-layer-interface}, but which is exactly same in its meaning. We show how they are connected together in the next chapter  (Chapter~\ref{chapter:linking}.)})
 updates the log by adding one ($\setnext{prev\_id}$) event.
 In the compiled code, these primitives appear as empty functions that do nothing, they are only used to modify the logical state.
 
-The code $\codeinmath{M}_{\mmcslockintro}$ in the layer contains the 
+The code $\codeinmath{M}_{\mmcslockintro}$ in the layer contains  
 functions which actually modifies the memory in the way the event announces.
 Each function in $\codeinmath{M}_{\mmcslockintro}$ calls the corresponding primitive from
 $\mmcsbootfull$ inside the function to add the event to the log.
@@ -132,14 +132,14 @@ the empty function $\mcssetnextlog$:
 \end{figure}
 
 The interface $\mmcslockintrofull$ contains the high level specification for each function defined in $\codeinmath{M}_ {\mmcslockintro}$. 
-The high level specifications work on the log instead of the exact memory slot $\lockmemloc$.
+Those high-level specifications work on the log instead of the exact memory slot $\lockmemloc$.
 Therefore, after proving the {\em refinement} between the memory ($\lockmemloc$ in Figure~\ref{fig:chapter:mcslock:layer-struct-mcs-verification})
 and the abstract state ($\lockabsloc$ that is calculated by the \emph{log}\footnote{$\lockmultilogpool$: a partial map form a lock identifier to the log with the type $\lockmultilog$ associated with the identifier.}
 in Figure~\ref{fig:chapter:mcslock:layer-struct-mcs-verification}), we only need to care about the abstract state.
 
 For the refinement proof, we need two more ingredients.
 The first one is a \emph{log replay function}.
-A log is merely a list of events, but what specifications need to know is what the state of the system will look like after those events have executed,
+A log is merely a list of events, but specifications need to know about the log is what the state of the system will look like after those events have executed,
 and a replay function calculates that. 
 Different layers may define different replay functions in order to interpret the same log in a way that suits their proofs.
 Therefore, we have introduced the proper log replay function in several layers, and prove the relationship between the result of them when we introduced the new one.
@@ -150,7 +150,7 @@ $ \calmcslock :\ \lockmultilog\ \rightarrow\ \optiondef\ \lockabsloc$
 where
 \lstinputlisting [language = Caml] {source_code/mcslock/lowmcsstruct.v}
 The return type of this log replay function closely corresponds to C data structures, which makes it easy to prove the refinement ($\zmapfunc$ is a finite map from $\ztype$ to $\booltype$*$\ztype$.)
-The second ingredient is a relation $R_{\mmcslockintro}$ which shows the relationship between the concrete memory in underlay $\mmcsbootfull$ and the abstract state in overlay $\mmcslockintrofull$.
+The second ingredient is a relation $R_{\mmcslockintro}$ which shows the relationship between the concrete memory in an underlay $\mmcsbootfull$ and the abstract state in an overlay $\mmcslockintrofull$.
 As a part of $R$, we define $\matchmcslock$, which is a part related to 
 the $\mcsname$ lock in $R_{(\mmcslockintro, \mmcsboot)}$,  as follows:
 
@@ -169,7 +169,7 @@ Suppose that `$loc$' is among the proper field accessors for the $\mcsname$ Lock
 \end{definition}
 
 Intuitively, the definition says that the value that
-$\calmcslock$calculates from the log always corresponds to the value 
+$\calmcslock$ calculates from the log always corresponds to the value 
 in the memory with the same identifiers. The memory access functions $\memloadkwd$ and $\memaccesskwd$ are
 from $\compcert$'s operational semantics for C.
 Using the definition, we prove one theorem for each primitive, which
@@ -188,9 +188,9 @@ $ \mcssetnext_{L_1}(v, \codeinmath{{m}}_1, \codeinmath{{d}}_1) = \Some (\codeinm
   R_{(\mmcslockintro, \mmcsboot)}\ (\codeinmath{{m}}'_1, \codeinmath{{d}}'_1)\ (\codeinmath{{m}}'_0, \codeinmath{{d}}'_0).$ 
    \end{tabular}
 \end{theorem}
-Similar to the Theorem~\ref{thm:chapter:mcslock:machine-state-refinement},
+Similar to  Theorem~\ref{thm:chapter:mcslock:machine-state-refinement},
 proving the refinement property for other primitives between two layers 
-are possible, an the generalized theorem for the refinement is as follows:
+are possible, and the generalized theorem for the refinement is as follows:
 
  \begin{theorem}[Machine State Refinement]
  \label{thm:chapter:mcslock:machine-state-refinement-full} 
@@ -215,12 +215,14 @@ $({\mmcsboot}[cid, \oracle^{mcs}_{cid}]  \vdash \sigma_f : (\_, \codeinmath{m}_0
  \end{theorem}
 
 
+
 One interesting variation is the semantics
 for fetch-and-store and compare-and-swap. These instructions are not
 formalized in the x86 assembly semantics we use, so we cannot prove
-that replay function is correctly defined. Instead we modify the last
+that replay function is correctly defined. Instead, we modify the last
 (``pretty-printing'') phase of the compiler so that these primitive calls map to assembly
 instructions, and one has to trust that they match the specification.
+
 
 \subsection{Event interleaving layer}
 \label{chapter:mcslock:subsec:abstractoperationlayer}
@@ -231,11 +233,12 @@ our approach, this is done through a new layer which adds \emph{context queries}
 
 To recall what the environmental (concurrent context) is,
 the concurrent context $\oracle^{mcs}_{cid}$ (sometimes called the ``oracle'') is
-a function of the CPU ID and the log which has the type\newline
+a function that gets  a CPU ID and a log and returns a log.
+It has the type\newline
 \begin{tabular}{P{0.95\textwidth}}
     $\oracle^{mcs}_{cid}:\  \codeinmath{Z}\ \rightarrow \ \codeinmath{Z}\ \rightarrow\ \codeinmath{list event}\ \rightarrow\ \codeinmath{list event}.$\\
 \end{tabular}\newline
-when the first argument is a lock ID, the second argument is a CPU ID, and the third is the current log\footnote{Similar to a global log, we divide a single concurrent context into multiple ones for optimization; thus the first parameter (lock ID) is necessary for querying the proper concurrent context. We show how this set of concurrent contexts is connected with a single concurrent context which is discussed in Chapter~\ref{chapter:ccal} in the next Chapter (in Chapter~\ref{chapter:linking}.)} 
+when the first argument is a lock ID, the second argument is a CPU ID, and the third is a current log\footnote{Similar to a global log, we divide a single concurrent context into multiple ones for optimization; thus the first parameter (lock ID) is necessary for querying the proper concurrent context. We show how this set of concurrent contexts is connected with a single concurrent context which is discussed in Chapter~\ref{chapter:ccal} in the next Chapter (in Chapter~\ref{chapter:linking}.)} 
 It is one component of the abstract state in our implementation, and it represents the specific behavior of \emph{all
 the other CPUs}, from the perspective of code running on the current
 CPU.  Any time a program does an operation which reads or writes
@@ -262,24 +265,24 @@ For example, $\mcssetnext$ can be re-written as
 \lstinputlisting [language = Caml] {source_code/mcslock/mcs_set_next_low_charac.c}
 by using the logical primitive which corresponds to the oracle query
 (The function $\mcslog$ refines the semantics of $\atomicmcslog$ in the lowest layer by the $\matchmcslock$ relation).
-To model the interleaving, all the setter and getter functions defined
+To model the interleaving, all  setter and getter functions defined
 in Section~\ref{chapter:mcslock:subsec:lowestmachinemodel} should be combined with the
 oracle query.
 
 \subsubsection{Trust in the machine model}
-Some of the design decisions in the memory access
-layers have to be trusted, so the division between machine model and
-implementation is unfortunately slightly blurred.
-Ideally, we would have a generic machine model as proposed in Section~\ref{chapter:ccal:sec:interface-calculus}, where memory is partitioned into thread-local
-memory (no events), lock-protected memory (accesses generate $\push$/$\pull$
+Some of design decisions in  memory access
+layers have to be trusted, so the division between the machine model and
+the implementation is unfortunately slightly blurred.
+Ideally, we would have a generic machine model as proposed in Section~\ref{chapter:ccal:sec:interface-calculus}, where memory is partitioned into a thread-local
+memory (no events), a lock-protected memory (accesses generate $\push$/$\pull$
 events), and atomic memories (each access
 generates one $\codeinmath{READ}$/$\codeinmath{WRITE}$/$\codeinmath{SWAP}$/etc event).  However, our starting point
-is the $\compcert$ $\intelmachine$ semantics, which was designed for single-threaded
+is  $\compcert$ $\intelmachine$ semantics, which was designed for single-threaded
 programs, and does not come with a log, so we add a log and memory access
 primitives ourselves.
 But because the spinlock module is the only code in the OS that uses
 atomic memory, we do not add a generic operation called
-read\_word etc. Instead we take a short-cut and specify the particular
+read\_word etc. Instead, we take a short-cut and specify the particular
 6 memory accesses that the lock code uses: $\mcssetnext$ etc.
 For these procedures to correctly express the intended semantics,
 there are two trusted parts we must take care to get right. First,
@@ -292,6 +295,7 @@ operations execute atomically) we must not forget the call to
 $\mcslog$ after each access.
 
 
+
 \subsection{Low-level functional specification}
 \label{chapter:mcslock:subsec:atomicoperation}
 
@@ -299,9 +303,9 @@ Using the primitives that we have defined in lower layers, we prove the correctn
 The target code in this layer is identical to the code in Figure~\ref{fig:chapter:mcslock:mcs_lock} except two aspects. 
 First, we replaced all operations on memory with the getters and setters described in Section~\ref{chapter:mcslock:subsec:abstractoperationlayer}.
 Second, $\mcsacquire$ has one more
- argument, which is the bound number for the client code of the lock.
+ argument, which is a bound number for the client code of the lock.
 
-Since the functions defined in
+Since functions defined in
 Section~\ref{chapter:mcslock:subsec:abstractoperationlayer} already abstract interleaving
 of multiple CPUs, the proofs in this layers work just like sequential
 code verification. We find out the machine state after the function
@@ -309,7 +313,7 @@ call by applying the C operational semantics to our function
 implementation, and check that it is equal to the desired state
 defined in our specification.
 
-However, writing the specifications for these functions is slightly subtle, 
+However, writing specifications for these functions is slightly subtle, 
 because they contain
 while-loops without any obviously decreasing numbers. Since our
 specifications are $\coq$ functions we need to model this by structural
@@ -318,7 +322,7 @@ So to define the semantics of $\mcswaitlockfunc$,
 we define an auxiliary function
 $\calmcsacqwait$ which describes the
 behavior of the first $n$ iterations of the loop: each iteration
-queries the the environment context $\oracle^{mcs(lkid)}_{\mathrm{i}}$ (\ie,  $lkid$ is a lock identifier and $\mathrm{i}$ is a CPU ID), replays the log to see if if $\codeinmath{busy}$ is now $\bfalse$ and appends a $\GETBUSY$ event.
+queries the the environment context $\oracle^{mcs(lkid)}_{\mathrm{i}}$ (\ie,  $lkid$ is a lock identifier and $\mathrm{i}$ is a CPU ID), replays a log to see if if $\codeinmath{busy}$ is now $\bfalse$ and appends a $\GETBUSY$ event.
 If we do not succeed within $n$ iterations the function is undefined ($\coq$ $\None$).
 Then, in the part of the  specification for the  acquire lock 
 function ($\calmcsacqwait$ in Figure~\ref{fig:chapter:mcslock:calmcsacqwait}) where we need to talk about the while loop,
@@ -330,7 +334,7 @@ number of iterations $\CalWaitLockTime$  $\codeinmath{tq}$.
 \label{fig:chapter:mcslock:calmcsacqwait}
 \end{figure}
 The function $\CalWaitLockTime$ computes a suitable 
-number of loop iterations based on $\codeinmath{tq}$, the time-bounds  which each of the queuing CPUs promised to respect.
+number of loop iterations based on $\codeinmath{tq}$, time-bounds  which each of the queuing CPUs promised to respect.
 We will show how it is defined in Section~\ref{chapter:mcslock:sec:liveness-atomicity}. 
 However, in \emph{this part} of the proof, the definition doesn't matter. 
 Computations where $n$ reaches 0 are considered crashing, and our
@@ -370,25 +374,25 @@ The meaning of a tuple $\codeinmath{(c1,c2,b,q,slow,t)}$ is as follows:
 \begin{itemize}
 \item  $\codeinmath{c1}$ and $\codeinmath{c2}$ are upper bounds on how many more operations 
 the CPU which currently holds the lock will generate as part of the critical section and of 
-releasing the lock, respectively. They are purely logical ghost state but can be deduced from the complete
+releasing the lock, respectively. They are purely logical ghost states but can be deduced from the complete
 history of events in the system.
 
 \item $\codeinmath{b}$ is either  $\mcslempty$ or  $\mcslhold$, 
 the lock status of the head of the queue.
-They are closely to $\push$/$\pull$ operations in our memory model discussed in Section~\ref{chapter:ccal:sec:interface-calculus}.
+They are closely related to $\push$/$\pull$ operations in our memory model discussed in Section~\ref{chapter:ccal:sec:interface-calculus}.
 When the $\codeinmath{b}$ value is $\mcslhold$, this implies that one CPU already pulls the value for that shared memory block.
 On the other hand, when $\codeinmath{b}$ value is $\mcslempty$, no CPUs pull the value from the block, so the next CPU in the wait list 
 can pull the block to enter the critical section.
 
-\item $\codeinmath{q}$ is the list of the CPUs currently waiting for the lock, 
-and $\codeinmath{t}$ is the list of bound numbers that 
-corresponds to each element in $\codeinmath{q}$.
+\item $\codeinmath{q}$ is a list of  CPUs who are currently waiting for the lock, 
+and $\codeinmath{t}$ is a list of bound numbers that 
+correspond to the related elements in $\codeinmath{q}$.
 
-\item $\codeinmath{slow}$ is a finite set which represents the subset of CPUs in $\codeinmath{q}$ that have not yet executed their \emph{set next} operation.  
+\item $\codeinmath{slow}$ is a finite set which represents a subset of CPUs in $\codeinmath{q}$ that have not yet executed their \emph{set next} operation.  
 \end{itemize}
 Our liveness proof is based on the fact that each CPU only needs to wait for CPUs that are ahead of it in $\codeinmath{q}$, which is the waiting queue that guarantees FIFO ordering.
 
-Some of this information is implicit in the state of the memory, while some of it (for example $\codeinmath{c1}$ and $\codeinmath{c2}$) is purely ghost state. But in any case, it can be deduced from the complete history of events in the system, which is what the replay function $\QSCalLock$ does. We define it by recursion on the list $\codeinmath{l}$, computing the new state after each event. A few representative cases of the function are shown in Figure~\ref{fig:chapter:mcslock:QS_CalLock}.  For example, the event
+Some of the information are implicit in the state of the memory, while some of it (for example $\codeinmath{c1}$ and $\codeinmath{c2}$) are purely ghost states. But in any case, it can be deduced from the complete history of events in the system, which is what the replay function $\QSCalLock$ does. We define it by recursion on the list $\codeinmath{l}$, computing the new state after each event. A few representative cases of the function are shown in Figure~\ref{fig:chapter:mcslock:QS_CalLock}.  For example, the event
 $\setbusy$ indicates that a thread releases the lock. If the CPU $i$ is already the  front of the queue $\codeinmath{q}$, it currently holds the lock ($\mcslhold$), and the bound $\codeinmath{c2}$ has not yet reached zero, and $i$ is not slow, then generating this event will reset the lock status to $\mcslempty$ and remove the head element ($i$) from $\codeinmath{q}$ and $\codeinmath{t}$. In any of those side conditions are not satisfied, on the other hand, the replay function is undefined ($\None$). Similar
 considerations hold executing memory operations (you must be in the critical section, and it decrements $\codeinmath{c1}$) and querying the busy flag (you must have executed $\SETNEXT$ first).
 
@@ -401,8 +405,8 @@ considerations hold executing memory operations (you must be in the critical sec
 
 \subsubsection{Invariant} 
 
-The replay function plays two different roles. When it returns $\Some\codeinmath{ v}$, for some tuple $\codeinmath{v}$, it describes what the current state of the system is, which lets us write the specifications for the primitives. At the same time, the cases where the function is defined to return $\None$ are also important, because this can be read as a description of events that are \emph{not} possible. For example, from inspecting the program, we know that each CPU will create
-exactly one $\SETNEXT$  event before it starts generating $\GETBUSY$ events, and this fact will be needed when doing the proofs in the later layers (Section~\ref{chapter:mcslock:sec:liveness-atomicity}). By taking advantage of  the side conditions in the replay function, we can express all the invariants about the log in a single statement, ``the replay function is defined'':\newline
+The replay function plays two different roles. When it returns $\Some\codeinmath{ v}$, for some tuple $\codeinmath{v}$, it describes what the current state of the system is, which lets us write  specifications for those primitives. At the same time, the cases where the function is defined to return $\None$ are also important, because this can be read as a description of events that are \emph{not} possible. For example, from inspecting the program, we know that each CPU will create
+exactly one $\SETNEXT$  event before it starts generating $\GETBUSY$ events, and this fact will be needed when doing proofs in the later layers (Section~\ref{chapter:mcslock:sec:liveness-atomicity}). By taking advantage of those  side conditions in the replay function, we can express all  invariants about the log in a single statement, ``the replay function is defined'':\newline
 \begin{tabular}{P{0.95\textwidth}}
     $\exists \codeinmath{c1}\ \codeinmath{c2}\ \codeinmath{b}\ \codeinmath{q}\ \codeinmath{s} \codeinmath{t}.\ \QSCalLock\codeinmath{(l)=Some(c1,c2,b,q,s,t)}$\\
 \end{tabular}
@@ -426,13 +430,13 @@ To show that the ghost layer refines the previous layer, we show a
 one-step forward-downward refinement: if the method from the higher
 layer returns, then method in the lower layer returns a related
 value. For this particular layer the log doesn't change, so the
-relation in the refinement is just equality (including the relation for the global log and the environmental context ($\oracle^{mcs}_{cid}$) -- \ie, the relation for the strategies in the $\oracle^{mcs}_{cid}$), 
+relation in the refinement is just equality (including the relation for the global log and the environmental context ($\oracle^{mcs}_{cid}$) -- \ie, the relation for strategies in the $\oracle^{mcs}_{cid}$), 
 and the programmer just
-has to show that the lower-level methods are at least as defined and
+has to show that  lower-level methods are at least as defined and
 that they return equal results for equal arguments.
 
 
-As we prove this, we need lemmas to show that we can satisfy the preconditions for the operations in the lower layer, by relating the data in $\codeinmath{la}$ to the abstract queue.  For example, when trying to take the lock, the high level specification checks if the current CPU is at the head of $\codeinmath{q}$, which the low specification tests if the $\codeinmath{busy}$ field is true, so we need Lemma~\ref{lem:chapter:mcslock:Q_CalMCSLock_tail_is_busy} to show that they will follow the same path of code. 
+As we prove this, we need lemmas to show that we can satisfy preconditions for operations in the lower layer, by relating the data in $\codeinmath{la}$ to the abstract queue.  For example, when trying to take the lock, the high level specification checks if the current CPU is at the head of $\codeinmath{q}$, which the low specification tests if the $\codeinmath{busy}$ field is true, so we need Lemma~\ref{lem:chapter:mcslock:Q_CalMCSLock_tail_is_busy} to show that they will follow the same path of code. 
 
 
 \begin{lemma}[tail is busy]
@@ -486,14 +490,14 @@ memory that the lock protects ($\mcstshared{\ignorechar}$)
 \label{fig:chapter:mcslock:hswaitlockspec}
 \end{figure}
 
-Figure~\ref{fig:chapter:mcslock:hswaitlockspec} shows the final specification for 
-wait and pass primitives. We show this one in full detail, with no elisions,
-because this is the interface that clients use. First, the
+Figure~\ref{fig:chapter:mcslock:hswaitlockspec} shows  final specifications for 
+wait and pass primitives. We show them in full details, with no elisions,
+because they are the interfaces that clients use. First, the
 specification for the lock acquire function itself
-($\mcswaithlockspec$) takes the function arguments
+($\mcswaithlockspec$) takes  function arguments
 $\codeinmath{bound}$, $\codeinmath{index}$, $\codeinmath{ofs}$, and maps an
 abstract state ($\mcsabsdata$) to another. When writing this
-specification we chose to use two components in the abstract state, the
+specification we chose to use two components in the abstract state, a
 log ($\lockmultilogpool$) and also a field ($\mcslockabsfield$) which
 records for each numbered lock if it is free ($\mcsockfalse$)
 or owned by a CPU ($\mcslockown \ \bfalse$). 
@@ -509,8 +513,8 @@ convenient.
 The specification returns $\None$ in some
 cases, and it is the
 responsibility of the client to ensure  that does not
-happen. So clients must ensure that: the CPU is in kernel/host
-mode (for the memory accesses to work); the index/offset (used to
+happen. So clients must ensure that: the CPU is in a kernel/host
+mode (for the memory accesses to work); an index and an offset (used to
 compute the lock id) are in range; the CPU did not already hold the
 lock ($\mcsockfalse$); and the log is well-formed
 ($\HCalLock\ \codeinmath{l'}$ is defined, which will always be the case if
@@ -553,15 +557,15 @@ thread-local data this is exactly what $\certikos$ does also.
 
 Let's recall the contextual refinement property in Definition~\ref{def:chapter:ccal:contextual-refinement}. 
 This relation   $R_{(\mhmcslockop, \mqmcslockop)}$ must includes the relation in between 
-two strategies of that two layers are relying on; 
+two strategies of those two layers are relying on; 
 thus the relation for two different environmental contexts, which are $\oracle^{lk}_{cid}$ for $\mhmcslockopfull$ and $\oracle^{mcs}_{cid}$ for $\mqmcslockop$.
 For example, suppose one particular
 execution of the system generates the log $\codeinmath{l}_{\mqmcslockop}$.  A normal simulation
-theorem for CPU 1 would tell us that there \emph{exists} a log $\codeinmath{l}_{\mhmcslockop}$
-that meets CPU 1's local specification and satisfies the relation
+theorem for a CPU 1 would tell us that there \emph{exists} a log $\codeinmath{l}_{\mhmcslockop}$
+that meets CPU 1's local specifications and satisfies the relation
 ($R_{({\mhmcslockop}, {\mqmcslockop})}$). 
-Similarly, the local proof for CPU 2 would say there
-exists some log $\codeinmath{l'}_{\mhmcslockop}$
+Similarly, the local proof for a CPU 2 would say there
+exists a some log $\codeinmath{l'}_{\mhmcslockop}$
 related to  $\codeinmath{l}_{\mqmcslockop}$. 
 But in order to derive a simulation for the
 entire system, we need the constraint that that $\codeinmath{l}_{\mhmcslockop}$  is equal to
@@ -601,16 +605,17 @@ $\codeinmath{d'}_{\mqmcslockop}$
    $\relatemcslog{\codeinmath{d'}_{\mqmcslockop}}{\codeinmath{d'}_{\mhmcslockop}}$.
 \end{theorem}
 
-The proof  requires a \emph{fairness assumption}.
+
+The proof requires a \emph{fairness assumption}.
 A CPU cannot take the lock until the previous CPU releases it, 
 and the previous CPU cannot release it if it never gets to run. 
-At its most fundamental, the $\certikos$ machine model is a nondeterministic 
+At its most fundamental, the $\certikos$ machine model is a non-deterministic 
 transition system (which is subsequently viewed as a log of events), 
 and there is nothing in the basic model that ensures fairness, 
-so we have to add an extra assumption somewhere. In principle it would be 
+so we have to add an extra assumption somewhere. In principle, it would be 
 possible to modify the machine model itself, and then pass the fairness assumptions 
 along in the specification of each layer until we reach the layers related to mutex locks, 
-but in our development we choose a more expedient solution, and express
+but in our development, we choose a more expedient solution and express
 the fairness assumption as an extra axiom talking about the logs 
 in the data representation layer (Section~\ref{chapter:mcslock:sec:representation-ghost}). 
 By doing that, our framework can use the previous machine 
@@ -622,6 +627,7 @@ which ``counts down''
 until CPU $i$ gets a chance to 
 execute. 
 The full definition of $\CalBound$ is in Figure~\ref{fig:chapter:mcslock:calbound-definition}.
+
 
 \begin{figure}
 \begin{center}
@@ -687,13 +693,13 @@ $\mcsmeasure_i\codeinmath{(c1',c2',h',q}_{1}'\codeinmath{,s',t}_{1}'\codeinmath{
 
 \begin{proof}
  We consider all possible events
-$\codeinmath{e}_j$ which could make $\QSCalLock$ return $\Some$. If $j$ is not the 
+$\codeinmath{e}_j$ which could make $\QSCalLock$ returns $\Some$. If $j$ is not the 
 CPU at the head of the queue gets scheduled, it will not be
 able to make any progress, so the abstract state of the queue remains the same,
 but the counter $\CalBound$ decreases.
 Otherwise, the counter $\CalBound$ will reset to the upper bound we assumed on fairness, $F$. 
-However, in this case the algorithm will make some progress that changes $\codeinmath{c1}$, $\codeinmath{c2}$, $\codeinmath{q}$, or $\codeinmath{s}$.
-For example, CPU $j$ may execute a $\SETNEXT$ (which decreases the size of
+However, in this case the algorithm will make some progresses that change $\codeinmath{c1}$, $\codeinmath{c2}$, $\codeinmath{q}$, or $\codeinmath{s}$.
+For example, a CPU $j$ may execute  $\SETNEXT$ (which decreases the size of
 $\codeinmath{s}$), it may enter the critical section (which moves some measure from
 the head of $\codeinmath{q}$ to the counters $\codeinmath{c1+c2}$) or it may exit the section
 (and that event will decrement $\codeinmath{c2}$).
@@ -774,19 +780,19 @@ Unfortunately, concurrent programs are \emph{not} deterministic: we
 want to prove that every interleaving of operations from
 different CPUs in the low-level machine results in correct
 behavior. So if we had directly modeled the implementation as a
-nondeterministic transition system, then we would have to work
+non-deterministic transition system, then we would have to work
 directly with upwards simulations, which would be intractable when
 reasoning about the low-level details of C programs.
 
-In our approach, all the nondeterminism is isolated to the concurrent
-context $\oracle$. Any possible interleaving of the threads can be
+In our approach, all the non-determinism is isolated to the concurrent
+context $\oracle$. Any possible interleavings of  threads can be
 modelled by initializing the abstract state with a particular
 $\oracle^{mcs}_{cid}$, and the execution proceeds deterministically from
 there. Therefore we can still use the $\compcert$ method of first
 proving a downward simulation and then concluding the existence of a
 upward simulation as a corollary.
 The context-formalism is also helpful because $\oracle^{mcs}_{cid}$ contains
-the entire execution of the other threads, both past and future, so we
+the entire execution of all other threads, both past and future, so we
 have enough information to directly prove a \emph{forward}
 simulation. Otherwise it may not be clear if a given low-level
 operation can really ``commit'' (and generate a high-level event)

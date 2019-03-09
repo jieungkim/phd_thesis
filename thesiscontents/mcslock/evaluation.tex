@@ -17,9 +17,9 @@
 \subsection{Clients}
 
 The verified $\mcsname$ lock code is used by multiple clients in the $\certikos$ (in Chapter~\ref{chapter:certikos})
-system. To be practical the design should require as little extra work
+system. To be practical the design should require as a little extra work
 as possible compared to verifying non-concurrent programs, both to
-better match the programmer's mental model, and to allow code-reuse
+better match the programmer's mental model, and to allow a code-reuse
 from the earlier, single-processor version of $\certikos$.
 
 For this reason, we don't want our machine model to generate an event
@@ -80,10 +80,11 @@ specific to the $\pallocfunc$ function.
 
 We can then ascribe a low-level functional specification
 $\pallocpspec$ to the $\pallocfunc$ function. As shown
-in Figure~\ref{fig:chapter:mcslock:palloc-spec}, this is decomposed into three parts, the
-acquire/release lock, and the specification for the critical
+in Figure~\ref{fig:chapter:mcslock:palloc-spec}, this is decomposed into three parts, specifications for
+acquire/release lock functions, and the specification for the critical
 section. The critical section spec is exactly the same in a sequential
 program: it does not modify the log, but instead only affects the $\mcsalloctable$ field in the abstract data.
+
 
 Then in a final, pure refinement step, we ascribe a high-level atomic
 specification $\lpallocspec$ to the $\pallocfunc$
@@ -94,7 +95,7 @@ proof obligations related to liveness of the locks.
 Specifically, in order to prove the downwards refinement, we need to
 show that the call to $\pallocpspec$ doesn't return
 $\None$, so we need to show that $\HCalLock\codeinmath{ l'}$ is
-defined, so in particular the bound counter must not hit zero.
+defined, so in particular, the bound counter must not hit zero.
 By expanding out the definitions, we see that
 $\pallocpspec$ takes a log $\codeinmath{l}$ as its initial global log
 and generates the result,
@@ -108,11 +109,11 @@ Like all kernel-mode primitives in $\certikos$, the $\pallocfunc$ function is
 total: if its preconditions are satisfied it always returns. So
 when verifying it, we show that all loops inside the critical section
 terminate. Through the machinery of bound numbers, this guarantee is
-propagated to the the while-loops inside the lock implementation:
+propagated to the while-loops inside the lock implementation:
 because all functions terminate, they can know that other CPUs will
 make progress and add more events to the log, and because of the
 bound number, they cannot add push/pull events forever. On the other
-hand, the framework completely abstract away how long time (in microseconds) elapses
+hand, the framework completely abstracts away how long time (in microseconds) elapses
 between any two events in the log.
 
 \subsection{Code reuse} 
@@ -142,19 +143,19 @@ involves a lock (Note that the lock is not re-exported from the
 $\pallocfunc$ layer, and if it was the proof of the atomic
 specification would not go through.)  For example, some function in a
 higher layer could acquire a lock, allocate a page, and release the
-lock; in such an example the the order of the layers provides an order
+lock; in such an example the order of the layers provides an order
 on the locks implicitly.
 
 \subsection{Proof Effort}
 
 
-As an evaluation, we do not count the total lines of code in $\coq$ for our entire 
+As an evaluation, we do not count  total lines of code in $\coq$ for our entire 
 $\mcsname$ Lock module due to the two following reasons. First, our $\mcsname$ Lock implementation 
 is a part of $\certikos$ (in Chapter~\ref{chapter:certikos}). Therefore, our $\mcsname$ Lock module also contains several definitions 
 and proofs that are totally irrelevant to $\mcsname$ Lock verification. 
-This implies that counting the total lines of code for $\mcsname$ Lock module has a 
-high possibility of misinterpretation due to the lines of code for those definitions and proofs.
-Second, we intensively use contextual refinement approach to 
+This implies that counting the total lines of code for our $\mcsname$ Lock module has a 
+high possibility of misinterpretation due to  lines of code for those definitions and proofs.
+Second, we intensively use a contextual refinement approach to 
 build the whole system rather than focusing on verifying the correctness and 
 liveness of $\mcsname$ Lock. Therefore, our proof efforts are mainly focus on proving 
 $\mcsname$ Lock that is able to be easily combined with multiple client codes 
@@ -165,7 +166,7 @@ freedom theorems like Theorem~\ref{thm:chapter:mcslock:mcs_wait_lock_exist},
 and the functional correctness proofs for $\mcsacquire$ 
 and $\mcsrelease$ functions
 in Section~\ref{chapter:mcslock:subsec:atomicoperation}.
-The total lines of codes for starvation freedom is 2.5K lines, 0.6K lines for specifications, 
+Total lines of code for starvation freedom is 2.5K lines, 0.6K lines for specifications, 
 and 1.9k lines for proofs. This is because of the subtlety of those proofs. 
 To prove the starvation freedom theorems and show the evidence of loop termination,
 lots of lemmas are required to express
@@ -174,39 +175,38 @@ When $\QSCalLock\codeinmath{(l)=}\Some\codeinmath{(c1,c2,b,q,s,t)}$
 and $\codeinmath{q=}\nil$, 
 for instance, the mechanized proof for $\codeinmath{s=}\emptyset$ 
 and $\codeinmath{t=}\nil$ is necessary. It looks trivial in the hand-written proofs, 
-but requires multiple lines of codes in the mechanized proof. 
+but requires multiple lines of code in the mechanized proof. 
 
-The total lines of codes for the low-level functional correctness
+
+Total lines of code for the low-level functional correctness
 of two main C functions, $\mcsacquire$ and $\mcsrelease$, are 3.2K lines,  
 0.7K lines for specifications, and 2.5K lines for proofs.
 It is much bigger than other code correctness proofs for while-loops in $\certikos$, which we will
 discuss in Chapter~\ref{chapter:certikos},
 because these loops do not have any explicit decreasing value.
 One another big part in our $\mcsname$ Lock proofs is the proofs for 
-Theorem~\ref{thm:chapter:mcslock:machine-state-refinement} and the lines of code for this part is 
+Theorem~\ref{thm:chapter:mcslock:machine-state-refinement} and  lines of code for this part is 
 approximately 5K lines. The log replay function ($\calmcslock$) always 
 return the whole $\mcsname$ Lock values ($\lockabsloc$) related 
 to the  $\codeinmath{mcs\_lock}$ structure defined in Figure~\ref{fig:chapter:mcslock:mcs_lock}. 
 In this sense, we always have to give the exact values for all memory 
 chunks and prove the correspondence between the memory and the abstract 
 data even the event associated with reading values (\eg, $\getnext$).
-Hence, those proofs contain a lot of duplicate proofs for the memory access. 
+Hence, those proofs contain a lot of duplicate proofs for memory access refinements. 
 However, they are quite straightforward and easy to produce. 
-On top of that, we strongly believe 
-that they can be easily reduced by introducing mechanized user-defined tactics later. 
+On top of that, we strongly believe that they can be easily reduced by introducing mechanized user-defined tactics later. 
+
 
 As can be seen from these line counts, proofs about concurrent programs
 have a huge ratio of lines of proof to lines of C code.
-If we tried to directly verify shared objects that use locks to 
+If we directly tried to  verify shared objects that use locks to 
 perform more complex operations, like thread scheduling
 and inter-process communication, a monolithic proof  
 would become much bigger than the current one, and would be quite
 unmanageable. The modular lock specification is essential here.
 
 By contrast, the proofs for them in $\certikos$ are quite tractable, 
-because the proofs for the locks are modular, re-usable, and can 
-be combined with other client-part proofs like we have briefly 
+because our proofs for the locks are modular, reusable, and can 
+be combined with other client-part proofs as we have briefly 
 mentioned earlier in this Section.
-Therefore, we believe that our approach is a promising way to 
-show the correctness of large systems that use shared objects with mutex protection. 
-
+Therefore, we believe that our approach is a promising way to show the correctness of large systems that use shared objects with mutex protections. 
