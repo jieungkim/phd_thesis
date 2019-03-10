@@ -33,7 +33,7 @@ it is ready to serve the next ticket.
 Figure~\ref{fig:chapter:certikos:ticket-lock-example} shows the implementation of our ticket lock (a few insignificant parts are omitted.)
 Our lock module provides multiple lock instances associated with their own lock identifiers;
 thus, all operations on shared objects specify their lock IDs as their argument, which is $lkid$ in this example.
-We provides three getter/setter primitives-- $\codeinmath{FAI}$, $\codeinmath{get\_now}$, and $\codeinmath{incr\_now}$--
+We provide three getter/setter primitives-- $\codeinmath{FAI}$, $\codeinmath{get\_now}$, and $\codeinmath{incr\_now}$--
 that correspond to the three operations of the atomic object.
 Among them, the atomic increment to the ticket (the operation of the dispenser) 
 use the atomic fetch-and-increment (FAI) operation that is implemented using the $\codeinmath{xaddl}$ instruction with the 
@@ -229,7 +229,7 @@ and dynamic thread spawn.
 \label{fig:chapter:certikos:kernel-context-switch-impl}
 \end{figure}
 Our thread management first introduces a context switching written in Assembly, of which the implementation is in Figure~\ref{fig:chapter:certikos:kernel-context-switch-impl}.
-We first abstracts a kernel context pool in a memory ($\codeinmath{KCtxtPool\_LOC}$ in Figure~\ref{fig:chapter:certikos:kernel-context-switch-impl}) 
+We first abstract a kernel context pool in a memory ($\codeinmath{KCtxtPool\_LOC}$ in Figure~\ref{fig:chapter:certikos:kernel-context-switch-impl}) 
 into a kernel context map in abstract data:
 \begin{lstlisting}[language = C, deletekeywords = {Context}]
 Definition KCtxt := regset.
@@ -359,7 +359,7 @@ We have introduced 60 layers for all those modules in our per-CPU layers, from a
 $\PBThrd$.
 They can be linked together via the composition rules described in Section~\ref{chapter:ccal:subsec:linking},
 thus forming a single contextual refinement theorem, which is defined in Theorem~\ref{theorem:chapter:certikos:per-cpu-contextual-refinement},
-corresponding to number (1) in Figure~\ref{fig:chapter:certikos:idea-of-dividing-certikos-with-formal-def}.
+corresponding to the number (1) in Figure~\ref{fig:chapter:certikos:idea-of-dividing-certikos-with-formal-def}.
 \begin{theorem}[Contextual Refinement for Per-CPU layers]
 \label{theorem:chapter:certikos:per-cpu-contextual-refinement}
 Let's assume that $cid$ is a valid CPU ID (in between 0 and 7), $\oracle_{\codeinmath{cpu}}$ and  $\oracle'_{\codeinmath{cpu}}$ are 

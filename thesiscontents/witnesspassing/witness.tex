@@ -236,7 +236,7 @@ attached to the new state. To do so, a log replay function should internally cal
 
 Figure~\ref{fig:chapter:witnesspassing:witness-construction} shows methods for constructing witnesses.
 At the end of $\ldrfunction$, $\ldrwcons$ first constructs information about voters ($vtr:\voters$) and, if the requester succeeds in becoming a leader,
-it choose the witness from the received network event. 
+it chooses the witness from the received network event. 
 Witness building in a leader election does not need to know 
 all details about distributed object manipulations.
 It only needs to copy one witness from voters of the election.
@@ -291,7 +291,7 @@ the template functions satisfy the following properties:
 \begin{proof}
 The proof is straightforward. 
 Since both $\dstate$ and $\dstate_\witness$ contain the same fields aside from
-the witnesses, the refinement relation $R$ for each field will be identity.
+the witnesses, the refinement relation $R$ for each field will be an identity relation.
 Thus, the simulation proof for these fields is straightforward. 
 The witness can be easily constructed from the witness construction functions
 in Figure~\ref{fig:chapter:witnesspassing:witness-construction}, which do not touch fields other

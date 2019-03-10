@@ -10,7 +10,7 @@ but also other high-level progress properties or the protocol correctness of the
 
 
 The prevalence of concurrent environments brings enormous changes to the software. 
-They allow for achieving higher performance or more functionality in a single software by using interactions among several instances 
+They allow  achieving higher performance or more functionality in a single software by using interactions among several instances 
 (\ie, multiple threads, nodes, I/O devices, and networks) in the system, 
 but they create whole new challenges in terms of providing correctness software. 
 Obviously, they are well-known to be difficult to get right and debug because of numerous (usually unbounded)
@@ -37,25 +37,6 @@ but it required considerable effort. The verification took 11 person years for 7
 %in the concurrent program verification, 
 %which has to resolve not only the interleaving among the concurrent instances as well as the dependencies among the sub-modules 
 %that forms the entire system.
-
-
-\begin{figure}
-
-NEED TO ADD FIGURE
-NEED TO ADD FIGURE
-NEED TO ADD FIGURE
-NEED TO ADD FIGURE
-NEED TO ADD FIGURE
-NEED TO ADD FIGURE
-NEED TO ADD FIGURE
-NEED TO ADD FIGURE
-NEED TO ADD FIGURE
-
-\label{fig:intro:challenges-concurrent-prog-verification}
-\caption{Challenges in Concurrent Program Verification.}
-\end{figure}
-
-\jieung{Need to add figure}
 
 
 %%%%%%%% isolation is required
@@ -88,6 +69,32 @@ Besides, some approaches not only focus on functional correctness but also shows
 However, most previous works do not provide a programming framework that addresses all the above challenges
 in concurrent program verification and is capable of extracting the running code from the program written in low-level programming 
 languages such as C and assembly.
+
+
+
+\begin{figure}
+\begin{center}
+
+NEED TO ADD FIGURE
+NEED TO ADD FIGURE
+NEED TO ADD FIGURE
+NEED TO ADD FIGURE
+NEED TO ADD FIGURE
+NEED TO ADD FIGURE
+NEED TO ADD FIGURE
+NEED TO ADD FIGURE
+NEED TO ADD FIGURE
+\end{center}
+
+\caption{Challenges in Concurrent Program Verification.}
+\label{fig:intro:challenges-concurrent-prog-verification}
+\end{figure}
+
+
+Figure~\ref{fig:intro:challenges-concurrent-prog-verification} abbreviates key challenges in concurrent program verification. 
+Concurrent program verification has to deal with (1) complex dependencies among multiple sub-modules in the system; (2) linking  for the program written in different languages such as C and Assembly; (3) providing isolation for each instance in the concurrent program; (4) 
+providing fine-grained concurrency in the middle of the program with the proper linking. 
+
 
 \section{Verification Toolkit for Concurrent Programs}
 \label{chapter:introduction:sec:verification-toolkit-for-concurrent-programs}

@@ -27,7 +27,7 @@ the low-level shared object that provides protection--spinlock modules.
 It provides two lock implementations, Ticket and MCS, with the same high-level interface for them. 
 Based on that, 
 multiple shared objects are implemented, which include
-sleep queues (SleepQ, which is for condition variable), message queues (MsgQ, which is for working up on a thread on another CPU), memory-management modules (Container, PMM, VMM), an a IPC module with supporting synchronizations via condition variables, \etc
+sleep queues (SleepQ, which is for a condition variable), message queues (MsgQ, which is for working up on a thread on another CPU), memory-management modules (Container, PMM, VMM), an IPC module with supporting synchronizations via condition variables, \etc
 It also contains a per-core services including per-core scheduler (that can communicate with MsgQ and SleepQ), a process-management module,
 a virtual machine monitor (VM). 
 Each thread also contains its private states, TCB (thread control block, thread management, context, and so on. 
@@ -38,12 +38,12 @@ We  built the operating systems in a layered structure to provide the highest-le
 works as a transition machine for the user programs, thus preserving the behavior of our operating system.  
 In this sense, providing this layer interface requires us 
 to prove a contextual refinement between our $\certikos$ implementation with a bare machine (Intel Core i7) and 
-the top-most layer for our OS layers ($\codeinmath{TSyscall}$, the layer that defines system calls as its primitives).
-Informally, we wants to prove that
+the top-most layer of our OS layers ($\codeinmath{TSyscall}$, the layer that defines system calls as its primitives).
+Informally, we want to prove that
 \begin{quote}
 "Any context program $\codeinmath{CTXT}$ running on the $\codeinmath{TSyscall}$ layer (the top-most layer of $\certikos$) on $\hasm$, a machine model for a per-thread layer interface, with the valid thread ID ($tid$)
 and a valid environmental context ($\oracle_{\codeinmath{thrd}})$ 
-contextually refines the context program $\codeinmath{CTXT}$ plus $\certikos$ kernel code running on $\codeinmath{MBoot}$ layer (the bottom-most layer of $\certikos$) with a hardware step semantics describing a non-deterministic $\intelmachine$ multicore machine model."
+contextually refines the context program $\codeinmath{CTXT}$ plus $\certikos$ kernel code running on the $\codeinmath{MBoot}$ layer (the bottom-most layer of $\certikos$) with a hardware step semantics describing a non-deterministic $\intelmachine$ multicore machine model."
 \end{quote}
 Formally (with the notations in the previous chapters), the theorem we want to provide as the top-level theorem for $\certikos$ is 
  \begin{center}

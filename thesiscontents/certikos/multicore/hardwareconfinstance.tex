@@ -46,13 +46,13 @@ Thanks to the similarity between this state definition and the state definition 
 $\compcertx$ facilitates many parts of the verified compiler of $\compcert$ with some modifications, 
 and it is applicable to our concurrent program verification (because 
 we built all layers based on our sequential-like layer interfaces).
-The memory in the $\compcertx$   is also a pair of two elements--a memory (a map from a identifier to a value) and an abstract datum. 
+The memory in the $\compcertx$   is also a pair of two elements--a memory (a map from an identifier to a value) and an abstract datum. 
 %\begin{lstlisting}
 %Definition <@$\pi$@>_mem {D}: mwd D -> mem := fst.
 %Definition <@$\pi$@>_data {D}: mwd D -> ldata_type D := snd.
 %\end{lstlisting}
 The first element of the memory is the same as the memory in the $\compcert$~\cite{leroy08},
- which is a map from its index (a pair of a block ID and an offset) to the value alongside with its type information for the size of the value. 
+ which is a map from its index (a pair of a block ID and an offset) to the value alongside with its type information about the size of the value. 
 An abstract datum gives us huge freedom for the state definition by allowing us to add multiple fields.
 To use the existing tools as much as possible, 
 we also include our global log in the abstract data (as we have seen in Chapter~\ref{chapter:mcs-lock}).
@@ -94,7 +94,7 @@ Figure~\ref{chapter:certikos:subsec:hardware-configuration-instance}
  and 
   Figure~\ref{fig:chapter:certikos:abstract-data-for-bottom-layer}
   show the layer definition 
-  and the definition for the abstract data 
+  and the definition of the abstract data 
   in the bottom layer of our per-CPU layer interface, $\mmcsbootfull$.
 %
 %For all layers, the primitive definitions in the layer $\Layer$ (when $\PLayer{L}{\ignorechar}{\ignorechar} = (\Layer, \ignorechar, \ignorechar)$) contains a set of primitives 
@@ -104,7 +104,7 @@ Figure~\ref{chapter:certikos:subsec:hardware-configuration-instance}
 %which is basically a partial map from a primitive ID ($\primitiveid$) to the specifications ($\spec$).
 %Each layer also use its abstract data, and the abstract data definition for the bottom layer is in Figure~\ref{fig:chapter:certikos:abstract-data-for-bottom-layer}.
 As mentioned, 
-we have provided atomic fetch-and-increase as an atomic operation in the layer,
+we have provided an atomic fetch-and-increase as an atomic operation in the layer,
 and it will update the log in the abstract data ($\codeinmath{multi\_log}$), which is 
 a part of our state definition. 
 Our hardware-configuration instance is closely related to those definitions
@@ -119,7 +119,7 @@ the state definition in the machine model of $\compcertx$--a pair two elements w
 and a memory (\ie, the extended memory with  abstract states in it)--and the shared piece is a list of bytes, which represents 
 the snapshot of the shared memory via $\push$/$\pull$ operations. 
 
-To instantiates the definition $\mcevent$ in Figure~\ref{chapter:certikos:subsec:hardware-configuration-instance},
+To instantiate the definition $\mcevent$ in Figure~\ref{chapter:certikos:subsec:hardware-configuration-instance},
 we define ``\lstinline$OtherEvent$'' as follows:
 \begin{lstlisting}[language=C, deletekeywords={for}]
 // The instance that implements <@${\color{red}  \mcevent}$@>
@@ -128,7 +128,7 @@ Inductive OtherEvent := | OINC_TICKET (n: nat) <@$\cdots$@>
 The definition maps each atomic operation in layer $\mmcsbootfull$ into each single event in our hardware configuration.
 For example, \lstinline$OINC_TICKET (n: nat)$ corresponds to the fetch-and-increase primitive,
 
-In addition, \lstinline$OtherEvent_2_ident$ is an instance for the $\atomiceventidentkwd$ function, which is the function
+In addition, \lstinline$OtherEvent_2_ident$ is an instance of the $\atomiceventidentkwd$ function, which is the function
 that gets the event and returns the corresponding identifier (the primitive identifier) that is related to the event.
 \begin{lstlisting}[language=C]
 // The instance that implements <@${\color{red}  \atomiceventidentkwd}$@>
@@ -261,7 +261,7 @@ that has a subset of its instructions (but sufficiently rich for building operat
 and follows the sequentially consistent evaluation order for the memory consistency. 
 However, it does not need to be specified by $\intelmachine$. 
 All those hardware configurations can be instantiated with other definitions, such as ARM assembly machine for $\compcertx$, 
-or even other machine models that are not entirely related to $\compcertx$ if users can prove the desired property of them.
+or even another machine model that is not entirely related to $\compcertx$ if users can prove the desired property of them.
 
 
 

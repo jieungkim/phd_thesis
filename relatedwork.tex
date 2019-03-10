@@ -137,7 +137,7 @@ useful for verifying specific concurrent objects within our layered
 framework. 
 Our use of a global log is similar to the use of compositional
 subjective history traces; a history trace specifies past events, proposed by Sergey \etal~\cite{sergey15}.
-Our environment context, however, can talk about both past and future events rather than only past events.
+Our environmental context, however, can talk about both past and future events rather than only past events.
 Total-TaDA~\cite{pinto16} can be used to prove
 the total correctness of concurrent programs but it has not been
 mechanized in any proof assistant and there is no formal proof that
@@ -221,7 +221,7 @@ thread's behaviors over the environment's full strategies (\ie, both
 past and future events).
 Our composition treats the semantics for running $P$ over $L[t]$ as still well
 defined even if a thread $t$ is never
-created, because it will always query its environment context to
+created, because it will always query its environmental context to
 construct a global log.
 
 \jieung{Do we also need to add View paper?}
@@ -249,7 +249,7 @@ but $\ccalname$ still uses traditional small-step semantics for its concurrent m
 past works~\cite{ghica08,nishimura13,rideau11,abramsky99}  for concurrency modeling in the game-semantics community.
 They use games to
 define the semantics of a complete language, 
-and modeling higher-order sequential features as games is excellent for proving full abstraction. 
+and modeling higher-order sequential features as games is excellent for proving a full abstraction. 
 However, it is unclear how it is applied to the large-scale verification in the certified software community.
 
 
@@ -449,17 +449,17 @@ Our witness-passing approach also attempts to find a reusable framework for thes
 but instead of decomposing Paxos further, we make the critical implicit invariants more explicit by passing around
 the information needed to prove them.
 
-It enables proofs to be done in a thread-local (or node-local) manner using an environment context to
+It enables proofs to be done in a thread-local (or node-local) manner using an environmental context to
 capture the behavior of the rest of the world.
 These proofs can then be linked together to obtain a strong correctness theorem for the entire system.
 
 Our witness benefits significantly from using $\ccalname$.
 By decomposing distributed systems into layers, we reduce the amount of time and effort needed to
 prove functional correctness.
-By treating each distributed node as a separate thread, we can use the environment context to
+By treating each distributed node as a separate thread, we can use the environmental context to
 prove properties in a local context.
 Combining this with the witness then allows us to bring in information about the global state when necessary.
-We also use the environment context to model a realistic and non-deterministic network.
+We also use the environmental context to model a realistic and non-deterministic network.
 Another advantage afforded by $\ccalname$ is that we can lift our safety proofs to higher layers via using a contextual refinement property.
 It allows us to implement and verify a system once and then reuse it as a component in various distributed applications.
 

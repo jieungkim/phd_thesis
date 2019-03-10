@@ -117,21 +117,6 @@ None of the previous works expose those challenges or offer empirical studies on
 %\end{figure}
 
 
-\begin{figure}
-\jieung{Need to revise those figures. If I will add the linking with concrete layers in the next section, I need to simplify those figures}
-\begin{center}
-\includegraphics[width=0.7\textwidth]{figs/conlink/cpu_linking_structure}\newline
-(a) Multicore linking structure
-\end{center}
-\begin{center}
-\includegraphics[width=0.7\textwidth]{figs/conlink/thread_linking_structure}\newline
-(b) Multithreaded linking structure
-\end{center}
-\textbf{Note:} We discuss the components in the grey boxes  in the next chapter, but we include them in this figure for better understanding.
-\caption{Concurrent Linking Structure.}
-\label{fig:chapter:conlink:concurrent-linking-structure}
-\end{figure}
-
 % concurrent layer  - the proof
 $\ccalname$
 has proven to be a useful and efficient tool 
@@ -193,6 +178,22 @@ when  $\codeinmath{mach}_{\codeinmath{full}}$ is a machine model that runs the l
 $\codeinmath{mach}_{\codeinmath{local}}$ is a machine model that runs the layer with a singleton focused set (such as a machine model of $\compcertx$).
 \end{definition}
 
+
+\begin{figure}
+\jieung{Need to revise those figures. If I will add the linking with concrete layers in the next section, I need to simplify those figures}
+\begin{center}
+\includegraphics[width=0.9\textwidth, page=1]{figs/conlink/overview}\newline
+(a) Multicore linking structure
+\end{center}
+\begin{center}
+\includegraphics[width=0.9\textwidth, page=2]{figs/conlink/overview}\newline
+(b) Multithreaded linking structure
+\end{center}
+\textbf{Note:} We discuss the components in the grey boxes  in the next chapter, but we include them in this figure for better understanding.
+\caption{Concurrent Linking Structure.}
+\label{fig:chapter:conlink:concurrent-linking-structure}
+\end{figure}
+
 %\begin{mathpar}
 %\inferrule{L[i] }{\jieung{Need to add composition rule}\\
 %\jieung{the PCOMP rule in the ccal paper is not supported at all in our framework.}}
@@ -234,7 +235,7 @@ It also requires us to handle the mutual exclusiveness of
 private states, including memories, register values, and private fields in abstract data (such as page table allocations.)
 In addition to that, it also requires us to assign proper initial states for all threads in the system if we want to prove that the composition of multithreaded linking has the same behavior as the multithreaded program runs on the CPU-local layer. 
 To handle them, we also introduce multiple intermediate machine models that can parameterize abstract layer as well as thread configurations, and we use various auxiliary functions and auxiliary properties related to the abstract layer (and the top-most layer in the CPU-local machine as well as the bottom-most layer in the thread-local machine). 
-After we provide that linking framework, users need to 
+With the provided linking framework, users need to 
 fill out the layer definition, configurations, and the generic properties to link the layer for each thread and the layer for each CPU.
 
 All in all, we provide  generic linking framework that minimizes the user's effort as much as possible.

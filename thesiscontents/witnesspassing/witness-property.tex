@@ -8,7 +8,7 @@ Proving a safety property of generic specifications using witnesses is similar t
 This section illustrates the proof of one of the common desirable properties
 of a leader-based distributed system, linearizability.
 Linearizability guarantees that if a quorum of approvers accepts a request $c$, 
-all the subsequently issued requests reflects the result of $c$. 
+all the subsequently issued requests reflect the result of $c$. 
 The proof of linearizability can take advantage of the witness. 
 
 \begin{lemma}
@@ -35,7 +35,7 @@ This proof is related to generic specifications, $\ldrfunction$ and $\ldrhfuncti
 and the witness construction specifications, $\ldrwcons$ and $\opwcons$.
 First, the $g$ function in $\ldrhfunction$ has to satisfy that  
 it always returns the current status to the requester.
-Second, the $g_{post}$ function has to choose the value mapped with the highest version number among a valid acknowledgments. 
+Second, the $g_{post}$ function has to choose the value mapped with the highest version number among valid acknowledgments. 
 Third, the $\ldrwcons$ function should be called with the proper write witness, which is the witness mapped with the highest version number among all witnesses from  approvers (in a set of quorum).
 With the given constraints, the following two lemmas can be proved.
 
@@ -52,7 +52,7 @@ witness with the largest number of entries.
 Proving the election consistency is providing that system-specific functions satisfy the conditions that we illustrated. However, satisfying these
 conditions are common requirements for system-specific functions in
 our approach and thus if we assume that the conditions already hold for all
-system-specific functions, the proofs for the lemmas are straightforward.
+system-specific functions, the proofs of the lemmas are straightforward.
 \end{proof}
 
 With these lemmas, proving  linearizability is finally available.
@@ -62,8 +62,8 @@ The commit witness is linearizable.
 \end{theorem}
 
 \begin{proof}
-Our witness contains all the linearizable history that is matched with the current local state, 
-and the witness in all consistent nodes are the same due to our witness passing mechanism. 
+Our witness contains all the linearizable history that is matched by the current local state, 
+and the witness in all consistent nodes is the same due to our witness passing mechanism. 
 Therefore, linearizability is captured by our witness.
 \end{proof}
 

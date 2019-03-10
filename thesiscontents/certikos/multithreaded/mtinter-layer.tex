@@ -72,13 +72,13 @@ Dividing  abstract data into two parts by distinguishing
 each field into either a part of shared data or private data
 requires a full understanding of  behaviors of all primitives in $\certikos$;
 thus, we faced multiple trial-and-error.
-Parts of proper division on our abstract state are in Figure~\ref{fig:chapter:certikos:single-data-of-multithreaded-linking-certikos},
+Parts of the proper division on our abstract state are in Figure~\ref{fig:chapter:certikos:single-data-of-multithreaded-linking-certikos},
 which implies that 
 all threads share information about the current CPU ID, thread ID, the global log for the shared state,
 and the status of initialization of the current system. 
 However, they have separate data structures 
  for containers, permission tables for all pages in the memory, 
- their page-map table, user contexts, and the information of the synchronization pool for IPC.
+ their page-map table, user contexts, and the information about the synchronization pool for IPC.
  It implies that 
  each thread cannot look up the global permission table (\ie, the table that tells which pages are already allocated to some threads),
  other threads' page-map table, or the communication information (IPC channel) that is not associated with the thread.
@@ -146,7 +146,7 @@ when assuming that there exists a proper function pointer \lstinline$START_USER_
 of the main function for the thread.
 Multiple functions are also presented to define \lstinline$thread_init_dproc$, the function that calculates the initial private state for each thread. 
 It searches the initial log of the thread and
-uses the information of the process-creation event  for the thread via
+uses the information about the process-creation event  for the thread via
 calling \lstinline$cal_init_dproc$.
 The behavior of  \lstinline$cal_init_dproc$ regarding updating the container information for the newly created thread is similar to the behavior 
 of the process-create function specification in $\PBThrd$ (see line 11
@@ -219,8 +219,8 @@ Figure~\ref{fig:chapter:certikos:proc-create-cpu-spec-phbthred} shows the specif
 Compared to the specification in $\PBThrd$ in Figure~\ref{fig:chapter:certikos:proc-create-cpu-spec},
  it does not modify the child's local state while it updates the 
  parent's state, unlike the specification in $\PBThrd$ does.
-The modification (dynamic initialization) of the child's initial state is a responsibility of the child by using auxiliary functions in Figure~\ref{fig:chapter:certikos:auxfunctions-of-multithreaded-linking-certikos}.
-Again, providing this intermediate layer  requires a lot of work but is scalable.
+The modification (dynamic initialization) of the child's initial state is a responsibility of the child by using several auxiliary functions in Figure~\ref{fig:chapter:certikos:auxfunctions-of-multithreaded-linking-certikos}.
+Again, providing this intermediate layer  requires a lot of work, but it is scalable.
 Adding a primitive in both layers only requires us to define  specifications for the newly added primitive.
 
 
@@ -238,7 +238,7 @@ all primitives and transitions modify all parts of the state.
 Figure~\ref{fig:chapter:certikos:absrelc-of-multithreaded-linking-certikos} provides
 a few interesting parts of  \lstinline$match_EData_RData$, the refinement relation between \lstinline$EData$ and  \lstinline$RData$.
 Few cases--such as \lstinline$CPU_ID_re$, which matches the current CPU ID in both parts--are trivial and straightforward because of the simple modification to them. 
-Others--such as the case for containers--need complex case analysis based on the system's behavior. 
+Others--such as the case of containers--need complex case analysis based on the system's behavior. 
 The \lstinline$relate_AC_per_pd$ shows few cases.
 It distinguishes the case whether the system is initialized, whether the thread has been
 spawned (via calling \lstinline$B_GetContainerUsed id (CPU_ID sd) (big_log sd)$),
@@ -249,7 +249,7 @@ For example, \lstinline$pperm_disjoint$ shows
 that page-permission tables in multiple thread's states are disjoint from others, thus implying
 the mutual exclusion of the page allocation in the system. 
 By providing this refinement relation,
-we give the instance for $\AbsRelC$ by proving 
+we give the instance of $\AbsRelC$ by proving 
 that each transition on both machines satisfies the property stated in $\AbsRelC$,
 which is mainly focused on the case analysis on the primitives in  $\PBThrd$ and $\PHBThrd$.
 Again, this requires a lot of work but is scalable.

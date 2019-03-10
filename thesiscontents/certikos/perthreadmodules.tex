@@ -57,7 +57,7 @@ return values in other registers with the order of
  $\codeinmath{EBX}$, $\codeinmath{ECX}$, $\codeinmath{EDX}$, $\codeinmath{ESI}$, and $\codeinmath{EDI}$. 
 Based on them, 
 we built a list of system call handlers with the guarantee of safety condition:
-``the semantics of each system call handler does not get stuck.'' 
+``the semantics of each system call handler do not get stuck.'' 
 Our top-most layer also implements the system call dispatcher that facilitates the proper system call handler based on the system call number in the $\codeinmath{EAX}$ register.
 The $\TSyscall$ layer also contains the page-fault handler as its interface.
 
@@ -68,7 +68,7 @@ We have introduced seven layers for all those modules in our per-thread layers, 
 $\TSyscall$ layer.
 Similar to the per-CPU modules, they  can be linked together via the composition rules described in Section~\ref{chapter:ccal:subsec:linking},
 thus forming a single contextual refinement theorem, which is defined in Theorem~\ref{theorem:chapter:certikos:per-thread-contextual-refinement},
-corresponding to  number (2) in Figure~\ref{fig:chapter:certikos:idea-of-dividing-certikos-with-formal-def}.
+corresponding to  the number (2) in Figure~\ref{fig:chapter:certikos:idea-of-dividing-certikos-with-formal-def}.
 \begin{theorem}[Contextual Refinement for Per-thread Layers]
 \label{theorem:chapter:certikos:per-thread-contextual-refinement}
 Let's assume that $tid$ is a valid thread ID, $\oracle_{\codeinmath{thrd}}$ and  $\oracle'_{\codeinmath{thrd}}$ are environmental contexts for 

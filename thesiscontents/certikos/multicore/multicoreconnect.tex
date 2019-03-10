@@ -46,7 +46,7 @@ multicore linking in $\certikos$  is in Theorem~\ref{theorem:chapter:certikos:co
 \begin{theorem}[Multicore Linking Theorem for $\certikos$]
 \label{theorem:chapter:certikos:contextual-refinement-theorem-in-certikos-multicore-linking}
 Let's assume  $cid$ is a valid CPU ID, $\oracle_{cid}$ is a valid
-environmental context for thread $cid$, and $\codeinmath{Ctxt}$ is a
+environmental context for a thread $cid$, and $\codeinmath{Ctxt}$ is a
  context program that runs on top of layer $\codeinmath{MBoot}$. 
  Then we can state that
  \begin{center}
@@ -58,7 +58,7 @@ when ${R_{\certikos_\codeinmath{mclink}}}$ is a refinement relation for multicor
 \end{theorem}
 
 
-The proof for Theorem~\ref{theorem:chapter:certikos:contextual-refinement-theorem-in-certikos-multicore-linking} 
+The proof of Theorem~\ref{theorem:chapter:certikos:contextual-refinement-theorem-in-certikos-multicore-linking} 
 can be divided into multiple sub-lemmas, each of which is a backward-simulation proof 
 that facilitates one of refinement theorems in Section~\ref{chapter:linking:sec:multicore-linking}. 
 The overall structure of the entire proof is in Figure~\ref{fig:chapter:certikos:multicore-connect-proof-overall-structure}, which is 

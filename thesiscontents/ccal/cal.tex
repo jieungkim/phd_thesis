@@ -7,7 +7,7 @@ but that work does not address handling concurrent programs in it.
 However, the approach, Certified Abstraction Layers ($\calname$), works as a basis of our concurrent layer framework.
 It enables us to build and verify the (sequential) system by dividing it into modular layers, 
 proving the correctness of its every layer independently, and connecting the proofs of all layers in the system to show the correctness of the system's end-to-end behavior via \textit{contextual refinement} between layers. 
-It only supports sequential program verification but works as a basis of our concurrent certified abstraction layers.
+It only supports sequential program verification, but works as a basis of our concurrent certified abstraction layers.
 
 $\calname$ is a predicate over two layers with a context program, 
 ``$\ltyp{L_{\codeinmath{low}}}{R}{\codeinmath{M}_\codeinmath{high}}{L_{\codeinmath{high}}}$'' 
