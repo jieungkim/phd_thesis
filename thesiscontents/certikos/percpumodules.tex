@@ -1,10 +1,10 @@
 \section{Per-CPU Modules}
 \label{chapter:certikos:sec:per-cpu-modules}
 
-Per-CPU modules in $\certikos$ refined part of $\certikos$ modules--which are included in $\certikos_{\codeinmath{cpu}}$ in the figure, based on the $\mmcsbootfull$ layer-- 
+Per-CPU modules in $\certikos$  refines related parts of  $\certikos$ modules--which are included in $\certikos_{\codeinmath{cpu}}$ in the figure, based on the $\mmcsbootfull$ layer-- 
 into the local layer interface, $\PBThrd$.
 Those modules consist of six components:
-two spinlock modules, a device-driver module, a memory-management module,  a thread-management module, and a VM management module. 
+two spinlock modules, a device driver module, a memory management module,  a thread-management module, and a VM management module. 
 \jieung{process? thread? which one will I choose? --- thread}
 
 \subsection{Spinlock Module}
@@ -28,22 +28,22 @@ the system updates the now-serving sign by increasing the now-serving number.
 \label{fig:chapter:certikos:ticket-lock-example}
 \end{figure}
 Implementing a ticket lock follows the same manner with this high-level idea.
-It is built on top of an atomic object that contains two fields--\textit{next} and \textit{now}--and operations for a dispenser, checking the now-serving number, and increasing the now-serving number when
+It is built on top of an atomic object that contains two fields--\textit{next} and \textit{now}--and operations for a dispenser, checking the now-serving number and increasing the now-serving number when
 it is ready to serve the next ticket. 
 Figure~\ref{fig:chapter:certikos:ticket-lock-example} shows the implementation of our ticket lock (a few insignificant parts are omitted.)
-Our lock module provides multiple lock instances associated with their own lock identifier;
-thus, all operations on the lock object specify the lock ID as their argument, which is $lkid$ in this example.
+Our lock module provides multiple lock instances associated with their own lock identifiers;
+thus, all operations on shared objects specify their lock IDs as their argument, which is $lkid$ in this example.
 We provides three getter/setter primitives-- $\codeinmath{FAI}$, $\codeinmath{get\_now}$, and $\codeinmath{incr\_now}$--
 that correspond to the three operations of the atomic object.
 Among them, the atomic increment to the ticket (the operation of the dispenser) 
-use the the atomic fetch-and-increment (FAI) operation, that is implemented using the $\codeinmath{xaddl}$ instruction with the 
+use the atomic fetch-and-increment (FAI) operation that is implemented using the $\codeinmath{xaddl}$ instruction with the 
 lock prefix in $\intelmachine$.
 
 We also prove one progress property--starvation freedom--for this Ticket Lock based on the assumption about hardware fairness,
 which implies that each CPU has a fair chance to execute its one program instance.
 The starvation freedom proof in this ticket lock is 
 similar to that of the MCS Lock in Chapter~\ref{chapter:mcs-lock}, but 
-it's simpler.
+it's much simpler than the proof of the MCS Lock.
 
 \subsection{Device Driver Module}
 \label{chapter:certikos:subsec:device-driver-module}
@@ -51,9 +51,9 @@ it's simpler.
 $\certikos$ supports device-driver handling, and all these works are from the previous work by  Chen \etal~\cite{certikos:interrupt}.
 The work introduces a device model for multiple hardware devices,
 as well as a formal model for interrupts. 
-Based on them, who verify interruptible codes and insert them into the sequential $\certikos$~\cite{deepspec}, a prior work of our concurrent $\certikos$. 
+Based on them, we verify interruptible codes and insert them into the sequential $\certikos$~\cite{deepspec}, a prior work of our concurrent $\certikos$. 
 The work has  successfully ported to the concurrent $\certikos$
-by clearly separating the concurrent aspects of multicore/multithreaded environments
+by clearly separating  concurrent aspects of multicore/multithreaded environments
 with those triggered by devices.
 $\certikos$ has a single designated thread that is responsible for those interrupts,
 and our future direction is to extend the current version to support a more efficient concurrent-handling model that can cover both device drivers and multicore/multithreaded environments together.
@@ -62,8 +62,8 @@ and our future direction is to extend the current version to support a more effi
 \label{chapter:certikos:subsec:memory-management-module}
 
 We built a memory-management module with 15 layers, 
-which supports a container for resource management, two-level page tables, and dynamic page allocations for users.
-This module also contains the shared memory library,
+which supports a container for resource management, a two-level page table, and a dynamic page allocation for users.
+This module also contains a shared memory library,
 but we omit an explanation of the library because our thread linking does not include that. 
 
 \subsubsection{Container} 
@@ -88,23 +88,24 @@ but we omit an explanation of the library because our thread linking does not in
 \caption{Container Data Type Definition (Written in C and $\coq$).}
 \label{fig:chapter:certikos:container}
 \end{figure}
-The container manages the resource that each thread (its children) can facilitate.
+A container manages the resource that each thread (its children) can facilitate.
 In the case of memory management, for instance,
-the container memorizes the maximum number of pages (via the thread's quota) 
+a container memorizes the maximum number of pages (via the thread's quota) 
 that each thread can use or hand it over to its children.
-Definitions of container data structure (both in C and $\coq$) are in 
+Definitions of our container data structure (both in C and $\coq$) are in 
 Figure~\ref{fig:chapter:certikos:container}. 
 By following our \textit{fun-lift} pattern of $\ccalname$ (Section~\ref{chapter:ccal:subsec:local-layer-interface}, 
-we built getter/setter functions based on the C data structure (left in the figure), 
-and refines them with the functions that uses $\coq$ data structure (right in the figure.)
+we built getter/setter functions based on this C data structure (left in the figure), 
+and refine those getter/setter functions with the functions that use our $\coq$ data structure (right in the figure.)
+
 
 Our container object stems from the notion of containers and quotas in HiStar~\cite{zeldovich06};
 thus, our thread spawn is parameterized by the number for the thread's  quota--the maximum number of pages that 
 the thread can occupy.
-This quota works as a protection against a denial-of-service attack, where one thread repeatedly allocates pages and uses up all available memory. 
-By denying other threads from allocating pages.
+This quota works as a protection against a denial-of-service attack, where one thread repeatedly allocates pages and uses up all available memory
+by denying other threads from allocating pages.
 Since each thread has its capacity, all threads can fairly use memory pages even though some threads occupy their maximum pages specified in quota. 
-This also prevents the undesirable information channel between different threads that occurs due to such an attack.
+This also prevents the undesirable information channel between different threads that occur due to such an attack.
 
 This container is a tree structure, and each CPU contains its tree with the root thread for each core. 
 With this separation, the container of each core does not interfere with other containers in other cores. 
@@ -122,10 +123,10 @@ As discussed in the section, the page-allocation table $\codeinmath{AT}$ is shar
 all CPUs in the system; so
 the designated lock--$\codeinmath{acquire\_lock\_AT}$ and  $\codeinmath{release\_lock\_AT}$--encapsulates the function $\codeinmath{palloc\_aux}$ that touches and manipulates the $\codeinmath{AT}$.
 The full source codes for both functions are in Figure~\ref{fig:chapter:certikos:palloc-in-c}.
-Once we prove that the correctness of those functions, we facilitate 
-the \textit{log-lift} pattern of $\ccalname$ (Section~\ref{chapter:ccal:subsec:local-layer-interface}) to simplify the interleaving for this object,
+Once we prove  the correctness of those functions, we facilitate 
+our \textit{log-lift} pattern to simplify  interleavings for this object,
 and we introduce 
-an atomic object for this page allocation table, by merging the lock acquire and lock release as well as 
+an atomic object for this page allocation table, by merging  lock acquire and lock release events as well as 
 the event for the shared resources  (see Section~\ref{chapter:mcslock:sec:evaluation} for more details).
 \begin{figure}
 \lstinputlisting[language = C]{source_code/certikos/palloc_spec.v} 
@@ -133,13 +134,12 @@ the event for the shared resources  (see Section~\ref{chapter:mcslock:sec:evalua
 \label{fig:chapter:certikos:palloc-in-coq}
 \end{figure}
 The high-level specification for $\pallocfunc$ is in Figure~\ref{fig:chapter:certikos:palloc-in-coq}.
-In the figure, \lstinline$RData$ is a type of abstract data, and $AC$ is a container field in the abstract data. 
-\lstinline$CalAT_log_real$ is the function to pull out the current allocation table state by replaying  the log
+In the figure, \lstinline$RData$ is a type of abstract data, and $AC$ is a container field in the abstract state.
+\lstinline$CalAT_log_real$ is a function to pull out the current allocation table state by replaying the log
 related to page allocations in the system, and \lstinline$pperm$ is a CPU-local page permission table. 
 With that given information, \lstinline$palloc_spec$ updates a single event (\lstinline$OPALLOCE$) into the log, based on the result of the page-allocation operation and considering the related interleaving with other CPUs via the environmental context (\lstinline$multi_oracle$ in the figure.)
 The lock instance for this page allocation--one element in our spinlock pool--is not allowed to be invoked at higher layers;
-thus, threads that hold the lock for other shared objects 
-cannot hold (and does not release) the lock for page allocation.
+thus, threads that hold the lock for other shared objects cannot hold (and does not release) the lock for page allocation.
 By providing this atomic interface for those locks,
 threads precisely follow the order of acquiring and releasing locks with the layer order, which implies that 
 the lock in the higher layer will be acquired before the lock in the lower layer,
@@ -147,8 +147,9 @@ and the lock in the lower layer will be released before the lock in the higher l
 This implicit order of lock acquisitions prevents deadlocks in the $\certikos$ kernel.
 
 
+
 \subsubsection{Virtual memory management}
-The virtual memory-management module is built on top of the physical memory-management layers. 
+The virtual memory-management module is built on top of  physical memory-management layers. 
 Our virtual memory-management is
 based on the explicit modeling of the memory management unit (MMU) in our abstract data and thus on abstract layers. 
 Our MMU model follows and mirrors the paging hardware; thus, memory accesses made by both the kernel and the user programs are translated using the two-level page maps. 
@@ -161,17 +162,17 @@ that the initialization procedure sets up the two-level page maps correctly rega
 \caption{Page Table Abstract Data Structure Definition (Written in $\coq$).}
 \label{fig:chapter:certikos:page-table}
 \end{figure}
-In detail, the page table is a partial map from a thread ID to its page table, as the definition related to the page table (written in $\coq$) is in
+In detail, our page table is a partial map from a thread ID to its page table, as the definition related to the page table (written in $\coq$) in
 Figure~\ref{fig:chapter:certikos:page-table}. 
-Page table 0 is reserved for the kernel page table, which is defined as an identity map,
+The page table 0 is reserved for the kernel page table, which is defined as an identity map,
 and we map the low memory as an identity map with kernel-only permission
 for every thread's page table.
 It reduces the complexity of our permission resolution because when each thread is trapped into the kernel,
 the kernel can still access kernel data natively via memory access
 without switching to the kernel page table. 
 In the figure, 
-\lstinline$IDPDE$ is an identity  map, which maps its address to every page-directory entry when we need an identity mapping.
-The page table structure, \lstinline$PMapPool$, is a partial map from a thread identifier to its two-level page table , \lstinline$PMap$.
+\lstinline$IDPDE$ is an identity map, which maps its address to every page-directory entry when we need an identity mapping.
+The page table structure, \lstinline$PMapPool$, is a partial map from a thread identifier to its two-level page table, \lstinline$PMap$.
  Each page directory entry (\lstinline$PDE$) has one of four values:
  1) the proper page table entry (\lstinline$PDEValid$); 2) an identity map (\lstinline$PDEID$); 3) unallocated (\lstinline$PDEUnPresent$); or 4) uninitialized or invalid (\lstinline$PDEUndef$). 
 A page table entry is one of three values:
@@ -183,17 +184,17 @@ A page table entry is one of three values:
 \caption{Pate Table Reservation Primitive Specification (Written in $\coq$.)}
 \label{fig:chapter:certikos:ptresv-func}
 \end{figure}
- One important function that manipulates the page table is a page-table reservation function,
+ One important function that manipulates this page table is a page-table reservation function,
  which updates each thread's page table.
  The specification for the function is defined in Figure~\ref{fig:chapter:certikos:ptresv-func},
-  where  $\codeinmath{ptInsert\_spec}$ is a specification for the $\codeinmath{ptInsert}$ function which links 
-the physical address mapping with the virtual address mapping. 
+  where  $\codeinmath{ptInsert\_spec}$ is a specification for  $\codeinmath{ptInsert}$  which links 
+a physical address mapping with a virtual address mapping. 
 The function first checks whether the corresponding page directory entry is already mapped to any page-table entries.
 If it is not, it allocates one by invoking $\codeinmath{ptAllocPDE}$ primitive that corresponds to the  $\codeinmath{ptAllocPDE\_spec}$
 in the figure.
-The $\codeinmath{ptInsertPTE\_spec}$ is the specification for function $\codeinmath{ptInsertPTE}$ that actually inserts the page 
+The $\codeinmath{ptInsertPTE\_spec}$ is the specification for  $\codeinmath{ptInsertPTE}$ that actually inserts the page 
 information into the page table. 
-When any threads fails during this evaluation, it returns the magic number as its result, which is distinguishable from 
+When any threads fail during this evaluation, it returns the magic number as its result, which is distinguishable from 
 any return values of the function.
 
 \subsection{Intel Virtualization Module}
@@ -202,12 +203,12 @@ any return values of the function.
 Our $\certikos$ can run at most one virtual machine per  core:
 and our Intel virtualization module implements layers related to the virtual machine management--
 the hardware-assisted virtualization technology Intel VT-x.  
-The module introduces the four-level Extended Page Table (EPT), 
-similar to the two-level in-kernel page-table structure but  with two additional levels, 
+The module introduces a four-level Extended Page Table (EPT), 
+similar to our two-level in-kernel page-table structure but  with two additional levels, 
 as well as several primitives to manipulate the extended page entries.
 It also contains layers to introduce the Virtual Machine Control Structure (VMCS) and the
  Virtual Machine Extension metadata (VMX).
-Those layers introducing VMCS and VMX objects, which consists of their data structures as well as primitives. 
+Those layers introduce VMCS and VMX objects, which consists of their data structures as well as primitives. 
 They model VMCS and VMX data structures  in their 
  abstract layers (introduce those data structures as parts of an abstract state)
 as well as provide primitives that properly initialize and manipulate them. 
@@ -227,14 +228,14 @@ and dynamic thread spawn.
 \caption{Kernel Context Switch Implementation (Written in Assembly).}
 \label{fig:chapter:certikos:kernel-context-switch-impl}
 \end{figure}
-Our thread management first introduces the context switching written in Assembly, of which the implementation is in Figure~\ref{fig:chapter:certikos:kernel-context-switch-impl}.
-We first abstracts the kernel context pool in the memory ($\codeinmath{KCtxtPool\_LOC}$ in Figure~\ref{fig:chapter:certikos:kernel-context-switch-impl}) 
-into the kernel context map in the abstract data:
+Our thread management first introduces a context switching written in Assembly, of which the implementation is in Figure~\ref{fig:chapter:certikos:kernel-context-switch-impl}.
+We first abstracts a kernel context pool in a memory ($\codeinmath{KCtxtPool\_LOC}$ in Figure~\ref{fig:chapter:certikos:kernel-context-switch-impl}) 
+into a kernel context map in abstract data:
 \begin{lstlisting}[language = C, deletekeywords = {Context}]
 Definition KCtxt := regset.
 Definition KCtxtPool := ZMap.t KCtxt.
 \end{lstlisting}
-By using that, we provide the layer interface that contains the kernel context switching as its primitive,
+By using that, we provide a layer interface that contains a kernel context switching as its primitive,
 \lstinputlisting[language = C, deletekeywords = Context]{source_code/certikos/kctxt_switch.v}
 which stores the kernel context of $\codeinmath{src}$ and returns the kernel context of $\codeinmath{des}$ as its result.
 
@@ -242,18 +243,19 @@ which stores the kernel context of $\codeinmath{src}$ and returns the kernel con
 \jieung{I need to decide whether I will add this subsubsection or not}
 \subsubsection{User Context Switching}
 
-A few layers introduce the user context that contains the list of user registers that we save and restore when 
-the context switching happens between users and the kernel (via trap and system calls.)
-Similar to the case of kernel context switching, $\certikos$ models the user context in the abstract data and verifies the functionality of user context switching. 
-However, it differs from  kernel context switching.
+A few layers introduce a user context that contains the list of user registers that we save and restore when 
+a context switching happens between users and the kernel (via trap and system calls.)
+Similar to the case of a kernel context switching, $\certikos$ models a user context in abstract data and verifies the functionality of this user context switching. 
+However, it differs from a kernel context switching.
 User context switching specifications in $\certikos$ only describes the saves and restores of the second half of the full context switching.
 The hardware has responsibilities for the first half, which will automatically save and restore them.
 
 
+
 \subsubsection{Abstract Queue Library}
 
-The abstract queue with having a FIFO property works as bases of multiple crucial services of $\certikos$. 
-The thread management and  CV (via sleep and wake-up) in our kernel heavily rely on this abstract queue library. 
+An abstract queue with having a FIFO property works as bases of multiple crucial services of $\certikos$. 
+A thread management and  CV (via sleep and wake-up) in our kernel heavily rely on this abstract queue library. 
 The implementation of this abstract queue uses 
 doubly linked lists; thus, each node in the lists is defined as 
 \begin{lstlisting}[language = C, multicols=2]
@@ -264,7 +266,7 @@ uint head; uint tail; };
 Inductive TDQueue :=
 | TDQUndef | TDQValid (head tail: Z).   
 \end{lstlisting}
-To provide the simple interface for the queue, 
+To provide a  simple interface for this queue, 
 we abstracts the queue state as $\coq$ lists as
 \begin{lstlisting}[language = C]
 Inductive AbQueue := | AbQUndef | AbQValid (l: list Z).
@@ -289,19 +291,19 @@ Function enqueue_atomic_spec (n i: Z) (adt: RData): option RData :=
   | _ => None
   end.
 \end{lstlisting}
-and provide the atomic interface for the queue by using the \textit{log-lift} pattern in $\ccalname$.
+and provide an atomic interface for the queue by using a \textit{log-lift} pattern in $\ccalname$.
 
 
 \subsubsection{Thread Management}
-The thread-management module introduces the  thread-control block, 
+Our thread-management module introduces a  thread-control block, 
 that contains the status of each thread (\ie, ready, run, \etc)
 as well as other information for the thread, including the information about its quotas, parent, and children.
 
-The thread scheduler is associated with thread primitives; yield, sleep, and wake-up, which uses the kernel context switching and the abstract queue library. 
+A thread scheduler is associated with thread primitives; yield, sleep, and wake-up, which uses a kernel context switching and an abstract queue library. 
 Each CPU has a private ready queue and a shared pending queue (for our condition variable).
-The ready queue is private to each CPU, so, operations on the ready queue are only allowed by the owner of the queue.
+This ready queue is private to each CPU, so, operations on the ready queue are only allowed by the owner of the queue.
 On the other hand, other CPUs in the system can insert threads to the current CPU’s pending queue. 
-The $\certikos$ kernel also provides a set of sleeping queues, which are shared among all CPUs.
+$\certikos$  also provides a set of sleeping queues, which are shared among all CPUs.
 Each sleeping queue is associated with its condition variable (CV).
 
 The \textit{yield} primitive works with three operations:
@@ -330,7 +332,7 @@ and then creates the child by giving the new thread ID to it.
 The thread then adds the newly created child at the end of the ready queue of the CPU and tells the CPU that the parent and child belong to it.
 As seen in these scheduling procedures, we do not allow the thread migration from one CPU to another.
 
-Like what our layers do for other shared primitives, $\certikos$ provides the layer interface ($\PBThrd$)
+Like what our layers do for other shared primitives, $\certikos$ provides a layer interface ($\PBThrd$)
 that contains atomic specifications for all scheduling-related primitives. 
 The layer, $\PBThrd$, also merges all separate logs\footnote{Note that we divide the global log into multiple individual logs is associated with the corresponding shared objects from $\mmcsbootfull$. The division is for the simplicity of our layer building, but we have to merge them into the single global log for multithreaded linking. We mentioned this several times in Chapter~\ref{chapter:mcs-lock} and Chapter~\ref{chapter:linking}} 
 into a single log to provide the top-most layer of our per-CPU modules (and thus the base layer for our multithreaded linking).
@@ -353,8 +355,8 @@ Figure~\ref{fig:chapter:certikos:proc-create-cpu-spec} and Figure~\ref{fig:chapt
 \subsection{Connecting All per-CPU layers}
 \label{chapter:certikos:subsec:connecting-all-per-cpu-layers}
 
-We have introduced 60 layers for all those modules in our per-CPU layers, from the $\mmcsbootfull$ layer to the 
-$\PBThrd$ layer.
+We have introduced 60 layers for all those modules in our per-CPU layers, from a layer $\mmcsbootfull$  to a layer 
+$\PBThrd$.
 They can be linked together via the composition rules described in Section~\ref{chapter:ccal:subsec:linking},
 thus forming a single contextual refinement theorem, which is defined in Theorem~\ref{theorem:chapter:certikos:per-cpu-contextual-refinement},
 corresponding to number (1) in Figure~\ref{fig:chapter:certikos:idea-of-dividing-certikos-with-formal-def}.

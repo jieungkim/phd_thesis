@@ -25,9 +25,9 @@ attackers cannot break into all systems even if they take control of parts of th
 $\certikos$ also contains various shared objects protected by 
 the low-level shared object that provides protection--spinlock modules.
 It provides two lock implementations, Ticket and MCS, with the same high-level interface for them. 
-Based on that, , 
+Based on that, 
 multiple shared objects are implemented, which include
-sleep queues (SleepQ, which is for condition variable), message queues (MsgQ, which is for working up on a thread on another CPU), memory-management modules (Container, PMM, VMM), an IPC module with supporting synchronizations via condition variables, \etc
+sleep queues (SleepQ, which is for condition variable), message queues (MsgQ, which is for working up on a thread on another CPU), memory-management modules (Container, PMM, VMM), an a IPC module with supporting synchronizations via condition variables, \etc
 It also contains a per-core services including per-core scheduler (that can communicate with MsgQ and SleepQ), a process-management module,
 a virtual machine monitor (VM). 
 Each thread also contains its private states, TCB (thread control block, thread management, context, and so on. 
@@ -35,9 +35,9 @@ Each thread also contains its private states, TCB (thread control block, thread 
 With this operating system, 
 we hope to prove  the correctness of our operating system's behavior with any context programs run on top of it.
 We  built the operating systems in a layered structure to provide the highest-level layer interface that hides most details of OS implementation and
-works as a transition machine for the user programs, thus preserving the behavior of our operating systems.  
+works as a transition machine for the user programs, thus preserving the behavior of our operating system.  
 In this sense, providing this layer interface requires us 
-to prove the contextual refinement between the $\certikos$ implementation with the bare machine (Intel Core i7) and 
+to prove a contextual refinement between our $\certikos$ implementation with a bare machine (Intel Core i7) and 
 the top-most layer for our OS layers ($\codeinmath{TSyscall}$, the layer that defines system calls as its primitives).
 Informally, we wants to prove that
 \begin{quote}
@@ -56,11 +56,11 @@ which involves not only contextual refinement proofs between multiple local laye
 different machine models and focused sets\footnote{We omit explanations about some notations in here for simplicity, but later sections in this chapter explain them.}
 
 To  prove that, we first decompose the full $\certikos$ into two parts--per-thread $\certikos$ ($\certikos_{\codeinmath{td}}$) and per-CPU $\certikos$ ($\certikos_{\codeinmath{cpu}}$)
-Then, we can prove that those two program parts satisfy the contextual refinement property by using the proofs for each layer, 
+Then, we can prove that those two program parts satisfy contextual refinement theorems by using proofs for all layers,
 along with our multilayer-linking library described in Section~\ref{chapter:ccal:subsec:linking}. 
 Next, we can link those two proofs with the multithreaded linking described in Section~\ref{chapter:linking:sec:multithreaded-linking}. 
 This gives us a theorem for the contextual refinement of the entire $\certikos$ kernel. 
-However, it is still insufficient to argue that this is an end-to-end theorem because its bottom-level machine model is a per-CPU local-layer machine, 
+However, it is still insufficient to argue that this is an end-to-end theorem because its bottom-level machine model is still a per-CPU local-layer machine, 
 which is a sequential-like machine based on the machine model of 
 $\compcertx$.  % (the "mboot" layer).
  Therefore, we propagate the contextual refinement theorem all the way down to the non-deterministic $\intelmachine$ 

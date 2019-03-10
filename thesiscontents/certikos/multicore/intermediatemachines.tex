@@ -87,13 +87,13 @@ Figure~\ref{fig:chapter:certikos:multicore-machine-model-instances} (c) and (d) 
 we instantiate single core semantics--which corresponds to the abstract machine in Section~\ref{chapter:linking:subsec:single-core-machine-model}.
 We omit the details, but they are defined in a similar manner to those definitions in Figure~\ref{fig:chapter:certikos:multicore-machine-model-instances} (a) and (b). 
 Other abstract machine models 
-in Section~\ref{chapter:linking:sec:multicore-linking} also can be defined 
+in Section~\ref{chapter:linking:sec:multicore-linking} also can be defined in
  the same way. 
 We also prove that all machine models 
 are receptive--producing at most a single event per one evaluation--as well as deterministic, 
 except for the multicore machine model because it is a non-deterministic machine model by nature.
 For example, 
-we shows that
+we show that
 our single-core machine model satisfies the following three properties:
 \begin{lstlisting}[language=C]
 Lemma si_sem_single_events  (pl: program): single_events (single_semantics pl).

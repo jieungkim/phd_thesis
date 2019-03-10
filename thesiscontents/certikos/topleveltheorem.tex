@@ -98,9 +98,9 @@ Refinement proofs & 3,300 & Top-level theorem & 100\\
 Table~\ref{table:multicore-evaluation} shows LOC information of $\certikos$ multicore linking.
 Instantiating hardware configurations and auxiliary definitions requires 750 lines of code. 
 By using them, providing concrete machine models is straightforward.
-However, due to the multiple numbers of intermediate machine models and the definitions that we have to provide for those machine models to fit them into $\compcert$ style semantics, the process requires 2,600 lines of code, which implies that 260 lines of code per one machine model.
+However, due to multiple numbers of intermediate machine models and  definitions that we have to provide for those machine models to fit them into $\compcert$ style semantics, the process requires 2,600 lines of code, which implies that 260 lines of code per one machine model.
 However, those definitions are quite similar to others, so providing them requires a small amount of time. 
-Lines of code information to provide refinement proofs between those intermediate languages has a similar manner to that of giving those concrete machine models. 
+Lines of code information to provide refinement proofs between the program on $\mmcsbootfull$ with those intermediate languages has a similar manner to that of giving those concrete machine models. 
 It requires us to write 3,300 lines of code, which implies that 300 lines of code per one for providing refinement proofs between two intermediate languages. 
 Most of those lines of code are to adjust generic proofs in our framework to make them fit into the $\compcert$ style backward simulation proof. 
 Those parts also contain similar proofs from others, so there is a room for improvement by providing a way to simplify or automatically generate those redundant parts. 
@@ -126,15 +126,15 @@ Connecting per-CPU layer & 23,000 & Top-level theorem & 190\\
 \hrulefill
 \end{table}
 Table~\ref{table:multithreaded-evaluation} shows LOC information of $\certikos$ multithreaded linking.
-Instantiating all auxiliary functions as well as defining new specifications and memory accessor definitions is a tedious task because
-we have to write all specifications for all primitives in the intermediate layer $\PHBThrd$. 
+Instantiating all auxiliary functions as well as defining new specifications and memory accessor definitions is a tedious task since
+we have to write all specifications for all primitives in $\PHBThrd$. 
 It requires us to write  7,000 LOC. 
-Connecting this   intermediate layer with the bottom layer in a per-thread machine ($\PHThrd$) and 
-connecting this with the top layer in a per-CPU machine ($\PBThrd$) require us 
-to provide the concrete evidence for $\AbsRelT$ and $\AbsRelC$ per each primitive, respectively.
-It requires a huge amount of proof, and it needs us to write 6,700  and 23,000 lines of code.
-However,  we can assume that the effort per each primitive is not huge because 
- we have approximately 65 primitives in the layer $\PHBThrd$.
+Connecting this  intermediate layer with the bottom layer in per-thread interfaces ($\PHThrd$) and 
+connecting this with the top layer in per-CPU interfaces ($\PBThrd$) require us 
+to provide concrete evidence for $\AbsRelT$ and $\AbsRelC$ per each primitive, respectively.
+These steps require a huge amount of proofs, and we write 6,700  and 23,000 lines of code for them. 
+However,  we can assume that the effort per each primitive is reasonable because 
+ we have approximately 65 primitives in $\PHBThrd$, which implies that  $\PBThrd$ and $\PHThrd$ contains around 57 primitives including yield and sleep functions.
 
 \begin{table}
 \begin{center}

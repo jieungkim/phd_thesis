@@ -2,7 +2,7 @@
 \label{chapter:certikos:phbthread}
 
 Building intermediate layers to facilitates our multithreaded-linking framework 
-for $\certikos$ first requires the concrete definitions 
+for $\certikos$ first requires  concrete definitions 
 that the layer relies on--thread configurations as well as auxiliary functions in Section~\ref{chapter:linking:subsec:multithreaded-machine-model}.
 
 \begin{figure}
@@ -63,18 +63,18 @@ Global Instance single_data : SingleData := {
 
 Providing abstract data types in  Figure~\ref{fig:chapter:linking:thread-configurations} is an initial step 
 toward connecting our multithreaded-linking framework with $\certikos$,
-and it requires us to divide the abstract data in $\certikos$.
-The part of abstract data ($\codeinmath{RData}$) in $\PBThrd$
-is defined in Figure~\ref{fig:chapter:certikos:abstract-data-for-pbthread-layer}, 
-which contains the field for a container tree, page table pool, global log, and user context, \etc.
+and it requires us to divide abstract data in $\certikos$.
+Parts of abstract data ($\codeinmath{RData}$) in $\PBThrd$
+are in Figure~\ref{fig:chapter:certikos:abstract-data-for-pbthread-layer}.
+The figure contains fields for a container tree, a page table pool, a global log, \etc.
 We explain several parts of them in Section~\ref{chapter:certikos:sec:per-cpu-modules}. 
-Dividing the abstract data into two parts by distinguishing 
-each field into either a shared datum or a private datum 
-requires a full understanding of the behavior of all primitives in $\certikos$;
+Dividing  abstract data into two parts by distinguishing 
+each field into either a part of shared data or private data
+requires a full understanding of  behaviors of all primitives in $\certikos$;
 thus, we faced multiple trial-and-error.
-The parts of proper division on the abstract state are in Figure~\ref{fig:chapter:certikos:single-data-of-multithreaded-linking-certikos},
+Parts of proper division on our abstract state are in Figure~\ref{fig:chapter:certikos:single-data-of-multithreaded-linking-certikos},
 which implies that 
-all threads share the information about the current CPU ID, thread ID, the global log for the shared state,
+all threads share information about the current CPU ID, thread ID, the global log for the shared state,
 and the status of initialization of the current system. 
 However, they have separate data structures 
  for containers, permission tables for all pages in the memory, 
@@ -82,6 +82,7 @@ However, they have separate data structures
  It implies that 
  each thread cannot look up the global permission table (\ie, the table that tells which pages are already allocated to some threads),
  other threads' page-map table, or the communication information (IPC channel) that is not associated with the thread.
+
 
 \begin{figure}
 \begin{lstlisting}[language=C, deletekeywords={int}]
@@ -136,11 +137,11 @@ Program Instance s_oracle_prf : SingleOracle <@$\cdots$@>:= {
 \label{fig:chapter:certikos:auxfunctions-of-multithreaded-linking-certikos}
 \end{figure}
 
-All auxiliary functions in Figure~\ref{fig:chapter:conlink:multithreaded-linking-aux-functions}  also must be defined 
+All auxiliary functions in Figure~\ref{fig:chapter:conlink:multithreaded-linking-aux-functions}  also have to be defined 
 properly, and Figure~\ref{fig:chapter:certikos:auxfunctions-of-multithreaded-linking-certikos} shows
 those function definitions in $\certikos$. 
-A key purposes of providing them is to assign an adequate initial value and state to each thread.
-The \lstinline$prim_thread_init_pc$ provides the proper initial program counter for each thread, 
+Key purposes of providing them are to assign an adequate initial value and state to each thread.
+The \lstinline$prim_thread_init_pc$ function provides the proper initial program counter for each thread, 
 when assuming that there exists a proper function pointer \lstinline$START_USER_FUN_LOC $ 
 of the main function for the thread.
 Multiple functions are also presented to define \lstinline$thread_init_dproc$, the function that calculates the initial private state for each thread. 
@@ -150,11 +151,11 @@ calling \lstinline$cal_init_dproc$.
 The behavior of  \lstinline$cal_init_dproc$ regarding updating the container information for the newly created thread is similar to the behavior 
 of the process-create function specification in $\PBThrd$ (see line 11
 Figure~\ref{fig:chapter:certikos:proc-create-cpu-spec}).
-The \lstinline$has_event$ is associated with the intermediate machine definitions in Section~\ref{chapter:linking:sec:multithreaded-linking}
+The \lstinline$has_event$ function is associated with  intermediate machine definitions in Section~\ref{chapter:linking:sec:multithreaded-linking}
 and checks 
-whether the primitive call will update the shared state or not.
+whether each primitive call will update the shared state or not.
 For example, $\pallocfunc$, \lstinline$pt_resv$, and \lstinline$proc_create$ must
-trigger the event during their evaluations because they modify parts of shared states
+trigger  proper events during their evaluations because they modify parts of shared states
 among threads.
 
 
@@ -207,20 +208,20 @@ Function single_big_proc_create_spec (d: PData) (b b<@$'$@> buc: block) (ofs_uc:
 
 Using the illustrated definitions, we provide the concrete instance of $\TLink$ in our multithreaded linking,
 which is layer $\PHBThrd$. 
-It requires a lot of work because the  
-$\PHBThrd$ layer is based on the different state definition with the state that 
+It requires a lot of work because a layer  
+$\PHBThrd$  is based on a different state definition with the state that 
 $\PBThrd$ uses,
 but $\PHBThrd$ has to contain all primitives (except scheduling primitives)
 that $\PBThrd$ contains.
 In this sense, 
 we re-define specifications for all primitives to build $\PHBThrd$; thus, it explores the size of the code in the multithreaded-linking part of $\certikos$.
-Figure~\ref{fig:chapter:certikos:proc-create-cpu-spec-phbthred} shows the specification for the process-create primitive in the $\PHBThrd$ layer.
+Figure~\ref{fig:chapter:certikos:proc-create-cpu-spec-phbthred} shows the specification for the process-create primitive in $\PHBThrd$.
 Compared to the specification in $\PBThrd$ in Figure~\ref{fig:chapter:certikos:proc-create-cpu-spec},
  it does not modify the child's local state while it updates the 
- parent's state, the specification in $\PBThrd$.
+ parent's state, unlike the specification in $\PBThrd$ does.
 The modification (dynamic initialization) of the child's initial state is a responsibility of the child by using auxiliary functions in Figure~\ref{fig:chapter:certikos:auxfunctions-of-multithreaded-linking-certikos}.
-This  requires a lot of work but is scalable.
-Adding a primitive in both layers only defines the specifications for the newly added primitive.
+Again, providing this intermediate layer  requires a lot of work but is scalable.
+Adding a primitive in both layers only requires us to define  specifications for the newly added primitive.
 
 
 \subsubsection{Contextual Refinements}
@@ -229,9 +230,9 @@ Contextual refinement between the program with $\PBThrd$ on $\lasmmach$ and
  needs to facilitate Lemma~\ref{lemma:chapter:conlink:parallel-composition}, 
  which requires us to instantiate all evidences for elements in $\AbsRelC$ (\eg, 
  Figure~\ref{fig:chapter:conlink:two-cases-of-abs-rel-c}).
-The abstract relation relies on the relation between  \lstinline$EData$ (of $\easmmach$) and \lstinline$RData$ (of $\lasmmach$),
+This abstract relation relies on a relation between  \lstinline$EData$ (of $\easmmach$) and \lstinline$RData$ (of $\lasmmach$),
 which specifies the relation between a set of thread states and a single per-CPU state. 
-Providing the definition is another task that requires enormous efforts 
+Providing this definition is another task that requires enormous efforts 
 because it must reflect how
 all primitives and transitions modify all parts of the state.
 Figure~\ref{fig:chapter:certikos:absrelc-of-multithreaded-linking-certikos} provides
@@ -316,7 +317,7 @@ Record relate_RData (kctxt_val : KContext) (hadt : RData) (sd : sharedData) (pd 
  the program with $\PHThrd$ on $\hasmmach$
  needs to facilitate Lemma~\ref{lemma:chapter:conlink:tasm-refines-hasm}.
 However, providing the instance of $\AbsRelT$ is more straightforward than it is for  $\AbsRelC$;
-it again depends on the refinement relation between the state definition of $\tasmmach$ and that of $\hasmmach$,
+it again depends on the refinement relation between  state definitions of $\tasmmach$ and $\hasmmach$,
 which is much simpler than providing the refinement relation for  $\AbsRelC$.
 Because the abstract data of $\tasmmach$ only contains one private abstract state ($\codeinmath{dproc}$) and 
 a shared abstract state ($\codeinmath{sharedData}$), 
@@ -328,7 +329,6 @@ By providing this refinement relation,
 we again give the instance for $\AbsRelT$ by proving 
 that each transition on both machines satisfies the property stated in $\AbsRelT$,
 which is mainly focused on the case analysis on the primitives in  $\PHBThrd$ and $\PHThrd$.
-
 
 \jieung{I can add (a little bit formal definition for AbsRelT adn AbsRelC, which shows the type of them (only for proc creates case?)}
 

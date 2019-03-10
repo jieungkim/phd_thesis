@@ -25,19 +25,19 @@ which implies a full thread set on CPU $cid$.
 
 The proof for Theorem~\ref{theorem:chapter:certikos:contextual-refinement-theorem-in-certikos-multithreaded-linking} 
 can be divided into multiple sub-lemmas, each of which is a backward-simulation proof 
-that facilitates the refinement theorems in Section~\ref{chapter:linking:sec:multithreaded-linking}. 
+that facilitates  refinement theorems in Section~\ref{chapter:linking:sec:multithreaded-linking}. 
 The overall structure of the proof is in Figure~\ref{fig:chapter:certikos:multithreaded-connect-proof-overall-structure}, which is 
 similar to the multithreaded-linking framework structure (in Figure~\ref{fig:chapter:linking:multithreaded-linking-structure}) but does not rely on
-the abstract thread configuration, the abstract layers ($\TSched$, $\TLink$, and $\CSched$), or 
-the abstract relations between those layers ($\codeinmath{AbstractRel}$ and $\codeinmath{AbstractRelT}$).
+any abstract thread configurations,  abstract layers ($\TSched$, $\TLink$, and $\CSched$), or 
+ abstract relations between those layers ($\codeinmath{AbstractRel}$ and $\codeinmath{AbstractRelT}$).
 \begin{figure}
 \includegraphics[width=\textwidth, page=3]{figs/certikos/concurrent_linking}
 \caption{Multithreaded-Linking Structure in $\certikos$.}
 \label{fig:chapter:certikos:multithreaded-connect-proof-overall-structure}
 \end{figure}
-However, providing concrete definitions for those abstract definitions is tedious and requires a lot of proof efforts. 
+However, providing concrete instances for those abstract definitions is tedious and requires a lot of proof efforts. 
 Our future direction is to reduce the cost of multithreaded linking by minimizing the cost for building 
-those abstract definitions. 
+them.
 
 %
 %\begin{lstlisting}[language=C]

@@ -13,8 +13,8 @@ For example,
 fetch-and-increase or compare-and-swap functions are atomic operations that are crucial for building a 
 concurrent object by providing the lowest-level atomicity. 
 However, they are not supported by $\compcert$'s instructions.
-Our bottom (TCB) layer, $\mmcsbootfull$, is the parameter of the machine model for $\compcertx$ 
-and provides those  primitives to give  extra transition rules for the state of $\compcertx$.
+Our bottom (TCB) layer, $\mmcsbootfull$, works as a parameter of a machine model for $\compcertx$ 
+and provides those  primitives to give  extra transition rules on the state of $\compcertx$.
 %
 %\begin{figure}
 %\begin{lstlisting}[language=C]
@@ -125,7 +125,7 @@ we define ``\lstinline$OtherEvent$'' as follows:
 // The instance that implements <@${\color{red}  \mcevent}$@>
 Inductive OtherEvent := | OINC_TICKET (n: nat) <@$\cdots$@> 
 \end{lstlisting}
-The definition maps the atomic operation in layer $\mmcsbootfull$ into each single event in our hardware configuration.
+The definition maps each atomic operation in layer $\mmcsbootfull$ into each single event in our hardware configuration.
 For example, \lstinline$OINC_TICKET (n: nat)$ corresponds to the fetch-and-increase primitive,
 
 In addition, \lstinline$OtherEvent_2_ident$ is an instance for the $\atomiceventidentkwd$ function, which is the function
@@ -209,25 +209,25 @@ All our abstract languages in Section~\ref{chapter:linking:sec:multicore-linking
 also rely on the abstract transition rules ($\hardwaresemantics$) for 
 $\privatecmdkwd$, $\atomiccmdkwd$, $\acqsharedcmdkwd$, and $\relsharedcmdkwd$ commands, and the special auxiliary function to get a program counter ($\programcounterkwd$) from the current state.
 Similar to the previous definitions, 
-it also facilitates the layer definition (the $\codeinmath{mboot}$ layer), 
+it also facilitates the layer definition ($\codeinmath{mboot}$), 
 and machine model of $\compcertx$, $\lasmmach$.
 For example, the core part of the program counter command definition for the fetch-and-increase function call is defined in Figure~\ref{fig:chapter:certikos:definitions-for-hw-abstract-semantics} (a), which is associated with the case when the current function pointer is pointing out the \lstinline$atomic_FAI$. 
 In the rule, \lstinline$(ge :genv)$ stands for the global environment that contains the 
-global information such as the function names--global variables of the whole programs--which 
+global information such as function names--global variables of the whole programs--which 
 is necessary for us to divide the full program into multiple components without keeping the information 
 about the entire program context.
 
+
 Similarly, all abstract transition rules   ($\hardwaresemantics$)  in  Figure~\ref{fig:chapter:conlinkg:abstract-hardware-configuration-and-semantics}.
 are defined 
-by slightly modifying the step relation in $\compcertx$ as well as  using the case analysis for the primitive identifiers. 
+by slightly modifying the step relation in $\compcertx$ as well as using the case analysis for the primitive identifiers. 
 For instance, the transition rule for the $\acqsharedcmdkwd$ is defined in Figure~\ref{fig:chapter:certikos:definitions-for-hw-abstract-semantics} (b), which updates the program counter in the private state
-and  updates the shared log (note that the shared log is a part of our abstract state in our implementation).
+and updates the shared log (note that the shared log is a part of our abstract state in our implementation).
 Similarly, the atomic execution rule is in Figure~\ref{fig:chapter:conlinkg:abstract-hardware-configuration-and-semantics} (c),
-which gets the global environment (\lstinline$ge$), current CPU ID (\lstinline$cid$),  identifier for the atomic primitive
-(\lstinline$id$),  local state (\lstinline$(State rs m)$),
-and  shared log (\lstinline$sl$) and returns the updated local state (\lstinline$(State rs_res m_res)$) as well as an event (\lstinline$e$) generated during the evaluation of the primitive.
+which gets a global environment (\lstinline$ge$), a current CPU ID (\lstinline$cid$),  an identifier for the atomic primitive
+(\lstinline$id$),  a local state (\lstinline$(State rs m)$),
+and a shared log (\lstinline$sl$) and returns a newly updated local state (\lstinline$(State rs_res m_res)$) as well as an event (\lstinline$e$) generated during the evaluation of the primitive.
 This type is identical to the type of $\atomicstepkwd$ in $\hardwaresemantics$ of Figure~\ref{fig:chapter:certikos:hardware-local-step-transition-rules}.
-
 
 \begin{figure}
 \begin{lstlisting}[language=C]
@@ -250,12 +250,12 @@ Global Program Instance hdsem : HardSemantics (hdset:= hdseting) := {
 
 With similar transition rules for $\relsharedcmdkwd$ and $\privatecmdkwd$,
 Figure~\ref{fig:chapter:conlinkg:abstract-hardware-configuration-and-semantics}
-show the instance of $\hardwaresemantics$, which is defined in Figure~\ref{fig:chapter:certikos:hardware-local-step-transition-rules}. 
-We also proved basic properties of those transition rules in Figure~\ref{fig:chapter:conlink:properties-of-abstract-hardware-semantics-for-multicore-linking}.
-Most of them are straightforward because our instances use the definitions in the machine model of $\compcertx$,
-which already contains the deterministic properties. 
+shows the instance of $\hardwaresemantics$, which is defined in Figure~\ref{fig:chapter:certikos:hardware-local-step-transition-rules}. 
+We also prove basic properties of those transition rules in Figure~\ref{fig:chapter:conlink:properties-of-abstract-hardware-semantics-for-multicore-linking}.
+Most of them are straightforward because our instances use  definitions in the machine model of $\compcertx$,
+which already contains  deterministic properties. 
 
-Note that we are using the assembly model  in $\compcertx$ for $\intelmachine$; thus, it implies that 
+Note that we are using an assembly model  in $\compcertx$ for $\intelmachine$; thus, it implies that 
 our instance for this hardware configuration is   part of a practical $\intelmachine$ multicore machine,
 that has a subset of its instructions (but sufficiently rich for building operating systems) with a small TCB, 
 and follows the sequentially consistent evaluation order for the memory consistency. 
