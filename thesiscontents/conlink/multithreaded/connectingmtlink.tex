@@ -17,6 +17,67 @@ all our refinement lemmas is an
 easy task when we adequately provide those definitions, similar to the multicore-linking framework mentioned in Section~\ref{chapter:linking:subsec:linking-with-the-layer-on-local-layer-interface}.
 We explain this by providing our $\coq$ implementation in the next chapter.
 
+
+
+
+\section{Evaluation}
+
+\begin{table}
+\begin{center}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\tabcolsep}{0.3em}
+\begin{tabular}{|c|c|}
+\hline
+Components  & LOC\\
+\hline
+\hline
+Basic library & 400 \\
+\hline
+Auxiliary functions and machine model definitions & 1,600 \\
+\hline
+Refinement proofs & 1,500 \\
+\hline
+\end{tabular}
+\end{center}
+\caption{Statistics for Multicore Linking Framework}
+\label{table:multicore-linking-evaluation}
+\hrulefill
+\end{table}
+
+This section briefly provides lines of code information of our concurrent linking framework. 
+Table~\ref{table:multicore-linking-evaluation} shows statistics of our multicore  linking framework. 
+Basic library in the table implies the cod that are related to lemmas that we have introduced to ease our refinement proofs easy in multicore linking framework. 
+To provide auxiliary definitions including abstract hardware configurations, hardware step rules, as well as multiple intermediate machine models, we had to write 1,600 lines of code.
+Besides, refinement proof templates between those intermediate languages require us to write 1,500 lines of code. 
+\begin{table}
+\begin{center}
+\renewcommand{\arraystretch}{1.1}
+\setlength{\tabcolsep}{0.3em}
+\begin{tabular}{|c|c|}
+\hline
+Components  & LOC\\
+\hline
+\hline
+Auxiliary functions and thread configurations & 2,200 \\
+\hline
+Language definitions & 1,800 \\
+\hline
+Refinement proofs & 7,100 \\
+\hline
+\end{tabular}
+\end{center}
+\caption{Statistics for Multithreqded Linking Framework}
+\label{table:multithreaded-linking-evaluation}
+\hrulefill
+\end{table}
+In the case of our multithreaded linking framework, Table~\ref{table:multithreaded-linking-evaluation} shows statistical information about our implementation. 
+Since this multithreaded linking framework involves low-level hardware definitions in our framework, it requires relatively big lines of code when compared to our multicore linking framework. 
+Defining auxiliary functions and thread configurations is done with 2,200 lines of code, and this part also includes multiple proofs related to auxiliary definitions. 
+Providing four intermediate languages is done with   1,800 lines of code, and providing generic refinement proofs between those intermediate machine models is done with 7,100. 
+Those definitions and proofs are not associated with any concrete layer definitions that may be specific to programs. 
+Those proofs are quite generic enough to be applied to any layer definitions if it satisfies a few requirements that our framework relies on them.
+
+
 %
 %
 %%%

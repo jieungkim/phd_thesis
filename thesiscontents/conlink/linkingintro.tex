@@ -143,10 +143,10 @@ the theorem:
 $\ltyp{\PLayer{\mmcsbootfull}{cid}{\oracle_{mcs}}}{R_{mcs}}{\codeinmath{M}_{\codeinmath{mcslock}}}{\PLayer{L_{\mhmcslockopfull}}{cid}{\oracle^{lk}_{cid}}}$,
 \end{center}
 which means that ``any context program plus the implementation of MCS Lock ($\codeinmath{M}_{\codeinmath{mcslock}}$) runs on top of 
-  layer $\mmcsbootfull$ with CPU ID $cid$ and the environmental context $\oracle^{mcs}_{cid}$ \textit{contextually refines}
- the same context program runs on the of  layer $\mhmcslockopfull$ with CPU ID $cid$ and the environmental context $\oracle^{lk}_{cid}$.''
+ a  layer $\mmcsbootfull$ with a CPU ID $cid$ and an environmental context $\oracle^{mcs}_{cid}$ \textit{contextually refines}
+ the same context program runs on the of a  layer $\mhmcslockopfull$ with a CPU ID $cid$ and an environmental context $\oracle^{lk}_{cid}$.''
 However, the proof does not consider the program that runs with the whole CPUs in the system, so it is a partial-correctness statement. 
-To guarantee the full correctness of the program,
+To guarantee the full correctness of our program,
 we must provide the judgment that connects the program runs on the full concurrent machine with the program on this local layer interface. 
 In case of our MCS Lock operation, it is 
 %In this purpose, 
@@ -181,7 +181,7 @@ $\forall \codeinmath{P}. \ \semwmachine{L_{\codeinmath{full}}[D]}{\codeinmath{P}
 ,where $\codeinmath{mach}_{\codeinmath{local}}$ is a machine model that runs the layer with a singleton focused set (such as a machine model of $\compcertx$).
 \end{definition}
 {\noindent}
-In addition, proofs about the compositionality of our verification are highly desirable to show that multiple instances within it rely on  consistent assumptions that can be ruled out via other instances in the same system.  Formally, it is
+In addition, proofs about the compositionality of our verification are highly desirable to show that multiple instances within it relies on  consistent assumptions that can be ruled out via other instances in the same system.  Formally, it is
 \begin{definition}[Parallel Composition]
 \label{definition:conlink:parallel-composition}
 For any program $ \codeinmath{P}$, a full focused set for the system ($D$), a valid environmental context for the layer with the singleton focused set in $D$ ($\oracle^{\codeinmath{local}}_{i}$), and a layer $L_{\codeinmath{full}}$ and $L_{\codeinmath{local}}$ related with a certain 
