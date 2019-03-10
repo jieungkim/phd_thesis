@@ -31,7 +31,7 @@ which contains arbitrary active or available threads.
 Those threads are associated with their identifiers, and they do not need to be a sequence of consecutive numbers.
 For example, when the range of
 the thread identifier in the system is from 0 to 1023, 
-then, CPU 1 may be able to run threads that have thread IDs divisible by 8 (8, 16, \etc). 
+then, a CPU 1 may be able to run threads that have thread IDs divisible by 8 (8, 16, \etc). 
 %Each thread associated with the 
 %designated thread ID. 
 It is possible for threads to use the same identifier again, but we avoid this because it increases complexity without any remarkable benefits. 
@@ -320,7 +320,7 @@ This requires  match between the environmental step in Figure~\ref{fig:chapter:c
 based on  assumption about the progress of each thread. 
 The assumption says that 
 every thread will generate at least one event within finite steps,
-to machine the  single environmental step in Figure~\ref{fig:chapter:conlink:introduce-single-threaded-machine-model-with-iiasm}  (3)  with multiple private steps, plus a single step that generates an event in  Figure~\ref{fig:chapter:conlink:introduce-single-threaded-machine-model-with-iiasm}  (2).
+to connect the  single environmental step in Figure~\ref{fig:chapter:conlink:introduce-single-threaded-machine-model-with-iiasm}  (3)  with multiple private steps, plus a single step that generates an event in  Figure~\ref{fig:chapter:conlink:introduce-single-threaded-machine-model-with-iiasm}  (2).
 
 \begin{figure}
 \begin{center}

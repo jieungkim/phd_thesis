@@ -87,7 +87,7 @@ $}
 
 \subsubsection{Big-Step Oracle Query}
 
-Querying the environmental context after each local step is subtle when defining the local layer interface;
+Querying an environmental context after each local step is subtle when defining the local layer interface;
 thus, simplification is desirable. 
 We define two intermediate machine models for this optimization,
 which is presented in Figure~\ref{fig:chapter:conlink:single-core-big-step} based on the one, the fairness of the evaluation chance for each CPU, which is notated as $\timebound$. 
@@ -102,9 +102,9 @@ which is defined in the $\textsf{YIELD}$ rule in the $\singlebigstepkwd$.
 The $\singlebigtwostepkwd$ even merges the two rules in  $\singlebigstepkwd$ to simplify 
 the evaluation rule of the machine, which removes the boolean flag in the local view (as well as in  the definition of state $\rstatekwd$) 
 we added when introducing our hardware oracle (in Section~\ref{chapter:linking:subsec:multicore-machine-model-with-hardware-scheduler}) to indicate whether the current state is for the hardware scheduler or for the local evaluation.
-We, of course, provides the refinement lemmas between those machines.
+We, of course, provide the refinement lemmas between those machines.
 Similar to the previous steps, 
-we show  refinement proofs between those machine models,
+we show refinement proofs between those machine models,
 which are stated in Lemma~\ref{lemma:chapter:linking:one-step-big-refines-single} and Lemma~\ref{lemma:chapter:linking:one-step-big-p-refines-big}.
 %
 %\begin{figure}

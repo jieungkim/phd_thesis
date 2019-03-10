@@ -5,7 +5,7 @@
 
 The concurrent (environmental) machine model is a language that can run programs with a partially focused set in it,
 and it is associated with the concurrent layer interface in Section~\ref{chapter:ccal:subsec:concurrent-layer-interface}. 
-This machine model does not provide the interface for us to build layers on top of it (\eg, $\compcertx$ and its machine model), but it provides the key connection between the oracle machine model (and thus the multicore machine model) and a single CPU machine model
+This machine model does not provide the interface for us to build layers on top of it (\eg, $\compcertx$ and its machine model), but it provides the key connection between our oracle machine model (and thus our multicore machine model) and a single CPU machine model
 by treating parts of the system as an environment of the currently focused system. 
 
 \begin{figure}
@@ -57,13 +57,13 @@ l' = \listconsoppo{\yieldev{curid'}}{l_0} \\
 
 Figure~\ref{fig:chapter:conlink:multicore-env-step-machine} contains the state definition, 
 auxiliary functions, and step relations of the partial machine. 
-The state definition is almost same as the state definition in Figure~\ref{fig:chapter:conlink:multicore-machine-with-hardware-oracle},
+The state definition is almost the same as the state definition in Figure~\ref{fig:chapter:conlink:multicore-machine-with-hardware-oracle},
 which is the state for all cores.
-However, it differs from the state definition in our oracle machine in the sense the local state pool can be parameterized by any sets of CPUs, the focused set for the machine.
+However, it has a different state definition with our oracle machine in the sense the local state pool can be parameterized by any sets of CPUs, the focused set for the machine.
 Other CPUs outside of the focused set ($D - A$) and the hardware scheduler are treated as the environment of the machine. 
 To handle the steps by the environment of the machine, the step relation has the \textsf{SKIP} rule, 
 which queries the oracle to update the global log when the currently running CPU is not in the set $A$.
-This rule is  key to connecting the full machine semantics with the local machine semantics. 
+This rule is  a key to connecting the full machine semantics with the local machine semantics. 
 
 \subsubsection{Concurrent Machine Model with the Full CPU Set}
 
@@ -74,7 +74,7 @@ The refinement corresponds to the parallel composition rule for all CPUs. It pro
 match relation between two states defined in Figure~\ref{fig:chapter:conlink:parallel-composition-for-multicore} (with the 
 environmental variable $start\_cpu$, which is a start CPU ID for the system's evaluation).
 The relation is basically saying that all values in both states are identical when keeping the valid evaluation flag as well as the valid log condition. 
-With the definition, the proof for the lemma is straightforward, because the  evaluations of both machines are identical. 
+With the definition, the proof of this lemma is straightforward, because  evaluations of both machines are identical. 
 
 \begin{figure}
 
@@ -153,19 +153,19 @@ Figure~\ref{fig:chapter:conlink:parallel-composition-for-multicore} shows the fu
 \subsubsection{Concurrent Machine Model with a Single CPU}
 
 
-However, when  focusing on a single CPU
-multiple things to be considered to connect the environmental machine that uses the full CPU set  
+However, when  focusing on a single CPU,
+multiple things have to be considered to connect the environmental machine that uses the full CPU set  
 with the environmental machine that uses a single-focused set.
 It plays a crucial role 
 for our multicore linking because it proves that the multiple concrete steps  in the machine with the full CPU set can
- refine the evaluation of multiple environmental steps in the machine with a single CPU.
+ refine the corresponding evaluation of multiple environmental steps in the machine with a single CPU.
 The proof is sophisticated due to the mismatch between those two  states (even though they are 
 using the same concurrent machine model).
 To prove this theorem, 
-we first introduce the auxiliary function defined in Figure~\ref{fig:chapter:conlink:auxiliary-function-for-full-cpus-and-a-single-cpu},
+we first introduce one auxiliary function defined in Figure~\ref{fig:chapter:conlink:auxiliary-function-for-full-cpus-and-a-single-cpu},
 which measures the progress of the evaluation by the environment. 
 
-The evaluation on the machine with the full focused set does not evaluate the program with its $\textsf{SKIP}$ rule because all private states are associated with the all domain, all CPU IDs in the core set. 
+The evaluation on the machine with the full focused set does not evaluate the program with its $\textsf{SKIP}$ rule because all private states are associated with  all CPU IDs in the core set. 
 In this sense, the evaluation of the machine with the full-core set always generates two adjacent events regarding its scheduling. 
 On the other hand, the evaluation of the machine with a single focused set uses 
 $\textsf{SKIP}$ rules when the currently running CPU is not in the domain (is not equal to the focused CPU ID.)
@@ -222,8 +222,7 @@ the enviornmental machine model with a single-focused set and a full CPU set.}
 \end{figure}
 
 
-By using those auxiliary functions, we define the refinement relation between two machine states in Figure~\ref{fig:chapter:conlink:refinement-relation-for-full-cpus-and-a-single-cpu}, 
-which distinguish when the machine with the full-core set has to perform is evaluation.
+By using those auxiliary functions, we define the refinement relation between two machine states in Figure~\ref{fig:chapter:conlink:refinement-relation-for-full-cpus-and-a-single-cpu}.
 
 \begin{figure}
 \noindent\fbox{match state : $\envstatekwd_{[\set{cpuid}]} \rightarrow  \envstatekwd_{[\coreset]}  \rightarrow \mcprop$}
@@ -330,7 +329,7 @@ b = \bfalse \rightarrow  l = \listconsoppo{\yieldbackev{\_}}{\_})}
 
 
 Using the refinement relation, 
-we formally states the refinement lemma between two machines in Lemma~\ref{lemma:chapter:conlink:one-env-refines-env},
+we formally state the refinement lemma between two machines in Lemma~\ref{lemma:chapter:conlink:one-env-refines-env},
 which basically says that 
 multiple evaluations in the environmental machine with a single-focused CPU matches with certain multiple evaluations in the environmental machine with a full-core set.
 

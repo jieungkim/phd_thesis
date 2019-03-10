@@ -77,7 +77,7 @@ Inductive tstate: Type := | TState: Z -> regset -> mem -> dproc -> Log -> tstate
 \end{lstlisting}
 which is a tuple of five elements. 
 Those elements represent a current thread ID, 
-a register value for the thread, a local memory, a private abstract state, and a global log for shared objects. 
+a register value of the thread, a local memory, a private abstract state, and a global log for shared objects. 
 The state definition is identical to the each thread's view of the global state in $\ieasmmach$ an $\easmmach$ in the previous section. 
 This way,
 this machine can also use the same abstract layer definition, $\TLink$, 

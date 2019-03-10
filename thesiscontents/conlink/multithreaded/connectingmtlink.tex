@@ -2,7 +2,7 @@
 \label{chapter:linking:subsec:connecting-with-thread-local-machine-model}
 
 We define multiple intermediate languages for multithreaded linking in this section.
-We  also provide the refinement proofs between those intermediate languages, which can be further used to link those languages and proofs  
+We  also provide  refinement proofs between those intermediate languages, which can be further used to link those languages and proofs  
 with proper instances for thread configurations, auxiliary functions, and
 concrete layer definitions,
 which are the parts that correspond it to the grey box in Figure~\ref{fig:chapter:conlink:concurrent-linking-structure} (b) as well as 
@@ -45,10 +45,10 @@ Refinement proofs & 1,500 \\
 \end{table}
 
 This section briefly provides lines of code information of our concurrent linking framework. 
-Table~\ref{table:multicore-linking-evaluation} shows statistics of our multicore  linking framework. 
-Basic library in the table implies the cod that are related to lemmas that we have introduced to ease our refinement proofs easy in multicore linking framework. 
+Table~\ref{table:multicore-linking-evaluation} shows the statistics of our multicore linking framework. 
+The basic library contains multiple basic lemmas that is useful for us to use them in multiple places of our multicore linking proofs. 
 To provide auxiliary definitions including abstract hardware configurations, hardware step rules, as well as multiple intermediate machine models, we had to write 1,600 lines of code.
-Besides, refinement proof templates between those intermediate languages require us to write 1,500 lines of code. 
+Besides, refinement proof templates between those intermediate languages require us to write 1,500 lines of code.
 \begin{table}
 \begin{center}
 \renewcommand{\arraystretch}{1.1}

@@ -34,7 +34,7 @@ When the status is \lstinline$Available$, it implies that the thread is a member
 When the thread associated with this status initially achieves the evaluation control, it calculates its own initial state by using 
 auxiliary functions. 
 With the full focused set, for example, the main thread is initialized with the \lstinline$Running$ flag as well as the proper register values (\ie, including the initial program counter for the system),
-but other threads in the full focused set are initialized with the   the \lstinline$Available$ flag.
+but other threads in the full focused set are initialized with    the \lstinline$Available$ flag.
 Lastly, when the thread is  \lstinline$Environmnet$, 
 this implies it is neither running nor a member of the current focused set. 
 %They are 
@@ -124,7 +124,7 @@ With this state definition, $\easmmach$ defines its transition rules that change
 Two transition rules that correspond to the two rules in $\lasmmach$ in Figure~\ref{fig:chapter:linking:eval-rule-in-lasm}
 are presented in Figure~\ref{fig:chapter:linking:eval-rule-in-easm-normal}.
 When compared to the rules in $\lasmmach$,
-the rules in $\easmmach$ look up the thread state pool and the thread private state pool 
+those rules in $\easmmach$ look up the thread state pool and the thread private state pool 
 to extract the proper state for the evaluation.
 In addition, the evaluation rule for external calls checks the primitive ID to ensure that 
 the primitive ID is neither $\yield$ nor $\sleep$. 
@@ -332,18 +332,18 @@ external_call_match_has_event:
 \end{figure}
 
 Providing the refinement proof for the program with $\CSched$ on $\lasmmach$ and the program with $\TLink$ on $\easmmach$ (Figure~\ref{fig:chapter:conlink:parallel-composition-in-easm})
-should require relying on the detailed information of those two layer definitions.
+should require relying on the detailed information about those two layer definitions.
 A straightforward condition is about the domain of the primitive of those two layers, which we described in Definition~\ref{definition:chapter:conlink:same-domain-sched-tlink}. 
 In addition,
 users determine the specifications of those primitives when providing the concrete layer definitions. 
-In this sense, defining the form the users must follow when they specify those layers
+In this sense, defining the form that the users must follow when they specify those layers
 is useful for the users as well as for proving the refinement theorem without thoroughly depending on the concrete layer definitions that users can fill out.  
 In this purpose, we define an abstract relation--$\AbsRelC$--which describes the minimum criteria they must follow for each primitive that users will provide in their layers.
 The relation is based on the relation of two abstract states (\lstinline$match_EData_RData$) in two different machines, which has a
 type ``\lstinline$EData -> Log -> RData -> Prop$'' and shall be specified later by users with  concrete definitions for those abstract data types too. Figure~\ref{fig:chapter:conlink:two-cases-of-abs-rel-c} shows 
 one case in  $\AbsRelC$, which is the case 
-for the external call while generating an event. 
-With that, we shows the parallel composition in our multithreaded-linking framework, which is in Lemma~\ref{lemma:chapter:conlink:parallel-composition}. 
+of  the external call while generating an event. 
+With that, we show the parallel composition in our multithreaded-linking framework, which is in Lemma~\ref{lemma:chapter:conlink:parallel-composition}. 
 
 \begin{lemma}[Parallel Composition: Contextual Refinement Between $\lasmmach$ and $\easmmach$]
 \label{lemma:chapter:conlink:parallel-composition}
