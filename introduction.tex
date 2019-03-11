@@ -16,7 +16,7 @@ but they create whole new challenges in terms of providing correctness software.
 Obviously, they are well-known to be difficult to get right and debug because of numerous (usually unbounded)
  interleavings among their multiple components. Testing is necessary to avoid their possible faults, 
  but it is not a promising way to provide their high assurance. Reproducing a bug is unfeasible unless testers know their precise interleaving order.
-In this sense, building reliable concurrent programs requires verification to formally shows that they 
+In this sense, building reliable concurrent programs requires verification to formally show that they 
 correctly reflect the desired behavior (\ie, the behavior stated in their specifications) without missing any single interleaving cases.
 
 
@@ -72,41 +72,46 @@ languages such as C and assembly.
 
 
 
-\begin{figure}
-\begin{center}
-
-NEED TO ADD FIGURE
-NEED TO ADD FIGURE
-NEED TO ADD FIGURE
-NEED TO ADD FIGURE
-NEED TO ADD FIGURE
-NEED TO ADD FIGURE
-NEED TO ADD FIGURE
-NEED TO ADD FIGURE
-NEED TO ADD FIGURE
-\end{center}
-
-\caption{Challenges in Concurrent Program Verification.}
-\label{fig:intro:challenges-concurrent-prog-verification}
-\end{figure}
-
-
-Figure~\ref{fig:intro:challenges-concurrent-prog-verification} abbreviates key challenges in concurrent program verification. 
-Concurrent program verification has to deal with (1) complex dependencies among multiple sub-modules in the system; (2) linking  for the program written in different languages such as C and Assembly; (3) providing isolation for each instance in the concurrent program; (4) 
-providing fine-grained concurrency in the middle of the program with the proper linking. 
+%\begin{figure}
+%\begin{center}
+%
+%NEED TO ADD FIGURE
+%NEED TO ADD FIGURE
+%NEED TO ADD FIGURE
+%NEED TO ADD FIGURE
+%NEED TO ADD FIGURE
+%NEED TO ADD FIGURE
+%NEED TO ADD FIGURE
+%NEED TO ADD FIGURE
+%NEED TO ADD FIGURE
+%\end{center}
+%
+%\caption{Challenges in Concurrent Program Verification.}
+%\label{fig:intro:challenges-concurrent-prog-verification}
+%\end{figure}
+%
+%
+%Figure~\ref{fig:intro:challenges-concurrent-prog-verification} abbreviates key challenges in concurrent program verification. 
+%Concurrent program verification has to deal with (1) complex dependencies among multiple sub-modules in the system; (2) linking  for the program written in different languages such as C and Assembly; (3) providing isolation for each instance in the concurrent program; (4) 
+%providing fine-grained concurrency in the middle of the program with the proper linking. 
 
 
 \section{Verification Toolkit for Concurrent Programs}
 \label{chapter:introduction:sec:verification-toolkit-for-concurrent-programs}
-%
-%\begin{figure}
-%\includegraphics[width=\textwidth]{figs/intro}
-%\caption{Verification Toolkit Structure}
-%\label{chapter:intro:verific	tion-toolkit-structure} 
-%\end{figure}
+
+\begin{figure}
+\begin{center}
+\includegraphics[width=0.9\textwidth]{figs/introfigures}
+\end{center}
+\caption{Verification Toolkit Structure}
+\label{chapter:intro:verification-toolkit-structure} 
+\end{figure}
+
 With those investigations, we present the toolkit that supports modular and compositional verification for concurrent programs. 
-The toolkit consists of two parts: 1) propose the method to build local layer interfaces for concurrent program verification; and 
-2) provide the concurrent-linking framework. All layers and linking parts are also connected with the traditional simulation 
+Figure~\ref{chapter:intro:verification-toolkit-structure}  shows the overall structure of our verification toolkit. 
+The toolkit consists of two parts: 1) propose the method to build local layer interfaces for concurrent program verification (\ie, local layer interfaces in Figure~\ref{chapter:intro:verification-toolkit-structure}); and 
+2) provide the concurrent-linking framework (\ie, multicore and multithreaded linking in Figure~\ref{chapter:intro:verification-toolkit-structure}).
+All layers and linking parts are also connected with the traditional simulation 
 technique~\cite{compcert, deepspec}. 
  
 The first part of our toolkit is to construct certified concurrent abstraction layers: a new compositional model for concurrency, 
@@ -163,22 +168,12 @@ build concurrent layers using our framework. Second, it also can be linked with 
 
 
 \begin{figure}
-
-NEED TO ADD FIGURE
-NEED TO ADD FIGURE
-NEED TO ADD FIGURE
-NEED TO ADD FIGURE
-NEED TO ADD FIGURE
-NEED TO ADD FIGURE
-NEED TO ADD FIGURE
-NEED TO ADD FIGURE
-NEED TO ADD FIGURE
-
-\label{fig:intro:certikos-structure}
+\begin{center}
+\includegraphics[width=0.9\textwidth, page=1]{figs/intro}
+\end{center}
 \caption{Structure of Concurrent Operating System Verification.}
+\label{fig:intro:certikos-structure}
 \end{figure}
-
-
 
 As examples of the applicability of our framework, we verified two large-scale concurrent systems--$\certikos$ and $\wormspace$.
 These examples also represent two models for concurrent programs: 
@@ -197,6 +192,19 @@ correctness theorem of the kernel. This work not only facilitates the abstractio
 but also uses our concurrent-linking framework to show the simulation relation between 
 the program on each instance with its concurrent environment and the program runs on the full 
 concurrent machine--the $\intelmachine$ multicore machine. 
+
+
+
+Figure~\ref{fig:intro:certikos-structure} briefly describes the overall structure of our $\certikos$ verification.
+We divide the full kernel as two parts, per-CPU $\certikos$ and per-thread $\certikos$, and build abstraction layers for those two parts with our framework.
+We prove the correctness theorem of each part; the implementation of each part on its local machine (\ie, a thread-local machine or a CPU-local machine) contextually refines the top-most layer of each part. 
+Then, we merge those two correctness proofs using our multithreaded linking framework. 
+We also propagate the correctness proof down to the multicore machine using our multicore linking framework. 
+Followed by all those steps, we prove a single top-level correctness theorem of $\certikos$, which implies 
+that $\certikos$ implementation running on a multicore machine model (\ie, a $\intelmachine$ multicore machine)  contextually refines the top-most abstraction layer in $\certikos$ layer stacks (\ie, $\TSyscall$ layer that abstracts all system calls in $\certikos$).
+
+
+
 
 We also built a spinlock module to support fine-grained lock services for multiple shared objects in the kernel 
 (\ie, page allocation, atomic queue, \etc).
@@ -297,3 +305,9 @@ which is inspired by the verification work on $\wormspace$.
 Chapter~\ref{chapter:related}
 offers an in-depth discussion of related work, and  Chapter~\ref{chapter:conclusion}  
 mentions limitations and future directions as well as summarizes this thesis.
+
+
+
+\section{Acknowledgment}
+This research is based on work supported in part by DARPA grants FA8750-10-2-0254, FA8750- 12-2-0293, FA8750-16-2-0274, and FA8750-15-C-0082 and NSF grants 1065451, 0915888, 1521523, and 1319671 and ONR Grant N00014-12-1-0478. Any opinions, findings, and conclusions contained in this document are those of the authors and do not reflect the views of these agencies.
+
