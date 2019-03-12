@@ -96,7 +96,7 @@ The first only changes private states associated with the CPU ID and is not visi
 thus we are safe to treat it as a ``silent'' step without generating any events. 
 The other, however, 
 accesses shared states (a shared memory and/or a shared abstract state),
-so executing it is  the only way for our machine model  to access and append events to the global log 
+so executing it is  the only way for our machine model  to access and append events to the global log.
 Figure~\ref{fig:chapter:ccal:push-pull-memory-model-and-shared-memory} is one example of shared operations.
 
 When we model our multicore machine as a $\intelmachine$ model (with multiple cores),

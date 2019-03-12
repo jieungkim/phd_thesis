@@ -44,7 +44,7 @@ its own busy flag, so there is no cache-line bouncing. Simpler lock
 algorithms make all the CPUs read the same memory location, which does
 not scale past 10-40 CPUs~\cite{Boyd-wickizer12}.
 
-We follows the programming style of $\ccalname$ in Chapter~\ref{chapter:ccal}; thus
+We follow the programming style of $\ccalname$ in Chapter~\ref{chapter:ccal}; thus
 the verified version that we have made has a property that all lock node and variables are statically assigned.
 However, this doesn't restrict the functionality of our verified $\mcsname$ Lock.
 Instead of creating the new node when acquiring the lock and removing the node when releasing the lock,
