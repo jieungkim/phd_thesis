@@ -14,7 +14,7 @@ Inductive hw_step_aux_ge : genv -> hstate -> trace -> hstate -> Prop :=
     forall s1 t s2, hw_step_aux s1 t s2 -> hw_step_aux_ge ge s1 t s2.
 \end{lstlisting}
 \begin{center}
-(a) Transition-rules with Hardware-configuration for Multicore Machine Model
+(a) Transition Rules with Hardware-configuration for Multicore Machine Model
 \end{center}
 \begin{lstlisting}[language=C, deletekeywords={int}]    
 // initial state, which initiates all private states as well as a global log
@@ -46,7 +46,7 @@ Inductive single_step_aux_ge : genv -> single_state -> trace ->
     forall s1 t s2, single_step_aux s1 t s2 -> single_step_aux_ge ge s1 t s2.
 \end{lstlisting}
 \begin{center}
-(c) Transition-rules with Hwardware-configuration for Single-core Machine Model
+(c) Transition Rules with Hwardware-configuration for Single-core Machine Model
 \end{center}
 \begin{lstlisting}[language=C, deletekeywords={int}]    
 // The complete machine model for <@$\color{red}\singlestepkwd$@> with proper initial and final states

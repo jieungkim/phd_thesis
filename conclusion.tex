@@ -38,7 +38,10 @@ Those things are apparent parts that our linking framework can be improved.
 We assume sequential consistency for atomic operations. 
 This implies that all atomic operations on the system appear to take place in some total order--the global order of atomic operations.
 This assumption makes reasoning about concurrent programs easy, differing from most $\intelmachine$
- hardware models. Based on the previous work~\cite{sevcik13}, 
+ hardware models. 
+Therefore, small parts of our verified kernel that use underlying atomic operations (\ie, MCS Lock and Ticket Lock) may have unsounded behaviors with the real $\intelmachine$ hardware models due to native features of relaxed memory models that those hardware models are using. 
+To resolve the problem, we need to provide the correct implementation and the proof for those modules (\ie, MCS Lock and Ticket Lock) with relaxed memory models. 
+Based on the previous work~\cite{sevcik13}, 
 race-free programs on a TSO model behave as if they were executing on the sequential consistent machine. 
 We believe this observation can be applied to our program because the programs on our push/pull model are race-free. 
 However, we need more investigation to extend our work to support relaxed memory models.

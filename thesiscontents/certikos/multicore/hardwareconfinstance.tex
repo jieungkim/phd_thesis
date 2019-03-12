@@ -154,7 +154,7 @@ Global Instance hdseting: HardWaredSetting := {
   sched_id := 8  // <@$\color{red} \schedid$@>
 }.
 \end{lstlisting}
-\caption{The Hardware-setting Definition for $\certikos$ Multicore Linking.}
+\caption{Hardware-setting Definition for $\certikos$ Multicore Linking.}
 \label{fig:chapter:ceritkos:instances-of-abstract-hardware-setting}
 \end{figure}
 All values are instances of 
@@ -172,7 +172,7 @@ Inductive command_predicate (ge: genv): mstate -> command -> Prop :=
 <@$\cdots$@>
 \end{lstlisting}
 \begin{center}
-(a) The Definition of Program Counter for \lstinline$atomic_FAI$.
+(a) Definition of Program Counter for \lstinline$atomic_FAI$.
 \end{center}
 \begin{lstlisting}[language=C, deletekeywords={int, unsigned}]
  Inductive get_shared_sem (ge: genv) 
@@ -188,7 +188,7 @@ Inductive command_predicate (ge: genv): mstate -> command -> Prop :=
        (State (rs_res#RA <- Vundef#PC <- (rs RA)) (m, a_res)).
 \end{lstlisting}
 \begin{center}
-(b) The Transition Rule Definition for the $\acqsharedcmdkwd$ Command.
+(b) Transition Rule Definition for the $\acqsharedcmdkwd$ Command.
 \end{center}
 \begin{lstlisting}[language=C]
 Inductive atomic_exec (ge: genv):
@@ -199,7 +199,7 @@ Inductive atomic_exec (ge: genv):
   <@$\cdots$@>
 \end{lstlisting}
 \begin{center}
-(b) The  Transition-rule Definition for the $\atomiccmdkwd$ Command.
+(b) Transition Rule Definition for the $\atomiccmdkwd$ Command.
 \end{center}
 \caption{Program Counter and Transition Rules in $\certikos$ Multicore Linking (Details Are Ignored).}
 \label{fig:chapter:certikos:definitions-for-hw-abstract-semantics}
@@ -244,7 +244,7 @@ Global Program Instance hdsem : HardSemantics (hdset:= hdseting) := {
   atomic_step := atomic_exec ge // <@$\atomicstepkwd$@>
 }.
 \end{lstlisting}
-\caption{The Hardware Setting Definition for $\certikos$ Multicore Linking.}
+\caption{Hardware Setting Definition for $\certikos$ Multicore Linking.}
 \label{fig:chapter:certikos:hardware-local-step-transition-rules}
 \end{figure}
 
