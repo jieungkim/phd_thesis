@@ -86,8 +86,8 @@ waiting queue by assigning $\codeinmath{busy}$.
 
 Figure~\ref{fig:chapter:mcslock:mcs-example} illustrates a possible sequence of states taken by the algorithm. 
 At the beginning (a), the lock is free, and a CPU 1 can take it in a single atomic $\FAS$ operation (b).
-Since a CPU 1 did not have to wait for the lock, it does not need to update its \emph{next}-pointer. 
-After that, CPUs 2 and 3 each try to take the lock ((c) and (d)). 
+Since a CPU 1 did not have to wait for the lock, it did not need to update its \emph{next}-pointer. 
+After that, CPUs 2 and 3  try to take the lock ((c) and (d)). 
 The last value will be updated correctly thanks to the property of the atomic expression.
 However, there can be some delay in-between a CPU updating the \emph{tail} pointer, and adjusting the \emph{next}-pointer of the previous node in the queue; as this example illustrates, that means although there are three nodes which logically makes up the queue of waiting CPUs, any subset of the next-pointers may be unset. 
 At (e), although a CPU 1 wants to release the lock, the $\CAS$
