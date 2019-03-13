@@ -70,7 +70,7 @@ a collection of helper functions with names like
 $\mcssetnext$. The lowest two layers in our proofs
 are devoted to implementing these helper functions.
 The key concern is to make sure that the events that get appended to the log correspond to the actual actions to the memory. Some of that can be proven, 
-but some parts of this layer are trusted as a part of the machine model.
+but some parts of this layer are trusted as part of the machine model.
 
 We first describe the first and the lowest tuple in our proofs,
 
@@ -324,7 +324,7 @@ $\calmcsacqwait$ which describes the
 behavior of the first $n$ iterations of the loop: each iteration
 queries the the environment context $\oracle^{mcs(lkid)}_{\mathrm{i}}$ (\ie,  $lkid$ is a lock identifier and $\mathrm{i}$ is a CPU ID), replays a log to see if if $\codeinmath{busy}$ is now $\bfalse$ and appends a $\GETBUSY$ event.
 If we do not succeed within $n$ iterations the function is undefined ($\coq$ $\None$).
-Then, in the part of the  specification for the  acquire lock 
+Then, in  part of the  specification for the  acquire lock 
 function ($\calmcsacqwait$ in Figure~\ref{fig:chapter:mcslock:calmcsacqwait}) where we need to talk about the while loop,
 we say that it loops for some ``sufficiently large'' 
 number of iterations $\CalWaitLockTime$  $\codeinmath{tq}$. 

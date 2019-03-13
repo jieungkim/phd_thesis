@@ -273,7 +273,7 @@ class, modified by AG]
 \newcommand{\makecopyright}[1]{%
 \thispagestyle{empty}
   \hbox{\hfil}\vspace{4in}\begin{center}
-  Copyright \copyright\ #1 by \@author \\
+  \copyright\ #1 by \@author \\
   All rights reserved.
   \end{center}
   \clearpage
