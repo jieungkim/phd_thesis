@@ -49,11 +49,14 @@
 
 \bibliographystyle{abbrvunsrt}
 
+\newcommand{\newfootnote}[1]{{\footnote{\normalsize{\textnormal{#1}}}}}
+
+
 \begin{document}
 \title{Modular and Compositional Development of Certified Concurrent Software Systems}
 \author{Jieung Kim}
 \advisor{Zhong Shao}
-\date{March, 2019} 
+\date{May, 2019} 
 
 \frontmatter
 
@@ -61,7 +64,9 @@
 \input{abstract}
 \end{abstract}
 
+\newgeometry{left=1 in, right=1 in, top=1 in,bottom=1.0 in,nohead,footskip=0.5 in}
 \maketitle
+\restoregeometry
 \makecopyright{2019} % change as needed.
 
 \tableofcontents

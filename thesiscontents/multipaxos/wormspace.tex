@@ -121,7 +121,7 @@ if multiple clients attempt to prepare and write the same $\WOR$ only one will s
 $\WOR$s can be naturally implemented via the $\paxos$ protocol (with modifications to support quorum reads), 
 offering durability and availability against a minority of storage servers failing. 
 The $\WOR$  prepare/write API mirrors the phases of single-shot $\paxos$. 
-\footnote{$\WOR$ can also be implemented via other protocols such as Primary-Backup or Chain Replication~\cite{chainreplication}, 
+\newfootnote{$\WOR$ can also be implemented via other protocols such as Primary-Backup or Chain Replication~\cite{chainreplication}, 
 obtaining different durability and availability guarantees.}
 Most distributed services embed $\WOR$s, but hide them underneath a higher-level API:
 

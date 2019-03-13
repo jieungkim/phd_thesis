@@ -13,7 +13,7 @@ $\wormspace$ applications and a verified OS.
 \subsection{Layer Structure for Verification}
 
 $\wormspace$ consists of two separate stacks of verification layers, the client library (17 layers) and the wormserver (2 layers), over a common set of base functionalities (5 layers). While the number of layers may seem excessive, it matches a conventional software stack designed for modularity: each layer is a C component implementing some interface. A simplified layer diagram is shown in Figure~\ref{fig:chapter:multipaxos:layerdiagram}.
-\footnote{A set of base layers offer common functionalities to the client library and the wormserver stacks: 
+\newfootnote{A set of base layers offer common functionalities to the client library and the wormserver stacks: 
 the bottom layer provides an interface to the TCB, including network communication functions and a small number of system calls, 
 while the data layer implements various data structures over the trusted primitives.
 Above, the server stack includes layers for the $\paxos$ acceptor logic and the WormServer code. 

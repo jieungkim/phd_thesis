@@ -334,7 +334,7 @@ As seen in these scheduling procedures, we do not allow the thread migration fro
 
 Like what our layers do for other shared primitives, $\certikos$ provides a layer interface ($\PBThrd$)
 that contains atomic specifications for all scheduling-related primitives. 
-The layer, $\PBThrd$, also merges all separate logs\footnote{Note that we divide the global log into multiple individual logs is associated with the corresponding shared objects from $\mmcsbootfull$. The division is for the simplicity of our layer building, but we have to merge them into the single global log for multithreaded linking. We mentioned this several times in Chapter~\ref{chapter:mcs-lock} and Chapter~\ref{chapter:linking}} 
+The layer, $\PBThrd$, also merges all separate logs\newfootnote{Note that we divide the global log into multiple individual logs is associated with the corresponding shared objects from $\mmcsbootfull$. The division is for the simplicity of our layer building, but we have to merge them into the single global log for multithreaded linking. We mentioned this several times in Chapter~\ref{chapter:mcs-lock} and Chapter~\ref{chapter:linking}.} 
 into a single log to provide the top-most layer of our per-CPU modules (and thus the base layer for our multithreaded linking).
 Figure~\ref{fig:chapter:certikos:proc-create-cpu-spec} and Figure~\ref{fig:chapter:certikos:thread-yield-cpu-spec} show the specification of the thread creation primitive and the specification of the thread yield primitive, respectively.
 
