@@ -7,12 +7,12 @@ Our $\ccalname$ toolkit follows the layer-based compositional proof approach pro
 They proposed certified abstraction layers (CAL) for sequential programs and 
 verified certified system software to show the applicability of the approach.
 CAL has many different aspects with
- hoare-style program verification~\cite{hoare69,reynolds02,boogie05,nanevski06}.
+ Hoare-style program verification~\cite{hoare69,reynolds02,boogie05,nanevski06}.
 
 First, $\calname$ proves a contextual correctness property by using the termination-sensitive forward simulation 
 techniques~\cite{Lynch95,compcert}, 
 which is stronger than simple partial or total correctness properties guaranteed by Hoare logic style verification.
-Besides, its overlay interface of a certified object thoroughly disables 
+Furthermore, its overlay interface of a certified object thoroughly disables 
 the concrete memory block (of the object)  for  future usage 
 and replaces the memory with an abstract state;
 this abstract state is suitable for high-level reasoning such as proving security properties and progress properties (when it is extended to support
@@ -20,9 +20,9 @@ concurrency as $\ccalname$ does).
 It also differs from ghost or auxiliary states in Hoare-style program verification in terms of 
 its usage.
 The abstract state is a part of an entire state of the transition machine; 
-thus it can be used to define the semantics of the overlay abstract machine
+it can thus be used to define the semantics of the overlay abstract machine
 as well as the corresponding contextual refinement property.
-Lastly,  building layers enable us to provide a new state transition machine and a new programming language that gets close to the specification language. 
+Lastly,  by building layers, we are able to provide a new state transition machine and a new programming language that gets close to the specification language. 
 Higher layers replace more low-level memory blocks and function implementations with 
 the corresponding abstract states and primitives,
 and can call primitives at higher abstraction levels while  
