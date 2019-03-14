@@ -22,7 +22,7 @@ are local layer interfaces), but there is a place that we need a simplification 
 acquire/release locks as mentioned in Section~\ref{chapter:ccal:subsec:local-layer-interface}.
 We will clearly state that which layer is related to a \textit{log-lift} pattern; 
 thus require the change in an environmental context.
-Each big and outer rectangle in the figure means each layer in the $\mcsname$ Lock Module, 
+Each big and outer rectangle in the figure means each layer in the $\mcsname$ Lock module, 
 and small and inner rectangles in each layer implies primitives defined in the layer.
 Arrows show dependencies between adjacent layers,
 for example the implementation of $\waitlockfunc$ in  $\mmcslockopfull$
@@ -86,7 +86,7 @@ when $cid$ is the focused current CPU ID and\\
 The interface ($\mmcsbootfull$) represents the machine model that our compiled code will run on.
 All primitives defined in $\mmcslockintrofull$ are parts of the trusted computing base and correspond to empty functions in our compiled code.
 
-Eight of  primitives in $\mmcsbootfull$  are firmly related to the $\mcsname$ Lock verification:
+Eight of  primitives in $\mmcsbootfull$  are firmly related to the  $\mcsname$ Lock verification:
 
 \begin{center}
 \begin{tabular}{P{0.95\textwidth}}
@@ -152,10 +152,10 @@ where
 The return type of this log replay function closely corresponds to C data structures, which makes it easy to prove the refinement ($\zmapfunc$ is a finite map from $\ztype$ to $\booltype$*$\ztype$.)
 The second ingredient is a relation $R_{\mmcslockintro}$ which shows the relationship between the concrete memory in an underlay $\mmcsbootfull$ and the abstract state in an overlay $\mmcslockintrofull$.
 As a part of $R$, we define $\matchmcslock$, which is a part related to 
-the $\mcsname$ lock in $R_{(\mmcslockintro, \mmcsboot)}$,  as follows:
+ $\mcsname$ Lock in $R_{(\mmcslockintro, \mmcsboot)}$,  as follows:
 
 \begin{definition}[$\matchmcslock$]
-Suppose that `$loc$' is among the proper field accessors for the $\mcsname$ Lock, which are `$\codeinmath{last}$', `$\codeinmath{ndpool[}i\codeinmath{].next}$', or  `$\codeinmath{ndpool[}i\codeinmath{].busy}$' when `$0 \leq i < \invalidmcsval$'.
+Suppose that `$loc$' is among the proper field accessors for  $\mcsname$ Lock, which are `$\codeinmath{last}$', `$\codeinmath{ndpool[}i\codeinmath{].next}$', or  `$\codeinmath{ndpool[}i\codeinmath{].busy}$' when `$0 \leq i < \invalidmcsval$'.
  And, assuming that `$\codeinmath{lk\_id}$' is a lock identifier satisfies `$0 \leq \codeinmath{lk\_id} < \codeinmath{lock\_range}$' and $\codeinmath{l}$ is a shared log. Then define \newline
   \begin{tabular}{P{0.90\textwidth}}
     $\matchmcslock\ \codeinmath{(l:Log) (}\lockmemloc\codeinmath{ :block) loc}$\\
@@ -199,7 +199,7 @@ Assuming that
 2) and, $A_{\mmcsboot}$ and $A_{\mmcslockintro}$ are abstract datum for $L_{\mmcsboot}$ and $L_{\mmcslockintro}$, respectively.
     With the given $R_{(\mmcslockintro, \mmcsboot)}$, defined as $\matchmcslock$
      over the $\lockmemloc$ block in the memory  (\ie,$\lockmemloc\codeinmath{@}mem$) and 
-the $\mcsname$ Lock related data structure in the abstract data of the overlay layer (\ie, $\lockabsloc\codeinmath{@}A_{\mmcslockintro}$), 
+ $\mcsname$ Lock related data structure in the abstract data of the overlay layer (\ie, $\lockabsloc\codeinmath{@}A_{\mmcslockintro}$), 
  identity relation for other parts of $A_{\mmcsboot}$ and $A_{\mmcslockintro}$, 
  The specification for the function $f$, $\sigma_f$, in $L_{\mmcslockintro}$ refines that in $L_{\mmcsboot}$ when:
  \begin{center}
@@ -575,7 +575,7 @@ In other words, when proving the simulation,
 we find a function $f_{(lk, mcs)}$ for the logs, such that $f_{(lk, mcs)}(\codeinmath{l}_{\mqmcslockop}) = \codeinmath{l}_{\mhmcslockop}$.
 
 
-As for the $\mcsname$ Lock, we define a function $\relatemcslogkwd$ from the
+As for  $\mcsname$ Lock, we define a function $\relatemcslogkwd$ from the
 implementation log to the atomic log. Figure~\ref{fig:chapter:mcslock:logsequence}
 shows by example what it does. It keeps the shared memory events as
 they are, discards the events that are generated while a CPU wait for

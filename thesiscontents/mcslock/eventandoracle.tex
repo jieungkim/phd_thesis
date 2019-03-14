@@ -43,7 +43,7 @@ to future work.
 \item \textbf{${\swaptail{bound}{success}}$} event is for the
 operations from line 5 to 7 in Figure~\ref{fig:chapter:mcslock:mcs_lock} and takes
 two arguments. The second argument is a boolean flag indicating
-whether the previous ``last'' value of $\mcsname$ lock was $\invalidmcsval$,
+whether the previous ``last'' value of the $\mcsname$ lock data was $\invalidmcsval$,
 which means it records whether the if-statement at line 9 took the fast path or not.
 The first argument is the \emph{bound number}, which is a key idea in
 our development. Every client that invokes $\mcsacquire$ has
@@ -93,7 +93,7 @@ In addition, the ``busy'' corresponds to the result of the $\CAS$ operation in F
 \end{itemize}
 
 Those six events are used to show the functional correctness of
-an $\mcsname$ Lock. However, for clients that use the $\mcsname$ Lock to build shared
+$\mcsname$ Lock. However, for clients that use  $\mcsname$ Lock to build shared
 objects they expose too much implementation details.
 In Section~\ref{chapter:mcslock:sec:liveness-atomicity} we will prove linearizability and
 starvation freedom,  to replace them
