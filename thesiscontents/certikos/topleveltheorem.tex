@@ -84,10 +84,10 @@ We provide some statistics of $\certikos$ in this section.
 Components  & LOC & Components  & LOC \\
 \hline
 \hline
-Hardware semantics & 750 &
-Machine models & 2,600 \\ 
+Hardware Semantics & 750 &
+Machine Models & 2,600 \\ 
 \hline
-Refinement proofs & 3,300 & Top-level theorem & 100\\ 
+Refinement Proofs & 3,300 & Top-level Theorem & 100\\ 
 \hline
 \end{tabular}
 \end{center}
@@ -114,10 +114,10 @@ Connecting all proofs requires us to write only 100 lines of code because the on
 Components  & LOC & Components  & LOC \\
 \hline
 \hline
-Intermediate layer & 7,000 &
-Connecting per-thread layer & 6,700 \\ 
+Intermediate Layer & 7,000 &
+Connecting Per-thread Layer & 6,700 \\ 
 \hline
-Connecting per-CPU layer & 23,000 & Top-level theorem & 190\\ 
+Connecting per-CPU layer & 23,000 & Top-level Theorem & 190\\ 
 \hline
 \end{tabular}
 \end{center}
@@ -146,21 +146,21 @@ However,  we can assume that the effort per each primitive is reasonable because
 %\cline{3-4}
 % & Source & Specification & Invariant Proof & Proof & Proof  \\
 \hline
-Ticket lock & 74 & 615 & 1,080 & 1,173 & 2,296 \\
+Ticket Lock & 74 & 615 & 1,080 & 1,173 & 2,296 \\
 \hline
-Sequential queue & 377 & 554 & 748 & 2,821& 3,647 \\
+Sequential Queue & 377 & 554 & 748 & 2,821& 3,647 \\
 \hline
-Shared queue &  20 & 107 & 190 & 171& 419\\
+Shared Queue &  20 & 107 & 190 & 171& 419\\
 \hline
 Yield/Sleep/Wakeup & 62 & 153 & 166 & 1,724 & 2,042 \\
 \hline
-Queuing lock & 112 & 255 & 992 & 328 & 464\\
+Queuing Lock & 112 & 255 & 992 & 328 & 464\\
 \hline
 \end{tabular}
 \newline
 \end{center}
 \begin{flushright}
-* Starvation proof for Ticket lock included: 980\\
+* Starvation proof for Ticket Lock included: 980\\
 \end{flushright}
 \caption{Statistics for Implemented Components in $\certikos$}
 \label{table:certikos-evaluation}
@@ -169,7 +169,7 @@ Queuing lock & 112 & 255 & 992 & 328 & 464\\
 Table~\ref{table:certikos-evaluation} presents  the statistics for some other  $\certikos$ components.
  As for lock implementations, their source code contains not only the code of the associated functions but also the data structures and their initialization. In addition to the top-level interface, the specification contains all the specifications used in the intermediate layers.
 
-For the ticket lock case, the simulation proof column includes progress property proofs in addition to the correctness proof. 
-The ticket lock implementation usually requires less than 10 lines of code, but the proof size is huge when compared to the implementation.
-The gap between the underlying C implementation and the high-level specification of the locks also contributes to the large proof size for these components. For example, intermediate specifications of a ticket lock use an unbounded integer for the ticket field, while the implementation uses a binary integer which wraps back to zero. Similarly, the queue is represented as a logical list in the specification, while it is implemented as a doubly linked list.
+For the Ticket Lock case, the simulation proof column includes progress property proofs in addition to the correctness proof. 
+The Ticket Lock implementation usually requires less than 10 lines of code, but the proof size is huge when compared to the implementation.
+The gap between the underlying C implementation and the high-level specification of the locks also contributes to the large proof size for these components. For example, intermediate specifications of Ticket Lock use an unbounded integer for the ticket field, while the implementation uses a binary integer which wraps back to zero. Similarly, the queue is represented as a logical list in the specification, while it is implemented as a doubly linked list.
 

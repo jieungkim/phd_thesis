@@ -68,7 +68,7 @@ and deriving them is possible by interpreting the global log from the beginning 
 For instance, finding the result values ($res_1$, $res_2$, and $res_3$) in Figure~\ref{fig:chapter:ccal:game-for-fetch-and-increase-primitive-call}
 requires the function that calculates the ticket number from the log.
 The function counts the number of fetch-and-increase events ($\incticket$) in the up-to-date log (\eg. $l$ for $res_1$), which
-also corresponds to the current value of the next serving ticket number of the shared data for the ticket lock.
+also corresponds to the current value of the next serving ticket number of the shared data for Ticket Lock~\cite{lwn:ticketlocks}.
 Such reconstruct functions for the current shared state from the log are called \emph{replay} functions and we notate them with $\replay$.
 
 The strategy of the scheduler ($\strat{sched}$) acts as a judge of the game to abstract away complex interleavings, 

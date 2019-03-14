@@ -198,7 +198,7 @@ strategies (i.e., both the past and the future events) of all
 environment threads and a scheduler, so we can readily impose
 temporal invariants over the environment. Within each thread-modular
 layer $L[t]$, we can show that each lock-acquire primitive (\eg, for
-ticket locks) always returns as long as its environment is cooperative
+Ticket Lock) always returns as long as its environment is cooperative
 (\eg, always releases its acquired lock), even if $t$ itself may not
 be cooperative.
 In other words, the termination of $t$'s lock-acquire

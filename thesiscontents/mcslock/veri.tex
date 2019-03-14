@@ -155,7 +155,7 @@ As a part of $R$, we define $\matchmcslock$, which is a part related to
  $\mcsname$ Lock in $R_{(\mmcslockintro, \mmcsboot)}$,  as follows:
 
 \begin{definition}[$\matchmcslock$]
-Suppose that `$loc$' is among the proper field accessors for  $\mcsname$ Lock, which are `$\codeinmath{last}$', `$\codeinmath{ndpool[}i\codeinmath{].next}$', or  `$\codeinmath{ndpool[}i\codeinmath{].busy}$' when `$0 \leq i < \invalidmcsval$'.
+Suppose that `$loc$' is among the proper field accessors for  the $\mcsname$ Lock data structure, which are `$\codeinmath{last}$', `$\codeinmath{ndpool[}i\codeinmath{].next}$', or  `$\codeinmath{ndpool[}i\codeinmath{].busy}$' when `$0 \leq i < \invalidmcsval$'.
  And, assuming that `$\codeinmath{lk\_id}$' is a lock identifier satisfies `$0 \leq \codeinmath{lk\_id} < \codeinmath{lock\_range}$' and $\codeinmath{l}$ is a shared log. Then define \newline
   \begin{tabular}{P{0.90\textwidth}}
     $\matchmcslock\ \codeinmath{(l:Log) (}\lockmemloc\codeinmath{ :block) loc}$\\

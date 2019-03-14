@@ -14,9 +14,9 @@ Spinlock provides the protection mechanism for shared resources by using its saf
 We build two spinlock modules, 
 MCS Lock~\cite{mcs91} and Ticket Lock~\cite{lwn:ticketlocks}.
 Because we have already discussed MCS Lock in Chapter~\ref{chapter:mcs-lock}, 
-we only explain ticket lock here.
+we only explain Ticket Lock here.
 
-The concept of a ticket lock is similar to the ticket-management system that is common in many bakeries, banks, and delis. 
+The concept of Ticket Lock is similar to the ticket-management system that is common in many bakeries, banks, and delis. 
 In the system, 
 there is a dispenser which gives the numbered ticket to the clients upon arrival. 
 Each time the next ticket number is ready to 
@@ -27,10 +27,10 @@ the system updates the now-serving sign by increasing the now-serving number.
 \caption{Ticket Lock Implementation (Written in C).}
 \label{fig:chapter:certikos:ticket-lock-example}
 \end{figure}
-Implementing a ticket lock follows the same manner with this high-level idea.
+Implementing Ticket Lock  follows the same manner with this high-level idea.
 It is built on top of an atomic object that contains two fields--\textit{next} and \textit{now}--and operations for a dispenser, checking the now-serving number and increasing the now-serving number when
 it is ready to serve the next ticket. 
-Figure~\ref{fig:chapter:certikos:ticket-lock-example} shows the implementation of our ticket lock (a few insignificant parts are omitted.)
+Figure~\ref{fig:chapter:certikos:ticket-lock-example} shows the implementation of our Ticket Lock (a few insignificant parts are omitted.)
 Our lock module provides multiple lock instances associated with their own lock identifiers;
 thus, all operations on shared objects specify their lock IDs as their argument, which is $lkid$ in this example.
 We provide three getter/setter primitives-- $\codeinmath{FAI}$, $\codeinmath{get\_now}$, and $\codeinmath{incr\_now}$--
@@ -41,7 +41,7 @@ lock prefix in $\intelmachine$.
 
 We also prove one progress property--starvation freedom--for this Ticket Lock based on the assumption about hardware fairness,
 which implies that each CPU has a fair chance to execute its one program instance.
-The starvation freedom proof in this ticket lock is 
+The starvation freedom proof in this Ticket Lock is 
 similar to that of  MCS Lock in Chapter~\ref{chapter:mcs-lock}, but 
 it's much simpler than the proof of the MCS Lock.
 
