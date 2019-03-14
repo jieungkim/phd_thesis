@@ -1,100 +1,43 @@
-The goal of this dissertation is to build formal methods for concurrent program verification and apply those techniques to 
-multiple examples so we can guarantee to users that these systems are reliable and trustworthy not only in terms of functional correctness 
-but also other high-level progress properties or the protocol correctness of them.
-
+The goal of this dissertation is to build formal methods for concurrent program verification, 
+and then to apply those techniques to multiple examples in order to demonstrate to users that these systems are reliable and trustworthy. 
+ Functional correctness is an obvious priority, but it is also critical to demonstrate other high-level progress attributes and consistency with protocols. 
 
 \section{Challenges in Concurrent Program Verification}
 \label{chapter:introduction:sec:challenges-in-concurrent-program-verification}
 
+The prevalence of concurrent environments brings enormous changes, and challenges, to the software. 
+They allow for improved performance and greater functionality in a single software 
+through interactions among several instances in the system (\ie, multiple threads, nodes, I/O devices, and networks), 
+but they also create new challenges in terms of ensuring that the applied software is appropriately suited to the task. 
+It is well-known that it can be difficult to get the software right and to debug appropriately, 
+due to numerous (usually unbounded) interleavings among the programs’ multiple components. 
+Testing is necessary to avoid possible faults, but the more that is required the less assured users tend to be. 
+Furthermore, reproducing a bug is impractical unless testers know their precise interleaving order. 
+In this sense, building reliable concurrent programs requires verification to formally demonstrate 
+that they correctly reflect the desired behavior (\ie, the behavior stated in their specifications) without missing any single interleaving cases. 
 
+In addition, modern software systems consist of multiple sub-modules, which are intimately connected with other modules in the system. 
+This brings another source of complexity to the verification. 
+These sub-modules are highly dependent on others, which makes the modular reasoning of each component difficult. 
+As a result, software verification is often considered to be excessively tedious work with prohibitive costs.
+It is also well-known that software verification is poor at achieving scalability, reusability, and extensibility.
+For example, a famous previous effort by an seL4 team~\cite{klein2009sel4} accomplished a breakthrough in software verification 
+by providing the first verified (sequential) microkernel and by connecting all proofs in a mechanized proof assistant, 
+but doing so required considerable effort. 
+The verification took 11 person years and 7,500 lines of C code but still contained 
+unverified parts (\ie, 1,300 lines of C, 500 lines of assembly, and the compiler had to extract the executable code from the verified C codes). 
 
+Given this context, modular and compositional reasoning is indispensable for concurrent program verification. 
+The verification should be able to decompose the entire system into a collection of instances (\ie, multiple threads or a set of nodes) and further into a stack of modules in each instance. 
+Verification then needs to be achieved with each module separately, without considering complex dependencies or interleavings with other modules and instances in the system. 
+Of course, the process must also provide evidence about the system’s consistency by verifying the relation on behaviors of each module and the entire system. Modular and compositional software reasoning of this sort not only provides an efficient tool for verification but also opens up the possibility of proving the correct behavior of the system software, 
+which is usually parameterized by other programs running on it. 
 
-The prevalence of concurrent environments brings enormous changes to the software. 
-They allow  achieving higher performance or more functionality in a single software by using interactions among several instances 
-(\ie, multiple threads, nodes, I/O devices, and networks) in the system, 
-but they create whole new challenges in terms of providing correctness software. 
-Obviously, they are well-known to be difficult to get right and debug because of numerous (usually unbounded)
- interleavings among their multiple components. Testing is necessary to avoid their possible faults, 
- but it is not a promising way to provide their high assurance. Reproducing a bug is unfeasible unless testers know their precise interleaving order.
-In this sense, building reliable concurrent programs requires verification to formally show that they 
-correctly reflect the desired behavior (\ie, the behavior stated in their specifications) without missing any single interleaving cases.
-
-
-In addition, modern software systems consist of multiple sub-modules, 
-which are intimately connected with other modules in the system. This brings another source of complexity to the verification. 
-These sub-modules highly depend on others, which makes the modular reasoning of each component difficult. 
-Accordingly, software verification is considered painful work with prohibitive costs associated with the difficulty of achieving scalability, 
-reusability,  and extensibility. 
-For example, a famous previous by an seL4 team ~\cite{klein2009sel4} accomplished a breakthrough in software verification 
-by providing the first verified (sequential) microkernel and connecting all proofs in a mechanized proof assistant, 
-but it required considerable effort. The verification took 11 person years for 7,500 lines of C codes but still contained unverified parts
- (\ie, 1,300 lines of C, 500 lines of assembly, and the compiler to extract the executable code from the verified C codes).
-%When combined with concurrency,
-%some modules facilitate
-%shared operations of other modules
-%to form the new shared services.
-%It also provides another challenge 
-%in the concurrent program verification, 
-%which has to resolve not only the interleaving among the concurrent instances as well as the dependencies among the sub-modules 
-%that forms the entire system.
-
-
-%%%%%%%% isolation is required
-
-Therefore, modular and compositional reasoning is indispensable for concurrent program verification. 
-The verification should be able to decompose the entire system into a collection of instances (\ie, multiple threads or a set of nodes) and 
-further into a stack of modules in each instance; then it needs to be achieved with each module separately without considering complex 
-dependencies or interleavings with other modules and instances on the system. Of course, it needs to provide evidence about the system's 
-consistency by verifying each module and the behavior of the entire system. 
-This modular and compositional software reasoning not only provides an efficient tool for verification 
-but also opens the possibility of proving the correct behavior of the system software that is usually parameterized by other programs running on them.
-%
-%This feature is crucial in some sorts 
-%of concurrent programs such as 
-%operating systems, libraries, or application interfaces because of the
-%proof of them usually needs to be parameterized by 
-%other programs running on them. 
-%In those cases, composition and proof isolation 
-%give enough power to state and prove the correctness property 
-%of those programs upon any arbitrary context programs run with the targeted programs. 
-
-%%%%%%%v other previous works 
-In this sense, several previous works address modular and/or compositional reasoning with respect to programs--either with or without concurrency.
-% need separation logic????
-There are two traditional approaches--rely-guarantee ~\cite{jones83} and separation logic ~\cite{ishtiaq01}-and many others 
-that stem from either or both of them 
-~\cite{feng07:sagl,vafeiadis:marriage,LRG,fu10:roch,sergey15, lili16,Vafeiadis11mfps, Yang07relsep,
+Several previous works address modular and/or compositional reasoning with respect to programs-either with or without concurrency. 
+Two traditional approaches are typically used -- rely- guarantee~\cite{jones83}  and separation logic~\cite{ishtiaq01} -- and many other variations exist that stem from either or both of them~\cite{feng07:sagl,vafeiadis:marriage,LRG,fu10:roch,sergey15, lili16,Vafeiadis11mfps, Yang07relsep,
 Liang14lics}.
-Besides, some approaches not only focus on functional correctness but also shows liveness~\cite{lili16}.
-However, most previous works do not provide a programming framework that addresses all the above challenges
-in concurrent program verification and is capable of extracting the running code from the program written in low-level programming 
-languages such as C and assembly.
-
-
-
-%\begin{figure}
-%\begin{center}
-%
-%NEED TO ADD FIGURE
-%NEED TO ADD FIGURE
-%NEED TO ADD FIGURE
-%NEED TO ADD FIGURE
-%NEED TO ADD FIGURE
-%NEED TO ADD FIGURE
-%NEED TO ADD FIGURE
-%NEED TO ADD FIGURE
-%NEED TO ADD FIGURE
-%\end{center}
-%
-%\caption{Challenges in Concurrent Program Verification.}
-%\label{fig:intro:challenges-concurrent-prog-verification}
-%\end{figure}
-%
-%
-%Figure~\ref{fig:intro:challenges-concurrent-prog-verification} abbreviates key challenges in concurrent program verification. 
-%Concurrent program verification has to deal with (1) complex dependencies among multiple sub-modules in the system; (2) linking  for the program written in different languages such as C and Assembly; (3) providing isolation for each instance in the concurrent program; (4) 
-%providing fine-grained concurrency in the middle of the program with the proper linking. 
-
+In addition, some approaches focus not just on functional correctness but also on showing liveness~\cite{lili16}. 
+However, most previous works do not provide a programming framework that addresses all of the above challenges in concurrent program verification and that is also capable of extracting the running code from the program written in low-level programming languages, such as C and assembly. 
 
 \section{Verification Toolkit for Concurrent Programs}
 \label{chapter:introduction:sec:verification-toolkit-for-concurrent-programs}
@@ -107,61 +50,57 @@ languages such as C and assembly.
 \label{chapter:intro:verification-toolkit-structure} 
 \end{figure}
 
-With those investigations, we present the toolkit that supports modular and compositional verification for concurrent programs. 
+With those investigations in mind, 
+we present a toolkit that supports modular and compositional verification for concurrent programs.
 Figure~\ref{chapter:intro:verification-toolkit-structure}  shows the overall structure of our verification toolkit. 
-The toolkit consists of two parts: 1) propose the method to build local layer interfaces for concurrent program verification (\ie, local layer interfaces in Figure~\ref{chapter:intro:verification-toolkit-structure}); and 
-2) provide the concurrent-linking framework (\ie, multicore and multithreaded linking in Figure~\ref{chapter:intro:verification-toolkit-structure}).
-All layers and linking parts are also connected with the traditional simulation 
-technique~\cite{compcert, deepspec}. 
+The toolkit consists of two parts: 
+1) it outlines the method for building local layer interfaces for concurrent program verification (\ie, local layer interfaces in Figure~\ref{chapter:intro:verification-toolkit-structure}); 
+and 2) it provides a concurrent-linking framework (\ie, multicore and multithreaded linking in Figure~\ref{chapter:intro:verification-toolkit-structure}). 
+All layers and linking parts are also connected with the traditional simulation technique~\cite{compcert, deepspec}. 
+
  
-The first part of our toolkit is to construct certified concurrent abstraction layers: a new compositional model for concurrency, 
+The first part of our toolkit outlines the construction of certified concurrent abstraction layers: a new compositional model for concurrency, 
 a program verifier for concurrent C and assembly, and a verified C compiler. 
-Each layer interface in our framework functions as an executable machine which consists of state and multiple transition rules. 
+Each layer interface in our framework functions as an executable machine that consists of state and multiple transition rules. 
 To divide the program into fine-grained pieces, we follow the idea of abstraction layers, which are widely used in modern computer systems. 
-Our layered approach also reduces the complex dependency among the sub-modules in the entire system.
-We use the verified compiler for this layered approach to minimize the trusted parts between the verified program and the executable code 
-on a bare machine. Programs written and verified with our toolkit use a subset of C language, 
-which can be compiled into $\intelmachine$ assembly language via $\compcertx$, which is the variance of verified C compiler $\compcert$.
+Our layered approach also reduces the complex dependency among the sub-modules in the entire system. 
+We use the verified compiler for this layered approach to minimize the trusted parts between the verified program and the executable code on a bare machine. 
+Programs written and verified with our toolkit use a subset of C language, which can be compiled into $\intelmachine$ assembly language via $\compcertx$, which is the variance of verified C compiler $\compcert$.  
 
-This first part of our verification toolkit has several distinctive features which stem from the requirements of 
-a sizeable concurrent system. First, it is suitable for dealing with the low-level code. To make the proofs tractable, 
-we mainly work at the C level (relying on the $\compcert$ verified compiler~\cite{compcert}), 
-but we sometimes need to go lower. 
-For example, the MCS algorithm needs to use atomic CPU instructions (fetch-and-store and compare-and-swap), 
-so we need a way to mix C and assembly code. At the same time, C itself is too low-level to reason about conveniently, 
-so we need data abstraction to hide the details about representation in memory. 
-Our toolkit provides an efficient way to verify C and assembly programs as well as connect the data abstraction 
-with detailed representations in memory. Second, to handle large developments, we need separation of responsibilities. 
-In a small proof of a small concurrent program in isolation, 
-you can state the specification as a single pre- and post-condition which specifies the shape and ownership of the data structure, 
+This first part of our verification toolkit has several distinctive features, which stem from the requirements of a sizeable concurrent system. 
+First, it is suitable for dealing with low-level code.
+To make the proofs tractable, we work primarily at the C level (relying on the $\compcert$ verified compiler~\cite{compcert}), 
+but we sometimes need to go lower. For example, the $\mcsname$ algorithm needs to use atomic CPU instructions (fetch-and-store and compare-and-swap), 
+so we need a way to mix C and assembly code. 
+At the same time, C itself is too low-level to reason about conveniently, 
+so we need to use data abstraction to hide the details about representation in memory. 
+Our toolkit provides an efficient way to verify C and assembly programs as well as to connect the data abstraction with detailed representations in memory. 
+Second, to handle large developments, we need a separation of responsibilities. 
+In a small proof of a small concurrent program in isolation, one can state the specification as a single pre- and post-condition that specifies the shape and ownership of the data structure, 
 the invariants of the liveness conditions, and even the behavior of the entire system. 
-But such a proof is not modular and not reusable. In our development, 
-these are done as separate refinement steps in separate modules with explicit interfaces, 
-and they can even be the responsibility of different software developers. 
-Finally, the layers approach is general purpose in the sense that the same semantic framework can be used for proving all kinds of properties. 
-The model of program execution exposed to the programmer is simple—mostly the same as what you would use for sequential code, 
-and with a notion of logs of events to model concurrency. We did not have to add any special features to the logic to show high-level 
-properties (such as a liveness property) because we could directly reason in $\coq$ about how long an execution will take.
-
-The other part of our toolkit is to provide the connection between multiple concurrent instances in the system. 
-Our certified concurrent abstraction layers provide the way to build and verify concurrent programs by decoupling 
-the complex interleaving from the correctness proof of each layer in the system. 
-This compositional requires each layer to use assumptions on the environment of the layer interface--the behavior of other concurrent components 
-in the system. 
+But such a proof is not modular and not reusable. 
+In our development, these are done as discrete refinement steps in separate modules with explicit interfaces, and they can even be the responsibility of different software developers. 
+Finally, the layers approach can be considered general purpose in the sense that the same semantic framework can be used for proving all kinds of properties. 
+The model of program execution exposed to the programmer is simple--mostly the same as one might use for sequential code, and with a notion of logs of events to model concurrency. 
+We do not have to add any special features to the logic to show high-level properties (such as a liveness property), because we can directly reason in $\coq$ about how long an execution will take. 
+ 
+The other part of our toolkit provides the connection between multiple concurrent instances in the system. 
+Our certified concurrent abstraction layers provide the method for building and verifying concurrent programs by decoupling the complex interleaving from the correctness proof of each layer in the system. 
+This composition requires each layer to use assumptions on the environment of the layer interface, 
+namely regarding the behavior of other concurrent components in the system. 
 Those assumptions inevitably need to be compatible with the properties that other concurrent components can guarantee; 
-thus, proving this property is desirable for our concurrent program verification toolkit. To fulfill this requirement, 
-we provide the concurrent linking library as a part of our toolkit, which includes defining concurrent machine 
-models and providing generic proof methods to show the validity in the parallel composition of multiple instances as well as 
-the formal connection between the program on concurrent machine models and the program on the local layer interface.
+proving this property is thus desirable for our concurrent program verification toolkit. 
+To fulfill this requirement, we provide the concurrent linking library as part of our toolkit, 
+which includes defining concurrent machine models and providing generic proof methods to show the validity in the parallel composition of multiple instances, 
+as well as the formal connection between the program on concurrent machine models and the program on the local layer interface. 
 
-Our linking library also has several unique aspects to apply it to large concurrent system verification. 
-First, our concurrent machine semantics are generic enough to be applied to arbitrary programs written in our layered framework. 
-We separate the linking process from the concurrent layer building so users do not have to deal with the details of linking itself when they 
-build concurrent layers using our framework. Second, it also can be linked with the assembly model for the verified compiler $\compcertx$, thus
- providing the full formal connection between the program written in C and assembly and the data abstraction for the detailed data 
- representation on the memory. Third, it provides complex dependencies among multiple data structures in large concurrent programs. 
- This is not only related to the dependencies among shared objects in the program but also the dependencies between 
- shared and private objects. Our toolkit handles all those issues with reasonable restrictions.
+Our linking library also has several unique aspects for applying it to large concurrent system verification. 
+First, our concurrent machine semantics are generic enough to be applied to arbitrary programs written in our layered framework.
+We separate the linking process from the concurrent layer building so that users do not have to deal with the details of linking itself when they build concurrent layers using our framework. 
+Second, it also can be linked with the assembly model for the verified compiler $\compcertx$, thus providing the full formal connection between the program written in C and assembly and the data abstraction for the detailed data representation on the memory. 
+Third, it provides complex dependencies among multiple data structures in large concurrent programs. 
+This relates not only to the dependencies among shared objects in the program but also to the dependencies between shared and private objects. 
+Our toolkit handles all those issues with reasonable restrictions. 
 
 \section{Concurrent Program Verification Examples}
 \label{chapter:introduction:sec:concurrent-program-verification-examples}
@@ -175,136 +114,117 @@ build concurrent layers using our framework. Second, it also can be linked with 
 \label{fig:intro:certikos-structure}
 \end{figure}
 
-As examples of the applicability of our framework, we verified two large-scale concurrent systems--$\certikos$ and $\wormspace$.
-These examples also represent two models for concurrent programs: 
-the shared-memory model of concurrency and the message-passing model.
 
-A concurrent operating system is a well-known example of the shared-memory model for concurrency that multiple threads 
-in the system share the same physical memory or a common 
-file system. Operating system verification has been studied for a while with impressive results~\cite{klein2009sel4, xu16, hawblitzel10}.
-However, these studies either lack supporting fine-grained lock control on shared resources or lack progress property proofs of their kernels.
- On the other hand, $\certikos$ is the first verified concurrent operating system kernel with fine-grained locking. 
- The kernel is written in C and assembly, and the extracted code of the kernel (via verified compositional compilation) 
- runs on an $\intelmachine$ multicore machine. It consists of 6,500 lines of C and assembly implementation and 200K+ lines of $\coq$ proofs.
+As examples of the applicability of our framework, we verified two large-scale concurrent systems--$\certikos$ and $\wormspace$. 
+These examples also represent two different models for concurrent programs: the shared-memory 
+model of concurrency and the message-passing model. 
 
-To manage such a massive verification work, we divide the kernel into multiple sub-modules and link them together to form the 
-correctness theorem of the kernel. This work not only facilitates the abstraction-layer approach in our framework 
-but also uses our concurrent-linking framework to show the simulation relation between 
-the program on each instance with its concurrent environment and the program runs on the full 
-concurrent machine--the $\intelmachine$ multicore machine. 
+A concurrent operating system is a well-known example of the shared-memory model for concurrency in which multiple threads in the system share the same physical memory or a common file system.
+Operating system verification has been studied for some time with impressive results~\cite{klein2009sel4, xu16, hawblitzel10}.
+However, these studies tend to either fail to support fine-grained lock control on shared resources or to lack progress property proofs of their kernels. 
+On the other hand, $\certikos$ is the first verified concurrent operating system kernel with fine-grained locking. 
+The kernel is written in C and assembly, and the extracted code of the kernel (via verified compositional compilation) runs on an $\intelmachine$ multicore machine. 
+It consists of 6,500 lines of C and assembly implementation and 200K+ lines of $\coq$ proofs. 
 
+To manage such extensive verification work, we divide the kernel into multiple sub-modules and link them together to form the correctness theorem of the kernel. 
+This work not only facilitates the abstraction-layer approach in our framework but also uses our concurrent-linking framework to show the simulation relation between the program on each instance with its concurrent environment, and the program runs on the full concurrent machine--the $\intelmachine$ multicore machine. 
 
-
-Figure~\ref{fig:intro:certikos-structure} briefly describes the overall structure of our $\certikos$ verification.
-We divide the full kernel as two parts, per-CPU $\certikos$ and per-thread $\certikos$, and build abstraction layers for those two parts with our framework.
+Figure~\ref{fig:intro:certikos-structure} briefly describes the overall structure of our $\certikos$ verification. 
+We divide the full kernel as two parts, per-CPU $\certikos$ and per-thread $\certikos$, 
+and we build abstraction layers for those two parts with our framework. 
 We prove the correctness theorem of each part; the implementation of each part on its local machine (\ie, a thread-local machine or a CPU-local machine) contextually refines the top-most layer of each part. 
-Then, we merge those two correctness proofs using our multithreaded linking framework. 
+We then merge those two correctness proofs using our multithreaded linking framework. 
 We also propagate the correctness proof down to the multicore machine using our multicore linking framework. 
-Followed by all those steps, we prove a single top-level correctness theorem of $\certikos$, which implies 
-that $\certikos$ implementation running on a multicore machine model (\ie, a $\intelmachine$ multicore machine)  contextually refines the top-most abstraction layer in $\certikos$ layer stacks (\ie, $\TSyscall$ layer that abstracts all system calls in $\certikos$).
+Following all of those steps, we prove a single top-level correctness theorem of $\certikos$, which implies that $\certikos$ implementation running on a multicore machine model (\ie, a $\intelmachine$ multicore machine) contextually refines the top-most abstraction layer in $\certikos$ layer stacks (\ie, $\TSyscall$ layer that abstracts all system calls in $\certikos$). 
 
 
 
 
-We also built a spinlock module to support fine-grained lock services for multiple shared objects in the kernel 
-(\ie, page allocation, atomic queue, \etc).
-The MCS Lock--one of two lock algorithms we used--verification is described in detail in this thesis, 
-focusing on how we divided the requirement of lock verification into multiple layers, proving
-liveness of the lock and providing a simple but common interface of the verified lock for other shared resources.
+We also built a spinlock module to support fine-grained lock services for multiple shared objects in the kernel (\ie, page allocation, atomic queue, etc.).
+The $\mcsname$ Lock verification--one of two lock algorithms we used--is described in detail in this thesis, focusing on how we divided the requirement of lock verification into multiple layers, proving liveness of the lock and providing a simple but common interface of the verified lock for other shared resources. 
 
-The MCS algorithm is well-known in scalable fair inter-CPU mutex locks. 
-Although the program is short, the proof is challenging. First, the implementation of a lock algorithm cannot itself use locks, 
-so it must rely solely on atomic-memory instructions and be robust against any possible interleavings between CPUs. 
-This is the most challenging type of concurrency--so-called lock-free programming.
-Second, unlike algorithms which only promise mutual exclusion, the MCS algorithm also aims for fairness among CPUs.
-To check that it got it right, our correctness theorem needs to guarantee not only mutual exclusion (a safety property) but also bounded waiting time (a liveness property). We show how we resolve these challenges in this thesis.
+The $\mcsname$ algorithm is well-known in scalable fair inter-CPU mutex locks. 
+Although the program is short, the proof is challenging. 
+First, the implementation of a lock algorithm cannot itself use locks, so it must rely solely on atomic-memory instructions and be robust against any possible interleavings between CPUs. 
+This is the most challenging type of concurrency, so-called lock-free programming. 
 
+Second, unlike algorithms that promise only mutual exclusion, the $\mcsname$ algorithm also aims for fairness among CPUs. 
+To ensure that it succeeds in this aim, our correctness theorem needs to guarantee not only mutual exclusion (a safety property) but also bounded waiting time (a liveness property). 
+We show how we resolve these challenges in this thesis. 
 
-Our verification toolkit is inspired by the $\certikos$ project, but it is not limited to operating system verification. 
-Distributed systems are well-known as the message-passing model of concurrency, where nodes in distributed systems are connected with 
-others via network communication. They serve millions of users in important applications
- these days (\ie, banking, communications, and social networking), but they are difficult programs to be correctly implemented 
- due to their concurrency and their failures. Local nodes may crash at arbitrary moments, and communications may possess failures 
- such as packet reordering, loss, and duplication. In this sense, distributed systems are a desirable target for verification to 
- show the applicability of our framework.
+Our verification toolkit is inspired by the $\certikos$ project, 
+but it is not limited to operating system verification. 
+Distributed systems are well-known as the message-passing model of concurrency, 
+where nodes in distributed systems are connected with others via network communication. 
+They serve millions of users in important applications (\ie, banking, communications, and social networking), 
+but they are difficult programs to implement correctly due to their concurrency and their failures. 
+Local nodes may crash at arbitrary moments, and communications may possess failures such as packet reordering, loss, and duplication. 
+In this sense, distributed systems are a fitting target for verification, in order to show the applicability of our framework. 
 
 To build a trustworthy distributed system, we first introduce the WOR abstraction inherent in many distributed systems and present a simple, 
-data-centric WOR API as a first-class programming abstraction.  
-Next, we implement three distributed applications over this API; for each, our modular design easily allows new configurations 
-with different performance and availability properties while matching or surpassing the performance of an existing monolithic implementation 
-in a similar configuration. Finally, we apply our verification toolkit into distributed systems by adding a 
-non-Byzantine band asynchronous network model (which allows packet duplication, delay, and loss). We built WormSpace, 
-which is a distributed system API that provides the abstraction of the common interfaces that many distributed systems can use. 
-The system is implemented via a collection of Paxos, and we prove its functional correctness as well as the key safety property of the 
-protocol--immutability.
+data-centric WOR API as a first-class programming abstraction. 
+Next, we implement three distributed applications over this API; for each, our modular design easily allows new configurations with different performance and availability properties while matching or surpassing the performance of existing monolithic implementation in a similar configuration. 
+Finally, we apply our verification toolkit into distributed systems by adding a non-Byzantine band asynchronous network model (which allows packet duplication, delay, and loss). 
+As a result, we built $\wormspace$, which is a distributed system API that provides the abstraction of the common interfaces that many distributed systems can use. The system is implemented via a collection of $\paxos$, and we prove its functional correctness as well as the key safety property of the protocol--immutability. 
+
 
 
 \section{Toolkit for Leader-based Distributed Protocols and Systems}
 \label{chapter:introduction:sec:toolkit-for-leader-based-distributed-protocols-and-systems}
 
 
-%The verification of distributed systems reveals another challenge beyond showing their functional correctness of those programs:  the safety proofs of their underlying protocols. 
-While even verifying a single distributed system is challenging, in practice, distributed applications 
-rely on several distributed systems. An application might employ different distributed systems for distinct functionalities (\eg,
-consensus~\cite{vivaladifference}, distributed transactions~\cite{gray:2006},
-and distributed locks~\cite{chubby, zookeeper} as part of a high-reliability distributed database),
-or it might use systems that achieve the same goal 
- (\eg,
-multi-Paxos~\cite{paxosmadesimple, rvrpaxos} vs. Raft~\cite{raft}) in different parts, depending on performance considerations or simple preference.
- Therefore, to realize a verified distributed system environment, methodologies to cover multiple distributed systems are necessary.
+While verifying even a single distributed system can be challenging, in practice, distributed applications rely on several distributed systems. 
+An application might employ different distributed systems for distinct functionalities (\eg, consensus~\cite{vivaladifference}, 
+distributed transactions~\cite{gray:2006}, and distributed locks~\cite{chubby, zookeeper}  as part of a high-reliability distributed database), 
+or it might use systems that achieve the same goal (\eg, multi-Paxos~\cite{paxosmadesimple, rvrpaxos} vs. Raft~\cite{raft}) in different parts, 
+depending on performance considerations or simple preference. 
+Therefore, to realize a verified distributed system environment, methodologies to cover multiple distributed systems are necessary. 
 
-We find that distributed systems that realize strong semantics are typically designed under a common pattern: 
-they exploit a leader node (or a centralized coordinator) explicitly or implicitly to coordinate distributed state changes. Indeed, 
-for simplicity of management and understanding, this leader-based scheme is commonly used to implement critical distributed functions. 
-For example, multi-Paxos and Raft elect a leader to replicate states across multiple nodes, two-phase commit employs a transaction manager to
- coordinate transactions over various resource managers, and coordination services grant a lock to a requester to allow for mutually exclusive 
- access to a distributed shared state. 
- To account for this, our dissertation proposes an idea that can be used in the distributed system 
- verification--especially leader-based distributed systems.
+
+We find that distributed systems that achieve strong semantics are typically designed under a common pattern: 
+they exploit a leader node (or a centralized coordinator) explicitly or implicitly to coordinate distributed state changes. 
+Indeed, for simplicity of management and understanding, this leader-based scheme is commonly used to implement critical distributed functions. 
+For example, multi-Paxos and Raft elect a leader to replicate states across multiple nodes, 
+Two-phase Commit employs a transaction manager to coordinate transactions over various resource managers, 
+and Coordination Services grant a lock to a requester to allow for mutually exclusive access to a distributed shared state. 
+To account for this, our dissertation proposes an idea that can be used in the distributed system verification, especially in leader-based distributed systems. 
 
 \section{Contributions by Collaborators}
 \label{chapter:introduction:sec:contributions-by-collaborators}
 
-The works in chapters~\ref{chapter:ccal},~\ref{chapter:mcs-lock},~\ref{chapter:linking}, and \ref{chapter:certikos} are parts of 
-the $\certikos$ project, and were jointly done with various members in our group.
-The author collaborated with Ronghui Gu on developing concurrent certified abstraction layers, concurrent linking libraries, and the verification on the verified concurrent OS kernel ($\certikos$).  
-The author wrote almost all proofs in linking libraries and concurrent-linking proofs for $\certikos$ with some help from 
-J{\'e}r{\'e}me Koenig.
-Among the entire $\certikos$, 
-the author developed the whole MCS Lock module with Vilhelm Sj{\"o}berg,
-who also contributed to many other parts. The automation engine for proving the C source program were developed solely by Xiongnan (Newman) Wu,
- but its details are out of scope in this thesis. Wu’s thesis illustrates in-depth explanations about the automation engine. 
- For the case study on distributed system verification in Chapter~\ref{chapter:wormspace} ($\wormspace$), Ji-Yong Shin and Wolf Honore 
- worked together to build and verify the system, and the author had a leading role in designing the network models, 
- layers for the target system, and safety proof of the system.
- The author also worked with Ji-Yong Shin and Wolf Honore to provide a verification toolkit for leader-based distributed systems 
- in Chapter~\ref{chapter:witness-passing}.
+The works in chapters~\ref{chapter:ccal},~\ref{chapter:mcs-lock},~\ref{chapter:linking}, and \ref{chapter:certikos}  are parts of the $\certikos$ project,
+conducted jointly by various members in our group. 
+The author collaborated with Ronghui Gu on developing concurrent certified abstraction layers, concurrent linking libraries, and the verification on the verified concurrent OS kernel ($\certikos$). 
+The author wrote almost all proofs in linking libraries and concurrent-linking proofs for $\certikos$, with some help from J{\'e}r{\'e}me Koenig. 
+Regarding the entire $\certikos$, the author developed the whole $\mcsname$ Lock module with Vilhelm Sj{\"o}berg, 
+and also contributed to many other parts. 
+The automation engine for proving the C source program was developed solely by Xiongnan (Newman) Wu, but its details are beyond the scope of this thesis. 
+Wu’s thesis illustrates in-depth explanations regarding the automation engine. 
+For the case study on distributed system verification in Chapter~\ref{chapter:wormspace} ($\wormspace$), Ji-Yong Shin and Wolf Honore worked together to build and verify the system, 
+and the author had a leading role in designing the network models, layers for the target system, and safety proof of the system. 
+The author also worked with Ji-Yong Shin and Wolf Honore to provide a verification toolkit for the leader-based distributed systems in  Chapter~\ref{chapter:witness-passing}.
+
 
 \section{Contents of the Chapters}
 \label{chapter:introduction:sec:contents-of-the-chapters}
 
-The rest of this dissertation is organized as follows. Chapter~\ref{chapter:ccal} focuses on the framework to build local layer 
-interfaces of concurrent programs--an abridged version of the related parts of our work in~\cite{concurrency}.
-Chapter~\ref{chapter:mcs-lock} is an abridged version of our work from~\cite{mcslock},
-which is a case study that uses the framework in Chapter~\ref{chapter:ccal}. 
+The rest of this dissertation is organized as follows. 
+Chapter~\ref{chapter:ccal}  focuses on the framework for building local layer interfaces of concurrent programs, 
+which is an abridged version of the related parts of our work in~\cite{concurrency}.
+Chapter~\ref{chapter:mcs-lock} is an abridged version of our work from~\cite{mcslock}, 
+which provides a case study that uses the framework in Chapter~\ref{chapter:ccal}. 
 Chapter~\ref{chapter:linking} provides the details for our concurrent-linking, multicore linking, and multithreaded-linking frameworks, 
-of which the high-level idea is part of our work in~\cite{concurrency}.
-However, this chapter differs from our previous publications by providing in-depth explanations for the parts related to concurrent linking, 
-thus addressing how to use our linking framework by presenting formal rules, proofs, and its true capability, 
-which are also addressed in~\cite{concurrency}.
-Chapter~\ref{chapter:certikos} shows our work on $\certikos$,
-which is closely related to our work in~\cite{certikos:osdi16}. 
-It provides an interesting case study that uses all the ingredients of our concurrent verification
- framework as well as shows its full power. The verification work on distributed systems, $\wormspace$,
-is discussed in Chapter~\ref{chapter:wormspace}.
-It is an abridged version of our work in~\cite{wormspace},
-which shows the applicability of our framework to distributed systems. 
-Chapter~\ref{chapter:witness-passing} 
-explains our idea for how to provide a generic toolkit to verify multiple leader-based distributed systems, 
-which is inspired by the verification work on $\wormspace$.
-Chapter~\ref{chapter:related}
-offers an in-depth discussion of related work, and  Chapter~\ref{chapter:conclusion}  
-mentions limitations and future directions as well as summarizes this thesis.
+for which the high-level idea is part of our work in~\cite{concurrency}.
+However, this chapter differs from our previous publications by providing in-depth explanations for the parts related to concurrent linking, thus addressing how to use our linking framework by presenting formal rules, proofs, and its true capability, 
+which are not well addressed in~\cite{concurrency}. 
+Chapter~\ref{chapter:certikos}  shows our work on $\certikos$, which is closely related to our work in~\cite{certikos:osdi16}. 
+It provides an interesting case study that uses all the ingredients of our concurrent verification framework and also shows its full power. 
+The verification work on distributed systems, $\wormspace$, is discussed in Chapter~\ref{chapter:wormspace}. 
+It is an abridged version of our work in~\cite{wormspace}, whose aim is to demonstrate the applicability of our framework to distributed systems. 
+Chapter~\ref{chapter:witness-passing}  explains our idea for how to provide a generic toolkit to verify multiple leader-based distributed systems, 
+which is inspired by the verification work on $\wormspace$. 
+Chapter~\ref{chapter:related} offers an in-depth discussion of related work, 
+and Chapter~\ref{chapter:conclusion}   mentions limitations and future directions, in addition to summarizing the thesis.
 
 
 
