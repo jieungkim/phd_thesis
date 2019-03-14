@@ -3,12 +3,12 @@
 Our CCAL has several limitations.
 The automation still needs improvement. Among the two common layer-building patterns discussed in 
 Chapter~\ref{chapter:ccal},
-the \textit{log-lift} pattern still requires a plethora of manual proofs that users have to write. 
+the \textit{log-lift} pattern still requires a number of manual proofs that users have to write. 
 We believe that providing better automation for several of their parts will dramatically improve the efficiency of our framework.
 
-Besides that, other parts of our proofs also can be improved by providing more automation. 
+Aside from that, other parts of our proofs also can be improved by providing more automation. 
 For example, building layers usually requires common patterns in code correctness proofs that show low-level implementations written in C and/or Assembly refines high-level specifications written in $\coq$. 
-As a simple example, introducing getter and setter functions in our framework normally requires us to write proofs about abstracting away the memory by showing operations in each cell in the associated memory block refine operations in each field in the corresponding abstract state definition with similar patterns.
+As a simple example, introducing getter and setter functions in our framework normally requires us to write proofs about abstracting away the memory by showing operations in each cell in the associated memory block to refine operations in each field  in the corresponding abstract state definition with similar patterns.
 In this sense, providing a tool that gives auto-generated low-level implementations as well as code correctness proofs with given high-level specifications would dramatically reduce proof efforts. 
 Other members in our group are working on this proof and code auto-generation.
 
@@ -18,7 +18,7 @@ model for composing multiple threads’ memories together
 our per-thread layer interfaces cannot support this model properly due to other dependencies of our framework 
 (\ie, the compiler and linking library). This restriction significantly limits the expressiveness of per-thread layer interfaces 
 and increases the complexity of multithreaded linking by making its size  (\ie, the concrete definition of 
-$\CSched$, $\TLink$, $\TSched$,  thread configurations, and auxiliary functions) huge. 
+$\CSched$, $\TLink$, $\TSched$,  thread configurations, and auxiliary functions) exceedingly large. 
 
 
 
@@ -27,11 +27,11 @@ $\CSched$, $\TLink$, $\TSched$,  thread configurations, and auxiliary functions)
 
 One limitation in our multicore and multithreaded linking frameworks is the lack of general parallel composition rules. 
 As discussed in Chapter~\ref{chapter:linking} and Chapter~\ref{chapter:certikos}, 
-our parallel composition is limited in specific places among the full layer stacks. Extending the current framework to support parallel compositions for every layer is required to strengthen our framework.
-Besides, our linking framework does not support automation when instantiating abstract relations to connect the framework with actual concurrent program verification.
-For example, providing concrete instances of $\AbsRelC$ and $\AbsRelT$ for $\certikos$ (discussed in Chapter~\ref{chapter:certikos}) requires us to write 30,000 lines of code with making us write same proofs several times. 
-Those things are apparent parts that our linking framework can be improved. 
-
+our parallel composition is limited in specific places among the full layer stacks. Extending the current framework to support parallel compositions for every layer would help to strengthen our framework.
+Furthermore, our linking framework does not support automation when instantiating abstract relations to connect the framework with actual concurrent program verification.
+For example, providing concrete instances of $\AbsRelC$ and $\AbsRelT$ for $\certikos$ (discussed in Chapter~\ref{chapter:certikos}) 
+would require that we write 30,000 lines of code and write the same proofs several times. 
+Those are some concrete areas in which our linking framework can be improved. 
 
 \section{Relaxed Memory Model}
 
@@ -39,35 +39,35 @@ We assume sequential consistency for atomic operations.
 This implies that all atomic operations on the system appear to take place in some total order--the global order of atomic operations.
 This assumption makes reasoning about concurrent programs easy, differing from most $\intelmachine$
  hardware models. 
-Therefore, small parts of our verified kernel that use underlying atomic operations (\ie, MCS Lock and Ticket Lock) may have unsounded behaviors with the real $\intelmachine$ hardware models due to native features of relaxed memory models that those hardware models are using. 
+Therefore, small parts of our verified kernel that use underlying atomic operations (\ie, MCS Lock and Ticket Lock) may have unsound behaviors with the real $\intelmachine$ hardware models due to native features of relaxed memory models that those hardware models are using. 
 To resolve the problem, we need to provide the correct implementation and the proof for those modules (\ie, MCS Lock and Ticket Lock) with relaxed memory models. 
 Based on the previous work~\cite{sevcik13}, 
 race-free programs on a TSO model behave as if they were executing on the sequential consistent machine. 
 We believe this observation can be applied to our program because the programs on our push/pull model are race-free. 
-However, we need more investigation to extend our work to support relaxed memory models.
+However, we need to investigate further in order to extend our work to support relaxed memory models. 
 
 
 \section{Timed Behaviors}
 
 Timed behavior is crucial for systems that provide time-sensitive services, such as real-time operating systems (RTOSs), 
-which serve real-time applications. However, our framework does not support the reasoning of real-time behaviors, 
-and providing the precise metric for each assembly instruction is challenging. Extending the current work to support 
-this is another future direction, and a separate line of work in our group is focusing on it.
+which serve real-time applications. 
+However, our framework does not support the reasoning of real-time behaviors, 
+and providing the precise metric for each assembly instruction is challenging. 
+Extending the current work in this way represents another avenue for future contribution, 
+and a separate line of work in our group is focusing on it. 
 
 
 \section{Trusted Computing Base in CertiKOS}
 
-Our verified kernel assumes the correctness of the hardware, and we assume the top-level system call specifications must be trusted. 
-Those shim layers are vulnerable points that possess bugs, and the previous work~\cite{shimlayer} investigates the weak parts via comparing 
-multiple verification works. We minimize those vulnerable points as much as possible. 
-$\compcert$ does not contain full specifications of $\intelmachine$ machine models.
-It does not have some control registers (\eg, CR3) and 
-instructions (\eg, xchg).
+Our verified kernel assumes the correctness of the hardware, and we assume that the top-level system call specifications must be trusted. 
+Those shim layers are vulnerable points that possess bugs, and previous work~\cite{shimlayer} investigates the weak parts by comparing multiple verification works. We minimize those vulnerable points as much as possible. 
+$\compcert$  does not contain full specifications of $\intelmachine$ machine models, 
+and it does not have some control registers (\eg, CR3) and instructions (\eg, xchg). 
 We focus on modeling hardware specifications that are only related to our kernel verification instead of specifying the entire hardware manual. 
-Trusted system call specifications are parts of our top-level abstraction layer ($\TSyscall$) in our $\certikos$.
+Trusted system call specifications are parts of our top-level abstraction layer ($\TSyscall$) in our $\certikos$. 
 Because all implementation details of our kernel are hidden in the layer, system call specifications are reasonably small. 
-This minimizes the possibility of errors and reduces the cost of the review process. However, we found multiple errors 
-in our review, so we believe testing those trusted parts is necessary to reduce the possibility of mistakes.
+This minimizes the possibility of errors and reduces the cost of the review process. 
+However, we found multiple errors in our review, so we believe that testing those trusted parts is necessary to reduce the possibility of mistakes. 
 
 \section{Extending CertiKOS}
 
@@ -84,32 +84,30 @@ Similar to TCBs in $\certikos$, we trust bottom and top layers in our abstractio
  For example, send-and-receive primitives and a socket-initialization primitive are parts of the bottom layer. 
 Extending $\certikos$ can reduce these trusted parts. 
 The top layer interface it contains the API for clients. 
-We minimize the size of those specifications as much as possible, as we did in   $\certikos$.
-This reduces the possibility of errors, but testing for those specifications is desirable if we have a proper testing tool for them.
+We minimize the size of those specifications as much as possible, as we did in $\certikos$. 
+This reduces the possibility of errors, but testing for those specifications is desirable if a proper testing tool exists. 
+
 
 \section{Extending WormSpace}
 
-Our $\wormspace$ has multiple possibilities for extension. Our work currently does not support membership changes 
-that are common in practical distributed systems. It also does not investigate liveness or other progress properties. 
-To support these things, we need to modify the current asynchronous network model into a semi-asynchronous 
-network model that has a time-related behavior (\ie, time out) in it. 
-Our network assumption is a non-Byzantine setting, which trusts all nodes in the network. Relaxing this condition is sometimes desirable,
- and it may be a future direction of  $\wormspace$ as well as our distributed system verification. 
- We believe that modeling them is feasible with the current framework, and we focus on parts of them as ongoing works.
+Our $\wormspace$ has multiple possibilities for extension. 
+Our work currently does not support membership changes that are common in practical distributed systems. 
+It also does not investigate liveness or other progress properties. 
+To support these features, we need to modify the current asynchronous network model into a semi-asynchronous network model that has a time-related behavior (\ie, time out) in it. 
+Our network assumption is a non-Byzantine setting, 
+which trusts all nodes in the network. 
+Relaxing this condition is sometimes desirable, and it may be a future direction of $\wormspace$ as well as our distributed system verification. 
+We believe that modeling the nodes is feasible with the current framework, and we are currently focusing on parts of them in our ongoing work.
  
  
 \section{Conclusion}
 
-This thesis explains the toolkit for concurrent program verification that provides support for users to build abstraction layers containing 
-machine-checked proof objects. The toolkit also provides the framework to combine local isolated proof instances in the concurrent environment 
-to form the  formal link between the local instance and formal behavior of the program on a concurrent machine model. 
-As case studies, we presented $\certikos$ and $\wormspace$, 
-which are a concurrent operating system with fine-grained locking and a distributed system API based on a collection of $\paxos$, respectively.
+This thesis explains the toolkit for concurrent program verification that provides support for users to build abstraction layers containing machine-checked proof objects. 
+The toolkit also provides a framework for combining local isolated proof instances in the concurrent environment to form the formal link between the local instance and formal behavior of the program on a concurrent machine model. 
+As case studies, we presented $\certikos$ and $\wormspace$, which represent a concurrent operating system with fine-grained locking and a distributed system API based on a collection of $\paxos$, respectively. 
+Regarding the verification of distributed systems, we also provided a generic toolkit to support the safety proof of multiple leader-based distributed systems. 
+We created a generic form that those systems can follow as support for their safety proof. 
+This is critical in the verification of distributed systems because providing high assurance of those systems is not only associated with functional correctness but also with protocol safety, which usually requires a sophisticated case analysis. 
 
-Regarding the verification of distributed systems, we also provide the generic toolkit to support the safety proof of multiple 
-leader-based distributed systems. We create a generic form that those systems must follow that can aid their safety proof. 
-This is critical in the verification of distributed systems because providing the high assurance of those systems is not only associated with 
-functional correctness but also the protocol safety that usually requires a sophisticated case analysis.
+Regarding directions for future work, we plan to rule out assumptions on which our framework and proofs rely and to improve the framework to extend its expressiveness and automation. We also plan to simplify the framework itself. 
 
-As a future direction, we plan to rule out assumptions on which our framework and the proofs rely and improve the framework to
-extend its expressiveness and automation. We also plan to simplify the framework itself.
