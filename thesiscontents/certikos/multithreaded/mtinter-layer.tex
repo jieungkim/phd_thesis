@@ -1,7 +1,7 @@
-\subsection{Concrete Definitions for Multithreaded-Linking Framework} 
+\subsection{Concrete Definitions for Multithreaded Linking Framework} 
 \label{chapter:certikos:phbthread}
 
-Building intermediate layers to facilitates our multithreaded-linking framework 
+Building intermediate layers to facilitates our multithreaded linking framework 
 for $\certikos$ first requires  concrete definitions 
 that the layer relies on--thread configurations as well as auxiliary functions in Section~\ref{chapter:linking:subsec:multithreaded-machine-model}.
 
@@ -214,7 +214,7 @@ $\PBThrd$ uses,
 but $\PHBThrd$ has to contain all primitives (except scheduling primitives)
 that $\PBThrd$ contains.
 In this sense, 
-we re-define specifications for all primitives to build $\PHBThrd$; thus, it explores the size of the code in the multithreaded-linking part of $\certikos$.
+we re-define specifications for all primitives to build $\PHBThrd$; thus, it explores the size of the code in the multithreaded linking part of $\certikos$.
 Figure~\ref{fig:chapter:certikos:proc-create-cpu-spec-phbthred} shows the specification for the process-create primitive in $\PHBThrd$.
 Compared to the specification in $\PBThrd$ in Figure~\ref{fig:chapter:certikos:proc-create-cpu-spec},
  it does not modify the child's local state while it updates the 

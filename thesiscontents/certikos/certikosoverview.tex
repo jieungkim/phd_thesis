@@ -56,7 +56,7 @@ different machine models and focused sets\newfootnote{We omit explanations about
 
 To  prove this, we first decompose the full $\certikos$ into two parts--per-thread $\certikos$ ($\certikos_{\codeinmath{td}}$) and per-CPU $\certikos$ ($\certikos_{\codeinmath{cpu}}$).
 Then, we can prove that those two program parts satisfy contextual refinement theorems by using proofs for all layers,
-along with our multilayer-linking library described in Section~\ref{chapter:ccal:subsec:linking}. 
+along with our multilayer linking library described in Section~\ref{chapter:ccal:subsec:linking}. 
 Next, we can link those two proofs with the multithreaded linking described in Section~\ref{chapter:linking:sec:multithreaded-linking}. 
 This provides a theorem for the contextual refinement of the entire $\certikos$ kernel. 
 However, it remains insufficient to argue that this is an end-to-end theorem because its bottom-level machine model is still a per-CPU local-layer machine, which is a sequential-like machine based on the machine model of $\compcertx$. 

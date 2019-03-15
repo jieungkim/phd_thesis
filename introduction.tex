@@ -55,7 +55,7 @@ we present a toolkit that supports modular and compositional verification for co
 Figure~\ref{chapter:intro:verification-toolkit-structure}  shows the overall structure of our verification toolkit. 
 The toolkit consists of two parts: 
 1) it outlines the method for building local layer interfaces for concurrent program verification (\ie, local layer interfaces in Figure~\ref{chapter:intro:verification-toolkit-structure}); 
-and 2) it provides a concurrent-linking framework (\ie, multicore and multithreaded linking in Figure~\ref{chapter:intro:verification-toolkit-structure}). 
+and 2) it provides a concurrent linking framework (\ie, multicore and multithreaded linking in Figure~\ref{chapter:intro:verification-toolkit-structure}). 
 All layers and linking parts are also connected with the traditional simulation technique~\cite{compcert, deepspec}. 
 
  
@@ -127,7 +127,7 @@ The kernel is written in C and assembly, and the extracted code of the kernel (v
 It consists of 6,500 lines of C and assembly implementation and 200K+ lines of $\coq$ proofs. 
 
 To manage such extensive verification work, we divide the kernel into multiple sub-modules and link them together to form the correctness theorem of the kernel. 
-This work not only facilitates the abstraction-layer approach in our framework but also uses our concurrent-linking framework to show the simulation relation between the program on each instance with its concurrent environment, and the program runs on the full concurrent machine--the $\intelmachine$ multicore machine. 
+This work not only facilitates the abstraction-layer approach in our framework but also uses our concurrent linking framework to show the simulation relation between the program on each instance with its concurrent environment, and the program runs on the full concurrent machine--the $\intelmachine$ multicore machine. 
 
 Figure~\ref{fig:intro:certikos-structure} briefly describes the overall structure of our $\certikos$ verification. 
 We divide the full kernel as two parts, per-CPU $\certikos$ and per-thread $\certikos$, 
@@ -195,7 +195,7 @@ To account for this, our dissertation proposes an idea that can be used in the d
 The works in Chapters~\ref{chapter:ccal},~\ref{chapter:mcs-lock},~\ref{chapter:linking}, and \ref{chapter:certikos}  are parts of the $\certikos$ project,
 conducted jointly by various members in our group. 
 The author collaborated with Ronghui Gu on developing  $\ccalname$, concurrent linking libraries, and the verification on the verified concurrent OS kernel ($\certikos$). 
-The author wrote almost all proofs in linking libraries and concurrent-linking proofs for $\certikos$, with some help from J{\'e}r{\'e}me Koenig. 
+The author wrote almost all proofs in linking libraries and concurrent linking proofs for $\certikos$, with some help from J{\'e}r{\'e}me Koenig. 
 Regarding the entire $\certikos$, the author developed the whole $\mcsname$ Lock module with Vilhelm Sj{\"o}berg, 
 and also contributed to many other parts. 
 The automation engine for proving the C source program was developed solely by Xiongnan (Newman) Wu, but its details are beyond the scope of this thesis. 
@@ -213,7 +213,7 @@ Chapter~\ref{chapter:ccal}  focuses on the framework for building local layer in
 which is an abridged version of the related parts of our work in~\cite{concurrency}.
 Chapter~\ref{chapter:mcs-lock} is an abridged version of our work from~\cite{mcslock}, 
 which provides a case study that uses the framework in Chapter~\ref{chapter:ccal}. 
-Chapter~\ref{chapter:linking} provides the details for our concurrent-linking, multicore linking, and multithreaded-linking frameworks, 
+Chapter~\ref{chapter:linking} provides the details for our concurrent linking, multicore linking, and multithreaded linking frameworks, 
 for which the high-level idea is part of our work in~\cite{concurrency}.
 However, this chapter differs from our previous publications by providing in-depth explanations for the parts related to concurrent linking, thus addressing how to use our linking framework by presenting formal rules, proofs, and its true capability, 
 which are not well addressed in~\cite{concurrency}. 

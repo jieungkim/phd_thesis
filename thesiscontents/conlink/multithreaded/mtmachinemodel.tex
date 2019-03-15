@@ -143,7 +143,7 @@ which was involved with the context switching that affects the state shared by a
 Instead of that,
 the yield-back rule in $\easmmach$ only touches the thread private state, which is not visible to other threads.
 When the state is associated with the thread ID that is in the environment,
-$\easmmach$ queries the environmental context, which is similar to the \textsf{SKIP} rule in our environmental machine model of our multicore-linking framework in Figure~\ref{fig:chapter:conlink:multicore-env-step-machine}. 
+$\easmmach$ queries the environmental context, which is similar to the \textsf{SKIP} rule in our environmental machine model of our multicore linking framework in Figure~\ref{fig:chapter:conlink:multicore-env-step-machine}. 
 The rule is defined in Figure~\ref{fig:chapter:linking:eval-rule-in-easm-yield} (b).
 
 \begin{figure}
@@ -343,11 +343,11 @@ The relation is based on the relation of two abstract states (\lstinline$match_E
 type ``\lstinline$EData -> Log -> RData -> Prop$'' and shall be specified later by users with  concrete definitions for those abstract data types too. Figure~\ref{fig:chapter:conlink:two-cases-of-abs-rel-c} shows 
 one case in  $\AbsRelC$, which is the case 
 of  the external call while generating an event. 
-With that, we show the parallel composition in our multithreaded-linking framework, which is in Lemma~\ref{lemma:chapter:conlink:parallel-composition}. 
+With that, we show the parallel composition in our multithreaded linking framework, which is in Lemma~\ref{lemma:chapter:conlink:parallel-composition}. 
 
 \begin{lemma}[Parallel Composition: Contextual Refinement Between $\lasmmach$ and $\easmmach$]
 \label{lemma:chapter:conlink:parallel-composition}
-Suppose  $\ThreadConf$ is a multithreaded-linking environment that contains thread configurations, auxiliary functions, and properties for them. 
+Suppose  $\ThreadConf$ is a multithreaded linking environment that contains thread configurations, auxiliary functions, and properties for them. 
 Additionally, let's assume   $T_{[cid]}$ is full set that contains all threads in CPU $cid$, 
  $\oracle_{cid}$ is a valid
 environmental context for CPU $cid$ (associated with $\CSched$ on $\lasmmach$),
@@ -368,7 +368,7 @@ which also contains $\AbsRelC$.
 
 \subsubsection{Multithreaded Linking: Providing a Single-threaded Machine}
 
-Our multithreaded-linking framework also connects the multithreaded machine model with the full focused thread set 
+Our multithreaded linking framework also connects the multithreaded machine model with the full focused thread set 
 and the model with a singleton focused thread set. 
 As shown in Figure~\ref{fig:chapter:conlink:introduce-single-threaded-machine-model-with-iiasm},
 we introduce an another level of intermediate machine model ($\ieasmmach$) with
@@ -389,11 +389,11 @@ Unlike Lemma~\ref{lemma:chapter:conlink:parallel-composition},
 those two lemmas
 do not require any abstract relations that
 users have to fill out later. 
-Our multithreaded-linking framework provides those theorems without any additional costs. 
+Our multithreaded linking framework provides those theorems without any additional costs. 
 
 \begin{lemma}[Contextual Refinement Between $\easmmach$ and $\ieasmmach$]
 \label{lemma:chapter:conlink:easm-refines-iieasm}
-Suppose  $\ThreadConf$ is a multithreaded-linking environment that contains thread configurations, auxiliary functions, properties for them. 
+Suppose  $\ThreadConf$ is a multithreaded linking environment that contains thread configurations, auxiliary functions, properties for them. 
 Additionally, let's assume   $T_{[cid]}$ is a full set that contains all threads in CPU $cid$, 
  $\oracle_{cid}$ is a valid
 environmental context for CPU $cid$,
@@ -412,7 +412,7 @@ when $R_{\mathcal{M}{[\ieasm, \easm]}}$ is a refinement relation between two mac
 
 \begin{lemma}[Multithreaded Linking: Providing a Single Threaded Machine]
 \label{lemma:chapter:conlink:easm-refines-single-ieasm}
-Suppose  $\ThreadConf$ is a multithreaded-linking environment that contains thread configurations, auxiliary functions, properties for them.
+Suppose  $\ThreadConf$ is a multithreaded linking environment that contains thread configurations, auxiliary functions, properties for them.
 Additionally, let's assume   $T_{[cid]}$ is a full set that contains all threads in CPU $cid$, 
  $\oracle_{cid}$ is a valid
 environmental context for CPU $cid$,

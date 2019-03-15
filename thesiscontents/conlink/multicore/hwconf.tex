@@ -73,7 +73,7 @@ Also, all atomic operations are associated with their shared state, and then the
 are associated with each action (\eg, CAS or SWAP).
 However, the abstract hardware setting 
 does not know how many atomic operations there are and what kinds of atomic operations 
-will be connected to the multicore-linking framework at this moment.
+will be connected to the multicore linking framework at this moment.
 In this sense, their details are hidden and can be instantiated later. 
 There are four kinds of commands in this abstract level: private, atomic, acquire-shared, and release-shared operations. 
 Two operations--acquire shared and release shared--are logical and work as  unsafe ownership-transfer operations for shared resources. 

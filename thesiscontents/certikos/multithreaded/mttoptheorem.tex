@@ -1,10 +1,10 @@
-\subsection{Connecting Multithreaded-Linking Theorem}
+\subsection{Connecting Multithreaded Linking Theorem}
 \label{chapter:certikos:subsec:connecting-multithreaded-theroem}
 
 The top-level theorem of
 multithreaded linking in $\certikos$  is in Theorem~\ref{theorem:chapter:certikos:contextual-refinement-theorem-in-certikos-multithreaded-linking}.
 
-\begin{theorem}[Multithreaded-Linking Theorem for $\certikos$]
+\begin{theorem}[Multithreaded Linking Theorem for $\certikos$]
 \label{theorem:chapter:certikos:contextual-refinement-theorem-in-certikos-multithreaded-linking}
 Let's assume that $cid$ is a valid CPU ID, $\oracle_{cid}$ is a valid
 environmental context for CPU $cid$, 
@@ -27,12 +27,12 @@ The proof for Theorem~\ref{theorem:chapter:certikos:contextual-refinement-theore
 can be divided into multiple sub-lemmas, each of which is a backward-simulation proof 
 that facilitates  refinement theorems in Section~\ref{chapter:linking:sec:multithreaded-linking}. 
 The overall structure of the proof is in Figure~\ref{fig:chapter:certikos:multithreaded-connect-proof-overall-structure}, which is 
-similar to the multithreaded-linking framework structure (in Figure~\ref{fig:chapter:linking:multithreaded-linking-structure}) but does not rely on
+similar to the multithreaded linking framework structure (in Figure~\ref{fig:chapter:linking:multithreaded-linking-structure}) but does not rely on
 any abstract thread configurations,  abstract layers ($\TSched$, $\TLink$, and $\CSched$), or 
  abstract relations between those layers ($\codeinmath{AbstractRel}$ and $\codeinmath{AbstractRelT}$).
 \begin{figure}
 \includegraphics[width=\textwidth, page=3]{figs/certikos/concurrent_linking}
-\caption{Multithreaded-Linking Structure in $\certikos$.}
+\caption{Multithreaded Linking Structure in $\certikos$.}
 \label{fig:chapter:certikos:multithreaded-connect-proof-overall-structure}
 \end{figure}
 However, providing concrete instances of those abstract definitions is tedious and requires a lot of proof efforts. 

@@ -4,7 +4,7 @@
 
 Multithreaded linking in $\certikos$ is connecting the top layer in  per-CPU layer interfaces with
 the corresponding bottom layer in  per-thread layer interfaces. 
-In that purpose, our multithreaded-linking framework from Section~\ref{chapter:linking:sec:multithreaded-linking} 
+In that purpose, our multithreaded linking framework from Section~\ref{chapter:linking:sec:multithreaded-linking} 
 has been applied to the $\certikos$ to prove a contextual refinement property between the program running on  layers associated with different machine models.
 Using this framework requires us to define concrete instances 
 of  abstract definitions that the framework relies on (in Figure~\ref{fig:chapter:linking:multithreaded-linking-structure}):
@@ -12,7 +12,7 @@ a thread configuration ($C$), concrete instances of three layers ($\CSched$, $\T
 and  two abstract relations between those layers ($\AbsRelC$ and $\AbsRelT$). 
 
 Multithreaded linking in $\certikos$  starts with concrete definitions of $\CSched$ in $\certikos$, $\PHThrd$ in Section~\ref{chapter:certikos:sec:per-cpu-modules}.
-To link it with our multithreaded-linking framework,
+To link it with our multithreaded linking framework,
 we show how we instantiate thread configurations as well as several abstract definitions provided by our framework, and we have proved that these abstract definitions satisfy the requirements of our toolkit.
 Using them, we also define an intermediate layer interface (we call it ``$\PHBThrd$'') that will be used as a layer instance of $\TLink$ and is with $\tasmmach$, $\ieasmmach$, and as $\easmmach$.
 It also includes  the explanation of the proof between the program with  $\PHThrd$ on $\lasmmach$ 
@@ -22,13 +22,13 @@ $\lasmmach(\PLayer{\PHThrd}{cid}{\oracle_{cid}})$ and
 $\easmmach(\parallel tid \in T_{[cid]} \PLayer{\PHBThrd}{tid}{\oracle_{cid}}$); and 
 (2) show that all transition rules (\ie, instructions and primitive calls) preserve the refinement relation. 
 
-The next step is to connect our multithreaded-linking framework with the concrete definition of  $\TSched$ in $\certikos$, $\PBThrd$ in Section~\ref{chapter:certikos:sec:per-thread-modules}.
+The next step is to connect our multithreaded linking framework with the concrete definition of  $\TSched$ in $\certikos$, $\PBThrd$ in Section~\ref{chapter:certikos:sec:per-thread-modules}.
 Connecting the layer with our framework also consists of two parts:  (1) define the refinement relation based on the implementation, which is an instance of $\AbsRelT$ between two states of two different machine models,
 $\tasmmach(\PLayer{\PHBThrd}{tid}{\oracle^{MTLink}_{tid}})$ and 
 $\hasmmach(\PLayer{\PHThrd}{tid}{\oracle_{tid}})$; and 
 (2) show that all transition rules (\ie, instructions and primitive calls) preserve the refinement relation. 
-With those components, proving the main theorem for multithreaded-linking is straightforward by connecting 
-them with our multithreaded-linking framework.
+With those components, proving the main theorem for multithreaded linking is straightforward by connecting 
+them with our multithreaded linking framework.
 
 
 %While explaining the layer interface by providing a small subset of the layer's definition as well as the machine model ($\lasmmach$)
