@@ -1,24 +1,14 @@
 \section{The MCS Algorithm}
 \label{chapter:mcslock:sec:overview}
 
-The $\mcsname$ algorithm~\cite{mcs91} is a list-based queuing lock,
-providing a \emph{fair} and \emph{scalable} mutex mechanism for
-multi-CPU computers. Fairness means that
-CPUs that compete for the lock are guaranteed to receive it in the same
-order as they asked for it (FIFO order). With an unfair lock, CPUs
-that try to take the lock can get nondeterministically passed over
-(even a million times in a row~\cite{lwn:ticketlocks}) creating
-unpredictable latency.
+The $\mcsname$ algorithm~\cite{mcs91} is a list-based queuing lock that provides a \textit{fair} and \textit{scalable} mutex mechanism for multi-CPU computers. Fairness means that CPUs competing for the lock are guaranteed to receive it in the same order as they asked for it (FIFO order).
+In  an unfair lock, CPUs
+that attempt to take the lock can become nondeterministically passed over (even a million times in a row~\cite{lwn:ticketlocks}), thereby creating unpredictable latency.
 
-Fairness is also an important factor to its verification, because
-there is the possibility that one particular CPU is continuously
-passed over so it loops forever without it.
-So unless the lock
-guarantees fairness, there is no way to prove a termination-sensitive
-refinement between the implementation and a simple (terminating)
-specification. With a non-fair lock, we would have to settle for
-either an ugly specification that allowed non-termination or for a weaker notion of correctness such as termination-insensitive
-refinement.
+Fairness is also an important factor to its verification, as it is possible that one particular CPU is continuously passed over; 
+as such, it loops indefinitely without it. 
+Therefore, unless the lock guarantees fairness, there is no method of proving a termination-sensitive refinement between the implementation and a simple (terminating) specification. 
+With a non-fair lock, we would have to settle for either an ugly specification that allowed non-termination or for a weaker notion of correctness such as termination-insensitive refinement.
 \begin{figure}
 \lstinputlisting [language = C, multicols=2] {source_code/mcslock/mcs_struct.h}
 \vspace{1em}
@@ -29,52 +19,39 @@ refinement.
 \end{figure}
 
 Figure~\ref{fig:chapter:mcslock:mcs_lock} shows the implementation of the $\mcsname$ Lock algorithm written in C. 
-The data structure  (Figure~\ref{fig:chapter:mcslock:mcs_lock}) has
-one global field pointing to the last node of the queue structure, and
-per-CPU nodes forming each node in the queue. This is similar to an
-ordinary queue data structure(, but note that it only has a
-pointer to the tail, not the head of the queue).  If the queue is
-empty, we set $\codeinmath{last}$ to the value $\invalidmcsval$, which
-acts as a null value (we could also have used \eg, -1). The queue is
-used to order the waiting CPUs, in order to ensure that lock
-acquisition is FIFO. The structs also include padding to take up full cache lines and avoid false sharing.  Each node is owned by one
-particular CPU (the array is indexed by CPU ID).  This is what makes
-the lock scalable: a CPU looping waiting for the lock will only read
-its own busy flag, so there is no cache-line bouncing. Simpler lock
-algorithms make all the CPUs read the same memory location, which does
-not scale past 10-40 CPUs~\cite{Boyd-wickizer12}.
+The data structure  (Figure~\ref{fig:chapter:mcslock:mcs_lock})
+has one global field pointing to the final node of the queue structure, and the 
+per-CPU nodes forming each node in the queue. This is similar to an ordinary queue data structure (note that it only has a pointer to the tail, and not the head of the queue).
+If the queue is empty, we set $\codeinmath{last}$ to the value $\invalidmcsval$, which acts as a null value (we could also have used \eg, $-1$). 
+The queue is used to order the waiting CPUs in order to ensure that lock acquisition is FIFO. 
+The structs also include padding to take up full cache lines and avoid false sharing. 
+Each node is owned by one particular CPU (the array is indexed by CPU ID). 
+To make the lock scalable, a CPU continues looping and waiting for the lock will only read its own busy flag; 
+therefore, there is no cache-line bouncing. 
+Simpler lock algorithms make all the CPUs read the same memory location, which does not scale past 10-40 CPUs~\cite{Boyd-wickizer12}.
 
-We follow the programming style of $\ccalname$ in Chapter~\ref{chapter:ccal}; thus
-the verified version that we have made has a property that all lock node and variables are statically assigned.
-However, this doesn't restrict the functionality of our verified $\mcsname$ Lock.
-Instead of creating the new node when acquiring the lock and removing the node when releasing the lock,
-each process can pick up one node, and use it as its node during the lock operation. 
-All nodes are uniquely distinguished by lock ID and CPU ID, but those
-things can be reused for the same purpose.
+We follow the programming style of $\ccalname$  presented in Chapter~\ref{chapter:ccal}; thus, the verified version we created has a property that all lock node and variables are statically assigned. 
+However, this does not restrict the functionality of our verified $\mcsname$ Lock. 
+Instead of creating the new node upon acquiring the lock and removing the node when releasing the lock, 
+each process can pick up one node and use it as its node during the lock operation. 
+All nodes are uniquely distinguished by lock ID and CPU ID, but these can be reused for the same purpose.
 
-Figure~\ref{fig:chapter:mcslock:mcs_lock} also shows the code for  acquire lock and
-release lock operations.  The acquire lock function uses an atomic {\em
-fetch-and-store} expression to {\em fetch} the current $\codeinmath{last}$
-value and {\em store} its CPU ID as the $\codeinmath{last}$ value of
-the lock in a single action (line 6).  Then, if the previous $\codeinmath{last}$ value
-was $\invalidmcsval$, the CPU can directly acquire the lock and enter the
-critical section (line 7).  If the previous $\codeinmath{last}$ value was not
-$\invalidmcsval$, it means that some other CPUs are in the critical
-section or in the queue waiting to enter it (line 9 to line 10).  In
-this case, the current CPU will wait until the previous node in the
-queue sets the current CPU's busy flag as $\codeinmath{FREE}$ during the lock
-release.
 
-Release lock also has two execution paths, based on the result of an atomic operation, {\em compare-and-swap} (line 15).
-It stores $\invalidmcsval$ into $\codeinmath{last}$, if and only if the old value
-of $\codeinmath{last}$ is equal to $\codeinmath{cpuid}$, and returns {\em
-  true} if the update succeeds and {\em false} otherwise.
-The $\CAS$ operation succeeds, immediately releasing the lock,
-if the current CPU is the only one in the queue.
-If the $\CAS$ fails, this implies that some other CPU has
-already performed the {\em fetch-and-store} operation (line 6). Thus, the current CPU busy-waits until that other CPU sets the
-$\codeinmath{next}$ field  (line 8), and then passes the lock to the head of the
-waiting queue by assigning $\codeinmath{busy}$.
+Figure~\ref{fig:chapter:mcslock:mcs_lock} 
+also presents the code for acquire lock and release lock operations. 
+The acquire lock function uses an atomic {\em fetch-and-store} expression to {\em fetch} the current $\codeinmath{last}$ value and  {\em store} its CPU ID as the $\codeinmath{last}$ value of the lock in a single action (line 6). 
+Then, if the previous $\codeinmath{last}$  value was $\invalidmcsval$, the CPU can directly acquire the lock and enter the critical section (line 7). 
+If the previous $\codeinmath{last}$ value was not $\invalidmcsval$, it implies that some other CPUs are in the critical section or in the queue waiting to enter it (line 9 to line 10). 
+In this case, the current CPU will wait until the previous node in the queue sets the current CPU’s busy flag as $\codeinmath{FREE}$ during the lock release.
+
+Release lock also has two execution paths based on the result of an atomic operation,  {\em  compare and swap} (line 15). 
+This operation stores $\invalidmcsval$ into $\codeinmath{last}$ only if the old value of $\codeinmath{last}$ is equal to $\codeinmath{cpuid}$, 
+and returns {\em true} if the update succeeds and {\em false} otherwise. 
+The $\CAS$  operation succeeds, it immediately releases the lock if the current CPU is the only one in the queue.
+ If the $\CAS$  fails, it implies that some other CPU has already performed the {\em fetch-and-store} operation (line 6). 
+ Thus, the current CPU busy-waits until the other CPU sets the $\codeinmath{next}$ field (line 8), 
+ and then passes the lock to the head of the waiting queue by assigning $\codeinmath{busy}$.
+
 
 \begin{figure}
 \begin{center}
@@ -84,32 +61,37 @@ waiting queue by assigning $\codeinmath{busy}$.
 \label{fig:chapter:mcslock:mcs-example}
 \end{figure}
 
-Figure~\ref{fig:chapter:mcslock:mcs-example} illustrates a possible sequence of states taken by the algorithm. 
-At the beginning (a), the lock is free, and a CPU 1 can take it in a single atomic $\FAS$ operation (b).
-Since a CPU 1 did not have to wait for the lock, it did not need to update its \emph{next}-pointer. 
-After that, CPUs 2 and 3  try to take the lock ((c) and (d)). 
-The last value will be updated correctly thanks to the property of the atomic expression.
-However, there can be some delay in-between a CPU updating the \emph{tail} pointer, and adjusting the \emph{next}-pointer of the previous node in the queue; as this example illustrates, that means although there are three nodes which logically makes up the queue of waiting CPUs, any subset of the next-pointers may be unset. 
-At (e), although a CPU 1 wants to release the lock, the $\CAS$
-call will return false (because $\codeinmath{tail}$ is 3, not 1).
-In this case, a CPU 1 has to wait in a busy-loop until CPU 2 has set its \emph{next}-pointer (f).
-After that, a CPU 1 can set the busy flag to $\codeinmath{FREE}$ for the next node in the queue, a CPU 2's node, which releases the lock (g).
+Figure~\ref{fig:chapter:mcslock:mcs-example} 
+illustrates a possible sequence of states taken by the algorithm. 
+At the beginning (a),
+the lock is free, and CPU 1 can take it in a single atomic $\FAS$ operation (b). 
+Since CPU 1 did not have to wait for the lock, it did not need to update its \textit{next}-pointer. 
+After that, CPUs 2 and 3 attempt to take the lock ((c) and (d)). 
+The final value will be updated correctly due to the property of the atomic expression.
+ However, there can be some delay between a CPU updating the \textit{tail} pointer and adjusting the \textit{next}-pointer of the previous node in the queue; as the example illustrates, this means that although there are three nodes which logically makes up the queue of waiting CPUs, 
+ any subset of the next-pointers may be unset. 
+ At (e), although a CPU 1 wants to release the lock, 
+ the $\CAS$ call will return false (because $\codeinmath{tail}$ is 3, not 1). 
+ In this case, a CPU 1 must wait in a busy-loop until CPU 2 has set its next-pointer (f). 
+ Thereafter, CPU 1 can set the busy flag to $\codeinmath{FREE}$ for the next node in the queue--CPU 2’s node--which releases the lock (g).
 
-Because the algorithm is fair, it satisfies a \emph{liveness}
-property:\begin{quote}
+
+
+
+
+
+Since the algorithm is fair, it satisfies a \textit{liveness} property:\begin{quote}
 ``Suppose all clients of the lock are well-behaved, \ie, whenever they acquire a lock they release it again after some finite time, and suppose the scheduling of operations from different CPUs is fair. Then  whenever $\mcsacquire$ or $\mcsrelease$ are called they will succeed within some finite time.''
 \end{quote}
-A big part of our formal development is devoted to stating and proving
-this.
-Let us give an informal proof sketch here. 
-Consider a CPU which starts executing $\mcsacquire$.
+A major part of our formal development is devoted to stating and proving the liveness property. 
+As such, an informal proof sketch is provided here. Consider a CPU that starts executing 
+ $\mcsacquire$.
 At this time, the queue contains a finite number of CPUs already waiting for the lock.
 By fairness of scheduling, the CPU at the head of the queue will get scheduled periodically, say every $F$ step. Each time it is scheduled, it will go through three phases. 
-First, it will execute the code in $\mcsacquire$; because it is at the head of the queue the loop will terminate immediately. 
-Then it executes the code in the critical section; by assumption, this is over after some finite number $k$ of operations. 
-Finally, it executes $\mcsrelease$; this either finishes immediately or enters the waiting loop, in which case it will complete as soon as the next CPU in the queue gets scheduled. 
-
-
+First, it will execute the code in $\mcsacquire$; also, since it is at the head of the queue, the loop will terminate immediately. 
+Then, it executes the code in the critical section; 
+by assumption, this completes after some finite number $k$ of operations. 
+Finally, it executes $\mcsrelease$; this either completes immediately or enters the waiting loop, in which case it will complete as soon as the next CPU in the queue is scheduled.
 
 
 

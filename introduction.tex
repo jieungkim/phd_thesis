@@ -59,7 +59,7 @@ and 2) it provides a concurrent-linking framework (\ie, multicore and multithrea
 All layers and linking parts are also connected with the traditional simulation technique~\cite{compcert, deepspec}. 
 
  
-The first part of our toolkit outlines the construction of certified concurrent abstraction layers: a new compositional model for concurrency, 
+The first part of our toolkit outlines the construction of \textbf{C}ertified \textbf{C}oncurrent \textbf{A}bstraction \textbf{L}ayers ($\ccalname$): a new compositional model for concurrency, 
 a program verifier for concurrent C and assembly, and a verified C compiler. 
 Each layer interface in our framework functions as an executable machine that consists of state and multiple transition rules. 
 To divide the program into fine-grained pieces, we follow the idea of abstraction layers, which are widely used in modern computer systems. 
@@ -85,7 +85,7 @@ The model of program execution exposed to the programmer is simple--mostly the s
 We do not have to add any special features to the logic to show high-level properties (such as a liveness property), because we can directly reason in $\coq$ about how long an execution will take. 
  
 The other part of our toolkit provides the connection between multiple concurrent instances in the system. 
-Our certified concurrent abstraction layers provide the method for building and verifying concurrent programs by decoupling the complex interleaving from the correctness proof of each layer in the system. 
+Our $\ccalname$ provide the method for building and verifying concurrent programs by decoupling the complex interleaving from the correctness proof of each layer in the system. 
 This composition requires each layer to use assumptions on the environment of the layer interface, 
 namely regarding the behavior of other concurrent components in the system. 
 Those assumptions inevitably need to be compatible with the properties that other concurrent components can guarantee; 
@@ -194,7 +194,7 @@ To account for this, our dissertation proposes an idea that can be used in the d
 
 The works in chapters~\ref{chapter:ccal},~\ref{chapter:mcs-lock},~\ref{chapter:linking}, and \ref{chapter:certikos}  are parts of the $\certikos$ project,
 conducted jointly by various members in our group. 
-The author collaborated with Ronghui Gu on developing  certified  concurrent abstraction layers, concurrent linking libraries, and the verification on the verified concurrent OS kernel ($\certikos$). 
+The author collaborated with Ronghui Gu on developing  $\ccalname$, concurrent linking libraries, and the verification on the verified concurrent OS kernel ($\certikos$). 
 The author wrote almost all proofs in linking libraries and concurrent-linking proofs for $\certikos$, with some help from J{\'e}r{\'e}me Koenig. 
 Regarding the entire $\certikos$, the author developed the whole $\mcsname$ Lock module with Vilhelm Sj{\"o}berg, 
 and also contributed to many other parts. 
