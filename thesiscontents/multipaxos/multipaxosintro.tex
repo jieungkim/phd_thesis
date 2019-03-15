@@ -9,6 +9,8 @@ instances as well as the possibility of errors in both those instances and the n
 For these reasons, verification of distributed systems is desirable to remove the possibility of bugs and guarantee their safety and correctness. 
 However, much current verification work still requires a great deal of effort and sometimes has limitations.
 
+
+
 Even without interleavings and% errors, 
 modern distributed applications are not built on top of one single distributed protocol (or system), but with multiple protocols.
 They are composed of distributed systems that provide replication, 
@@ -19,13 +21,17 @@ Still, developers re-implement the system (such as Paxos~\cite{paxos} and
 Two-Phase Commit (2PC)~\cite{2PC}) in slightly different ways to obtain different APIs and performance 
 characteristics despite the difficulty of implementing distributed systems correctly.
 
-To handle those issues, we propose Write-Once Registers ($\WOR$) as an abstraction for building and verifying distributed systems. 
-A $\WOR$ exposes a simple, data-centric API: 
-clients can capture, write, and read it. 
-Applications can use a sequence or a set of $\WOR$s to obtain properties such as durability, concurrency control, and failure atomicity. 
-By hiding the logic for distributed coordination underneath a data-centric API, the $\WOR$ abstraction enables easy, incremental, 
-and extensible implementation and verification of applications built above it. 
-Accordingly, we present the design, implementation, and verification of a system called $\wormspace$ 
-that provides developers with an address space of $\WOR$s, implementing each $\WOR$ via a $\paxos$ instance,
-which is the most popular consensus protocol that is still in use. 
+
+Even without interleavings, modern distributed applications are not built on top of one single distributed protocol (or system),
+ but are rather built using multiple protocols. They are composed of distributed systems that provide replication, logging, and transactions to achieve properties such as durability, concurrency control, failure atomicity, high availability, and strong consistency. 
+ While the high-level APIs and implementations of such systems vary widely, the properties provided by them and the protocols used to provide the properties are similar. Still, developers re-implement some systems (such as $\paxos$~\cite{paxos} and 
+Two-Phase Commit (2PC)~\cite{2PC}) in slightly different ways to obtain different APIs and performance characteristics despite the difficulty of correctly implementing distributed systems.
+
+
+
+To handle those issues, we propose \textbf{W}rite-\textbf{O}nce \textbf{R}egisters ($\WOR$) as an abstraction for building and verifying distributed systems.
+ A $\WOR$ exposes a simple, data-centric API: clients can capture, write, and read it. Applications can use a sequence or a set of $\WOR$s to obtain properties such as durability, concurrency control, and failure atomicity.
+  By hiding the logic for distributed coordination underneath a data-centric API, the $\WOR$ abstraction enables easy, incremental, and extensible implementation and verification of the applications built above it. 
+  Accordingly, we present the design, implementation, and verification of a system called $\wormspace$ that provides developers with an address space of $\WOR$s, implementing each $\WOR$ via a $\paxos$ instance, which is the most popular consensus protocol that remains in use.
+
 

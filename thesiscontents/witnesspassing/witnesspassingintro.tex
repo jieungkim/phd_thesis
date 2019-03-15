@@ -1,30 +1,14 @@
-The previous chapter (Chapter~\ref{chapter:wormspace}) illustrates that our verification work on distributed systems, 
-a different kind of concurrent programs with multicore/multithreaded concurrent programs. 
-It shows 
-that $\ccalname$ can be applied not only to the concurrency by local machines
-but also to the concurrency in the cluster of multiple machines in distributed protocols. 
-By using the approach, we also verified the safety property of $\WOR$, immutability. 
+The previous chapter (Chapter~\ref{chapter:wormspace})
+illustrates that our verification work on distributed systems, 
+a different concurrent program type with multicore/multithreaded concurrent programs. 
+It shows that $\ccalname$ can be applied not only to the concurrency by local machines, but also to concurrency in a cluster of multiple machines in distributed protocols. Using the approach, we also verified the safety property of $\WOR$--immutability. 
 However, verifying a single distributed protocol is insufficient to build large-scale distributed applications because they use multiple distributed systems as their bases.
 
-Proving the correctness of the application requires the verification of the underlying system, but even verifying a single distributed system is
-still very challenging. In this paper, we focus on one of the most commonly
-used families of distributed systems, the leader based distributed system, and study the standard properties to build a verification framework.
-We propose a generic specification to model leader-based distributed systems, and based on
-the specification we present a proof guideline that can verify the common
-desirable properties of the leader based system: linearizability and soundness of
-the leader election. 
-Also, our framework uses a novel logical data structure called witness which keeps track of the history for each distributed object.
-This witness provides the full logical succinct history up to the current status that contains all necessary information for the distributed object. 
 
-
-%In addition, the witness can be used to reason about different distributed functions and can
-%be composed to verify the properties of the entire distributed system. We provide
-%multi-Paxos as the primary example.
-
-
-%We demonstrate that once systems are specified to satisfy the proof template's requirement, the witness data structure delivers necessary
-%information to the proof template and common properties to leader-based systems are proved for free. 
-%
-%\jieung{In this chapter, I copied and pasted and slightly revised our PLDI submisison.  But, I will update this part continuously}%The witness can be used to reason about different distributed functions and can
-%be composed to verify the properties of the entire distributed system. We provide
-%multi-Paxos as the primary example
+Proving the correctness of the application requires the verification of the underlying system;
+ however, even verifying a single distributed system remains very challenging. 
+ In the present paper, we focus on one of the most commonly used families of distributed systems--the leader-based distributed system--and study the standard properties to build a verification framework.
+  We propose a generic specification to model leader-based distributed systems. 
+  Based on the specification, we present a proof guideline that can verify the common desirable properties of a leader-based system: linearizability and soundness in leader election. 
+  Also, our framework uses a novel logical data structure called witness, which tracks the history of each distributed object. 
+  This provides a full logical succinct history up to the current status that contains all necessary information for the distributed object.

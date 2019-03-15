@@ -1,34 +1,23 @@
 \section{Leader-Based Distributed Systems}
 \label{chapter:witnesspassing:sec:leader-based-distributed-systems}
 
-\jieung{\sysname{} - let's change the name later}
 
-We define a leader-based distributed system as a system with a set of nodes
+We define a leader-based distributed system with a set of nodes 
 $\fullset$ that are connected over the network and host a distributed shared state/object
-$\dobj$. At each monotonically increasing term $\termnum$, at most one leader
+$\dobj$. At each monotonically increasing term $\termnum$, only one leader 
 $L \in \fullset$ can make changes to $\dobj$. There can be many ways to elect
-$L$, but the election protocol must assign at most one $L$ per $\termnum$,
+$L$, though the  election protocol must assign at most one $L$ per $\termnum$,
 or the system should include a conflict resolution scheme to only apply
 state changes by at most one $L$ at $\termnum$.
 Update operations can fail during execution, but the effect on $\dobj$ should be atomic. 
 For example, a $\multipaxos$ system can reach a
 state where a $\paxos$ instance did not reach a consensus but contains an
 incomplete state change proposal from $\gstate$ to $\gstate^\prime$.
-Then $\protocolfunction$ should make sure that this incomplete state is either safely abandoned (in favor of retaining state $\gstate$)
+Then, $\protocolfunction$ should ensure that this incomplete state is either safely abandoned (in favor of retaining state $\gstate$)
 or completed (in favor of adopting $\gstate^\prime$ in its entirety)
 before executing any subsequent operations. 
 Our approach only focuses on the leader-based systems that can be modeled by this approach.
 We further formally model the elements of a leader-based distributed system.
-
-%The constraints of state updates, which are specified in $\protocolfunction$ in \sysname{},
-%are that update operations can fail during execution, but the effect on $\dobj$ should be atomic. For example, a $\multipaxos$ system can reach a
-%state where a $\paxos$ instance did not reach a consensus but contains an
-%incomplete state change proposal from $\gstate$ to $\gstate^\prime$.
-%Then $\protocolfunction$ should make sure that this incomplete state is either safely abandoned (in favor of retaining state $\gstate$)
-%or completed (in favor of adopting $\gstate^\prime$ in its entirety)
-%before executing any subsequent operations. 
-%\sysname{} only focus on the leader-based systems that can be modeled by this approach.
-%We further formally model the elements of a leader-based distributed system.
 
 \section{MultiPaxos}
 \label{chapter:witnesspassing:multipaxos}
@@ -40,46 +29,37 @@ as an example protocol to explain how our approach facilitates modeling and
 verifying leader-based distributed systems. $\multipaxos$ is a
 state machine replication protocol. In $\multipaxos$, a system's state changes
 are chosen by synod consensus of a $\paxos$ instance and replicated across acceptor nodes.
-The $\paxos$ instance consists of a group of acceptor nodes and the $\paxos$ protocol
-ensures that a state chosen by the instance is immutable.
+The $\paxos$ instance consists of a group of acceptor nodes, while the $\paxos$ protocol ensures that a state chosen by the instance is immutable.
 
-Each $\paxos$ instance requires a prepare and an accept phases to choose a new
-state. A proposer sends the request and acceptors accept the new state.
-A successful prepare requires a quorum (majority) of acceptor acknowledgments
-and the state is successfully chosen only if a quorum of acceptors
-accepted the state. For an acceptor to accept a state, the proposer's prepare
+Each $\paxos$ instance requires a prepare and an accept phase to choose a new state. 
+In this system, a proposer sends the request and acceptors accept the new state. 
+A successful prepare requires a quorum (majority) of acceptor acknowledgments, and the state is successfully chosen only if a quorum of acceptors have accepted the state. 
+For an acceptor to accept a state, the proposer's prepare
 request should be the last request (ordered by a round number $r$)
-that the acceptor has received. Once a state is chosen by the $\paxos$ instance,
-proposers trying to propose new state to the same instance are obligated to
-propose the already-chosen state; this makes the chosen state immutable.
-If there are contending proposers trying to propose a new
-state to a $\paxos$ instance, which does not have a chosen state, the proposers
-can indefinitely race with each other by overwriting the prepare request.
+that the acceptor has received.
+Once a state is chosen by the $\paxos$ instance, 
+proposers attempting to propose a new state to the same instance are obligated to propose the already-chosen state; 
+this makes the chosen state immutable. 
+If there are contending proposers attempting to propose a new state to a $\paxos$ instance that does not have a chosen state, 
+the proposers can indefinitely race with each other by overwriting the prepare request.
 
-As an optimization for successive proposals, $\multipaxos$ elects a
-leader (dedicated proposer), which can propose new state changes to multiple $\paxos$
-instances for as long as no other proposer attempts to prepare to write. However, the
-original $\paxos$ paper~\cite{paxos, paxosmadesimple} mostly focuses on the operation
-of a single $\paxos$ instance
-and developers are left to choose their implementation of $\multipaxos$.
+As an optimization for successive proposals, $\multipaxos$ elects a leader (dedicated proposer) that can propose new state changes to multiple $\paxos$ instances as long as no other proposer attempts to prepare to write. However, the original $\paxos$ paper~\cite{paxos, paxosmadesimple} 
+primarily focuses on the operation of a single Paxos instance, and developers are left to choose their implementation of $\multipaxos$.
 
 
-Our $\multipaxos$ example employs the scheme that is described as below:
+Our $\multipaxos$ example employs the scheme described below:
 \begin{itemize}
 	\item {\textbf{Leader election: }} whenever the leader at $\termnum$ is
 		suspected to be dead, a proposer increments $\termnum$ to $\termnum'$ and
 		sends a vote request to the acceptors.
 		If a proposer receives a majority of votes with a $\termnum'$ tag it
 		becomes the leader for round $\termnum'$.
-	\item {\textbf{Preparation of new leader: }} the new leader checks and completes any
-		partially finished tasks by the previous leader and figures out the
-		tail of the log $t$. Then the leader batch prepares the log entries
-		(Paxos instances) that come after $t$ with a round number $r = \termnum'$.
+	\item {\textbf{Preparation of new leader: }}  the new leader checks and completes any partially completed tasks by the previous leader and determines the tail of the log  $t$. 
+The leader batch then prepares the log entries ($\paxos$ instances) that come after $t$ with a round number  $r = \termnum'$.
 	\item {\textbf{Proposing new states: }} the leader sends proposals
 		to $\paxos$ instance $t+1$ whenever new state changes need to be chosen.
-		The leader makes sure that $t$ is incremented only after the
-		request at $t+1$ is successfully chosen (retries if the
-		request fails) to prevent holes in the log.
+		The leader ensures   that $t$ is incremented only after the
+		request at $t+1$ is successfully chosen (the leader retries if the request fails) to prevent gaps  in the log.
 \end{itemize}
 
 
@@ -87,18 +67,14 @@ Our $\multipaxos$ example employs the scheme that is described as below:
 \label{chapter:witnesspassing:sec:global-local-reasoning}
 
 
-One of the challenges of distributed system verification is that it requires reasoning about
-global invariants, (\ie, properties that hold for the entire distributed state rather than just
+One of the major challenges of distributed system verification is that it requires reasoning regarding global invariants 
+ (\ie, properties that hold for the entire distributed state rather than just
 one node's local state).
-However, relations between local and global invariants are not straightforward 
-So,  one must trace the network history back in time and consider multiple
-nodes' states at once to reason globally.
-It is further complicated if one assumes a network that can have failures such as duplicated
-or lost messages.
-We attempt to reduce the amount of global reasoning by logically gathering sufficient
-information in the local state to prove the desired properties.
-We call this gathered information a \textit{witness}, and while we provide a formal treatment, it is helpful first to see a simple example.
-
+However, relations between local and global invariants are not straightforward. 
+As such, one must trace the network history back in time and consider multiple nodes’ states simultaneously in order to reason globally. 
+This is further complicated if one assumes a network that can have failures such as duplicated or lost messages. 
+We attempt to reduce the amount of global reasoning by logically gathering sufficient information in the local 
+state to prove the desired properties. We call this gathered information a \textit{witness}, and it is helpful to first observe a simple example while we provide a formal treatment. 
 
 \begin{figure}
 \begin{minipage}{\linewidth}
@@ -108,78 +84,21 @@ We call this gathered information a \textit{witness}, and while we provide a for
   deletekeywords={struct, prop}, morekeywords={such,that,forall,in,null,to}]{source_code/witnesspassing/paxos_spec.c}
 \end{multicols}
 \end{minipage}
-\caption{Paxos with Witnesses. Witness extensions in \bfseries{bold}.}
+\caption{Paxos with Witnesses. Witness Extensions in \bfseries{Bold}.}
 \label{fig:chapter:witnesspassing:paxos-witness}
 \end{figure}
 
-Figure~\ref{fig:chapter:witnesspassing:paxos-witness} contains pseudo-code for single-decree $\paxos$,
-which has the same routine with the pseudo-code in Figure~\ref{fig:chapter:multipaxos:paxos-pseudocode},
-but with the witness, the evidence of distributed object manipulations.
-The parts in bold are the necessary additions to augment $\paxos$ with witnesses.
-These additions are purely logical in that they do not show up in the actual implementation.
-It is clear also that the overall behavior of the protocol does not depend on the witnesses;
-they exist purely to aid in reasoning about the protocol.
-By having the witnesses and assuming a well-formedness property certain safety invariants are
-made more obvious.
-
-For example, one of the primary safety properties of $\paxos$ is immutability, which says that it
-is safe for an acceptor to write a value $v$ when either no value is currently written in a
-majority of acceptors or $v$ is already written in a majority of acceptors.
-Looking at Figure~\ref{fig:chapter:witnesspassing:paxos-witness} we can see that in order for a proposer to write a value system-wide,
-it must have the highest round number that a majority of acceptors have seen.
-It can also be shown that whenever an acceptor writes a value, it exactly matches the one in the witness.
-Then by inspecting the promises stored in the witnesses, we can show that every value in the witnesses
-came from a proposer with the highest round number among a majority of acceptors.
-Therefore we know that the witnesses contain a history of all written values.
-We use this fact to sketch a proof of immutability.
-%
-%\begin{proof}
-%Consider a proposer in phase 2a with a witness $wit$ and a value $val$.
-%Proceeding by induction on the length of $wit$, the base case is trivial because no witnesses
-%means no value is written so it is safe to write anything.
-%In the inductive case we have a value $old$ that was the last write in round $rnd$.
-%If $val$'s round number is $rnd'$ then it must be the case that $rnd' >= rnd$ because
-%the acceptors would have rejected the messages otherwise.
-%If $rnd' = rnd$ then $val = old$ because round numbers are unique and only one value can be proposed
-%per round, so we are done.
-%If $rnd' > rnd$ then that implies there was a write in a round after $rnd$, which contradicts our
-%assumption that $rnd$ was the latest write.
-%Therefore, for any acceptor in phase 2b, the value in the witness is always safe to write and since
-%it matches the value in the message from the proposer, immutability is preserved.
-%\end{proof}
-
-%\jieung{Check the correctness of these tables!!}
-%
-%\begin{figure}
-%\begin{center}
-%%\includegraphics[width=.45\textwidth,page=1,trim=0 120 0 50,clip]{figs/witnesspassing/construct_witness}
-%	\includegraphics[width=.7\textwidth, page=1]{figs/witnesspassing/witnessspmp}
-%\end{center}
-%\caption{Single-Paxos Witnesses: fields are (round number, value) (promises omitted)}
-%\label{fig:chapter:witnesspassing:paxos-witness-table}
-%\vspace{-1em}
-%\end{figure}
-%
-%\begin{figure}
-%\begin{center}
-%%\includegraphics[width=.45\textwidth,page=2,trim=40 90 0 0,clip]{figs/witnesspassing/construct_witness}
-%	\includegraphics[width=.7\textwidth, page=2]{figs/witnesspassing/witnessspmp}
-%\end{center}
-%\caption{$\multipaxos$ Witnesses: fields are (cell-index, round number, value) (promises omitted)}
-%\label{fig:chapter:witnesspassing:multipaxos-witness-table}
-%\vspace{-1em}
-%\end{figure}
-%
-%Another strength of witnesses is their compositionality.
-%Figure~\ref{fig:chapter:witnesspassing:paxos-witness-table} shows the witnesses for two instances of $\paxos$.
-%The second write on each $\paxos$ instance keeps track of witnesses for each
-%instance: writes at round 3 in both instances shows that value $v_{1}$ and
-%$v_{2}$ originally came from writes at round 1 and round 2 respectively. 
-%If we want to extend our proofs about single-Paxos to $\multipaxos$, we can construct
-%a function that composes the witnesses in the manner shown in Figure~\\ref{fig:chapter:witnesspassing:multipaxos-witness-table}.
-%The composed witness is almost equivalent to what is actually stored in the sequence of
-%$\paxos$ instances in $\multipaxos$, which shows step-by-step state changes.
-%Even in a leader-based distributed system that does not maintain an explicit log 
-%to record state changes, the composed witness can provide the entire history of
-%state changes that can be used to reason about the system. 
-
+Figure~\ref{fig:chapter:witnesspassing:paxos-witness} 
+contains pseudo-code for single-decree $\paxos$, which has the same routine as the pseudo-code in Figure~\ref{fig:chapter:multipaxos:paxos-pseudocode};
+ however, evidence of distributed object manipulations exists with the witness.
+ The parts in bold are necessary additions to augment $\paxos$ with witnesses. These additions are purely logical in that they do not appear in the actual implementation. 
+ It is also clear that the overall behavior of the protocol does not depend on the witnesses; 
+ they exist purely to aid in reasoning regarding the protocol. By having witnesses and assuming a well-formedness property, certain safety invariants become more obvious.
+ 
+For example, one of the primary safety properties of $\paxos$ is immutability, 
+which implies that it is safe for an acceptor to write a value $v$ when either no value is currently written in a majority of acceptors or $v$ is already written in a majority of acceptors. 
+In Figure~\ref{fig:chapter:witnesspassing:paxos-witness}, it is evident that in order for a proposer to write a value system-wide, 
+it must have the highest round number that a majority of acceptors have seen. 
+It is also evident that whenever an acceptor writes a value, it exactly matches the one in the witness. 
+Then, by inspecting the promises stored in the witnesses, we can demonstrate that every value in the witnesses originated from a proposer with the highest round number among the majority of acceptors. 
+As such, we can know that the witnesses contain the history of all written values. In light of this fact, we create a sketch a proof of immutability.
