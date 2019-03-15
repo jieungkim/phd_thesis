@@ -273,7 +273,7 @@ oracle query.
 Some of design decisions in  memory access
 layers have to be trusted, so the division between the machine model and
 the implementation is unfortunately slightly blurred.
-Ideally, we would have a generic machine model as proposed in Section~\ref{chapter:ccal:sec:interface-calculus}, where memory is partitioned into a thread-local
+Ideally, we would have a generic machine model as proposed in Section~\ref{chapter:ccal:sec:interface-calculus}, where memory is partitioned into a per-thread 
 memory (no events), a lock-protected memory (accesses generate $\push$/$\pull$
 events), and atomic memories (each access
 generates one $\codeinmath{READ}$/$\codeinmath{WRITE}$/$\codeinmath{SWAP}$/etc event).  However, our starting point
@@ -286,7 +286,7 @@ read\_word etc. Instead, we take a short-cut and specify the particular
 6 memory accesses that the lock code uses: $\mcssetnext$ etc.
 For these procedures to correctly express the intended semantics,
 there are two trusted parts we must take care to get right. First,
-each access to non-thread-local memory must generate an event, so we
+each access to non-per-thread  memory must generate an event, so we
 must not forget the call to
 $\mcssetnextlog$.
 Second, to account for
@@ -500,7 +500,7 @@ abstract state ($\mcsabsdata$) to another. When writing this
 specification we chose to use two components in the abstract state, a
 log ($\lockmultilogpool$) and also a field ($\mcslockabsfield$) which
 records for each numbered lock if it is free ($\mcsockfalse$)
-or owned by a CPU ($\mcslockown \ \bfalse$). 
+or owned by one CPU ($\mcslockown \ \bfalse$). 
 The boolean value in ($\mcslockown\ \_$) indicates whether copied/flushed the shared memory value to/from the local memory for the CPU or not.
 The $\bfalse$ value in $\mcswaithlockspec$ implies that the CPU already hold the lock but does not pull the shared memory by using the $\pull$ operation yet. 
 On the other hand, the  $\bfalse$ value   in $\mcspasshlockspec$ implies that the $\push$ primitive has been invoked already 
@@ -553,7 +553,7 @@ slightly strengthened refinement theorem for the log-component of the
 state. Usually a refinement simulation works by specifying some
 relation $R_{(\mhmcslockop, \mqmcslockop)}$ between machine state and abstract state, and then
 proving that the state transitions preserve the relation. Indeed, for
-thread-local data this is exactly what $\certikos$ does also.
+per-thread data this is exactly what $\certikos$ does also.
 
 Let's recall the contextual refinement property in Definition~\ref{def:chapter:ccal:contextual-refinement}. 
 This relation   $R_{(\mhmcslockop, \mqmcslockop)}$ must includes the relation in between 
@@ -561,10 +561,10 @@ two strategies of those two layers are relying on;
 thus the relation for two different environmental contexts, which are $\oracle^{lk}_{cid}$ for $\mhmcslockopfull$ and $\oracle^{mcs}_{cid}$ for $\mqmcslockop$.
 For example, suppose one particular
 execution of the system generates the log $\codeinmath{l}_{\mqmcslockop}$.  A normal simulation
-theorem for a CPU 1 would tell us that there \emph{exists} a log $\codeinmath{l}_{\mhmcslockop}$
+theorem for  CPU 1 would tell us that there \emph{exists} a log $\codeinmath{l}_{\mhmcslockop}$
 that meets CPU 1's local specifications and satisfies the relation
 ($R_{({\mhmcslockop}, {\mqmcslockop})}$). 
-Similarly, the local proof for a CPU 2 would say there
+Similarly, the local proof for CPU 2 would say there
 exists a some log $\codeinmath{l'}_{\mhmcslockop}$
 related to  $\codeinmath{l}_{\mqmcslockop}$. 
 But in order to derive a simulation for the
@@ -699,7 +699,7 @@ able to make any progress, so the abstract state of the queue remains the same,
 but the counter $\CalBound$ decreases.
 Otherwise, the counter $\CalBound$ will reset to the upper bound we assumed on fairness, $F$. 
 However, in this case the algorithm will make some progresses that change $\codeinmath{c1}$, $\codeinmath{c2}$, $\codeinmath{q}$, or $\codeinmath{s}$.
-For example, a CPU $j$ may execute  $\SETNEXT$ (which decreases the size of
+For example,  CPU $j$ may execute  $\SETNEXT$ (which decreases the size of
 $\codeinmath{s}$), it may enter the critical section (which moves some measure from
 the head of $\codeinmath{q}$ to the counters $\codeinmath{c1+c2}$) or it may exit the section
 (and that event will decrement $\codeinmath{c2}$).

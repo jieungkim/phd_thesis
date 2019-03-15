@@ -3,7 +3,7 @@
 
 
 Per-thread modules are built on
-the bottom-most layer of our thread local layer interfaces, $\PHThrd$.
+the bottom-most layer of our per-thread  layer interfaces, $\PHThrd$.
 In this layer, all scheduling primitives are defined as an identity function for a private state (\ie, they change nothing in the thread's private state),
 and only updates a shared log as a result of their evaluation. 
 For example, the specification for the  function ``yield''  is

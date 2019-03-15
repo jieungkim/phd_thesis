@@ -2,7 +2,7 @@
 \label{chapter:linking:sec:multithreaded-linking}
 
 The purpose of building a framework for multithreaded linking is similar to that of our multicore portion: 
-to provide the thread-local interface by hiding other threads’ behavior. 
+to provide per-thread layer interfaces by hiding other threads’ behavior. 
 However, it differs from our multicore linking framework, which has a simpler context and configuration. 
 Multiple factors increase the complexity of this multithreaded linking. 
 First, systems already looking at it must provide scheduling-related primitives (\ie, yield, sleep, and create) as well as the other system necessary to implement them. 
@@ -24,9 +24,9 @@ For example, each thread has a maximum capacity of page numbers based on the arg
 Simpler systems may not allow this dynamic allocation for each thread, but many systems assign an appropriate initial state for each thread according to information from when the thread was spawned.
 
 
-Using these assumptions on the environment, our purpose of multithreaded linking is to provide a thread-local layer interface that hides the local behavior of other threads in the system by resolving the following four main challenges: 
+Using these assumptions on the environment, our purpose of multithreaded linking is to provide per-thread layer interfaces that hide the local behavior of other threads in the system by resolving the following four main challenges: 
 (1) hide context switching between threads; 
-(2) construct the environmental context for each thread and show the relationship between the CPU-local machine evaluation with each thread’s evaluation based on the environmental context; 
+(2) construct the environmental context for each thread and show the relationship between the per-CPU machine evaluation with each thread’s evaluation based on the environmental context; 
 (3) prove the compositionality of multiple per-thread machines; and 
 (4) provide the same (or nearly identical) interface for per-thread layers for users to build layers on top of per-thread machines. 
 Similar to the multicore linking, we propose a framework for multithreaded linking by introducing multiple intermediate languages to easily solve those challenges.
@@ -83,7 +83,7 @@ Inductive state `{memory_model_ops: Mem.MemoryModelOps mem}: Type :=
 This  is a state definition from $\compcert$ that was slightly extended by modifying the memory 
 into the memory that can be parameterized by an abstract datum (\ie, $(mem :mwd LATAOps)$).
 The abstract data also contains the global log, which shows the sequence of all operations on shared objects in the system. 
-The purpose of using this state definition for the per-CPU local layer interface is the reusability of $\compcertx$, which could be used to verify sequential programs. 
+The purpose of using this state definition for  per-CPU  layer interfaces is the reusability of $\compcertx$, which could be used to verify sequential programs. 
 With the underlying components of the state definition, 
  it becomes easy  to translate the definition into a simple form ($state_{\lasmmach} = (lst, l)$) when the first element ($lst$) is a local state for the
  CPU that contains 
@@ -136,7 +136,7 @@ and restores the kernel context ($\regs'$) for the next thread on the CPU that w
 
 \subsubsection{$\TLink$ layer with intermediate machines}
 
-Introducing a per-thread layer interface while addressing all challenges requires multiple steps. 
+Introducing per-thread layer interfaces while addressing all challenges requires multiple steps. 
 The first step involves dividing 
  a single CPU state into a set of thread states as well as a shared state among threads
 and providing 
@@ -156,7 +156,7 @@ $\PLayer{\TLink}{\ignorechar}{\ignorechar}(\Layer)(id)
 \end{center}
 This gets the argument  ($args$), the local state of the thread ($lst_{thrd}$), as well as  the global state ($l$), and then 
 returns the result of the evaluation ($\textit{res}\cup \{\}$) as well as the updated state ($(lst_{thrd}', l')$).
-However, scheduling primitives cannot be specified in this manner because it involves changes on multiple thread-local states. 
+However, scheduling primitives cannot be specified in this manner because it involves changes on multiple per-thread states. 
  In this sense, it implements these rules directly on our intermediate machine models instead of the layer definition. 
  In this sense, the relation between the primitive domain on two layers follows the following definition:
 
@@ -253,13 +253,13 @@ Section~\ref{chapter:linking:subsec:multithreaded-machine-model} also provides m
 \end{figure}
 
 
-Another fundamental property that our multithreaded linking framework must provide is multithreaded linking, which is the formal connection between two layers using different focused sets (\ie, the full thread set and a singleton thread set) parameterized with a $\easmmach$ 
-layer interface. 
+Another fundamental property that our multithreaded linking framework must provide is multithreaded linking, which is the formal connection between two layers using different focused sets (\ie, the full thread set and a singleton thread set) parameterized with  $\easmmach$ 
+layer interfaces. 
 We first introduce $\ieasmmach$, which is identical to  $\easmmach$, but has a different memory model from that of $\easmmach$.
 Providing that behaviors of context programs on $\TLink$ with the $\ieasmmach$  and the $\easmmach$ with the full thread set on the CPU is simple 
 due to the similarity of those two machine models (Figure~\ref{fig:chapter:conlink:introduce-single-threaded-machine-model-with-iiasm} (1) and Figure~\ref{fig:chapter:conlink:introduce-single-threaded-machine-model-with-iiasm} (2)). 
-The next step involves providing evidence of the behavior of $\TLink$ with the $\ieasmmach$ layer interface associated with the full thread set on the CPU. 
-This contextually refines the behavior of the $\TLink$ with the $\ieasmmach$ layer interface associated with a single-focused thread. 
+The next step involves providing evidence of the behavior of $\TLink$ with  $\ieasmmach$ layer interfaces associated with the full thread set on the CPU. 
+This contextually refines the behavior of the $\TLink$ with  $\ieasmmach$ layer interfaces associated with a single-focused thread. 
 This requires a match between the environmental step in Figure~\ref{fig:chapter:conlink:introduce-single-threaded-machine-model-with-iiasm} (3) and the concrete step evaluations in Figure~\ref{fig:chapter:conlink:introduce-single-threaded-machine-model-with-iiasm} (2) based on an assumption regarding the progress of each thread. 
 The assumption states that every thread will generate at least one event, within finite steps, to connect the single environmental step in Figure~\ref{fig:chapter:conlink:introduce-single-threaded-machine-model-with-iiasm} (3) with multiple private steps, plus a single step that generates an event in Figure~\ref{fig:chapter:conlink:introduce-single-threaded-machine-model-with-iiasm} (2).
 
@@ -279,12 +279,12 @@ As such, the $\yield$ call in the layer interface associated with
  $\ieasmmach$ 
 requires multiple evaluation steps, which is far from the atomic operation we want to provide as specifications of scheduling primitives on per-thread layer interfaces. 
 The operational style environmental context query potentially also changes the current thread ID in the state, 
-which is far from the thread-local layer interface and must keep the thread ID as a focused thread during the entire evaluation. 
+which is far from  per-thread layer interfaces and must keep the thread ID as a focused thread during the entire evaluation. 
 To make the connection easy, our multithreaded linking framework introduces another machine model, $\tasmmach$, which combines multiple environmental context queries into single-step query (see Figure~\ref{fig:chapter:conlink:introduce-single-threaded-machine-model-with-tasm} (2).) 
 It also provides the contextual refinement between their behaviors as a part of our framework, 
 but requires another assumption regarding the behavior of the system, which is that every thread will eventually be scheduled with a limited number of environmental steps to guarantee the progress of the focused thread when it calls scheduling primitives. 
 When associated with the assumption in Figure~\ref{fig:chapter:conlink:introduce-single-threaded-machine-model-with-iiasm},
- this assumption implies that every thread will be eventually scheduled within limit $\times$ progress steps. With this assumption, we formalize that the behavior of the $\TLink$ with the $\ieasmmach$ layer interface contextually refines the behavior of the $\TLink$  with the $\tasmmach$ 
+ this assumption implies that every thread will be eventually scheduled within limit $\times$ progress steps. With this assumption, we formalize that the behavior of the $\TLink$ with  $\ieasmmach$ layer interfaces contextually refines the behavior of the $\TLink$  with the $\tasmmach$ 
  (see Section~\ref{chapter:linking:subsec:single-threaded-machine-model}  for more details).
  
  
@@ -307,7 +307,7 @@ The machine state of the per-thread machine model $\codeinmath{state}_{\hasmmach
 This similarity gives us a huge benefit: the reusability of the compiler ($\compcertx$) 
 that we  used in our per-CPU layer interfaces. 
 
-The program at the bottom level of our per-thread-local layer interfaces also relies on the abstract layer definition $\TSched$, which contains the same domain on the primitive set as that of $\CSched$ (see Definition~\ref{definition:chapter:conlink:domain-csched-tsched}).
+The program at the bottom level of our per-thread layer interfaces also relies on the abstract layer definition $\TSched$, which contains the same domain on the primitive set as that of $\CSched$ (see Definition~\ref{definition:chapter:conlink:domain-csched-tsched}).
 
 \begin{definition}[Primitive Domain of $\CSched$ and $\TSched$]
 \label{definition:chapter:conlink:domain-csched-tsched}

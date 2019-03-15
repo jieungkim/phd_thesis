@@ -74,11 +74,11 @@ The memory is a map from a block identifier to its value,
 and the ownership field of our shared abstract state is also a map form a block identifier to the ownership flag.
 Only two shared primitives, $\pull$ and $\push$,
 provide a way to manipulate them.
-In this example, a CPU 1 tries to access a memory block $b$ by calling a primitive $\pull$. 
+In this example, CPU 1 tries to access a memory block $b$ by calling a primitive $\pull$. 
 The $\pull$ operation modifies the ownership from \code{free} to \code{own} $1$. 
 Then, other CPUs cannot change the ownership flag of the block until CPU $1$ change it back to \code{free} 
 by a $\push$ operation.
-The $\push$ operation also updates the shared memory block $b$ (from $v$ to $v'$), which is the result of the operations for the memory block $b$ performed by a CPU $1$  between $\pull$ and $\push$ calls. 
+The $\push$ operation also updates the shared memory block $b$ (from $v$ to $v'$), which is the result of the operations for the memory block $b$ performed by  CPU $1$  between $\pull$ and $\push$ calls. 
 Those two shared operations also generate $1.\push(b)(v)$ (the memory snapshot when CPU $1$ starts its shared memory manipulation) 
 and  $1.\pull(b)(v)$ (the result of shared memory manipulation by CPU $1$), respectively.
 By doing that, those two $\push$ and $\pull$ encapsulate the shared memory operations
@@ -193,11 +193,11 @@ Figure~\ref{fig:chapter:ccal:push-pull-memory-model-and-local-memory} shows how
 all local memory updates keep the consistency with the corresponding shared memory updates. 
 In the example, the model has the same sequence of updates with the example 
 in Figure~\ref{fig:chapter:ccal:push-pull-memory-model-and-shared-memory}.
-The local memory update by a CPU $1$ needs to be followed by the corresponding $\pull$ event, 
+The local memory update by  CPU $1$ needs to be followed by the corresponding $\pull$ event, 
 so the pull event, $1.pull(b)(v)$, tells the local machine that the current memory value is 
 $v$ for the block $b$ by replaying the global log up to that point ($l$)
 and updates the block in the local copy $m$ with the value ($b \rightarrow v$). 
-After that, a CPU $1$ operates on the memory based on the value $v$ until it pushes the change (as well as frees the ownership for the block).
+After that, CPU $1$ operates on the memory based on the value $v$ until it pushes the change (as well as frees the ownership for the block).
 The value $v$ for the block in here is the same value in the global shared memory accessed by multiple CPUs. 
 All shared memory (and all abstract state) updates are recorded in the global log; thus,
 updating the local copy of block $b$ by replaying the log $l$ gives the same status for the shared memory block $b$ (in multicore machine mode) at the moment

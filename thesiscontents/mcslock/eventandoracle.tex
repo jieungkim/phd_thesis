@@ -17,7 +17,7 @@ the state.
 Again, an \emph{event} is any action which has observable consequences for
 other CPUs. Each specification must define events for all the points
 in the program where it reads or writes to shared memory (but not for
-accesses to thread-local memory). The \emph{log} is a list of
+accesses to per-thread memory). The \emph{log} is a list of
 events, representing all actions that have happened in the system
 since it began running. Actions from different CPUs are interleaved in
 the list.

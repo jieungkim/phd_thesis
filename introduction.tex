@@ -86,13 +86,13 @@ We do not have to add any special features to the logic to show high-level prope
  
 The other part of our toolkit provides the connection between multiple concurrent instances in the system. 
 Our $\ccalname$ provide the method for building and verifying concurrent programs by decoupling the complex interleaving from the correctness proof of each layer in the system. 
-This composition requires each layer to use assumptions on the environment of the layer interface, 
+This composition requires each layer to use assumptions on the environment of  layer interfaces, 
 namely regarding the behavior of other concurrent components in the system. 
 Those assumptions inevitably need to be compatible with the properties that other concurrent components can guarantee; 
 proving this property is thus desirable for our concurrent program verification toolkit. 
 To fulfill this requirement, we provide the concurrent linking library as part of our toolkit, 
 which includes defining concurrent machine models and providing generic proof methods to show the validity in the parallel composition of multiple instances, 
-as well as the formal connection between the program on concurrent machine models and the program on the local layer interface. 
+as well as the formal connection between the program on concurrent machine models and the program on  local layer interfaces. 
 
 Our linking library also has several unique aspects for applying it to large concurrent system verification. 
 First, our concurrent machine semantics are generic enough to be applied to arbitrary programs written in our layered framework.
@@ -132,7 +132,7 @@ This work not only facilitates the abstraction-layer approach in our framework b
 Figure~\ref{fig:intro:certikos-structure} briefly describes the overall structure of our $\certikos$ verification. 
 We divide the full kernel as two parts, per-CPU $\certikos$ and per-thread $\certikos$, 
 and we build abstraction layers for those two parts with our framework. 
-We prove the correctness theorem of each part; the implementation of each part on its local machine (\ie, a thread-local machine or a CPU-local machine) contextually refines the top-most layer of each part. 
+We prove the correctness theorem of each part; the implementation of each part on its local machine (\ie, a per-thread machine or a per-CPU machine) contextually refines the top-most layer of each part. 
 We then merge those two correctness proofs using our multithreaded linking framework. 
 We also propagate the correctness proof down to the multicore machine using our multicore linking framework. 
 Following all of those steps, we prove a single top-level correctness theorem of $\certikos$, which implies that $\certikos$ implementation running on a multicore machine model (\ie, a $\intelmachine$ multicore machine) contextually refines the top-most abstraction layer in $\certikos$ layer stacks (\ie, $\TSyscall$ layer that abstracts all system calls in $\certikos$). 

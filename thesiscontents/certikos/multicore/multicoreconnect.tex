@@ -1,5 +1,5 @@
 
-\subsection{Connect Layers on Multicore Machine and CPU-Local Machine}
+\subsection{Connect Layers on Multicore Machine and per-CPU Machine}
 \label{chapter:certikos:subsec:connect-multicore}
 
 %All those proofs requires the additional refinement proofs for between adjacent step relations, but they can 
@@ -46,7 +46,7 @@ multicore linking in $\certikos$  is in Theorem~\ref{theorem:chapter:certikos:co
 \begin{theorem}[Multicore Linking Theorem for $\certikos$]
 \label{theorem:chapter:certikos:contextual-refinement-theorem-in-certikos-multicore-linking}
 Let's assume  $cid$ is a valid CPU ID, $\oracle_{cid}$ is a valid
-environmental context for a thread $cid$, and $\codeinmath{Ctxt}$ is a
+environmental context for CPU $cid$, and $\codeinmath{Ctxt}$ is a
  context program that runs on top of layer $\codeinmath{MBoot}$. 
  Then we can state that
  \begin{center}

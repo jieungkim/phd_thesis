@@ -2,7 +2,7 @@
 \label{chapter:certikos:sec:per-cpu-modules}
 
 Per-CPU modules in $\certikos$  refines related parts of  $\certikos$ modules--which are included in $\certikos_{\codeinmath{cpu}}$ in the figure, based on the $\mmcsbootfull$ layer-- 
-into the local layer interface, $\PBThrd$.
+into the  local layer interface, $\PBThrd$.
 Those modules consist of six components:
 two spinlock modules, a device driver module, a memory management module,  a thread-management module, and a VM management module. 
 \jieung{process? thread? which one will I choose? --- thread}
@@ -136,7 +136,7 @@ the event for the shared resources  (see Section~\ref{chapter:mcslock:sec:evalua
 The high-level specification for $\pallocfunc$ is in Figure~\ref{fig:chapter:certikos:palloc-in-coq}.
 In the figure, \lstinline$RData$ is a type of abstract data, and $AC$ is a container field in the abstract state.
 \lstinline$CalAT_log_real$ is a function to pull out the current allocation table state by replaying the log
-related to page allocations in the system, and \lstinline$pperm$ is a CPU-local page permission table. 
+related to page allocations in the system, and \lstinline$pperm$ is a per-CPU page permission table. 
 With that given information, \lstinline$palloc_spec$ updates a single event (\lstinline$OPALLOCE$) into the log, based on the result of the page-allocation operation and considering the related interleaving with other CPUs via the environmental context (\lstinline$multi_oracle$ in the figure.)
 The lock instance for this page allocation--one element in our spinlock pool--is not allowed to be invoked at higher layers;
 thus, threads that hold the lock for other shared objects cannot hold (and does not release) the lock for page allocation.

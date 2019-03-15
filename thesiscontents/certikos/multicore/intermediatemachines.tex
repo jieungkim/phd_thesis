@@ -62,7 +62,7 @@ Definition single_semantics (p: program) :=
 \end{figure}
 
 
-Our intermediate machine models in Section~\ref{chapter:linking:sec:multicore-linking} are abstract languages, but our ultimate goal is to connect them with per-CPU local layers. 
+Our intermediate machine models in Section~\ref{chapter:linking:sec:multicore-linking} are abstract languages, but our ultimate goal is to connect them with per-CPU  layers. 
 This requires us to connect those abstract machine models with $\lasmmach$--the machine model of $\compcertx$--by using backward-simulation proofs in $\compcert$~\cite{leroy06} (\ie, it is also used in the layer linking of local layer interfaces  with $\compcertx$).
 To make  this possible,
 we provide  full concrete definitions for those abstract languages

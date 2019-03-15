@@ -1,8 +1,8 @@
-\subsection{Machine Model for Per-thread Local Layer Interfaces}
+\subsection{Machine Model for Per-thread  Layer Interfaces}
 \label{chapter:linking:subsec:machine-model-for-single-threaded}
 
 We now introduce a machine model for our per-threaded layer interfaces, $\hasmmach$.
-This machine resolves all the issues  we  illustrated related to providing the machine model for per-thread local layers. 
+This machine resolves all the issues  we  illustrated related to providing the machine model for per-thread  layers. 
 The model can be connected with the compiler in $\compcertx$ by matching its state definition with that of $\lasmmach$. 
 The model also can calculate the proper initial state for each focused thread,
 and provide the no-op-like software scheduling behavior by hiding the context switching between threads on the same CPU with the proper environmental context. 
@@ -116,9 +116,9 @@ Suppose  $\ThreadConf$ is a multithreaded linking environment that contains thre
 Additionally, let's assume  
 $tid$ is a valid thread ID in a certain CPU,
   $\oracle^{\TLink}_{tid}$ is a valid
-environmental context for a thread $tid$ with $\tasmmach$,
+environmental context for  thread $tid$ with $\tasmmach$,
  $\oracle_{tid}$ is a valid
-environmental context for a thread $tid$ with $\hasmmach$,
+environmental context for thread $tid$ with $\hasmmach$,
 and $\codeinmath{Ctxt}$ is a
 context program that runs on top of layer $\TSched$ (as well as $\TLink$).
  Then we can state that

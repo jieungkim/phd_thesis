@@ -448,7 +448,7 @@ Our witness-passing approach also attempts to find a reusable framework for thes
 but instead of decomposing Paxos further, we make the critical implicit invariants more explicit by passing around
 the information needed to prove them.
 
-It enables proofs to be done in a thread-local (or node-local) manner using an environmental context to
+It enables proofs to be done in a per-thread (or node-local) manner using an environmental context to
 capture the behavior of the rest of the world.
 These proofs can then be linked together to obtain a strong correctness theorem for the entire system.
 

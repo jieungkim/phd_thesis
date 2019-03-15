@@ -26,7 +26,7 @@ If the queue is empty, we set $\codeinmath{last}$ to the value $\invalidmcsval$,
 The queue is used to order the waiting CPUs in order to ensure that lock acquisition is FIFO. 
 The structs also include padding to take up full cache lines and avoid false sharing. 
 Each node is owned by one particular CPU (the array is indexed by CPU ID). 
-To make the lock scalable, a CPU continues looping and waiting for the lock will only read its own busy flag; 
+To make the lock scalable, the CPU continues looping and waiting for the lock will only read its own busy flag; 
 therefore, there is no cache-line bouncing. 
 Simpler lock algorithms make all the CPUs read the same memory location, which does not scale past 10-40 CPUs~\cite{Boyd-wickizer12}.
 
@@ -68,11 +68,11 @@ the lock is free, and CPU 1 can take it in a single atomic $\FAS$ operation (b).
 Since CPU 1 did not have to wait for the lock, it did not need to update its \textit{next}-pointer. 
 After that, CPUs 2 and 3 attempt to take the lock ((c) and (d)). 
 The final value will be updated correctly due to the property of the atomic expression.
- However, there can be some delay between a CPU updating the \textit{tail} pointer and adjusting the \textit{next}-pointer of the previous node in the queue; as the example illustrates, this means that although there are three nodes which logically makes up the queue of waiting CPUs, 
+ However, there can be some delay between the CPU updating the \textit{tail} pointer and adjusting the \textit{next}-pointer of the previous node in the queue; as the example illustrates, this means that although there are three nodes which logically makes up the queue of waiting CPUs, 
  any subset of the next-pointers may be unset. 
- At (e), although a CPU 1 wants to release the lock, 
+ At (e), although CPU 1 wants to release the lock, 
  the $\CAS$ call will return false (because $\codeinmath{tail}$ is 3, not 1). 
- In this case, a CPU 1 must wait in a busy-loop until CPU 2 has set its next-pointer (f). 
+ In this case,  CPU 1 must wait in a busy-loop until CPU 2 has set its next-pointer (f). 
  Thereafter, CPU 1 can set the busy flag to $\codeinmath{FREE}$ for the next node in the queue--CPU 2’s node--which releases the lock (g).
 
 
@@ -84,7 +84,7 @@ Since the algorithm is fair, it satisfies a \textit{liveness} property:\begin{qu
 ``Suppose all clients of the lock are well-behaved, \ie, whenever they acquire a lock they release it again after some finite time, and suppose the scheduling of operations from different CPUs is fair. Then  whenever $\mcsacquire$ or $\mcsrelease$ are called they will succeed within some finite time.''
 \end{quote}
 A major part of our formal development is devoted to stating and proving the liveness property. 
-As such, an informal proof sketch is provided here. Consider a CPU that starts executing 
+As such, an informal proof sketch is provided here. Consider the CPU that starts executing 
  $\mcsacquire$.
 At this time, the queue contains a finite number of CPUs already waiting for the lock.
 By fairness of scheduling, the CPU at the head of the queue will get scheduled periodically, say every $F$ step. Each time it is scheduled, it will go through three phases. 

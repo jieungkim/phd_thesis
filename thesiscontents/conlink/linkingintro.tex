@@ -241,9 +241,9 @@ Most claims in multicore linking (Figure~\ref{fig:chapter:conlink:concurrent-lin
 remain nearly identical. However, claims are usually located in the middle of the system software stack, which already contains multiple primitives in the layer. 
 This requires us to handle some software and machine-dependent properties when implementing the linking framework as well as proving linking theorems. It also requires us to handle the mutual exclusiveness of private states, including memories, register values, and private fields in abstract data (such as page table allocations). 
 In addition, it also requires us to assign proper initial states for all threads in the system if we want to prove that the composition of multithreaded linking has the same behavior as the multithreaded program runs on the 
-CPU-local layer. 
+per-CPU layer. 
 To handle these, we also introduce multiple intermediate machine models that can parameterize abstract layer as well as thread configurations, 
-and we use various auxiliary functions and auxiliary properties related to the abstract layer (and the top-most layer in the CPU-local machine as well as the bottom-most layer in the thread-local machine). 
+and we use various auxiliary functions and auxiliary properties related to the abstract layer (and the top-most layer in the per-CPU machine as well as the bottom-most layer in the per-thread  machine). 
 With the linking framework provided, users must fill out the layer definition, configurations, and generic properties to link the layer for each thread and CPU.
 
 

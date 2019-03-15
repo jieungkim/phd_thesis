@@ -173,7 +173,7 @@ when thread 2 starts its evaluation after thread 1 spawns  thread 2 and gives th
 \end{figure}
 
 Based on those definitions, we provide multiple auxiliary functions 
-for thread-local machines to calculate necessary information in Figure~\ref{fig:chapter:conlink:multithreaded-linking-aux-functions}.
+for  per-thread machines to calculate necessary information in Figure~\ref{fig:chapter:conlink:multithreaded-linking-aux-functions}.
 Among them,  \lstinline$update$ and \lstinline$uRData$ functions are  declarations of a replay function for the global log. 
 The \lstinline$has_event$ function is to check whether the primitive calls must trigger the event.
 We also require the snapshot functions for the events.
