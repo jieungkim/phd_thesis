@@ -116,7 +116,7 @@ bound number, they cannot add push/pull events forever. On the other
 hand, the framework completely abstracts away how long time (in microseconds) elapses
 between any two events in the log.
 
-\subsection{Code reuse} 
+\subsection{Code Reuse} 
 The same
 $\acquirereleaselock$ specifications can be
 used for all clients of the lock. The only proofs that need to be done
@@ -127,7 +127,7 @@ atomic primitive like $\lpallocspec$ (which is very
 short). We never need to duplicate the thousands of lines of proof
 related to the lock algorithm itself.
 
-\subsection{Using more than one lock}
+\subsection{Using More than One Lock}
 
 The layers approach is particularly nice when verifying code that uses more than one
 lock. To avoid deadlock, all functions must acquire the locks in the

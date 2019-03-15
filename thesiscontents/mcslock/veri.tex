@@ -59,7 +59,7 @@ The top layer $\mhmcslockopfull$ proves starvation freedom and liveness
 specifications where taking or releasing a lock generates just a
 single event to the log.
 
-\subsection{Memory operations layers}
+\subsection{Memory Operations Layers}
 \label{chapter:mcslock:subsec:lowestmachinemodel}
 
 
@@ -224,7 +224,7 @@ that replay function is correctly defined. Instead, we modify the last
 instructions, and one has to trust that they match the specification.
 
 
-\subsection{Event interleaving layer}
+\subsection{Event Interleaving Layer}
 \label{chapter:mcslock:subsec:abstractoperationlayer}
 
 After abstracting memory accesses into the operation on the log, we
@@ -296,7 +296,7 @@ $\mcslog$ after each access.
 
 
 
-\subsection{Low-level functional specification}
+\subsection{Low-level Functional Specification}
 \label{chapter:mcslock:subsec:atomicoperation}
 
 Using the primitives that we have defined in lower layers, we prove the correctness of lock acquire, $\mcsacquire$, and release, $\mcsrelease$.
@@ -344,7 +344,7 @@ consider cases when $\calmcsacqwait$ returned $\codeinmath{(}\Some\codeinmath{ l
 It is easy to show in a downward simulation that the C loop can match any such finite run, 
 since the C loop can run any number of times.
 
-\subsection{Data representation and ghost state}
+\subsection{Data Representation and Ghost State}
 \label{chapter:mcslock:sec:representation-ghost}
 
 From here on, we never have to think about C programs again.  All the
@@ -454,7 +454,7 @@ $\mcsacquirespec\codeinmath{(d)=}\Some\codeinmath{(d')}$.
 \end{theorem}
 
 
-\subsection{Liveness and atomicity}
+\subsection{Liveness and Atomicity}
 \label{chapter:mcslock:sec:liveness-atomicity}
 
 The specification in the previous section is still too low-level and
@@ -754,7 +754,7 @@ $\waitqslockspec$, with the simulation on logs given by $\relatemcslogkwd$.
 \end{theorem}
 
 
-\subsection{From downwards- to upwards-simulation}
+\subsection{From Downwards- to Upwards-simulation}
 \label{chapter:mcslock:sec:downwards-to-upwards}
 
 When moving from sequential to concurrent programs we must

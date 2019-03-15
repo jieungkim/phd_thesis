@@ -3,7 +3,7 @@ and is considered a standard algorithm for providing inter-CPU locks with FIFO o
 $\mcsname$ Lock is an interesting target for verification, being short and subtle as well as involving both liveness and safety properties. 
 To demonstrate the applicability of $\ccalname$ (presented in Chapter 2), we implemented and verified the $\mcsname$ Lock algorithm using the $\ccalname$  toolkit, thereby demonstrating that the C/assembly implementation contextually refines the atomic specifications of the acquire and release lock methods.
 
-By using our  $\ccalname$ toolkit, splitting the proof into layers becomes possible with the \textit{fun-lift} and \textit{log-lift} patterns of local layer interface. 
+By using our  $\ccalname$ toolkit, splitting the proof into layers becomes possible with the \textit{fun-lift} and \textit{log-lift} patterns of local layer interfaces. 
 Using this toolkit, we can modularize the verification into separate parts for the low-level machine model, data abstraction, 
 and reasoning on concurrent interleavings. 
 This separation of concerns makes the layered methodology suitable for verified programming in the large, and our $\mcsname$

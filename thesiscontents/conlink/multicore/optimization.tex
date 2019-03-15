@@ -81,13 +81,13 @@ $}
 \hardwarelocalstep{curid}{(\localview{ps}{(\listappoppo{l_1}{l_0})})}{(\localview{ps'}{l'})}}
 {\singlebigtwostep{curid}{oracle}{(\rstate{ps}{l})}{\ccemptytrace}{(\rstate{ps'}{(\listappoppo{l'}{\listappoppo{l_1}{l_0}})})}}
 \end{mathpar}
-\caption{Single-Core Machine Model with Big-Step Style Oracle Query.}
+\caption{Single-core Machine Model with Big-Step Style Oracle Query.}
 \label{fig:chapter:conlink:single-core-big-step}
 \end{figure}
 
 \subsubsection{Big-Step Oracle Query}
 
-Querying an environmental context after each local step is subtle when defining the local layer interface;
+Querying an environmental context after each local step is subtle when defining local layer interfaces;
 thus, simplification is desirable. 
 We define two intermediate machine models for this optimization,
 which is presented in Figure~\ref{fig:chapter:conlink:single-core-big-step} based on the one, the fairness of the evaluation chance for each CPU, which is notated as $\timebound$. 
@@ -831,7 +831,7 @@ With the new state definition and multiple auxiliary functions regarding the sta
 we presents the single separate-step machine model in Figure~\ref{fig:chapter:conlink:separate-step-rules}, 
 which is the last piece of our multicore-linking framework 
 as well as an abstract but expressive machine model that can be connected with 
-the machine model for the local layer interface.
+the machine model for  local layer interfaces.
 Again, the machine model of the local layer interface is $\lasmmach$ in our case, but it is not restricted to  $\lasmmach$ and can be applied to other machines that satisfy specific properties--mostly the properties about hardware configurations. 
 The machine model contains two rules; the first is for the local private evaluation,
 and the other is for the shared operation that updates the proper log that is associated with the shared object 
