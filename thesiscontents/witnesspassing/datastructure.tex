@@ -58,7 +58,7 @@ functions and then explain both functions in detail.
 \begin{small}
 \raggedright
 
-\textbf{Local State:}\\
+\noindent\fbox{local state:}\\
 $$
 \begin{array}{lllllllll}
 \nodeid &:& Type & \mbox{(Node ID)} & & \termnum &:& Type & \mbox{(Term num)}^* \\
@@ -72,14 +72,14 @@ $$
 * : Total order required
 
 \raggedright
-\textbf{Global State:}\\
+\noindent\fbox{global state:}\\
 $$
 \begin{array}{lllllllll}
 \fullset &:=& \set{\nodeid} & \mbox{(Full node ID set)} & & \gstate &:=& \set{ \nodeid \mapsto \dstate ~\vert~ \forall \nodeid \in \fullset} & \mbox{(Global state)}\\
 \end{array}
 $$
 \\
-\textbf{Network:} \\
+\noindent\fbox{network:} \\
 $$
 \begin{array}{llll}
 \packet &: & Type & \mbox{(Network event)}\\
@@ -88,7 +88,7 @@ $$
 \end{array}
 $$
 \\
-\textbf{Protocol-specific Functions:}  \\
+\noindent\fbox{protocol-specific functions:}  \\
 $$
 \begin{array}{llll}
 	\updatefunc & := & (\seqnum * \dsvalue) \rightarrow   (\seqnum * \dsvalue)  &

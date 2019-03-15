@@ -26,7 +26,7 @@ and then show how we integrate them into the specifications described in Section
 
 \begin{figure}
 \raggedright
-\textbf{Basic definitions:}  \\
+\noindent\fbox{basic definitions:}  \\
 $$
 \begin{array}{llll}
 \accsset & := & \set{\nodeid} & \mbox{(All voters)}\\
@@ -34,7 +34,7 @@ $$
 \end{array}
 $$
 \raggedright
-\textbf{Witness definitions:}  \\
+\noindent\fbox{witness definitions:}  \\
 $$
 \begin{array}{llll}
 \voters & := & \set{\nodeid} & \mbox{(All supportive voters)}\\
@@ -124,7 +124,7 @@ The new composite witness is then sent back to the approvers at the point where
 
 \begin{figure}
 \raggedright
-\textbf{State definition with witness:}\\
+\noindent\fbox{state definition with witness:}\\
 $$
 \begin{array}{ll}
 \dstate_\witness:= (\dstate \times \witnesstree)  & \mbox{(Local state)} \\
@@ -136,7 +136,7 @@ $$
 $$
 
 \raggedright
-\textbf{Auxiliary abstract definitions for witness building:} \\
+\noindent\fbox{auxiliary abstract definitions for witness building:} \\
 $$
 \begin{array}{llll}
 find\_vtr_{ldr} &:& \termnum \rightarrow \networklog \rightarrow \networklog \rightarrow  \set{\nodeid} & \mbox{(Find voters for a leader election)}\\
@@ -147,7 +147,7 @@ f_{q} &:&  \isquorums & \mbox{(Quorum definition)}\\
 \end{array}
 $$
 \raggedright
-\textbf{Auxiliary function to insert evidence into uncommitted witness elements:}\\
+\noindent\fbox{auxiliary function to insert evidence into uncommitted witness elements:}\\
 $$
 \begin{array}{l}
 insert\_qrm_{wl}\ (wl : \text{lst } \witness)\ (qrm:  \set{\nodeid}) :=\\
@@ -160,7 +160,7 @@ insert\_qrm_{uc}(hd, qrm)::tl_{q}  \\
 \end{array}
 $$
 \raggedright
-\textbf{Witness building routine in} ${\replay}_{\witness}$\textbf{:}  \\
+\noindent\fbox{witness building routine in ${\replay}_{\witness}$:}  \\
 $$
 \begin{array}{ll}
 \ldrwcons \ (rn: \termnum) \ (l_{pre}\ l_{rcv}: \networklog) := \\
