@@ -56,7 +56,7 @@ in $\compcert$.
 However, directly proving the backward simulation requires us to prove the progress property of the source language, which is bothersome. 
 In this sense, $\compcert$ provides the way to show the equivalence of the forward simulation and  backward simulation when 
 two languages are deterministic.
-We could not take advantage of this conversion due to the non-deterministic behavior of our bottom-level machine,
+We could not take advantage of this conversion due to the nondeterministic behavior of our bottom-level machine,
 multicore machine model. 
 Therefore, we  need to prove the backward refinement proof directly to inject the proof into the backward simulation form of $\compcert$ later. 
 

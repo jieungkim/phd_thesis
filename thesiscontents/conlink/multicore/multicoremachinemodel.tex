@@ -45,7 +45,7 @@ $$
 
 
 Based on the hardware configurations, semantics, and auxiliary functions in Section~\ref{chapter:linking:subsec:hardware-configuration},
-we define a non-deterministic multicore machine model in this section.
+we define a nondeterministic multicore machine model in this section.
 We first define a \textit{local view}, which is the view from each core that consists of a private state and a view of the global log. 
 Based on the local view, 
 step relation rules for four commands 
@@ -100,7 +100,7 @@ curid \in \coreset \\
 \label{fig:chapter:conlink:multicore-machine-syntax-and-semantics}
 \end{figure}
 
-Using all this information, defining a fully non-deterministic machine model (which is restricted to the sequential consistency memory model) 
+Using all this information, defining a fully nondeterministic machine model (which is restricted to the sequential consistency memory model) 
 is possible as shown  in Figure~\ref{fig:chapter:conlink:multicore-machine-syntax-and-semantics}.
 The state definition in the machine model is almost the same  the state definition for the multicore machine model in Section~\ref{chapter:ccal:subsec:multicore-machine-model}. 
 The state ($\hstatekwd$) is defined as a tuple with three elements, and it consists of a current CPU ID that owns the evaluation control,
@@ -115,7 +115,7 @@ in terms of not having shared memory and an abstract state.
 The global log can calculate those shared resources, so we can safely assume that there exist shared memory and abstract data in this state definition. 
 $\getpstkwd$ and $\setpstkwd$ are getter and setter operations for the partial map of private datum. 
 With that, 
-the step relation for the non-deterministic multicore machine is defined in $\setpstkwd$. 
+the step relation for the nondeterministic multicore machine is defined in $\setpstkwd$. 
 The machine is parameterized with a single CPU ID, which is a start CPU (that will be first evaluated in the system),
 but it does not have any environmental context at all because it is a full machine model without any missing components. 
 The rule always starts the evaluation 
@@ -123,4 +123,4 @@ with a hardware-scheduling step, which will update the shared log by memorizing
 the scheduling result ($l_0 = \listconsoppo{\yieldbackev{curid'}}{\listconsoppo{\yieldev{curid}}{l}}$). 
 It then  updates the local view of the newly scheduled CPU via hardware local step relation. 
 The result will eventually update the shared log, the private state, and the current CPU ID. 
-Note that choosing the next CPU ID that will be evaluated in this step relation is totally non-deterministic.
+Note that choosing the next CPU ID that will be evaluated in this step relation is totally nondeterministic.

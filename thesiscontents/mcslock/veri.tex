@@ -609,7 +609,7 @@ $\codeinmath{d'}_{\mqmcslockop}$
 The proof requires a \emph{fairness assumption}.
 A CPU cannot take the lock until the previous CPU releases it, 
 and the previous CPU cannot release it if it never gets to run. 
-At its most fundamental, the $\certikos$ machine model is a non-deterministic 
+At its most fundamental, the $\certikos$ machine model is a nondeterministic 
 transition system (which is subsequently viewed as a log of events), 
 and there is nothing in the basic model that ensures fairness, 
 so we have to add an extra assumption somewhere. In principle, it would be 
@@ -780,11 +780,11 @@ Unfortunately, concurrent programs are \emph{not} deterministic: we
 want to prove that every interleaving of operations from
 different CPUs in the low-level machine results in correct
 behavior. So if we had directly modeled the implementation as a
-non-deterministic transition system, then we would have to work
+nondeterministic transition system, then we would have to work
 directly with upwards simulations, which would be intractable when
 reasoning about the low-level details of C programs.
 
-In our approach, all the non-determinism is isolated to the concurrent
+In our approach, all the nondeterminism is isolated to the concurrent
 context $\oracle$. Any possible interleavings of  threads can be
 modelled by initializing the abstract state with a particular
 $\oracle^{mcs}_{cid}$, and the execution proceeds deterministically from

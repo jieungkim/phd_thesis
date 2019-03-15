@@ -158,7 +158,7 @@ We come up with a number of variants that use $\WOR$s. We describe them below an
 
 
 \paragraph{[Variant A8: 8 message delays]} An obvious solution is to simply store the votes in a set of per-RM $\WOR$s. 
-If the TM decision is non-deterministic, a $\WOR$ is used to store the decision as well. In the $\WOR$-based 2PC protocol, 
+If the TM decision is nondeterministic, a $\WOR$ is used to store the decision as well. In the $\WOR$-based 2PC protocol, 
 an RM initiates the protocol by contacting the TM (message delay \#1); the TM contacts the RMs (\#2); 
 they prepare the $\WOR$ (\#3 and \#4), and then write to it (\#5 and \#6); send back their decision to the TM (\#7), 
 which sends back a commit message to all the RMs (\#8). This corresponds exactly to using $\paxos$ as a black-box.

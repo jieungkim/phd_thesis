@@ -8,79 +8,68 @@
 \jieung{Can I use it? And, I need to delete FIFOBBQ in this figure. Need to direct line from Trap and Syscall to VM Monitor?}
 \end{figure}
 
-$\certikos$ was initially developed in the context of a sizeable DARPA-funded research project,
-and its role is running high-assurance operating systems on a military land vehicle with an Intel Core i7 machine. 
-It supports concurrency with fine-grained locking as well as a hypervisor
-to run guest OSes on top of it, 
-at most one guest OS per one CPU. 
-In the real example with the land vehicle, 
-we run 6 Ubuntu Linux systems as guests (one each on the first six cores), 
-and  they are responsible for running  their one RADL (The Robot Architecture Definition Language) nodes (with the fixed hardware configuration such as accesses to radar, modem, and GPS). 
-Few simple device drivers (\eg, interrupt controllers and, serial and keyboard devices)  are in parts of $\certikos$,
-but other complex devices are also serviced via either a user level or being directly passed through (via IOMMU) to various guest Linux VMs. 
+
+$\certikos$ was initially developed in the context of a sizeable DARPA-funded research project, 
+and its role involves running high-assurance operating systems on a military land vehicle with an Intel Core i7 machine. 
+It supports concurrency with fine-grained locking as well as a hypervisor to run guest OSes on top of it, 
+with a maximum of one guest OS per one CPU. 
+In the real-world example with a land vehicle, we run six Ubuntu Linux systems as guests (one each on the first six cores). 
+These are responsible for running their one Robot Architecture Definition Language (RADL) 
+nodes (with a fixed hardware configuration including accesses to radar, modem, and GPS). 
+A few simple device drivers (\eg, interrupt controllers, serial and keyboard devices) are part of $\certikos$, though other complex devices are also serviced via either the user level or being directly passed through (via IOMMU) to various guest Linux VMs. 
 This $\certikos$ features strong isolation support by running different RADL nodes in different VMs. 
-Thanks to this strong isolation property, corruptions or attacks on one VM does not affect other VMs; so
-attackers cannot break into all systems even if they take control of parts of them.
+Due to this strong isolation property, corruptions or attacks on one VM would not affect other VMs; therefore, attackers cannot break into all systems, even if they take control of parts of them.
 
-$\certikos$ also contains various shared objects protected by 
-the low-level shared object that provides protection--spinlock modules.
-It provides two lock implementations, Ticket and MCS, with the same high-level interface for them. 
-Based on that, 
-multiple shared objects are implemented, which include
-sleep queues (SleepQ, which is for a condition variable), message queues (MsgQ, which is for working up on a thread on another CPU), memory-management modules (Container, PMM, VMM), an IPC module with supporting synchronizations via condition variables, \etc
-It also contains a per-core services including per-core scheduler (that can communicate with MsgQ and SleepQ), a process-management module,
-a virtual machine monitor (VM). 
-Each thread also contains its private states, TCB (thread control block, thread management, context, and so on. 
 
-With this operating system, 
-we hope to prove  the correctness of our operating system's behavior with any context programs run on top of it.
-We  built the operating systems in a layered structure to provide the highest-level layer interface that hides most details of OS implementation and
-works as a transition machine for the user programs, thus preserving the behavior of our operating system.  
+$\certikos$ also contains various shared objects protected by the low-level shared object that provides protection--spinlock modules.
+It provides two lock implementations, Ticket and $\mcsname$, with the same high-level interface for both of them. 
+As such, multiple shared objects are implemented, including sleep queues (SleepQ, which is for a condition variable), 
+message queues (MsgQ, which is for working up on a thread on another CPU), 
+memory-management modules (Container, PMM, VMM), and an IPC module with supporting synchronizations via condition variables, among others. 
+It also contains a per-core services including a per-core scheduler (that can communicate with MsgQ and SleepQ), 
+a process-management module, and a virtual machine monitor (VM). 
+Each thread also contains its private states, thread control block (TCB), thread management, and context, among other items.
+
+
+With this operating system, we aim to prove the correctness of our operating system’s behavior with any context programs run on top of it. 
+We built the operating systems in a layered structure to provide the highest-level layer interface that hides most details of OS implementation and works as a transition machine for user programs, thus preserving the behavior of our operating system.
+
+
 In this sense, providing this layer interface requires us 
 to prove a contextual refinement between our $\certikos$ implementation with a bare machine (Intel Core i7) and 
 the top-most layer of our OS layers ($\codeinmath{TSyscall}$, the layer that defines system calls as its primitives).
-Informally, we want to prove that
+Informally, we aim to prove that:
 \begin{quote}
 "Any context program $\codeinmath{CTXT}$ running on the $\codeinmath{TSyscall}$ layer (the top-most layer of $\certikos$) on $\hasm$, a machine model for a per-thread layer interface, with the valid thread ID ($tid$)
 and a valid environmental context ($\oracle_{\codeinmath{thrd}})$ 
-contextually refines the context program $\codeinmath{CTXT}$ plus $\certikos$ kernel code running on the $\codeinmath{MBoot}$ layer (the bottom-most layer of $\certikos$) with a hardware step semantics describing a non-deterministic $\intelmachine$ multicore machine model."
+contextually refines the context program $\codeinmath{CTXT}$ plus $\certikos$ kernel code running on the $\codeinmath{MBoot}$ layer (the bottom-most layer of $\certikos$) with a hardware step semantics describing a nondeterministic $\intelmachine$ multicore machine model."
 \end{quote}
-Formally (with the notations in the previous chapters), the theorem we want to provide as the top-level theorem for $\certikos$ is 
+Formally (with the notations in the previous chapters), the theorem we want to provide as the top-level theorem for $\certikos$ is as follows:
  \begin{center}
 \begin{tabular}{c}
 $\forall\ tid\  \codeinmath{CTXT},$\\
 $\semwmachine{\codeinmath{MBoot}}{\codeinmath{CertiKOS} \oplus \codeinmath{Ctxt}}{\codeinmath{mach}_{\codeinmath{x86}}} \refines_{R_{\codeinmath{certikos}}} \semwmachine{\codeinmath{TSyscall}[tid, \oracle_{\codeinmath{tid}}]}{\codeinmath{Ctxt}}{{\codeinmath{mach}_{\hasm}}}$\\
 \end{tabular}
 \end{center}
-which involves not only contextual refinement proofs between multiple local layers but also contextual refinement proofs between
-different machine models and focused sets\newfootnote{We omit explanations about some notations in here for simplicity, but later sections in this chapter explain them.}
+This involves not only contextual refinement proofs between multiple local layers but also contextual refinement proofs between
+different machine models and focused sets\newfootnote{We omit explanations about some notations in here for simplicity, but later sections in this chapter explain them.}.
 
-To  prove that, we first decompose the full $\certikos$ into two parts--per-thread $\certikos$ ($\certikos_{\codeinmath{td}}$) and per-CPU $\certikos$ ($\certikos_{\codeinmath{cpu}}$)
+To  prove this, we first decompose the full $\certikos$ into two parts--per-thread $\certikos$ ($\certikos_{\codeinmath{td}}$) and per-CPU $\certikos$ ($\certikos_{\codeinmath{cpu}}$).
 Then, we can prove that those two program parts satisfy contextual refinement theorems by using proofs for all layers,
 along with our multilayer-linking library described in Section~\ref{chapter:ccal:subsec:linking}. 
 Next, we can link those two proofs with the multithreaded linking described in Section~\ref{chapter:linking:sec:multithreaded-linking}. 
-This gives us a theorem for the contextual refinement of the entire $\certikos$ kernel. 
-However, it is still insufficient to argue that this is an end-to-end theorem because its bottom-level machine model is still a per-CPU local-layer machine, 
-which is a sequential-like machine based on the machine model of 
-$\compcertx$.  % (the "mboot" layer).
- Therefore, we propagate the contextual refinement theorem all the way down to the non-deterministic $\intelmachine$ 
- multicore machine by using our certified multicore linking library discussed in Section~\ref{chapter:linking:sec:multicore-linking}.
+This provides a theorem for the contextual refinement of the entire $\certikos$ kernel. 
+However, it remains insufficient to argue that this is an end-to-end theorem because its bottom-level machine model is still a per-CPU local-layer machine, which is a sequential-like machine based on the machine model of $\compcertx$. 
+Therefore, we propagate the contextual refinement theorem down to the non-deterministic $\intelmachine$ multicore machine by using our certified multicore linking library (discussed in Section~\ref{chapter:linking:sec:multicore-linking}).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{figure}
 \includegraphics[width=\textwidth, page=1]{figs/certikos/concurrent_linking}
-\caption{Idea of Dividing $\certikos$ with Formal Definitions.} 
+\caption{The Concept of Dividing $\certikos$ with Formal Definitions.} 
 \label{fig:chapter:certikos:idea-of-dividing-certikos-with-formal-def}
 \end{figure}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-All those steps are described in Figure~\ref{fig:chapter:certikos:idea-of-dividing-certikos-with-formal-def},
-which are: (1) contextual refinement for per-CPU layers of $\certikos$; (2) contextual refinement for per-thread layers of $\certikos$;
-(3) contextual refinement for multithreaded linking;  and (4) contextual refinement for multicore layers.
-Each section of this chapter explains each  component.
-\jieung{Need to change the bottom-most layer in Chapter 2 (MCS Lock) as MBoot instead of MMCSBoot for the consistency with this chapter}
-%
-%\begin{figure}
-%\includegraphics[width=\textwidth, page=11]{figs/certikos/concurrent_linking}
-%\caption{Idea of Dividing $\certikos$}
-%\label{fig:chapter:certikos:idea-of-dividing-certikos}
-%\jieung{Resize it!!}
-%\end{figure}
+These steps are described in Figure~\ref{fig:chapter:certikos:idea-of-dividing-certikos-with-formal-def}, and include: 
+(1) contextual refinement for per-CPU layers of $\certikos$; 
+(2) contextual refinement for per-thread layers of $\certikos$; 
+(3) contextual refinement for multithreaded linking; and 
+(4) contextual refinement for multicore layers. Each section of this chapter explains an individual component.

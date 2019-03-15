@@ -1,21 +1,7 @@
-
-
-
-
-This chapter presents our work on a large-scaled concurrent program verification, and
-especially 
-how $\ccalname$ in Chapter~\ref{chapter:ccal} and the concurrent-linking framework in Chapter~\ref{chapter:linking} are applied 
-to verify a large-scaled and practical concurrent-operation system, $\certikos$.
-We divide the full OS kernel as a stack of layers, independently verify them, 
-and connect them via our layer-linking library. 
-Also,
-we glue multiple instances in a concurrent program together by using concurrent-linking (composition) templates, both for multicore and multithreaded concurrency. 
-Our certified kernel is written in 6,500 lines of C and x86 assembly
-and runs on a $\intelmachine$ multicore machine with supporting fine-grained locking via spinlock modules.
-$\certikos$ is the first proof of functional correctness of a complete,
-general-purpose concurrent OS kernel with fine-grained locking,
-which supports a single top-level correctness theorem. 
-
-
-\jieung{ Few things to consider: 
-1) I used one figure from CertiKOS paper. Is it OK?: 2) I try to minimize the descriptions of per CPU module and per Thread module to distinguish those parts with others' dissertations. But, can I add more texts for  them if it is necessary: 2) I did not include performance evaluations in here, cause my dissertation is not related to anything about them, as well as those parts  are already in others' dissertations.}
+This chapter presents our work on a large-scale concurrent program verification, 
+with a particular focus on how $\ccalname$ (presented in Chapter~\ref{chapter:ccal}) and the concurrent linking framework (presented in Chapter~\ref{chapter:linking}) are applied to verify a large-scale and practical concurrent-operation system, $\certikos$. 
+We divide the full OS kernel as a stack of layers, independently verify them, and connect them via our layer-linking library. 
+Also, we glue multiple instances in a concurrent program together by using concurrent linking (composition) templates for 
+both multicore and multithreaded concurrency. 
+Our certified kernel is written in 6,500 lines of C and  $\intelmachine$ assembly and runs on a  $\intelmachine$ multicore machine with supporting fine-grained locking via spinlock modules. 
+$\certikos$ is the first proof of functional correctness of a complete, general-purpose concurrent OS kernel with fine-grained locking that supports a single top-level correctness theorem.
