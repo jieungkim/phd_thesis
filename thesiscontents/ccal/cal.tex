@@ -34,16 +34,16 @@ Contextual refinement, an underlying technique of $\calname$, is powerful becaus
  When a layer stack is extended with a new verified layer on top, 
   inter-layer contextual refinement proofs can be reused with an updated context to include a new layer continuously. 
 For instance, if we add a new layer $L_{\codeinmath{top}}$ on top of verified layers $L_{\codeinmath{mid}}$ and $L_{\codeinmath{btm}}$, 
-we need one new proof that shows $L_{\codeinmath{mid}}$ contextually refines $L_{\codeinmath{top}}$, but we can reuse the proof for $L_{\codeinmath{btm}} \refines_{R} L_{\codeinmath{mid}}$ without requiring any modification to the proof thanks to the characteristic of the contextual refinement. After the proof of $L_{\codeinmath{mid}} \refines_{{R}_{total}} L_{\codeinmath{top}}$, we are automatically guaranteed that $L_{\codeinmath{btm}}$ contextually refines all the way up to $L_{\codeinmath{top}}$ as follows:
+we need one new proof that shows $L_{\codeinmath{mid}}$ contextually refines $L_{\codeinmath{top}}$, but we can reuse the proof for $L_{\codeinmath{btm}} \refines_{R} L_{\codeinmath{mid}}$ without requiring any modification to the proof thanks to the characteristic of the contextual refinement. After the proof of $L_{\codeinmath{mid}} \refines_{{R}} L_{\codeinmath{top}}$, we are automatically guaranteed that $L_{\codeinmath{btm}}$ contextually refines all the way up to $L_{\codeinmath{top}}$ as follows:
 \begin{center}
 $
-\forall\ \codeinmath{Ctxt},\ \sem{L_{\codeinmath{btm}}}{\modulecompose{\codeinmath{M}_{\codeinmath{mid}}}{(\modulecompose{\codeinmath{M}_{\codeinmath{top}}}{\codeinmath{Ctxt})}}} \refines_{R_{(\codeinmath{mid}, \codeinmath{low})}}  \sem{L_{\codeinmath{mid}}}{\modulecompose{\codeinmath{M}_{\codeinmath{top}}}{\codeinmath{Ctxt}}} \refines_{R_{(\codeinmath{high}, \codeinmath{mid})}} \sem{L_{\codeinmath{top}}}{\codeinmath{Ctxt}}. 
+\forall\ \codeinmath{Ctxt},\ \sem{L_{\codeinmath{btm}}}{\modulecompose{\codeinmath{M}_{\codeinmath{mid}}}{(\modulecompose{\codeinmath{M}_{\codeinmath{top}}}{\codeinmath{Ctxt})}}} \refines_{R_{(\codeinmath{mid}, \codeinmath{low})}}  \sem{L_{\codeinmath{mid}}}{\modulecompose{\codeinmath{M}_{\codeinmath{top}}}{\codeinmath{Ctxt}}} \refines_{R_{(\codeinmath{top}, \codeinmath{mid})}} \sem{L_{\codeinmath{top}}}{\codeinmath{Ctxt}}. 
 $
 \end{center}
-where $R_{(\codeinmath{mid}, \codeinmath{low})}$ and $R_{(\codeinmath{high}, \codeinmath{mid})}$ are relations between states of $ L_{\codeinmath{btm}}$ and $L_{\codeinmath{mid}}$ as well as
+where $R_{(\codeinmath{mid}, \codeinmath{low})}$ and $R_{(\codeinmath{top}, \codeinmath{mid})}$ are relations between states of $ L_{\codeinmath{btm}}$ and $L_{\codeinmath{mid}}$ as well as
  $ L_{\codeinmath{mid}}$ and $L_{\codeinmath{top}}$, respectively, 
 and $\relcomposekwd$ is an operator that combines two refinement relations and is used for representing  
- ${R}_{total} =\relcompose{R_{(\codeinmath{mid}, \codeinmath{low})}}{{R_{(\codeinmath{high}, \codeinmath{mid})}}}$ in here.
+ ${R}_{total} =\relcompose{R_{(\codeinmath{mid}, \codeinmath{low})}}{{R_{(\codeinmath{top}, \codeinmath{mid})}}}$ in here.
 
 
 
