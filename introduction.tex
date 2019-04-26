@@ -14,7 +14,7 @@ due to numerous (usually unbounded) interleavings among the programs’ multiple
 Testing is necessary to avoid possible faults, but the more that is required the less assured users tend to be. 
 Furthermore, reproducing a bug is impractical unless testers know their precise interleaving order. 
 In this sense, building reliable concurrent programs requires verification to formally demonstrate 
-that they correctly reflect the desired behavior (\ie, the behavior stated in their specifications) without missing any single interleaving cases. 
+that they correctly reflect the desired behavior (\ie, the behavior stated in their specifications) without missing any single interleaving case.
 
 In addition, modern software systems consist of multiple sub-modules, which are intimately connected with other modules in the system. 
 This brings another source of complexity to the verification. 
@@ -85,7 +85,7 @@ The model of program execution exposed to the programmer is simple--mostly the s
 We do not have to add any special features to the logic to show high-level properties (such as a liveness property), because we can directly reason in $\coq$ about how long an execution will take. 
  
 The other part of our toolkit provides the connection between multiple concurrent instances in the system. 
-Our $\ccalname$ provide the method for building and verifying concurrent programs by decoupling the complex interleaving from the correctness proof of each layer in the system. 
+Our $\ccalname$ provides the method for building and verifying concurrent programs by decoupling the complex interleaving from the correctness proof of each layer in the system. 
 This composition requires each layer to use assumptions on the environment of  layer interfaces, 
 namely regarding the behavior of other concurrent components in the system. 
 Those assumptions inevitably need to be compatible with the properties that other concurrent components can guarantee; 
@@ -97,8 +97,8 @@ as well as the formal connection between the program on concurrent machine model
 Our linking library also has several unique aspects for applying it to large concurrent system verification. 
 First, our concurrent machine semantics are generic enough to be applied to arbitrary programs written in our layered framework.
 We separate the linking process from the concurrent layer building so that users do not have to deal with the details of linking itself when they build concurrent layers using our framework. 
-Second, it also can be linked with the assembly model for the verified compiler $\compcertx$, thus providing the full formal connection between the program written in C and assembly and the data abstraction for the detailed data representation on the memory. 
-Third, it provides complex dependencies among multiple data structures in large concurrent programs. 
+Second, our linking library also can be linked with the assembly model for the verified compiler $\compcertx$, thus providing the full formal connection between the program written in C and assembly and the data abstraction for the detailed data representation on the memory. 
+Third, our linking library provides a way to deal with complex dependencies among multiple data structures in large concurrent programs. 
 This relates not only to the dependencies among shared objects in the program but also to the dependencies between shared and private objects. 
 Our toolkit handles all those issues with reasonable restrictions. 
 
@@ -164,7 +164,7 @@ In this sense, distributed systems are a fitting target for verification, in ord
 To build a trustworthy distributed system, we first introduce the WOR abstraction inherent in many distributed systems and present a simple, 
 data-centric WOR API as a first-class programming abstraction. 
 Next, we implement three distributed applications over this API; for each, our modular design easily allows new configurations with different performance and availability properties while matching or surpassing the performance of existing monolithic implementation in a similar configuration. 
-Finally, we apply our verification toolkit into distributed systems by adding a non-Byzantine band asynchronous network model (which allows packet duplication, delay, and loss). 
+Finally, we apply our verification toolkit to distributed systems by adding a non-Byzantine band asynchronous network model (which allows packet duplication, delay, and loss). 
 As a result, we built $\wormspace$, which is a distributed system API that provides the abstraction of the common interfaces that many distributed systems can use. The system is implemented via a collection of $\paxos$, and we prove its functional correctness as well as the key safety property of the protocol--immutability. 
 
 
@@ -195,7 +195,7 @@ To account for this, our dissertation proposes an idea that can be used in the d
 The works in Chapters~\ref{chapter:ccal},~\ref{chapter:mcs-lock},~\ref{chapter:linking}, and \ref{chapter:certikos}  are parts of the $\certikos$ project,
 conducted jointly by various members in our group. 
 The author collaborated with Ronghui Gu on developing  $\ccalname$, concurrent linking libraries, and the verification on the verified concurrent OS kernel ($\certikos$). 
-The author wrote almost all proofs in linking libraries and concurrent linking proofs for $\certikos$, with some help from J{\'e}r{\'e}me Koenig. 
+The author wrote almost all proofs in linking libraries and concurrent linking proofs for $\certikos$, with some help from J{\'e}r{\'e}mie Koenig. 
 Regarding the entire $\certikos$, the author developed the whole $\mcsname$ Lock module with Vilhelm Sj{\"o}berg, 
 and also contributed to many other parts. 
 The automation engine for proving the C source program was developed solely by Xiongnan (Newman) Wu, but its details are beyond the scope of this thesis. 
@@ -229,5 +229,5 @@ and Chapter~\ref{chapter:conclusion}   mentions limitations and future direction
 
 
 \section{Acknowledgment}
-This research is based on work supported in part by DARPA grants FA8750-10-2-0254, FA8750- 12-2-0293, FA8750-16-2-0274, and FA8750-15-C-0082 and NSF grants 1065451, 0915888, 1521523, and 1319671 and ONR Grant N00014-12-1-0478. Any opinions, findings, and conclusions contained in this document are those of the authors and do not reflect the views of these agencies.
+This research is based on work supported in part by DARPA grants FA8750-10-2-0254, FA8750- 12-2-0293, FA8750-16-2-0274, and FA8750-15-C-0082 and NSF grants 1065451, 0915888, 1521523, and 1319671 and ONR Grant N00014-12-1-0478. Any opinions, findings, and conclusions contained in this document are those of the author and do not reflect the views of these agencies.
 

@@ -1,15 +1,15 @@
-Concurrency is ubiquitous. It is not only related to local machines (\ie, multicore hardware or multithreaded programming), 
-but also to the external behaviors of the system (\ie, I/O device) and other nodes’ behaviors in a cluster of multiple machines via network communications. 
-However, they are challenging to get right and debug because the behavior of the system contains the number (usually unbounded) of arbitrary interactions and interleaved executions among all system components. 
+Concurrency is ubiquitous. It is not only related to local machines (\eg, multicore hardware or multithreaded programming), 
+but also to the external behaviors of the system (\eg, I/O device) and other nodes’ behaviors in a cluster of multiple machines via network communications. 
+However, it is  challenging to get right and debug because the behavior of the system contains a number (usually unbounded) of arbitrary interactions and interleaved executions among all system components. 
 In this sense, building high-assurance concurrent programs remains challenging; thus, formal verification is desirable because it is the only known method of building bug-free programs. 
 
 However, formal verification requires a considerable cost for adaptation to large-scale system software, 
-even without considering concurrency, and becoming more expensive with it. 
+even without considering concurrency, and becomes more expensive with it. 
 Modularization and composition--the fundamental techniques common in building large-scale programs--are also required for verification in order to reduce the cost of developing verified software; 
-however, applying them to the verification is subtle due to the correlation of sub-modules or/and instances in the system. 
+however, applying them to  verification is subtle due to the correlation of sub-modules or/and instances in the system. 
 A software system usually consists of multiple sub-modules that are highly related to others and form multiple concurrently interleaved instances 
 (\ie, the mixture of heterogeneous and/or homogeneous instances depending on the system) that interact with others. 
-In this sense, a novel modular and compositional verification approach to resolve them is required for concurrent programs to provide a way to maintain global invariants when building multiple sub-modules that can run with other concurrent components in the full system. 
+In this sense, a novel modular and compositional verification approach to resolve interactions of sub modules is required for concurrent programs to provide a way to maintain global invariants when building multiple sub-modules that can run with other concurrent components in the full system. 
 
 Moreover, modularity and compositionality are also necessary to reduce the maintenance cost of verified software. 
 System software can be extended by adding more services based on current existing modules, 
@@ -19,12 +19,12 @@ When some parts of the system have been modified or extended, the proof must als
 The cost typically depends on the nature of the changes as well as the invariants that the change affects; 
 however, providing a verification approach to minimize the impact of such changes is also necessary. 
 
-Notably, providing an efficient executable code from verified programs without missing the robustness between them remains another challenge. 
+Notably, providing an efficient executable code from verified programs without missing the robustness remains another challenge. 
 Real-world systems are typically written in a mixture of low-level languages, including C and assembly. 
 Thus, verification of these systems requires specific tools to prove the correctness of both C and assembly functions, which requires a proper linking between the proofs for C and assembly codes. 
 The obvious and unavoidable step involves performing linking in an assembly level after the C code gets compiled into assembly, 
 though this requires trusting the correctness of a compiler that supports modularity as well as compositionality. 
-Linking comes with the concurrency also requires machine models that can support running multiple instances of the concurrent program. 
+Linking in the presence of the concurrency also requires machine models that can support running multiple instances of the concurrent program. 
 
 
 In order to handle the aforementioned challenges, this dissertation provides a modular and compositional method of verifying complicated concurrent system software written in C and assembly. 
