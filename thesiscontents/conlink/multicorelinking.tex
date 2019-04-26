@@ -7,7 +7,7 @@ a fixed number of CPUs, a fixed initial state for all CPUs, and fairness among C
 With these assumptions, concurrent linking for multicore requires multiple challenges being solved: 
 (1) hide the nondeterminism of a multicore machine model (by using the strategy of a hardware scheduler); 
 (2) build an environmental context for each CPU; 
-(3) prove the compositionality of multiple per-PCU machines; 
+(3) prove the compositionality of per-PCU machines; 
 (4) provide a simple environmental context for per-CPU machines; and 
 (5) connect this multicore linking framework with the machine for  local layer interfaces. The final piece of the multicore linking ((5) in Figure~\ref{fig:chapter:conlink:intermediate-languages-and-their-relationsihps-for-multicore-linking}) 
 must be proven manually, depending on the bottom layer of local layer interfaces and its underlying machine model (\ie, $\intelmachine$, ARM, or RISC-V). In our case study in Chapter~\ref{chapter:certikos}, the machine model is the assembly machine of $\compcertx$--$\lasmmach$, as well as the bottom layer of the system ($\mmcsbootfull$), which is also briefly discussed in Chapter~\ref{chapter:mcs-lock}.

@@ -11,7 +11,7 @@ Thus, the present chapter focuses on issues related to providing compositions in
 This linking process has a considerable cost for multiple reasons. 
 First, concurrent linking requires machine syntax and semantics for the entire program as well as for partial concurrent programs 
 (or a machine that can run both). 
-Our tool, $\compcertx$, is designed as a powerful tool to build abstraction layers with single-threaded (or sequential-like) programs written in both C and assembly by using the variance of the verified compiler $\compcert$ as well as its linking library (described in Section~\ref{chapter:ccal:subsec:linking}). However, $\compcertx$ only includes its own local state (\ie, per-CPU or per-thread) as its machine state and achieves interleaved behaviors of concurrent programs via environmental contexts that contain the abstracted view of other system components. 
+Our tool, $\compcertx$, is designed as a powerful tool to build abstraction layers with single-threaded (or sequential-like) programs written in both C and assembly by using the variants of the verified compiler $\compcert$ as well as its linking library (described in Section~\ref{chapter:ccal:subsec:linking}). However, $\compcertx$ only includes its own local state (\ie, per-CPU or per-thread) as its machine state and achieves interleaved behaviors of concurrent programs via environmental contexts that contain the abstracted view of other system components. 
 This isolation also has advantages in terms of re-using the verified compiler and efficiently building concurrent programs without directly handling complex interactions; however, $\compcertx$ is not suitable for parallel composition. 
 In this sense, providing a parallel composition requires us to employ a machine model for full participants of the concurrent program (i.e., a multicore machine model and/or a multithreaded machine model) that has a close connection with our machine model for  local layer interfaces, $\compcertx$.
 
@@ -169,7 +169,7 @@ $\lasmmach$ is a machine model for $\compcertx$.
 \end{definition}
 
 Definition~\ref{definition:conlink:con-linking-for-mcs-lock} 
-provides evidence regarding the formal connection between a program runs with a single local machine ($\compcertx$) in a proper environmental context and a program runs on top of a multicore machine model $\hardwarestepkwd$ with all CPUs. 
+provides evidence regarding the formal connection between a program on top of a single local machine ($\compcertx$) with a proper environmental context and a program on top of a multicore machine model $\hardwarestepkwd$ with all CPUs. 
 Generalizing the theorem is possible with any arbitrary layers, even any concurrent and local machine models with satisfying desired properties. This judgement is provided as follows:
 \begin{definition}[Concurrent Linking]
 \label{definition:conlink:concurrent-linking}
@@ -181,7 +181,7 @@ $\forall \codeinmath{P}. \ \semwmachine{L_{\codeinmath{full}}[D]}{\codeinmath{P}
 ,where $\codeinmath{mach}_{\codeinmath{local}}$ is a machine model that runs the layer with a singleton focused set (such as a machine model of $\compcertx$).
 \end{definition}
 {\noindent}
-In addition, proofs regarding the compositionality of our verification are highly desirable to demonstrate that multiple instances within it rely on consistent assumptions that can be ruled out via other instances in the same system. Formally, it is presented as follows:
+In addition, proofs regarding the compositionality of our verification are highly desirable to demonstrate that multiple instances within it rely on consistent assumptions that are ruled out via other instances in the same system. Formally, it is presented as follows:
 \begin{definition}[Parallel Composition]
 \label{definition:conlink:parallel-composition}
 For any program $ \codeinmath{P}$, a full focused set for the system ($D$), a valid environmental context for the layer with the singleton focused set in $D$ ($\oracle^{\codeinmath{local}}_{i}$), and a layer $L_{\codeinmath{full}}$ and $L_{\codeinmath{local}}$ related to a certain 

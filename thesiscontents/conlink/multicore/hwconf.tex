@@ -100,7 +100,7 @@ Up to that point, we can view that the input type of the function is a global lo
 
 The abstract semantics contain 
 four program rules and one special rule ($\programcounterkwd$). 
-$\programcounterkwd$ tells us the next command evaluate, 
+$\programcounterkwd$ tells us the next command to evaluate, 
 and the other four rules are for the operations associated with the corresponding commands.
 The abstract hardware semantics for the private command take the current CPU ID and private state and return the private states, which implies that 
 it does not look up or modify shared resources, a global log.
@@ -193,7 +193,7 @@ The responsibility of those safety controls does not rely on the hardware config
 \label{fig:chapter:conlink:properties-of-abstract-hardware-semantics-for-multicore-linking}
 \end{figure}
 
-Of course, they require few restrictions, as presented in Figure~\ref{fig:chapter:conlink:properties-of-abstract-hardware-semantics-for-multicore-linking}. 
+Of course, they require a few restrictions, as presented in Figure~\ref{fig:chapter:conlink:properties-of-abstract-hardware-semantics-for-multicore-linking}. 
 Most restrictions are for the \textit{deterministic} and \textit{receptive} behavior of the rules.
 They are necessary for us to prove various refinement theorems, which will work as bases of backward simulation proofs between different machine models, 
 and they are essential for us to use the forward-to-backward simulation template in $\compcert$~\cite{leroy06}, which is
