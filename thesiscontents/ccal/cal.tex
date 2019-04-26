@@ -3,7 +3,7 @@
 
 
 Building certified software in a layered approach was already addressed in the previous work by Gu \etal~\cite{deepspec},
-but that work does not address handling concurrent programs in it.
+but that work does not address handling concurrent programs.
 However, the approach, \textbf{C}ertified \textbf{A}bstraction \textbf{L}ayers ($\calname$), works as a basis of our concurrent layer framework.
 It enables us to build and verify the (sequential) system by dividing it into modular layers, 
 proving the correctness of its every layer independently, and connecting the proofs of all layers in the system to show the correctness of the system's end-to-end behavior via \textit{contextual refinement} between layers. 
@@ -43,7 +43,7 @@ $
 where $R_{(\codeinmath{mid}, \codeinmath{low})}$ and $R_{(\codeinmath{top}, \codeinmath{mid})}$ are relations between states of $ L_{\codeinmath{btm}}$ and $L_{\codeinmath{mid}}$ as well as
  $ L_{\codeinmath{mid}}$ and $L_{\codeinmath{top}}$, respectively, 
 and $\relcomposekwd$ is an operator that combines two refinement relations and is used for representing  
- ${R}_{total} =\relcompose{R_{(\codeinmath{mid}, \codeinmath{low})}}{{R_{(\codeinmath{top}, \codeinmath{mid})}}}$ in here.
+ ${R}_{total} =\relcompose{R_{(\codeinmath{mid}, \codeinmath{low})}}{{R_{(\codeinmath{top}, \codeinmath{mid})}}}$ here.
 
 
 
