@@ -10,16 +10,16 @@ For these reasons, verification of distributed systems is desirable to remove th
 However, much current verification work still requires a great deal of effort and sometimes has limitations.
 
 
-
-Even without interleavings and% errors, 
-modern distributed applications are not built on top of one single distributed protocol (or system), but with multiple protocols.
-They are composed of distributed systems that provide replication, 
-logging, and transactions to achieve properties such as durability, concurrency control, failure atomicity, high availability, and strong consistency.
-While the high-level APIs and implementations of such systems vary widely, 
-the properties provided by them and the protocols used to provide the properties are similar. 
-Still, developers re-implement the system (such as Paxos~\cite{paxos} and 
-Two-Phase Commit (2PC)~\cite{2PC}) in slightly different ways to obtain different APIs and performance 
-characteristics despite the difficulty of implementing distributed systems correctly.
+%
+%Even without interleavings and
+%modern distributed applications are not built on top of one single distributed protocol (or system), but with multiple protocols.
+%They are composed of distributed systems that provide replication, 
+%logging, and transactions to achieve properties such as durability, concurrency control, failure atomicity, high availability, and strong consistency.
+%While the high-level APIs and implementations of such systems vary widely, 
+%the properties provided by them and the protocols used to provide the properties are similar. 
+%Still, developers re-implement the system (such as Paxos~\cite{paxos} and 
+%Two-Phase Commit (2PC)~\cite{2PC}) in slightly different ways to obtain different APIs and performance 
+%characteristics despite the difficulty of implementing distributed systems correctly.
 
 
 Even without interleavings, modern distributed applications are not built on top of one single distributed protocol (or system),

@@ -20,8 +20,7 @@ We also omit the current focused set ($cid$ -- CPU ID) and the environmental con
 The CPU ID will not be changed at all during the whole layers (note that all  layer interfaces in this $\mcsname$ Lock module 
 are local layer interfaces), but there is a place that we need a simplification of the global log to guarantee the atomicity of 
 acquire/release locks as mentioned in Section~\ref{chapter:ccal:subsec:local-layer-interface}.
-We will clearly state that which layer is related to a \textit{log-lift} pattern; 
-thus require the change in an environmental context.
+We will clearly state layers related to a \textit{log-lift} pattern that requires a change in an environmental context.
 Each big and outer rectangle in the figure means each layer in the $\mcsname$ Lock module, 
 and small and inner rectangles in each layer implies primitives defined in the layer.
 Arrows show dependencies between adjacent layers,
@@ -134,7 +133,7 @@ the empty function $\mcssetnextlog$:
 The interface $\mmcslockintrofull$ contains the high level specification for each function defined in $\codeinmath{M}_ {\mmcslockintro}$. 
 Those high-level specifications work on the log instead of the exact memory slot $\lockmemloc$.
 Therefore, after proving the {\em refinement} between the memory ($\lockmemloc$ in Figure~\ref{fig:chapter:mcslock:layer-struct-mcs-verification})
-and the abstract state ($\lockabsloc$ that is calculated by the \emph{log}\newfootnote{$\lockmultilogpool$: a partial map form a lock identifier to the log with the type $\lockmultilog$ associated with the identifier.}
+and the abstract state ($\lockabsloc$ that is calculated by the \emph{log}\newfootnote{$\lockmultilogpool$: a partial map from a lock identifier to the log with the type $\lockmultilog$ associated with the identifier.}
 in Figure~\ref{fig:chapter:mcslock:layer-struct-mcs-verification}), we only need to care about the abstract state.
 
 For the refinement proof, we need two more ingredients.
@@ -523,7 +522,7 @@ satisfied, the specification queries the context once, and appends a
 single new $\WAITLOCK$ event to the log.
 Figure~\ref{fig:chapter:mcslock:hswaitlockspec} also shows the replay function
 $\HCalLock$.
-It has a much simpler type than $\QSCalLock$in the
+It has a much simpler type than $\QSCalLock$ in the
 previous layer, because we have abstracted the internal state of the lock
 to just whether it is free ($\LEMPTY$),
 held ($\LHOLD$), and if taken, the CPU id ($\Some\ i$)
@@ -556,7 +555,7 @@ proving that the state transitions preserve the relation. Indeed, for
 per-thread data this is exactly what $\certikos$ does also.
 
 Let's recall the contextual refinement property in Definition~\ref{def:chapter:ccal:contextual-refinement}. 
-This relation   $R_{(\mhmcslockop, \mqmcslockop)}$ must includes the relation in between 
+This relation   $R_{(\mhmcslockop, \mqmcslockop)}$ must includes the relation for
 two strategies of those two layers are relying on; 
 thus the relation for two different environmental contexts, which are $\oracle^{lk}_{cid}$ for $\mhmcslockopfull$ and $\oracle^{mcs}_{cid}$ for $\mqmcslockop$.
 For example, suppose one particular
@@ -802,7 +801,7 @@ from the end-state of the program.~\cite{DGLMQueue}
 
 There is still an obligation to show that for every $\oracle^{mcs}_{cid}$, there
 in fact exists an $\oracle^{lk}_{cid}$ with the right
-properties. (Specifically, it should the always output logs which
+properties. (Specifically, it should always output logs which
 respect the program invariants, \ie, the replay function is defined,
 and also it should respect the refinement relation $f_{(lk, mcs)}$.) But this can
 be managed by the framework in a generic way, which we discussed in Chapter~\ref{chapter:ccal}. When

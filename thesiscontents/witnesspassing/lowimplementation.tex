@@ -39,7 +39,7 @@ $$
 
 A network model here is one instantiation of a log in
  Section~\ref{chapter:witnesspassing:sec:specs-for-leader-based-system}. Our network is defined as a list of
-network events, and key definitions are found in Figure~{fig:chapter:witnesspassing:net-defs}. A
+network events, and key definitions are found in Figure~\ref{fig:chapter:witnesspassing:net-defs}. A
 network event ($\mathrm{E}_{net}$) represents an interaction between a node and
 a greater distributed system of which it is part. This $\mathrm{E}_{net}$ is a
 low-level instantiation of $\packet$ from Figure~\ref{fig:chapter:witnesspassing:basic-state}.
@@ -78,8 +78,8 @@ primitives - send and receive. The low-level send primitive adds a single send
 event to the network log. There is no acknowledgment and send always succeeds.
 The low-level receive primitive conceptually collects data received from other
 nodes, but in addition to receive and timeout events, populates the network log
-with all intermediate events. (including events not observable by the
-concrete local node). For reasoning purposes, receive consults a network oracle
+with all intermediate events including events not observable by the
+concrete local node. For reasoning purposes, receive consults a network oracle
 to fill in the log. The oracle is constrained by predicates that model only
 relevant forms of network failure,(which can be specified per protocol), and
 verification of a protocol will involve quantifying over all such valid oracles

@@ -397,7 +397,7 @@ interference among protocols. Our work assumes a realistic network to begin with
 and  not only allows both the horizontal and vertical composition of verified distributed
 protocols but also supports the combined reasoning of protocols by using witnesses.
 
-Taube et al.~\cite{modular}, followed by the previous work~\cite{paxosepr}, studied adding
+Taube \etal~\cite{modular} studied adding
 decidability for verifying distributed systems using SMT solvers.
 The work surrounding SMT solvers has a philosophical difference from our distributed system verification approach.
 We use high-order logic and $\ccalname$, which have higher expressiveness but less automation,
@@ -412,9 +412,9 @@ in IronFleet) are not always encodable or verifiable in first-order logic.
 
 A substantial body of work exists on verifying the Paxos protocol~\cite{paxos}.
 Lamport provided a proof sketch at the time of proposing the protocol~\cite{paxosmadesimple}.
-Lampson also attempted to distill Paxos into its core components by creating a very
-high-level Abstract Paxos~\cite{Lampson2001} and showing how variants of
-Paxos can be derived from it. 
+%Lampson also attempted to distill Paxos into its core components by creating a very
+%high-level Abstract Paxos~\cite{Lampson2001} and showing how variants of
+%Paxos can be derived from it. 
 Additional efforts were made to divide Paxos
 into simpler components~\cite{dpaxos, sdpaxos} to find a reusable framework for
 proving its variants. Our approach also attempts
@@ -422,7 +422,7 @@ to find a reusable framework for these proofs,
 but our approach chooses to pass around the information (by logically exposing the key implicit invariant as the explicit one)
  that is needed to prove the fundamental properties of distributed protocols instead of decomposing Paxos further. 
 
-Padon et al.~\cite{paxosepr} verified high-level specifications of many variants of Paxos
+Padon \etal.~\cite{paxosepr} verified high-level specifications of many variants of Paxos
 and multi-Paxos while proposing a method to specify the protocols using
 a decidable first-order logic. Verification of Paxos
 variants was made possible by reusing the specification and proof of vanilla

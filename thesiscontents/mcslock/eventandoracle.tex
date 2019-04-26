@@ -31,7 +31,6 @@ and acquiring/releasing the lock after we show starvation freedom.
 
 As discussed in Section~\ref{chapter:ccal:sec:interface-calculus},  we again assume that the
 machine is sequentially consistent (all CPUs see a single linear log). 
-This rules out 
 Even with this assumption,
 verifying the $\mcsname$ algorithm is not easy (the other proofs we are aware
 of assuming sequential consistency too), so we leave weak memory models
@@ -80,7 +79,7 @@ The first argument will be true when the last value is equal to the current CPU 
 It will be false when the last value is not equal to the current CPU ID that calls the primitive.
 \end{itemize}
 
-Next, other threes are enough to represent release lock in Figure~\ref{fig:chapter:mcslock:mcs_lock}.
+Next threes are enough to represent release lock in Figure~\ref{fig:chapter:mcslock:mcs_lock}.
 
 \begin{itemize}
 
@@ -94,7 +93,7 @@ In addition, the ``busy'' corresponds to the result of the $\CAS$ operation in F
 
 Those six events are used to show the functional correctness of
 $\mcsname$ Lock. However, for clients that use  $\mcsname$ Lock to build shared
-objects they expose too much implementation details.
+objects, they expose unnecessary implementation details.
 In Section~\ref{chapter:mcslock:sec:liveness-atomicity} we will prove linearizability and
 starvation freedom,  to replace them
 with just two events.

@@ -157,7 +157,7 @@ This implies that counting the total lines of code for our $\mcsname$ Lock modul
 high possibility of misinterpretation due to  lines of code for those definitions and proofs.
 Second, we intensively use a contextual refinement approach to 
 build the whole system rather than focusing on verifying the correctness and 
-liveness of $\mcsname$ Lock. Therefore, our proof efforts are mainly focus on proving 
+liveness of $\mcsname$ Lock. Therefore, our proof efforts mainly focus on proving 
 $\mcsname$ Lock that is able to be easily combined with multiple client codes 
 rather than the efficient lock verification itself.  
 
@@ -184,10 +184,10 @@ of two main C functions, $\mcsacquire$ and $\mcsrelease$, are 3.2K lines,
 It is much bigger than other code correctness proofs for while-loops in $\certikos$, which we will
 discuss in Chapter~\ref{chapter:certikos},
 because these loops do not have any explicit decreasing value.
-One another big part in our $\mcsname$ Lock proofs is the proofs for 
+Another big part in our $\mcsname$ Lock proofs is the proofs for 
 Theorem~\ref{thm:chapter:mcslock:machine-state-refinement} and  lines of code for this part is 
 approximately 5K lines. The log replay function ($\calmcslock$) always 
-return the whole $\mcsname$ Lock values ($\lockabsloc$) related 
+returns the whole $\mcsname$ Lock values ($\lockabsloc$) related 
 to the  $\codeinmath{mcs\_lock}$ structure defined in Figure~\ref{fig:chapter:mcslock:mcs_lock}. 
 In this sense, we always have to give the exact values for all memory 
 chunks and prove the correspondence between the memory and the abstract 
